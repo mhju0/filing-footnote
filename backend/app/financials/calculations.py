@@ -5,6 +5,7 @@ from collections.abc import Iterable, Sequence
 from decimal import Decimal
 from typing import Protocol
 
+from app.compare import percentage
 from app.financials.vocabulary import PeriodKind
 
 MAX_COMPARABLE_DURATION_DIFFERENCE_DAYS = 7
@@ -129,13 +130,14 @@ def compute_yoy_deltas(
     rows: Sequence[FinancialFactRow],
     target_period: str,
     previous_period: str | None,
-) -> dict[str, float | None]:
+) -> dict[str, Decimal | None]:
     """Return YoY percentages only for compatible Financial Fact pairs.
 
-    A missing or non-positive prior value is not comparable. Neither are facts
-    whose reporting kind, known duration, fiscal quarter, currency, unit, or
-    scale differs. Legacy DART duration rows remain comparable when both facts
-    honestly omit exact start and end dates.
+    Percentages come from ``app.compare.percentage``: exact decimals rounded
+    half-up to two places. A missing or non-positive prior value is not
+    comparable. Neither are facts whose reporting kind, known duration, fiscal
+    quarter, currency, unit, or scale differs. Legacy DART duration rows remain
+    comparable when both facts honestly omit exact start and end dates.
     """
     current_by_metric = {
         row.metric: row for row in rows if row.period == target_period
@@ -147,17 +149,11 @@ def compute_yoy_deltas(
         row.metric: row for row in rows if row.period == previous_period
     }
 
-    deltas: dict[str, float | None] = {}
+    deltas: dict[str, Decimal | None] = {}
     for metric, current in current_by_metric.items():
         previous = previous_by_metric.get(metric)
-        if (
-            previous is None
-            or previous.value <= 0
-            or not _periods_are_compatible(current, previous)
-        ):
+        if previous is None or not _periods_are_compatible(current, previous):
             deltas[metric] = None
             continue
-        deltas[metric] = float(
-            (current.value - previous.value) / previous.value * 100
-        )
+        deltas[metric] = percentage(current.value - previous.value, previous.value)
     return deltas

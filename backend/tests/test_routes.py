@@ -120,7 +120,10 @@ def test_compute_yoy_deltas_normal_case_both_periods_present() -> None:
         / decimal.Decimal("391035000000")
         * 100
     )
-    assert deltas["revenue"] == float(expected)
+    assert deltas["revenue"] == expected.quantize(
+        decimal.Decimal("0.01"), rounding=decimal.ROUND_HALF_UP
+    )
+    assert isinstance(deltas["revenue"], decimal.Decimal)
 
 
 def test_compute_yoy_deltas_rejects_a_multi_year_gap() -> None:
