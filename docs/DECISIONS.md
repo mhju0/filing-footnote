@@ -689,3 +689,15 @@ member of a chain is shown, and never when DART's `rm` field marks it 정 (since
 replaced). A run that cannot read a body keeps the stored link and
 classification. Structured facts attach to the filing DART returns them for,
 which is the newest version.
+
+## D66 · Bundle scope for annual reports · 2026-11-17 (`ACCEPTED`)
+
+PRODUCT.md promises "latest annual results" and lets a figure show "earlier
+years". The bundle therefore includes every annual report, filed on or before
+the build date, that is the source of an exported figure, keeping only the
+newest version for each company and year. Only each company's latest annual
+report needs owner-approved summaries; older annual reports serve as figure
+sources only. Event filings follow D64 and D65. A release build re-checks every
+figure and fact against pinned regulator responses and re-runs the neutrality
+guard, and it never relies on the build's own flags. ADR 0006 is accepted with
+this milestone; the file format is described in `docs/build-bundle.md`.

@@ -11,6 +11,9 @@
     {"key": "leadership", "ko": "경영진", "en": "Leadership", "priority": 7},
     {"key": "legal", "ko": "소송", "en": "Legal", "priority": 8}
   ],
+  "non_event_categories": [
+    {"key": "annual", "ko": "사업보고서", "en": "Annual report", "assigned_by_classifier": false, "note": "The bundle's category for an annual report (DART 사업보고서, SEC 10-K). The classifier never assigns it; the M8 export sets it."}
+  ],
   "priority_note": "When several rules of one SEC filing match, the category with the lowest priority number wins. A DART filing has one report name, so at most one rule applies.",
   "excluded_reasons": {
     "ir_event": "Investor-relations event notice",
