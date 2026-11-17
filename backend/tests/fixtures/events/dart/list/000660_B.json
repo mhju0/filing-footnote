@@ -1,0 +1,157 @@
+{
+  "stock_code": "000660",
+  "corp_code": "00164779",
+  "pblntf_ty": "B",
+  "bgn_de": "20251118",
+  "end_de": "20261117",
+  "status": "000",
+  "message": "정상",
+  "total_count": 13,
+  "partial": false,
+  "page_errors": [],
+  "list": [
+    {
+      "corp_code": "00164779",
+      "corp_name": "SK하이닉스",
+      "stock_code": "000660",
+      "corp_cls": "Y",
+      "report_nm": "주요사항보고서(자기주식취득결정)",
+      "rcept_no": "20261028000014",
+      "flr_nm": "SK하이닉스",
+      "rcept_dt": "20261028",
+      "rm": ""
+    },
+    {
+      "corp_code": "00164779",
+      "corp_name": "SK하이닉스",
+      "stock_code": "000660",
+      "corp_cls": "Y",
+      "report_nm": "주요사항보고서(자기주식취득결정)",
+      "rcept_no": "20260819000254",
+      "flr_nm": "SK하이닉스",
+      "rcept_dt": "20260819",
+      "rm": ""
+    },
+    {
+      "corp_code": "00164779",
+      "corp_name": "SK하이닉스",
+      "stock_code": "000660",
+      "corp_cls": "Y",
+      "report_nm": "주요사항보고서(자기주식처분결정)",
+      "rcept_no": "20260807000537",
+      "flr_nm": "SK하이닉스",
+      "rcept_dt": "20260807",
+      "rm": ""
+    },
+    {
+      "corp_code": "00164779",
+      "corp_name": "SK하이닉스",
+      "stock_code": "000660",
+      "corp_cls": "Y",
+      "report_nm": "주요사항보고서(해외증권시장주권등상장)",
+      "rcept_no": "20260713000324",
+      "flr_nm": "SK하이닉스",
+      "rcept_dt": "20260713",
+      "rm": ""
+    },
+    {
+      "corp_code": "00164779",
+      "corp_name": "SK하이닉스",
+      "stock_code": "000660",
+      "corp_cls": "Y",
+      "report_nm": "[기재정정]주요사항보고서(유상증자결정)",
+      "rcept_no": "20260710000008",
+      "flr_nm": "SK하이닉스",
+      "rcept_dt": "20260710",
+      "rm": ""
+    },
+    {
+      "corp_code": "00164779",
+      "corp_name": "SK하이닉스",
+      "stock_code": "000660",
+      "corp_cls": "Y",
+      "report_nm": "[기재정정]주요사항보고서(해외증권시장주권등상장결정)",
+      "rcept_no": "20260710000002",
+      "flr_nm": "SK하이닉스",
+      "rcept_dt": "20260710",
+      "rm": ""
+    },
+    {
+      "corp_code": "00164779",
+      "corp_name": "SK하이닉스",
+      "stock_code": "000660",
+      "corp_cls": "Y",
+      "report_nm": "[기재정정]주요사항보고서(유상증자결정)",
+      "rcept_no": "20260706000403",
+      "flr_nm": "SK하이닉스",
+      "rcept_dt": "20260706",
+      "rm": "정"
+    },
+    {
+      "corp_code": "00164779",
+      "corp_name": "SK하이닉스",
+      "stock_code": "000660",
+      "corp_cls": "Y",
+      "report_nm": "주요사항보고서(해외증권시장주권등상장결정)",
+      "rcept_no": "20260624000423",
+      "flr_nm": "SK하이닉스",
+      "rcept_dt": "20260624",
+      "rm": "정"
+    },
+    {
+      "corp_code": "00164779",
+      "corp_name": "SK하이닉스",
+      "stock_code": "000660",
+      "corp_cls": "Y",
+      "report_nm": "주요사항보고서(유상증자결정)",
+      "rcept_no": "20260624000420",
+      "flr_nm": "SK하이닉스",
+      "rcept_dt": "20260624",
+      "rm": "정"
+    },
+    {
+      "corp_code": "00164779",
+      "corp_name": "SK하이닉스",
+      "stock_code": "000660",
+      "corp_cls": "Y",
+      "report_nm": "주요사항보고서(자기주식처분결정)",
+      "rcept_no": "20260513000549",
+      "flr_nm": "SK하이닉스",
+      "rcept_dt": "20260513",
+      "rm": ""
+    },
+    {
+      "corp_code": "00164779",
+      "corp_name": "SK하이닉스",
+      "stock_code": "000660",
+      "corp_cls": "Y",
+      "report_nm": "주요사항보고서(자기주식처분결정)",
+      "rcept_no": "20260422000633",
+      "flr_nm": "SK하이닉스",
+      "rcept_dt": "20260422",
+      "rm": ""
+    },
+    {
+      "corp_code": "00164779",
+      "corp_name": "SK하이닉스",
+      "stock_code": "000660",
+      "corp_cls": "Y",
+      "report_nm": "주요사항보고서(자기주식처분결정)",
+      "rcept_no": "20260330001812",
+      "flr_nm": "SK하이닉스",
+      "rcept_dt": "20260330",
+      "rm": ""
+    },
+    {
+      "corp_code": "00164779",
+      "corp_name": "SK하이닉스",
+      "stock_code": "000660",
+      "corp_cls": "Y",
+      "report_nm": "주요사항보고서(자기주식처분결정)",
+      "rcept_no": "20260128000366",
+      "flr_nm": "SK하이닉스",
+      "rcept_dt": "20260128",
+      "rm": ""
+    }
+  ]
+}

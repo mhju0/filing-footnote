@@ -1,0 +1,145 @@
+{
+  "ticker": "WMT",
+  "cik": 104169,
+  "window": [
+    "2025-11-18",
+    "2026-11-17"
+  ],
+  "rows": [
+    {
+      "accessionNumber": "0000104169-26-000165",
+      "filingDate": "2026-11-16",
+      "reportDate": "2026-11-13",
+      "form": "8-K",
+      "items": "5.02,9.01",
+      "primaryDocument": "wmt-20261113.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0001193125-26-429539",
+      "filingDate": "2026-10-23",
+      "reportDate": "2026-10-19",
+      "form": "8-K",
+      "items": "8.01,9.01",
+      "primaryDocument": "d184548d8k.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0000104169-26-000145",
+      "filingDate": "2026-08-20",
+      "reportDate": "2026-08-20",
+      "form": "8-K",
+      "items": "2.02,9.01",
+      "primaryDocument": "wmt-20260820.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0000104169-26-000111",
+      "filingDate": "2026-06-05",
+      "reportDate": "2026-06-04",
+      "form": "8-K",
+      "items": "5.03,5.07,9.01",
+      "primaryDocument": "wmt-20260604.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0000104169-26-000095",
+      "filingDate": "2026-05-21",
+      "reportDate": "2026-05-21",
+      "form": "8-K",
+      "items": "2.02,9.01",
+      "primaryDocument": "wmt-20260521.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0001193125-26-194086",
+      "filingDate": "2026-04-30",
+      "reportDate": "2026-04-27",
+      "form": "8-K",
+      "items": "8.01,9.01",
+      "primaryDocument": "d131601d8k.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0000104169-26-000067",
+      "filingDate": "2026-03-27",
+      "reportDate": "2026-03-27",
+      "form": "8-K",
+      "items": "8.01",
+      "primaryDocument": "wmt-20260327.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0000104169-26-000057",
+      "filingDate": "2026-03-13",
+      "reportDate": "2026-03-10",
+      "form": "8-K",
+      "items": "8.01",
+      "primaryDocument": "wmt-20260310.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0000104169-26-000032",
+      "filingDate": "2026-02-19",
+      "reportDate": "2026-02-19",
+      "form": "8-K",
+      "items": "2.02,9.01",
+      "primaryDocument": "wmt-20260219.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0000104169-26-000028",
+      "filingDate": "2026-01-30",
+      "reportDate": "2026-01-15",
+      "form": "8-K/A",
+      "items": "5.02",
+      "primaryDocument": "wmt-20260115.htm",
+      "primaryDocDescription": "8-K/A"
+    },
+    {
+      "accessionNumber": "0000104169-26-000024",
+      "filingDate": "2026-01-16",
+      "reportDate": "2025-11-13",
+      "form": "8-K/A",
+      "items": "5.02",
+      "primaryDocument": "wmt-20251113.htm",
+      "primaryDocDescription": "8-K/A"
+    },
+    {
+      "accessionNumber": "0000104169-26-000023",
+      "filingDate": "2026-01-16",
+      "reportDate": "2026-01-15",
+      "form": "8-K",
+      "items": "5.02,9.01",
+      "primaryDocument": "wmt-20260115.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0000104169-26-000008",
+      "filingDate": "2026-01-08",
+      "reportDate": "2026-01-08",
+      "form": "8-K",
+      "items": "5.02,9.01",
+      "primaryDocument": "wmt-20260108.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0000104169-25-000238",
+      "filingDate": "2025-12-29",
+      "reportDate": "2025-12-24",
+      "form": "8-K",
+      "items": "8.01",
+      "primaryDocument": "wmt-20251224.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0000104169-25-000177",
+      "filingDate": "2025-11-20",
+      "reportDate": "2025-11-19",
+      "form": "8-K",
+      "items": "2.02,3.01,7.01,9.01",
+      "primaryDocument": "wmt-20251119.htm",
+      "primaryDocDescription": "8-K"
+    }
+  ]
+}

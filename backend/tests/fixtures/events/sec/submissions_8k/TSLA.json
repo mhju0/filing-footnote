@@ -1,0 +1,91 @@
+{
+  "ticker": "TSLA",
+  "cik": 1318605,
+  "window": [
+    "2025-11-18",
+    "2026-11-17"
+  ],
+  "rows": [
+    {
+      "accessionNumber": "0001628280-26-066738",
+      "filingDate": "2026-10-21",
+      "reportDate": "2026-10-21",
+      "form": "8-K",
+      "items": "2.02,9.01",
+      "primaryDocument": "tsla-20261021.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0001628280-26-064366",
+      "filingDate": "2026-10-02",
+      "reportDate": "2026-10-02",
+      "form": "8-K",
+      "items": "2.02,9.01",
+      "primaryDocument": "tsla-20261002.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0001628280-26-063820",
+      "filingDate": "2026-09-29",
+      "reportDate": "2026-09-29",
+      "form": "8-K",
+      "items": "1.01,1.02,2.03,9.01",
+      "primaryDocument": "tsla-20260929.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0001628280-26-049213",
+      "filingDate": "2026-07-22",
+      "reportDate": "2026-07-22",
+      "form": "8-K",
+      "items": "2.02,9.01",
+      "primaryDocument": "tsla-20260722.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0001628280-26-046717",
+      "filingDate": "2026-07-02",
+      "reportDate": "2026-07-02",
+      "form": "8-K",
+      "items": "2.02,9.01",
+      "primaryDocument": "tsla-20260702.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0001628280-26-026551",
+      "filingDate": "2026-04-22",
+      "reportDate": "2026-04-22",
+      "form": "8-K",
+      "items": "2.02,9.01",
+      "primaryDocument": "tsla-20260422.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0001628280-26-022956",
+      "filingDate": "2026-04-02",
+      "reportDate": "2026-04-02",
+      "form": "8-K",
+      "items": "2.02,9.01",
+      "primaryDocument": "tsla-20260402.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0001628280-26-003837",
+      "filingDate": "2026-01-28",
+      "reportDate": "2026-01-28",
+      "form": "8-K",
+      "items": "2.02,9.01",
+      "primaryDocument": "tsla-20260128.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0001628280-26-000016",
+      "filingDate": "2026-01-02",
+      "reportDate": "2026-01-02",
+      "form": "8-K",
+      "items": "2.02,9.01",
+      "primaryDocument": "tsla-20260102.htm",
+      "primaryDocDescription": "8-K"
+    }
+  ]
+}

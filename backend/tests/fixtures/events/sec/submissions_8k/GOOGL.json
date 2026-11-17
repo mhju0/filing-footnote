@@ -1,0 +1,154 @@
+{
+  "ticker": "GOOGL",
+  "cik": 1652044,
+  "window": [
+    "2025-11-18",
+    "2026-11-17"
+  ],
+  "rows": [
+    {
+      "accessionNumber": "0001193125-26-449835",
+      "filingDate": "2026-11-05",
+      "reportDate": "2026-11-05",
+      "form": "8-K",
+      "items": "8.01,9.01",
+      "primaryDocument": "d174184d8k.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0001652044-26-000080",
+      "filingDate": "2026-10-28",
+      "reportDate": "2026-10-28",
+      "form": "8-K",
+      "items": "2.02,9.01",
+      "primaryDocument": "goog-20261028.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0001193125-26-342390",
+      "filingDate": "2026-08-10",
+      "reportDate": "2026-08-10",
+      "form": "8-K",
+      "items": "8.01,9.01",
+      "primaryDocument": "d171253d8k.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0001652044-26-000066",
+      "filingDate": "2026-07-22",
+      "reportDate": "2026-07-22",
+      "form": "8-K",
+      "items": "2.02,9.01",
+      "primaryDocument": "goog-20260722.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0001193125-26-267578",
+      "filingDate": "2026-06-11",
+      "reportDate": "2026-06-05",
+      "form": "8-K",
+      "items": "5.02,5.07,9.01",
+      "primaryDocument": "d57679d8k.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0001193125-26-259830",
+      "filingDate": "2026-06-05",
+      "reportDate": "2026-06-05",
+      "form": "8-K",
+      "items": "1.01,3.03,5.03,9.01",
+      "primaryDocument": "d36818d8k.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0001652044-26-000059",
+      "filingDate": "2026-06-05",
+      "reportDate": "2026-06-02",
+      "form": "8-K",
+      "items": "5.02",
+      "primaryDocument": "goog-20260602.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0001193125-26-257724",
+      "filingDate": "2026-06-04",
+      "reportDate": "2026-06-04",
+      "form": "8-K",
+      "items": "1.01,7.01,8.01,9.01",
+      "primaryDocument": "d83560d8k.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0001193125-26-234488",
+      "filingDate": "2026-05-21",
+      "reportDate": "2026-05-21",
+      "form": "8-K",
+      "items": "8.01,9.01",
+      "primaryDocument": "d144566d8k.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0001193125-26-216986",
+      "filingDate": "2026-05-11",
+      "reportDate": "2026-05-11",
+      "form": "8-K",
+      "items": "8.01,9.01",
+      "primaryDocument": "d109021d8k.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0001652044-26-000043",
+      "filingDate": "2026-04-29",
+      "reportDate": "2026-04-29",
+      "form": "8-K",
+      "items": "2.02,9.01",
+      "primaryDocument": "goog-20260429.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0001652044-26-000034",
+      "filingDate": "2026-04-10",
+      "reportDate": "2026-04-07",
+      "form": "8-K",
+      "items": "5.02",
+      "primaryDocument": "goog-20260407.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0001652044-26-000031",
+      "filingDate": "2026-04-02",
+      "reportDate": "2026-03-30",
+      "form": "8-K",
+      "items": "5.02",
+      "primaryDocument": "goog-20260330.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0001652044-26-000026",
+      "filingDate": "2026-03-06",
+      "reportDate": "2026-03-04",
+      "form": "8-K",
+      "items": "5.02",
+      "primaryDocument": "goog-20260304.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0001193125-26-051423",
+      "filingDate": "2026-02-13",
+      "reportDate": "2026-02-13",
+      "form": "8-K",
+      "items": "8.01,9.01",
+      "primaryDocument": "d946885d8k.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0001652044-26-000012",
+      "filingDate": "2026-02-04",
+      "reportDate": "2026-02-04",
+      "form": "8-K",
+      "items": "2.02,9.01",
+      "primaryDocument": "goog-20260204.htm",
+      "primaryDocDescription": "8-K"
+    }
+  ]
+}

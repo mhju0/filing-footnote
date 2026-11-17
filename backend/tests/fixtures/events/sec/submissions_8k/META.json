@@ -1,0 +1,127 @@
+{
+  "ticker": "META",
+  "cik": 1326801,
+  "window": [
+    "2025-11-18",
+    "2026-11-17"
+  ],
+  "rows": [
+    {
+      "accessionNumber": "0001193125-26-458525",
+      "filingDate": "2026-11-12",
+      "reportDate": "2026-11-12",
+      "form": "8-K",
+      "items": "8.01,9.01",
+      "primaryDocument": "d177728d8k.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0001193125-26-450074",
+      "filingDate": "2026-11-05",
+      "reportDate": "2026-11-03",
+      "form": "8-K",
+      "items": "8.01,9.01",
+      "primaryDocument": "d166273d8k.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0001193125-26-438017",
+      "filingDate": "2026-10-29",
+      "reportDate": "2026-10-26",
+      "form": "8-K",
+      "items": "1.01,3.03,5.03,9.01",
+      "primaryDocument": "d183592d8k.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0001628280-26-066700",
+      "filingDate": "2026-10-21",
+      "reportDate": "2026-10-19",
+      "form": "8-K",
+      "items": "1.01,2.02,8.01,9.01",
+      "primaryDocument": "meta-20261019.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0001628280-26-050596",
+      "filingDate": "2026-07-29",
+      "reportDate": "2026-07-29",
+      "form": "8-K",
+      "items": "2.02,9.01",
+      "primaryDocument": "meta-20260729.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0001628280-26-039193",
+      "filingDate": "2026-05-29",
+      "reportDate": "2026-05-27",
+      "form": "8-K",
+      "items": "5.07",
+      "primaryDocument": "meta-20260527.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0001193125-26-204128",
+      "filingDate": "2026-05-04",
+      "reportDate": "2026-04-30",
+      "form": "8-K",
+      "items": "8.01,9.01",
+      "primaryDocument": "d134616d8k.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0001628280-26-028364",
+      "filingDate": "2026-04-29",
+      "reportDate": "2026-04-29",
+      "form": "8-K",
+      "items": "2.02,9.01",
+      "primaryDocument": "meta-20260429.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0001628280-26-025108",
+      "filingDate": "2026-04-14",
+      "reportDate": "2026-04-08",
+      "form": "8-K",
+      "items": "5.02",
+      "primaryDocument": "meta-20260408.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0001628280-26-003832",
+      "filingDate": "2026-01-28",
+      "reportDate": "2026-01-28",
+      "form": "8-K",
+      "items": "2.02,9.01",
+      "primaryDocument": "meta-20260128.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0001628280-26-002429",
+      "filingDate": "2026-01-16",
+      "reportDate": "2026-01-12",
+      "form": "8-K",
+      "items": "5.02",
+      "primaryDocument": "meta-20260112.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0001628280-25-058337",
+      "filingDate": "2025-12-19",
+      "reportDate": "2025-12-19",
+      "form": "8-K",
+      "items": "5.02",
+      "primaryDocument": "meta-20251219.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0001628280-25-056768",
+      "filingDate": "2025-12-12",
+      "reportDate": "2025-12-05",
+      "form": "8-K",
+      "items": "8.01,9.01",
+      "primaryDocument": "meta-20251205.htm",
+      "primaryDocDescription": "8-K"
+    }
+  ]
+}

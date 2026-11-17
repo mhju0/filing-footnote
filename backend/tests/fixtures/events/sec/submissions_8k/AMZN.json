@@ -1,0 +1,154 @@
+{
+  "ticker": "AMZN",
+  "cik": 1018724,
+  "window": [
+    "2025-11-18",
+    "2026-11-17"
+  ],
+  "rows": [
+    {
+      "accessionNumber": "0001018724-26-000038",
+      "filingDate": "2026-10-29",
+      "reportDate": "2026-10-29",
+      "form": "8-K",
+      "items": "2.02,9.01",
+      "primaryDocument": "amzn-20261029.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0001104659-26-107526",
+      "filingDate": "2026-09-14",
+      "reportDate": "2026-09-14",
+      "form": "8-K",
+      "items": "8.01,9.01",
+      "primaryDocument": "tm2624614d5_8k.htm",
+      "primaryDocDescription": "FORM 8-K"
+    },
+    {
+      "accessionNumber": "0001018724-26-000036",
+      "filingDate": "2026-09-09",
+      "reportDate": "2026-09-08",
+      "form": "8-K",
+      "items": "5.02",
+      "primaryDocument": "amzn-20260908.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0001018724-26-000024",
+      "filingDate": "2026-07-30",
+      "reportDate": "2026-07-30",
+      "form": "8-K",
+      "items": "2.02,9.01",
+      "primaryDocument": "amzn-20260730.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0001104659-26-082293",
+      "filingDate": "2026-07-09",
+      "reportDate": "2026-07-09",
+      "form": "8-K",
+      "items": "8.01,9.01",
+      "primaryDocument": "tm2619352d4_8k.htm",
+      "primaryDocDescription": "FORM 8-K"
+    },
+    {
+      "accessionNumber": "0001104659-26-073562",
+      "filingDate": "2026-06-12",
+      "reportDate": "2026-06-12",
+      "form": "8-K",
+      "items": "8.01,9.01",
+      "primaryDocument": "tm2613616d5_8k.htm",
+      "primaryDocDescription": "FORM 8-K"
+    },
+    {
+      "accessionNumber": "0001104659-26-072140",
+      "filingDate": "2026-06-10",
+      "reportDate": "2026-06-08",
+      "form": "8-K",
+      "items": "1.01,2.03,9.01",
+      "primaryDocument": "tm2613616d4_8k.htm",
+      "primaryDocDescription": "FORM 8-K"
+    },
+    {
+      "accessionNumber": "0001104659-26-065717",
+      "filingDate": "2026-05-22",
+      "reportDate": "2026-05-20",
+      "form": "8-K",
+      "items": "5.07",
+      "primaryDocument": "tm2614288d1_8k.htm",
+      "primaryDocDescription": "FORM 8-K"
+    },
+    {
+      "accessionNumber": "0001018724-26-000012",
+      "filingDate": "2026-04-29",
+      "reportDate": "2026-04-29",
+      "form": "8-K",
+      "items": "2.02,9.01",
+      "primaryDocument": "amzn-20260429.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0001104659-26-042880",
+      "filingDate": "2026-04-14",
+      "reportDate": "2026-04-14",
+      "form": "8-K",
+      "items": "7.01,9.01",
+      "primaryDocument": "tm2611746d1_8k.htm",
+      "primaryDocDescription": "FORM 8-K"
+    },
+    {
+      "accessionNumber": "0001104659-26-041034",
+      "filingDate": "2026-04-09",
+      "reportDate": "2026-04-09",
+      "form": "8-K",
+      "items": "7.01,9.01",
+      "primaryDocument": "tm263815d2_8k.htm",
+      "primaryDocDescription": "FORM 8-K"
+    },
+    {
+      "accessionNumber": "0001104659-26-028556",
+      "filingDate": "2026-03-16",
+      "reportDate": "2026-03-16",
+      "form": "8-K",
+      "items": "8.01,9.01",
+      "primaryDocument": "tm266670d9_8k.htm",
+      "primaryDocDescription": "FORM 8-K"
+    },
+    {
+      "accessionNumber": "0001104659-26-027729",
+      "filingDate": "2026-03-13",
+      "reportDate": "2026-03-13",
+      "form": "8-K",
+      "items": "8.01,9.01",
+      "primaryDocument": "tm266670d8_8k.htm",
+      "primaryDocDescription": "FORM 8-K"
+    },
+    {
+      "accessionNumber": "0001104659-26-021050",
+      "filingDate": "2026-02-27",
+      "reportDate": "2026-02-27",
+      "form": "8-K",
+      "items": "1.01,7.01,8.01,9.01",
+      "primaryDocument": "tm267374d1_8k.htm",
+      "primaryDocDescription": "FORM 8-K"
+    },
+    {
+      "accessionNumber": "0001018724-26-000002",
+      "filingDate": "2026-02-05",
+      "reportDate": "2026-02-05",
+      "form": "8-K",
+      "items": "2.02,9.01",
+      "primaryDocument": "amzn-20260205.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0001104659-25-114647",
+      "filingDate": "2025-11-20",
+      "reportDate": "2025-11-20",
+      "form": "8-K",
+      "items": "8.01,9.01",
+      "primaryDocument": "tm2530638d3_8k.htm",
+      "primaryDocDescription": "FORM 8-K"
+    }
+  ]
+}

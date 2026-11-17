@@ -1,0 +1,91 @@
+{
+  "stock_code": "035420",
+  "corp_code": "00266961",
+  "pblntf_ty": "B",
+  "bgn_de": "20251118",
+  "end_de": "20261117",
+  "status": "000",
+  "message": "정상",
+  "total_count": 7,
+  "partial": false,
+  "page_errors": [],
+  "list": [
+    {
+      "corp_code": "00266961",
+      "corp_name": "NAVER",
+      "stock_code": "035420",
+      "corp_cls": "Y",
+      "report_nm": "[기재정정]주요사항보고서(유상증자결정)",
+      "rcept_no": "20261103000311",
+      "flr_nm": "NAVER",
+      "rcept_dt": "20261103",
+      "rm": ""
+    },
+    {
+      "corp_code": "00266961",
+      "corp_name": "NAVER",
+      "stock_code": "035420",
+      "corp_cls": "Y",
+      "report_nm": "[기재정정]주요사항보고서(유상증자결정)",
+      "rcept_no": "20261030000001",
+      "flr_nm": "NAVER",
+      "rcept_dt": "20261030",
+      "rm": "정"
+    },
+    {
+      "corp_code": "00266961",
+      "corp_name": "NAVER",
+      "stock_code": "035420",
+      "corp_cls": "Y",
+      "report_nm": "주요사항보고서(유상증자결정)",
+      "rcept_no": "20260727000001",
+      "flr_nm": "NAVER",
+      "rcept_dt": "20260727",
+      "rm": "정"
+    },
+    {
+      "corp_code": "00266961",
+      "corp_name": "NAVER",
+      "stock_code": "035420",
+      "corp_cls": "Y",
+      "report_nm": "[기재정정]주요사항보고서(자기주식처분결정)",
+      "rcept_no": "20260323001314",
+      "flr_nm": "NAVER",
+      "rcept_dt": "20260323",
+      "rm": ""
+    },
+    {
+      "corp_code": "00266961",
+      "corp_name": "NAVER",
+      "stock_code": "035420",
+      "corp_cls": "Y",
+      "report_nm": "[기재정정]주요사항보고서(자기주식처분결정)",
+      "rcept_no": "20260323001243",
+      "flr_nm": "NAVER",
+      "rcept_dt": "20260323",
+      "rm": ""
+    },
+    {
+      "corp_code": "00266961",
+      "corp_name": "NAVER",
+      "stock_code": "035420",
+      "corp_cls": "Y",
+      "report_nm": "[기재정정]주요사항보고서(자기주식처분결정)",
+      "rcept_no": "20260323001224",
+      "flr_nm": "NAVER",
+      "rcept_dt": "20260323",
+      "rm": ""
+    },
+    {
+      "corp_code": "00266961",
+      "corp_name": "NAVER",
+      "stock_code": "035420",
+      "corp_cls": "Y",
+      "report_nm": "[기재정정]주요사항보고서(자기주식처분결정)",
+      "rcept_no": "20260323001206",
+      "flr_nm": "NAVER",
+      "rcept_dt": "20260323",
+      "rm": ""
+    }
+  ]
+}

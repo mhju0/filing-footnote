@@ -1,0 +1,136 @@
+{
+  "ticker": "NVDA",
+  "cik": 1045810,
+  "window": [
+    "2025-11-18",
+    "2026-11-17"
+  ],
+  "rows": [
+    {
+      "accessionNumber": "0001045810-26-000082",
+      "filingDate": "2026-11-12",
+      "reportDate": "2026-11-11",
+      "form": "8-K",
+      "items": "5.02,9.01",
+      "primaryDocument": "nvda-20261111.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0001045810-26-000078",
+      "filingDate": "2026-09-03",
+      "reportDate": "2026-09-02",
+      "form": "8-K",
+      "items": "8.01",
+      "primaryDocument": "nvda-20260902.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0001045810-26-000073",
+      "filingDate": "2026-08-26",
+      "reportDate": "2026-08-26",
+      "form": "8-K",
+      "items": "2.02,9.01",
+      "primaryDocument": "nvda-20260826.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0001045810-26-000069",
+      "filingDate": "2026-08-17",
+      "reportDate": "2026-08-17",
+      "form": "8-K",
+      "items": "1.01,2.03,7.01",
+      "primaryDocument": "nvda-20260817.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0001045810-26-000060",
+      "filingDate": "2026-07-02",
+      "reportDate": "2026-06-28",
+      "form": "8-K",
+      "items": "5.02",
+      "primaryDocument": "nvda-20260628.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0001045810-26-000056",
+      "filingDate": "2026-06-30",
+      "reportDate": "2026-06-24",
+      "form": "8-K",
+      "items": "5.07",
+      "primaryDocument": "nvda-20260624.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0001193125-26-275783",
+      "filingDate": "2026-06-18",
+      "reportDate": "2026-06-15",
+      "form": "8-K",
+      "items": "8.01,9.01",
+      "primaryDocument": "d48176d8k.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0001045810-26-000051",
+      "filingDate": "2026-05-20",
+      "reportDate": "2026-05-20",
+      "form": "8-K",
+      "items": "2.02,9.01",
+      "primaryDocument": "nvda-20260520.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0001045810-26-000028",
+      "filingDate": "2026-05-08",
+      "reportDate": "2026-05-07",
+      "form": "8-K",
+      "items": "5.02",
+      "primaryDocument": "nvda-20260507.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0001045810-26-000026",
+      "filingDate": "2026-04-27",
+      "reportDate": "2026-04-24",
+      "form": "8-K",
+      "items": "5.02",
+      "primaryDocument": "nvda-20260424.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0001045810-26-000024",
+      "filingDate": "2026-03-06",
+      "reportDate": "2026-03-02",
+      "form": "8-K",
+      "items": "5.02,9.01",
+      "primaryDocument": "nvda-20260302.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0001045810-26-000019",
+      "filingDate": "2026-02-25",
+      "reportDate": "2026-02-25",
+      "form": "8-K",
+      "items": "2.02,9.01",
+      "primaryDocument": "nvda-20260225.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0001045810-26-000003",
+      "filingDate": "2026-01-23",
+      "reportDate": "2026-01-20",
+      "form": "8-K",
+      "items": "5.02",
+      "primaryDocument": "nvda-20260120.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0001045810-25-000228",
+      "filingDate": "2025-11-19",
+      "reportDate": "2025-11-19",
+      "form": "8-K",
+      "items": "2.02,9.01",
+      "primaryDocument": "nvda-20251119.htm",
+      "primaryDocDescription": "8-K"
+    }
+  ]
+}

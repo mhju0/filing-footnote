@@ -1,0 +1,47 @@
+{
+  "stock_code": "066570",
+  "corp_code": "00401731",
+  "pblntf_ty": "B",
+  "bgn_de": "20251118",
+  "end_de": "20261117",
+  "status": "000",
+  "message": "정상",
+  "total_count": 3,
+  "partial": false,
+  "page_errors": [],
+  "list": [
+    {
+      "corp_code": "00401731",
+      "corp_name": "LG전자",
+      "stock_code": "066570",
+      "corp_cls": "Y",
+      "report_nm": "주요사항보고서(자기주식취득신탁계약해지결정)",
+      "rcept_no": "20260729000310",
+      "flr_nm": "LG전자",
+      "rcept_dt": "20260729",
+      "rm": ""
+    },
+    {
+      "corp_code": "00401731",
+      "corp_name": "LG전자",
+      "stock_code": "066570",
+      "corp_cls": "Y",
+      "report_nm": "주요사항보고서(감자결정)",
+      "rcept_no": "20260212001501",
+      "flr_nm": "LG전자",
+      "rcept_dt": "20260212",
+      "rm": ""
+    },
+    {
+      "corp_code": "00401731",
+      "corp_name": "LG전자",
+      "stock_code": "066570",
+      "corp_cls": "Y",
+      "report_nm": "주요사항보고서(자기주식취득신탁계약체결결정)",
+      "rcept_no": "20260129000359",
+      "flr_nm": "LG전자",
+      "rcept_dt": "20260129",
+      "rm": ""
+    }
+  ]
+}
