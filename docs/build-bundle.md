@@ -109,5 +109,17 @@ Annual filings (`app.build.model.ANNUAL_SCOPE`):
   when it replaced an earlier version or its title marks a correction;
 - a kept version is exported only when it is the source of an exported figure;
 - each company's latest exported annual filing needs approved summaries in both
-  languages and all four sections; older annual filings need none;
+  languages for `one_line`, `business` and `changes`, and for `risks` only when the report
+  has a risk section (`app.build.model.annual_sections`: a DART business or investment
+  risk heading, not 위험관리 or 파생; an SEC `Item 1A. Risk Factors` chunk, which ingest
+  omits when Item 1A is missing or shorter than its minimum); older annual filings need
+  none;
 - every exported event filing needs an approved summary in both languages.
+
+An approved summary ships only when its `input_sha256` equals the key the summary build
+would compute now (`app.build.model.summary_input_sha256`: source text, prompt version,
+model, section and neutrality lexicon version), using the export's `--llm-model` and
+`--prompt-version`. A release refuses a stale approval; a development build skips it and
+lists it under `summaries.stale_approved_rows_skipped` in the report. `verify` reads only
+the finished file, which carries no chunk titles, so it checks the three sections every
+report has and leaves `risks` coverage to the export.

@@ -4,6 +4,10 @@ backend/data/corpcode_snapshot.json
 # Downloaded regulator responses the M8 export verifies against (make data PINNED=...).
 backend/data/pinned/
 
+# M6 summary build outputs; approved.jsonl (M9) is tracked.
+backend/data/summaries/staged.jsonl
+backend/data/summaries/calls.jsonl
+
 # Offline eval harness run output (regenerable, not for the repo).
 backend/evals/reports/
 

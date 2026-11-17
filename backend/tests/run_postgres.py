@@ -63,6 +63,7 @@ def main() -> None:
                 "test_legacy_migration.py",
                 "test_event_migration.py",
                 "test_build_export_db.py",
+                "test_build_summaries_db.py",
             ):
                 subprocess.run(
                     [sys.executable, "-m", "pytest", "-q", f"tests/{suite}"],

@@ -18,6 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncConnection, create_async_engine
 from app.build.model import (
     AnnualFilingRow,
     BuildInput,
+    ChunkRow,
     CompanyRow,
     EventFactRow,
     EventRow,
@@ -56,20 +57,27 @@ async def read_companies(connection: AsyncConnection) -> list[CompanyRow]:
     ]
 
 
-async def _chunk_hashes(connection: AsyncConnection) -> dict[object, str]:
+async def _chunks(connection: AsyncConnection) -> tuple[dict[object, str], dict[object, tuple]]:
+    """Per filing: the SHA-256 of its chunk texts in chunk order, and the chunks themselves."""
     digests = defaultdict(hashlib.sha256)
+    chunks: dict[object, list[ChunkRow]] = defaultdict(list)
     result = await connection.execute(
-        text("SELECT filing_id, content FROM filing_chunks ORDER BY filing_id, chunk_index")
+        text(
+            "SELECT filing_id, chunk_index, content, meta->>'section_title' AS section_title"
+            " FROM filing_chunks ORDER BY filing_id, chunk_index"
+        )
     )
     for row in result:
         digest = digests[row.filing_id]
         digest.update(row.content.encode("utf-8"))
         digest.update(b"\n")
-    return {filing_id: digest.hexdigest() for filing_id, digest in digests.items()}
+        chunks[row.filing_id].append(ChunkRow(row.chunk_index, row.section_title, row.content))
+    hashes = {filing_id: digest.hexdigest() for filing_id, digest in digests.items()}
+    return hashes, {filing_id: tuple(found) for filing_id, found in chunks.items()}
 
 
 async def read_annual_filings(connection: AsyncConnection) -> list[AnnualFilingRow]:
-    hashes = await _chunk_hashes(connection)
+    hashes, chunks = await _chunks(connection)
     empty = hashlib.sha256(b"").hexdigest()
     result = await connection.execute(
         text(
@@ -89,6 +97,7 @@ async def read_annual_filings(connection: AsyncConnection) -> list[AnnualFilingR
             filed_on=row.filed_at,
             url=row.url,
             source_text_sha256=hashes.get(row.id, empty),
+            chunks=chunks.get(row.id, ()),
         )
         for row in result
     ]

@@ -29,6 +29,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from app.build.model import (
     AnnualFilingRow,
     BuildInput,
+    ChunkRow,
     CompanyRow,
     EventFactRow,
     FinancialRow,
@@ -148,6 +149,8 @@ def fixture_build_input() -> BuildInput:
                 regulator, filing.identity.source_filing_id, company_key, filing.filing_type,
                 filing.title, filing.reporting_period.label, filing.filed_at, filing.url,
                 digest.hexdigest(),
+                tuple(ChunkRow(c.chunk_index, c.location.section_title, c.content)
+                      for c in filing.filing_chunks),
             )
         )  # fmt: skip
         for fact in filing.financial_facts:

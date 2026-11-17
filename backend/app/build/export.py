@@ -67,9 +67,14 @@ from app.build.model import (
     CompanyRow,
     EventRow,
     FinancialRow,
+    annual_sections,
+    annual_source_text,
     canonical_decimal,
+    event_source_text,
+    latest_annual_ids,
     require_canonical,
     required_summaries,
+    summary_input_sha256,
 )
 from app.build.verify import (
     BASIS,
@@ -88,6 +93,7 @@ from app.clients.dart_events import load_facts_contract
 from app.filings.categories import load_contract as load_categories_contract
 from app.financials.vocabulary import ReportedMetric
 from app.ingest.events import _superseded_by_rm, window_bounds
+from app.llm.neutrality_guard import load_lexicon
 
 BACKEND_DIR = Path(__file__).resolve().parents[2]
 FAMILY_GLOSSARY_PATH = BACKEND_DIR.parent / "contracts" / "family-glossary.json"
@@ -151,6 +157,7 @@ class _Build:
     filings: dict[str, tuple] = field(default_factory=dict)
     filing_kinds: dict[str, str] = field(default_factory=dict)
     filing_company: dict[str, str] = field(default_factory=dict)
+    events: dict[str, EventRow] = field(default_factory=dict)  # exported, by filing id
     facts: list[tuple] = field(default_factory=list)
     figures: list[tuple] = field(default_factory=list)
     report: dict[str, Any] = field(default_factory=dict)
@@ -388,6 +395,7 @@ def _event_filings(build: _Build, companies: dict[tuple[str, str], CompanyRow]) 
         )  # fmt: skip
         build.filing_kinds[fid] = "event"
         build.filing_company[fid] = company_id
+        build.events[fid] = event
         _event_facts(build, fid, company_id, event, fact_errors, fact_checks)
 
     by_reason = Counter(e["reason"] for e in excluded)
@@ -519,20 +527,46 @@ def _figure_candidate(build: _Build, row: FinancialRow) -> _Candidate | None:
     )
 
 
-def _figures(build: _Build) -> None:
+def _figure_choices(
+    build: _Build,
+) -> list[tuple[tuple[str, str, str], _Candidate, bool]]:
+    """Per (company, metric, period end): the candidate that wins and whether an earlier
+    filing stated a different value. No pinned response is read here."""
     groups: dict[tuple[str, str, str], list[_Candidate]] = defaultdict(list)
     for row in build.data.financials:
         candidate = _figure_candidate(build, row)
         if candidate is not None:
             key = (candidate.company_id, row.metric, candidate.period_end.isoformat())
             groups[key].append(candidate)
-
-    checks = []
-    for (company_id, metric, period_end), candidates in sorted(groups.items()):
+    choices = []
+    for key, candidates in sorted(groups.items()):
         # The newest filing that states the figure wins (filed date, then filing id); an
         # earlier, different value makes it a restated figure.
         chosen = max(candidates, key=lambda c: (c.filed_on, c.filing_id))
-        is_restated = any(c.row.value != chosen.row.value for c in candidates)
+        choices.append((key, chosen, any(c.row.value != chosen.row.value for c in candidates)))
+    return choices
+
+
+def annual_summary_filings(data: BuildInput, as_of: datetime.date) -> set[str]:
+    """The annual filings that need summaries: each company's latest kept annual version
+    that is the source of a figure, chosen by the exporter's own rules (ANNUAL_SCOPE).
+
+    The pinned responses are not read. A figure that fails its pinned check fails a release
+    build, so a release exports exactly these filings as figure sources."""
+    build = _Build(data, BuildOptions(as_of, "summaries", allow_unapproved=True),
+                   PinnedResponses([]))  # fmt: skip
+    _annual_versions(build, {(c.regulator, c.key): c for c in data.companies})
+    sources = {chosen.filing_id for _, chosen, _ in _figure_choices(build)}
+    return latest_annual_ids(
+        (fid, annual.company_id, f"FY{annual.year}", annual.filing.filed_on.isoformat())
+        for fid, annual in build.annual.items()
+        if fid in sources
+    )
+
+
+def _figures(build: _Build) -> None:
+    checks = []
+    for (company_id, metric, period_end), chosen, is_restated in _figure_choices(build):
         figure_id = f"{company_id}|{metric}|{period_end}|{BASIS}"
         row = chosen.row
         value = canonical_decimal(row.value)
@@ -610,11 +644,25 @@ def _companies(build: _Build, companies: dict[tuple[str, str], CompanyRow]) -> l
     return rows
 
 
+def current_input_sha256(build: _Build, filing_id: str, section: str) -> str | None:
+    """The key a summary of this filing and section has now (the summary build's cache key,
+    :func:`app.build.model.summary_input_sha256`), or None when there is no source text."""
+    if build.filing_kinds[filing_id] == "event":
+        source = event_source_text(build.events[filing_id])
+    else:
+        source = annual_source_text(build.annual[filing_id].filing, section)
+    if source is None:
+        return None
+    return summary_input_sha256(source, build.options.llm_model, section,
+                                build.options.prompt_version, load_lexicon().version)  # fmt: skip
+
+
 def _summaries(build: _Build, company_rows: list[tuple]) -> list[tuple]:
     names = {row[0]: [row[3], row[4]] for row in company_rows}
     rows = []
     approved: set[tuple[str, str, str]] = set()
     not_approved = 0
+    stale: list[str] = []
     for summary in sorted(
         build.data.summaries, key=lambda s: (s.filing_id, s.lang, s.section, s.review_state)
     ):
@@ -630,6 +678,11 @@ def _summaries(build: _Build, company_rows: list[tuple]) -> list[tuple]:
             not_approved += 1
             continue
         key = (summary.filing_id, summary.lang, summary.section)
+        if summary.input_sha256 != current_input_sha256(build, summary.filing_id,
+                                                        summary.section):  # fmt: skip
+            # Approved for other source text, prompt, model or word lists: never shipped.
+            stale.append(f"{summary.filing_id} {summary.lang}/{summary.section}")
+            continue
         if key in approved:
             build.problems.append(f"{summary.filing_id}: duplicate summary {key[1]}/{key[2]}")
             continue
@@ -644,8 +697,18 @@ def _summaries(build: _Build, company_rows: list[tuple]) -> list[tuple]:
              summary.input_sha256)
         )  # fmt: skip
     required = required_summaries(
-        (fid, row[1], row[2], row[8], row[7]) for fid, row in build.filings.items()
+        ((fid, row[1], row[2], row[8], row[7]) for fid, row in build.filings.items()),
+        {
+            fid: annual_sections(annual.filing.regulator, annual.filing.chunks)
+            for fid, annual in build.annual.items()
+        },
     )
+    if stale and not build.options.allow_unapproved:
+        build.problems.append(
+            f"release build refused: {len(stale)} approved summaries do not match the current "
+            f"source text, prompt version, model or word lists ({', '.join(stale[:10])}"
+            f"{' ...' if len(stale) > 10 else ''})"
+        )
     missing = sorted(
         fid
         for fid, pairs in required.items()
@@ -660,6 +723,7 @@ def _summaries(build: _Build, company_rows: list[tuple]) -> list[tuple]:
     build.report["summaries"] = {
         "approved_rows": len(rows),
         "not_approved_rows_skipped": not_approved,
+        "stale_approved_rows_skipped": stale,
         "filings_needing_summaries": len(required),
         "filings_without_approved_summaries": missing,
     }

@@ -7,8 +7,10 @@ Every amount is a ``Decimal``; the bundle stores it as a canonical decimal strin
 from __future__ import annotations
 
 import datetime
+import hashlib
+import json
 import re
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from decimal import Context, Decimal, Inexact, Rounded
 
@@ -93,18 +95,160 @@ def latest_annual_ids(
 
 def required_summaries(
     filings: Iterable[tuple[str, str, str, str | None, str]],
+    annual_sections: Mapping[str, Sequence[str]] | None = None,
 ) -> dict[str, tuple[tuple[str, str], ...]]:
     """Filing id -> the ``(lang, section)`` pairs that must be approved, from
-    ``(filing_id, company_id, kind, period_label, filed_on)`` rows; see :data:`ANNUAL_SCOPE`."""
+    ``(filing_id, company_id, kind, period_label, filed_on)`` rows; see :data:`ANNUAL_SCOPE`.
+
+    ``annual_sections`` maps an annual filing id to its sections, from
+    :func:`annual_sections`. A filing missing from it needs the sections every report has,
+    :func:`mandatory_annual_sections`; a reader without the filing's chunks (the finished
+    bundle) can check no more than that."""
     rows = list(filings)
     latest = latest_annual_ids((f, c, p, d) for f, c, k, p, d in rows if k == "annual")
+    known = annual_sections or {}
     required = {}
     for filing_id, _, kind, _, _ in rows:
-        if kind == "event" or filing_id in latest:
-            required[filing_id] = tuple(
-                (lang, section) for lang in LANGS for section in SUMMARY_SECTIONS[kind]
-            )
+        if kind == "event":
+            sections: Sequence[str] = SUMMARY_SECTIONS["event"]
+        elif filing_id in latest:
+            sections = known.get(filing_id, mandatory_annual_sections(filing_id))
+        else:
+            continue
+        required[filing_id] = tuple((lang, section) for lang in LANGS for section in sections)
     return required
+
+
+# -- annual sections by heading (D64) ------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class ChunkRow:
+    """One stored filing chunk: its document-wide index, heading and text."""
+
+    chunk_index: int
+    section_title: str | None
+    content: str
+
+
+@dataclass(frozen=True)
+class HeadingRule:
+    include: re.Pattern[str]
+    exclude: re.Pattern[str] | None = None
+
+    def matches(self, title: str | None) -> bool:
+        if not title or not self.include.search(title):
+            return False
+        return self.exclude is None or not self.exclude.search(title)
+
+
+# Matched against filing_chunks.meta.section_title. DART headings are searched anywhere in
+# the title ("1. 사업의 개요"); SEC titles are the canonical ones app.clients.sec_document writes
+# ("Item 1. Business"). one_line is written from the business chunks.
+SECTION_HEADINGS: dict[str, dict[str, HeadingRule]] = {
+    "DART": {
+        "business": HeadingRule(re.compile(r"사업의\s*개요|주요\s*제품|사업의\s*내용")),
+        "changes": HeadingRule(re.compile(r"경영진단|분석의견")),
+        # Business and investment risks only; 위험관리 및 파생거래 is hedging and market-risk
+        # management, not a list of risks to the business.
+        "risks": HeadingRule(
+            re.compile(r"투자\s*위험|위험\s*요소|위험\s*요인|사업\s*위험|사업의\s*위험"),
+            re.compile(r"위험\s*관리|파생"),
+        ),
+    },
+    "SEC": {
+        "business": HeadingRule(re.compile(r"^\s*Item\s*1\.\s*Business", re.IGNORECASE)),
+        "changes": HeadingRule(re.compile(r"^\s*Item\s*7\.\s*Management", re.IGNORECASE)),
+        "risks": HeadingRule(re.compile(r"^\s*Item\s*1A\.\s*Risk", re.IGNORECASE)),
+    },
+}
+SECTION_SOURCE = {"one_line": "business", "business": "business", "changes": "changes",
+                  "risks": "risks"}  # fmt: skip
+# A DART top-level part ("II. 사업의 내용", "IV. 이사의 경영진단 및 분석의견"): chunks up to the
+# next top-level heading belong to it. SEC items have no parts.
+TOP_LEVEL_HEADING: dict[str, re.Pattern[str] | None] = {
+    "DART": re.compile(r"^\s*(?:[IVXL]+|[\u2160-\u216B])\s*\."),
+    "SEC": None,
+}
+# Sections a report may lack: a DART report without a risk heading, or a 10-K whose Item 1A
+# ingest omitted (missing or too short), has no risks section.
+OPTIONAL_SECTIONS: dict[str, frozenset[str]] = {
+    "DART": frozenset({"risks"}),
+    "SEC": frozenset({"risks"}),
+}
+_REGULATOR_PREFIX = {"dart": "DART", "sec": "SEC"}
+
+
+def section_chunks(regulator: str, section: str, chunks: Sequence[ChunkRow]) -> list[ChunkRow]:
+    """The chunks a section is written from, in chunk order.
+
+    A chunk belongs when its own heading matches, or when it follows a matching top-level
+    heading before the next top-level heading. Chunk meta has no parent titles, and ingest
+    drops a heading with no text of its own, so children of an empty top-level part are not
+    found; see the M6 notes.
+    """
+    rule = SECTION_HEADINGS[regulator][SECTION_SOURCE[section]]
+    top = TOP_LEVEL_HEADING[regulator]
+    picked, inside = [], False
+    for chunk in sorted(chunks, key=lambda c: c.chunk_index):
+        title = chunk.section_title
+        if top is not None and title and top.search(title):
+            inside = rule.matches(title)
+        if inside or rule.matches(title):
+            picked.append(chunk)
+    return picked
+
+
+def annual_sections(regulator: str, chunks: Sequence[ChunkRow]) -> tuple[str, ...]:
+    """The annual sections one report needs: every section, except an optional one with no
+    chunk under its heading. The exporter and the summary build both call this."""
+    return tuple(
+        section
+        for section in SUMMARY_SECTIONS["annual"]
+        if section not in OPTIONAL_SECTIONS[regulator]
+        or section_chunks(regulator, section, chunks)
+    )
+
+
+def mandatory_annual_sections(filing_id: str) -> tuple[str, ...]:
+    regulator = _REGULATOR_PREFIX[filing_id.split(":", 1)[0]]
+    return tuple(s for s in SUMMARY_SECTIONS["annual"] if s not in OPTIONAL_SECTIONS[regulator])
+
+
+# -- summary source text and cache key -----------------------------------------------------------
+
+# Source text sent per filing and section, in characters; longer text is cut at this point.
+MAX_SOURCE_CHARS = 12000
+
+
+def event_source_text(row: EventRow) -> str | None:
+    """The text an event summary is written from: the stored body, or None. A filing
+    without a body is never summarised from its title alone."""
+    body = row.body_text
+    if body is None or not body.strip():
+        return None
+    return f"Filing title: {row.report_nm}\n\nFiling text:\n{body.strip()[:MAX_SOURCE_CHARS]}"
+
+
+def annual_source_text(filing: AnnualFilingRow, section: str) -> str | None:
+    picked = section_chunks(filing.regulator, section, filing.chunks)
+    if not picked:
+        return None
+    parts = [f"Report: {filing.title}"]
+    parts += [f"[{c.section_title}]\n{c.content.strip()}" for c in picked]
+    return "\n\n".join(parts)[:MAX_SOURCE_CHARS]
+
+
+def summary_input_sha256(
+    source_text: str, model: str, section: str, prompt_version: str, lexicon_version: int
+) -> str:
+    """The cache key of a summary and the check the exporter makes on an approved one."""
+    payload = json.dumps(
+        [source_text, prompt_version, model, section, lexicon_version],
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
 # -- input rows ----------------------------------------------------------------------------------
@@ -131,6 +275,7 @@ class AnnualFilingRow:
     filed_on: datetime.date | None
     url: str | None
     source_text_sha256: str  # SHA-256 of the stored filing chunks in chunk order
+    chunks: tuple[ChunkRow, ...] = ()
 
 
 @dataclass(frozen=True)

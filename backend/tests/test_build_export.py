@@ -24,16 +24,21 @@ from app.build.model import (
     AnnualFilingRow,
     BuildError,
     BuildInput,
+    ChunkRow,
     EventFactRow,
     FinancialRow,
     SummaryRow,
+    annual_source_text,
     canonical_decimal,
+    event_source_text,
     latest_annual_ids,
     require_canonical,
+    summary_input_sha256,
 )
 from app.build.source import event_rows
 from app.build.verify import PinnedResponses, VerifyError, check_bundle, link_problems
 from app.filings.categories import load_contract as load_categories_contract
+from app.llm.neutrality_guard import load_lexicon
 from tests.build_seed import AS_OF, PINNED_BUILD, PINNED_DIRS, event_input, fixture_build_input
 
 BUILD_DIR = Path(__file__).resolve().parents[1] / "app" / "build"
@@ -84,20 +89,58 @@ NEUTRAL = {
 RELEASE = ("--release", "--prompt-version", "v1")
 
 
-def _summary(fid: str, lang: str, section: str) -> SummaryRow:
+# Text under every summary heading, so each event and annual section has source text.
+SOURCE_CHUNKS = {
+    "DART": (ChunkRow(10, "1. 사업의 개요", "사업 본문"),
+             ChunkRow(11, "IV. 이사의 경영진단 및 분석의견", "경영 본문"),
+             ChunkRow(12, "7. 투자위험요소", "위험 본문")),
+    "SEC": (ChunkRow(10, "Item 1. Business", "Business text"),
+            ChunkRow(11, "Item 7. Management's Discussion and Analysis", "MD&A text"),
+            ChunkRow(12, "Item 1A. Risk Factors", "Risk text")),
+}  # fmt: skip
+
+
+def _with_sources(data: BuildInput) -> BuildInput:
+    events = tuple(dataclasses.replace(e, body_text=e.body_text or f"본문 {e.filing_key}")
+                   for e in data.events)  # fmt: skip
+    annual = tuple(dataclasses.replace(f, chunks=f.chunks + SOURCE_CHUNKS[f.regulator])
+                   for f in data.annual_filings)  # fmt: skip
+    return dataclasses.replace(data, events=events, annual_filings=annual)
+
+
+def _key(data: BuildInput, fid: str, section: str, prompt_version: str) -> str:
+    """The current key, from the shared functions the summary build uses."""
+    events = {_event_id(e): e for e in data.events}
+    if fid in events:
+        source = event_source_text(events[fid])
+    else:
+        annual = next(f for f in data.annual_filings
+                      if f"{f.regulator.lower()}:{f.filing_key}" == fid)  # fmt: skip
+        source = annual_source_text(annual, section)
+    assert source is not None
+    return summary_input_sha256(source, export.DEFAULT_LLM_MODEL, section, prompt_version,
+                                load_lexicon().version)  # fmt: skip
+
+
+def _summary(data: BuildInput, fid: str, lang: str, section: str, prompt_version: str
+             ) -> SummaryRow:  # fmt: skip
     lines = NEUTRAL[lang] if section == "summary" else (NEUTRAL[lang][0], None, None)
-    return SummaryRow(fid, lang, section, *lines, "approved", "0" * 64)
+    return SummaryRow(fid, lang, section, *lines, "approved",
+                      _key(data, fid, section, prompt_version))  # fmt: skip
 
 
-def _all_approved(data: BuildInput, bundle, skip: frozenset[str] = frozenset()) -> BuildInput:
+def _all_approved(data: BuildInput, bundle, skip: frozenset[str] = frozenset(),
+                  prompt_version: str = "v1") -> BuildInput:  # fmt: skip
+    """Source text for every filing, and approved summaries keyed for ``prompt_version``."""
+    sourced = _with_sources(data)
     summaries = [
-        _summary(row[0], lang, section)
+        _summary(sourced, row[0], lang, section, prompt_version)
         for row in bundle.rows["filings"]
         if row[0] not in skip
         for lang in ("ko", "en")
         for section in export.SUMMARY_SECTIONS[row[2]]
     ]
-    return dataclasses.replace(data, summaries=tuple(summaries))
+    return dataclasses.replace(sourced, summaries=tuple(summaries))
 
 
 def _exported_ids(data: BuildInput) -> set[str]:
@@ -554,7 +597,7 @@ def test_release_verify_rejects_the_edited_development_file(data, tmp_path) -> N
     assert (f"{SEC_REVENUE}: sec/companyfacts/CIK0000320193.json: revenue is 416161000000, "
             "stored 999") in problems  # fmt: skip
     assert (f"dart:{SAMSUNG_2025}: no approved summary ko/one_line, ko/business, ko/changes, "
-            "ko/risks, en/one_line, en/business, en/changes, en/risks") in problems  # fmt: skip
+            "en/one_line, en/business, en/changes") in problems  # fmt: skip
     assert "prompt_version is 'none'; a release refuses it" in problems
     assert verify.main([str(out), "--release", *_pinned_args()]) == 1
 
@@ -569,10 +612,10 @@ def test_release_verify_runs_the_neutrality_guard_and_coverage(data, tmp_path) -
     _rehash(out, "UPDATE filing_summaries SET line1 = 'The company said revenue soared.' "
                  f"WHERE filing_id = '{event}' AND lang = 'en'",
             f"DELETE FROM filing_summaries WHERE filing_id = 'dart:{SAMSUNG_2025}' "
-            "AND lang = 'ko' AND section = 'risks'")  # fmt: skip
+            "AND lang = 'ko' AND section = 'business'")  # fmt: skip
     problems = check_bundle(out, release=True, pinned_dirs=PINNED_DIRS)
     assert f"{event} summary en/summary: N2 on line 1 'soared'" in problems
-    assert f"dart:{SAMSUNG_2025}: no approved summary ko/risks" in problems
+    assert f"dart:{SAMSUNG_2025}: no approved summary ko/business" in problems
 
 
 def test_release_export_runs_the_neutrality_guard(data, tmp_path, capsys) -> None:
@@ -1027,7 +1070,8 @@ def test_annual_is_a_non_event_category_of_the_contract() -> None:
 
 
 def test_rows_are_inserted_in_primary_key_order(data, tmp_path) -> None:
-    approved = _all_approved(data, build_bundle(data, _options(), PINNED_DIRS))
+    approved = _all_approved(data, build_bundle(data, _options(), PINNED_DIRS),
+                             prompt_version="none")
     out = tmp_path / "footnote.sqlite"
     write_bundle(build_bundle(approved, _options(), PINNED_DIRS), out)
     for table, (_, key) in TABLES.items():
@@ -1110,7 +1154,8 @@ def test_every_schema_column_is_in_the_fingerprint(data, tmp_path) -> None:
     fingerprinted = {n: cols for n, cols in schema.items() if n != "build_meta"}
     assert {n: set(spec[0]) for n, spec in TABLES.items()} == fingerprinted
 
-    approved = _all_approved(data, build_bundle(data, _options(), PINNED_DIRS))
+    approved = _all_approved(data, build_bundle(data, _options(), PINNED_DIRS),
+                             prompt_version="none")
     out = tmp_path / "footnote.sqlite"
     write_bundle(build_bundle(approved, _options(), PINNED_DIRS), out)
     with sqlite3.connect(out) as connection:
@@ -1126,7 +1171,8 @@ def test_every_schema_column_is_in_the_fingerprint(data, tmp_path) -> None:
 
 
 def test_release_export_refuses_prompt_version_none(data, tmp_path, capsys) -> None:
-    approved = _all_approved(data, build_bundle(data, _options(), PINNED_DIRS))
+    approved = _all_approved(data, build_bundle(data, _options(), PINNED_DIRS),
+                             prompt_version="none")
     out = tmp_path / "footnote.sqlite"
     assert _export(approved, out, "--release") == 1 and _no_outputs(tmp_path)
     err = capsys.readouterr().err
