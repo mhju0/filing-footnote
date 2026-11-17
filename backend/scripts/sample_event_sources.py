@@ -42,6 +42,7 @@ from app.clients.dart import (  # noqa: E402
     parse_dart_decimal,
 )
 from app.clients.sec import _archive_url, format_cik  # noqa: E402
+from app.clients.sec_8k import strip_sgml_header  # noqa: E402,F401  (one copy, in app code)
 from app.clients.sec_document import _html_to_text  # noqa: E402
 from app.config import Settings, get_settings  # noqa: E402
 
@@ -288,14 +289,6 @@ def decimal_parse_check(row: dict[str, Any]) -> dict[str, str]:
         elif re.fullmatch(r"-?[\d,]+(\.\d+)?", text):
             out[key] = str(parse_dart_decimal(text))
     return out
-
-
-_SGML_HEAD_RE = re.compile(r"^\s*<DOCUMENT>.*?<TEXT>\s*", re.S)
-
-
-def strip_sgml_header(html: str) -> str:
-    """Drop the leading ``<DOCUMENT><TYPE>…<TEXT>`` wrapper EDGAR puts on some exhibits."""
-    return _SGML_HEAD_RE.sub("", html, count=1)
 
 
 class _TableSplitter(HTMLParser):

@@ -8,6 +8,14 @@
     "date": "calendar date; source forms 'YYYY년 MM월 DD일' and 'YYYYMMDD'",
     "text": "whitespace-normalised source text"
   },
+  "sec": {
+    "description": "SEC 8-K and 8-K/A filings show only what code can verify (D64): item numbers and the event date, both from the submissions API. No figure is read from the filing text. Facts are written for every listed filing, excluded ones too, because a later 8-K/A matches its original on these two values.",
+    "source": "sec:submissions",
+    "fields": [
+      {"key": "items", "source_field": "sec:submissions.items", "en": "Item numbers of the filing, comma-separated as filed", "unit": null, "kind": "text"},
+      {"key": "report_date", "source_field": "sec:submissions.reportDate", "en": "Date of the event reported", "unit": null, "kind": "date"}
+    ]
+  },
   "endpoints": [
     {
       "endpoint": "tsstkAqDecsn",

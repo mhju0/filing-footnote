@@ -90,7 +90,8 @@ CREATE TABLE IF NOT EXISTS financials (
     UNIQUE (filing_id, period, metric)
 );
 
--- Event-filing staging tables (M3). Keep identical to db/migrations/0002_event_filings.sql.
+-- Event-filing staging tables (M3). Keep identical to db/migrations/0002_event_filings.sql
+-- plus 0003_event_filings_sec.sql (source, body_text, body_truncated).
 CREATE TABLE IF NOT EXISTS event_filings (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     rcept_no text NOT NULL UNIQUE,
@@ -115,10 +116,14 @@ CREATE TABLE IF NOT EXISTS event_filings (
     errors jsonb NOT NULL DEFAULT '[]',
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
+    source text NOT NULL DEFAULT 'dart',
+    body_text text,
+    body_truncated boolean NOT NULL DEFAULT false,
     CONSTRAINT event_filings_category_xor_reason_check
         CHECK ((category IS NULL) <> (excluded_reason IS NULL)),
     CONSTRAINT event_filings_correction_link_check
         CHECK (correction_link IN ('none', 'linked', 'unlinked', 'not_resolved_excluded')),
+    CONSTRAINT event_filings_source_check CHECK (source IN ('dart', 'sec')),
     CONSTRAINT event_filings_link_shape_check
         CHECK (
             (correction_link = 'none' AND original_rcept_no IS NULL AND NOT is_correction)

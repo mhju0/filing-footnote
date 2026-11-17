@@ -110,6 +110,7 @@ def resolve_chains(entries: list[ChainInput]) -> dict[str, ChainResult]:
     and 접수번호 can be ``is_latest``, and not if its ``rm`` carries 정: DART marks a filing a
     later correction replaced that way, so the newer correction is then an unlinked one that
     holds the flag itself. A filing outside any chain is latest unless its ``rm`` carries 정.
+    Unlinked corrections that name the same target form an orphan chain with the same rule.
     """
     originals: dict[tuple[str, str, bool], list[ChainInput]] = {}
     for entry in entries:
@@ -159,6 +160,28 @@ def resolve_chains(entries: list[ChainInput]) -> dict[str, ChainResult]:
             results[entry.rcept_no] = ChainResult(
                 "none", None, None, None, not _superseded_by_rm(entry.rm)
             )
+
+    # Orphan chains: unlinked corrections that name the same target (company, base report name,
+    # subsidiary flag and stated first-filing date) belong together although the original is not
+    # available. Only the newest can be latest, and not if its rm carries 정.
+    orphans: dict[tuple[str, str, bool, datetime.date], list[ChainInput]] = {}
+    for entry in entries:
+        found = results[entry.rcept_no]
+        if found.correction_link == "unlinked" and found.first_filed_at is not None:
+            key = (entry.corp_code, entry.base_key, entry.subsidiary, found.first_filed_at)
+            orphans.setdefault(key, []).append(entry)
+    for members in orphans.values():
+        newest = max(members, key=lambda e: (e.filed_at or _DATE_MIN, e.rcept_no))
+        shown = newest if not _superseded_by_rm(newest.rm) else None
+        for entry in members:
+            prior = results[entry.rcept_no]
+            results[entry.rcept_no] = ChainResult(
+                prior.correction_link,
+                prior.original_rcept_no,
+                prior.first_filed_at,
+                prior.note,
+                entry is shown,
+            )
     return results
 
 
@@ -204,6 +227,38 @@ class EventRecord:
     # True when a body this run needed could not be read; stored classification and link then
     # stay as they are instead of being replaced by this run's incomplete answer.
     degraded: bool = False
+
+    @property
+    def key(self) -> str:
+        return self.item.rcept_no
+
+    def to_row(self) -> dict:
+        """The ``event_filings`` columns this record sets (a DART row)."""
+        chain = self.chain
+        assert chain is not None
+        item, cls = self.item, self.classification
+        return {
+            "rcept_no": item.rcept_no,
+            "corp_code": item.corp_code,
+            "stock_code": item.stock_code or None,
+            "corp_name": item.corp_name,
+            "report_nm": item.report_nm,
+            "filed_at": item.rcept_dt,
+            "rm": item.rm,
+            "url": item.viewer_url,
+            "category": cls.category,
+            "excluded_reason": cls.excluded_reason,
+            "subsidiary": cls.subsidiary,
+            "is_correction": cls.is_correction,
+            "matched_rule": cls.matched_rule,
+            "basis": cls.basis,
+            "correction_link": chain.correction_link,
+            "original_rcept_no": chain.original_rcept_no,
+            "correction_first_filed_at": chain.first_filed_at,
+            "correction_note": chain.note,
+            "is_latest": chain.is_latest,
+            "errors": self.errors,
+        }
 
 
 @dataclass
@@ -372,75 +427,115 @@ async def _pause(seconds: float) -> None:
 
 # -- persistence ---------------------------------------------------------------------------------
 
-# Columns a degraded row may still refresh; classification and chain columns are kept.
+# Columns a frozen row may still refresh; classification and chain columns are kept.
 _DESCRIPTIVE_COLUMNS = (
     "corp_code", "stock_code", "corp_name", "report_nm", "filed_at", "rm", "url", "errors",
 )  # fmt: skip
+# Columns that say where a filing sits in a correction chain.
+_CHAIN_COLUMNS = frozenset(
+    {
+        "correction_link",
+        "original_rcept_no",
+        "correction_first_filed_at",
+        "correction_note",
+        "is_latest",
+    }
+)
 
 
 async def persist_events(
     session_factory: Callable[[], AsyncSession], records: list[EventRecord]
-) -> None:
-    """Upsert filings by 접수번호 and replace facts, in one transaction.
+) -> list[str]:
+    """Upsert filings by 접수번호 and replace facts, in one transaction; returns problem lines.
 
-    A filing whose body could not be read this run keeps its stored classification and chain
-    link, and so does the rest of that stored chain: this run could not resolve it, and
-    recomputing part of it would leave two versions marked latest. Facts are replaced only for
-    filings whose structured endpoint call succeeded.
+    ``records`` are ``EventRecord`` or ``SecEventRecord``: anything with ``key``, ``to_row()``,
+    ``chain``, ``degraded`` and ``facts``.
+
+    Chains are never half-recomputed. If any stored member of a chain could not be read this run
+    (``degraded``), every stored member of that chain keeps its classification, link and
+    ``is_latest``; a new correction that would join that chain is stored unlinked and not
+    latest, with a note and a problem line, until a healthy run resolves it. A stored correction
+    whose original is no longer in this run's listing (it left the window) keeps its stored
+    link instead of being rewritten as unlinked. Facts are replaced for every record whose
+    ``facts`` is not ``None``.
     """
+    problems: list[str] = []
     if not records:
-        return
-    rows: dict[str, dict] = {}
-    for record in records:
-        chain = record.chain
-        assert chain is not None
-        item, cls = record.item, record.classification
-        row = {
-            "rcept_no": item.rcept_no,
-            "corp_code": item.corp_code,
-            "stock_code": item.stock_code or None,
-            "corp_name": item.corp_name,
-            "report_nm": item.report_nm,
-            "filed_at": item.rcept_dt,
-            "rm": item.rm,
-            "url": item.viewer_url,
-            "category": cls.category,
-            "excluded_reason": cls.excluded_reason,
-            "subsidiary": cls.subsidiary,
-            "is_correction": cls.is_correction,
-            "matched_rule": cls.matched_rule,
-            "basis": cls.basis,
-            "correction_link": chain.correction_link,
-            "original_rcept_no": chain.original_rcept_no,
-            "correction_first_filed_at": chain.first_filed_at,
-            "correction_note": chain.note,
-            "is_latest": chain.is_latest,
-            "errors": record.errors,
-        }
-        rows[item.rcept_no] = row
+        return problems
+    rows: dict[str, dict] = {record.key: record.to_row() for record in records}
 
     async with session_factory() as session, session.begin():
-        degraded = [r.item.rcept_no for r in records if r.degraded]
-        stored_roots: set[str] = set()
-        if degraded:
-            stored = await session.execute(
-                select(EventFiling.rcept_no, EventFiling.original_rcept_no).where(
-                    EventFiling.rcept_no.in_(degraded),
-                    EventFiling.correction_link == "linked",
-                )
-            )
-            stored_roots = {original for _, original in stored.all() if original}
+        found = await session.execute(
+            select(
+                EventFiling.rcept_no, EventFiling.correction_link, EventFiling.original_rcept_no
+            ).where(EventFiling.rcept_no.in_(list(rows)))
+        )
+        stored = {key: (link, original) for key, link, original in found.all()}
+
+        def stored_original(key: str) -> str | None:
+            link, original = stored.get(key, ("none", None))
+            return original if link == "linked" else None
+
+        frozen_roots: set[str] = set()
+        for r in records:
+            if r.degraded and r.key in stored:
+                frozen_roots.add(r.key)
+                if original := stored_original(r.key):
+                    frozen_roots.add(original)
+
+        def roots(r) -> set[str]:
+            members = {r.key}
+            if original := stored_original(r.key):
+                members.add(original)
+            if r.chain and r.chain.original_rcept_no:
+                members.add(r.chain.original_rcept_no)
+            return members
+
         frozen = {
-            r.item.rcept_no
-            for r in records
-            if r.degraded
-            or r.item.rcept_no in stored_roots
-            or (r.chain and r.chain.original_rcept_no in stored_roots)
+            r.key for r in records if r.key in stored and (r.degraded or roots(r) & frozen_roots)
         }
+        keep_link: set[str] = set()
+        for r in records:
+            original = stored_original(r.key)
+            if (
+                r.key in stored
+                and r.key not in frozen
+                and original is not None
+                and original not in rows
+                and r.chain is not None
+                and r.chain.correction_link == "unlinked"
+            ):
+                keep_link.add(r.key)
+        for r in records:
+            if (
+                r.key not in stored
+                and r.chain is not None
+                and r.chain.original_rcept_no in frozen_roots
+            ):
+                root = r.chain.original_rcept_no
+                rows[r.key].update(
+                    correction_link="unlinked",
+                    original_rcept_no=None,
+                    correction_first_filed_at=None,
+                    correction_note=(
+                        f"chain of {root} has a member that could not be read this run; "
+                        "not resolved"
+                    ),
+                    is_latest=False,
+                )
+                problems.append(
+                    f"chain {r.key}: joins {root}, which has a member that could not be read; "
+                    "stored unlinked and not latest until a healthy run"
+                )
+
         ids: dict[str, int] = {}
         for rows_, columns in (
-            ([v for k, v in rows.items() if k not in frozen], None),
+            ([v for k, v in rows.items() if k not in frozen and k not in keep_link], None),
             ([v for k, v in rows.items() if k in frozen], _DESCRIPTIVE_COLUMNS),
+            (
+                [v for k, v in rows.items() if k in keep_link],
+                [c for c in next(iter(rows.values())) if c not in _CHAIN_COLUMNS],
+            ),
         ):
             if not rows_:
                 continue
@@ -456,15 +551,15 @@ async def persist_events(
 
         refreshed = [r for r in records if r.facts is not None]
         if not refreshed:
-            return
+            return problems
         await session.execute(
             delete(FilingFact).where(
-                FilingFact.event_filing_id.in_([ids[r.item.rcept_no] for r in refreshed])
+                FilingFact.event_filing_id.in_([ids[r.key] for r in refreshed])
             )
         )
         fact_rows = [
             {
-                "event_filing_id": ids[record.item.rcept_no],
+                "event_filing_id": ids[record.key],
                 "key": fact.key,
                 "kind": fact.kind,
                 "unit": fact.unit,
@@ -480,6 +575,7 @@ async def persist_events(
         ]
         if fact_rows:
             await session.execute(pg_insert(FilingFact).values(fact_rows))
+    return problems
 
 
 async def run_dart_events(
@@ -497,7 +593,7 @@ async def run_dart_events(
     records, summary = await collect_dart_events(
         client, corp_code, window, request_interval=request_interval
     )
-    await persist_events(session_factory, records)
+    summary.problems.extend(await persist_events(session_factory, records))
     return summary
 
 
@@ -535,11 +631,21 @@ def main(argv: list[str]) -> None:
         prog="python -m app.ingest events",
         description="Ingest a company's DART event filings for the last 12 months.",
     )
-    parser.add_argument("--source", choices=["dart"], required=True)
-    parser.add_argument("--ticker", required=True, help="6-digit stock code, e.g. 005930")
+    parser.add_argument("--source", choices=["dart", "sec"], required=True)
+    parser.add_argument(
+        "--ticker",
+        required=True,
+        help="DART: 6-digit stock code, e.g. 005930; SEC: symbol, e.g. AAPL",
+    )
     args = parser.parse_args(argv)
     configure_logging()
-    summary = asyncio.run(_run(args.ticker))
-    print(format_summary(summary))
+    if args.source == "sec":
+        from app.ingest.sec_events import format_sec_summary, run_sec_cli  # imports this module
+
+        summary = asyncio.run(run_sec_cli(args.ticker))
+        print(format_sec_summary(summary))
+    else:
+        summary = asyncio.run(_run(args.ticker))
+        print(format_summary(summary))
     if not summary.ok:
         raise SystemExit(1)
