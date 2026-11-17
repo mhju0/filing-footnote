@@ -1,0 +1,262 @@
+{
+  "version": 1,
+  "description": "Filing Footnote event-filing categories. Each event filing gets exactly one category from this list by deterministic rules, or is excluded with a reason key. A filing that matches no rule is excluded and counted, never guessed. Superseded versions of corrected filings are dropped later in ingest, not here.",
+  "categories": [
+    {"key": "earnings", "ko": "실적", "en": "Earnings", "priority": 1},
+    {"key": "unit_sales", "ko": "판매 대수", "en": "Unit sales", "priority": 2},
+    {"key": "buyback", "ko": "자사주", "en": "Buyback", "priority": 3},
+    {"key": "dividend", "ko": "배당", "en": "Dividend", "priority": 4},
+    {"key": "capital", "ko": "증자·사채", "en": "Capital", "priority": 5},
+    {"key": "deal", "ko": "인수·계약", "en": "Deals and contracts", "priority": 6},
+    {"key": "leadership", "ko": "경영진", "en": "Leadership", "priority": 7},
+    {"key": "legal", "ko": "소송", "en": "Legal", "priority": 8}
+  ],
+  "priority_note": "When several rules of one SEC filing match, the category with the lowest priority number wins. A DART filing has one report name, so at most one rule applies.",
+  "excluded_reasons": {
+    "ir_event": "Investor-relations event notice",
+    "ownership_report": "Shareholding or ownership change report",
+    "rumor_response": "Answer to a rumor, press report or exchange inquiry",
+    "market_action": "Exchange-issued market measure or inquiry",
+    "forward_looking": "Forward-looking plan or forecast; the product states no predictions",
+    "shareholder_meeting": "Shareholder meeting notice or result",
+    "record_date": "Record date or register closure notice",
+    "audit_report": "Audit report submission",
+    "governance_report": "Corporate governance report",
+    "sustainability_report": "Sustainability report notice",
+    "compliance_program": "Fair-trade compliance program status",
+    "earnings_notice": "Notice that results will be published later",
+    "value_up_plan": "Corporate value-up plan",
+    "other_management": "Free-form other management matters",
+    "notice_only": "Other notice",
+    "shareholder_vote": "SEC Item 5.07 shareholder vote results",
+    "bylaws_change": "SEC Item 5.03 charter or bylaws amendment",
+    "exhibits_only": "SEC Item 9.01 only: exhibits with no event item",
+    "listing_notice": "SEC Item 3.01 listing standard notice",
+    "rights_modification": "SEC Item 3.03 change in security holder rights",
+    "no_keyword_match": "SEC Item 7.01 or 8.01 text matched no keyword rule",
+    "trading_plan": "SEC Item 7.01 or 8.01 notice of an insider Rule 10b5-1 trading plan",
+    "no_rule": "Matches no rule and no explicit exclusion",
+    "needs_body": "The decision needs the filing text and none was supplied"
+  },
+  "dart": {
+    "name_normalisation": [
+      "Strip every leading bracketed group such as [기재정정] or [첨부추가] and record is_correction.",
+      "Collapse runs of whitespace.",
+      "Remove a subsidiary marker, (종속회사의주요경영사항) or (자회사의주요경영사항), wherever it appears and record subsidiary.",
+      "Unwrap 주요사항보고서(<name>) to <name>.",
+      "Match on the name with all whitespace removed; names below are written that way."
+    ],
+    "correction_prefix_pattern": "^\\s*(?:\\[[^\\]]*\\]\\s*)+",
+    "subsidiary_markers": ["(종속회사의주요경영사항)", "(자회사의주요경영사항)"],
+    "report_wrapper": "주요사항보고서",
+    "match_note": "An entry matches when the normalised name starts with one of its prefixes. Exclusions are checked before rules. Within exclusions, and within rules, the longest matching prefix wins, whatever the list order.",
+    "exclusions": [
+      {"id": "dart.x.ir", "reason": "ir_event", "prefixes": ["기업설명회"]},
+      {
+        "id": "dart.x.ownership",
+        "reason": "ownership_report",
+        "prefixes": ["최대주주등소유주식변동신고서", "임원ㆍ주요주주특정증권등소유상황보고서", "주식등의대량보유상황보고서"]
+      },
+      {"id": "dart.x.rumor", "reason": "rumor_response", "prefixes": ["풍문또는보도에대한해명", "조회공시요구(풍문또는보도)에대한답변"]},
+      {"id": "dart.x.inquiry", "reason": "market_action", "prefixes": ["조회공시요구(풍문또는보도)"]},
+      {
+        "id": "dart.x.forward",
+        "reason": "forward_looking",
+        "prefixes": ["장래사업ㆍ경영계획", "영업실적등에대한전망", "연결재무제표기준영업실적등에대한전망"]
+      },
+      {
+        "id": "dart.x.meeting",
+        "reason": "shareholder_meeting",
+        "prefixes": ["주주총회소집결의", "정기주주총회결과", "임시주주총회결과", "주주총회집중일"]
+      },
+      {
+        "id": "dart.x.record_date",
+        "reason": "record_date",
+        "prefixes": ["주주명부폐쇄", "현금ㆍ현물배당을위한주주명부폐쇄"]
+      },
+      {"id": "dart.x.audit", "reason": "audit_report", "prefixes": ["감사보고서제출"]},
+      {"id": "dart.x.governance", "reason": "governance_report", "prefixes": ["기업지배구조보고서"]},
+      {"id": "dart.x.sustainability", "reason": "sustainability_report", "prefixes": ["지속가능경영보고서"]},
+      {"id": "dart.x.compliance", "reason": "compliance_program", "prefixes": ["공정거래자율준수프로그램"]},
+      {"id": "dart.x.earnings_notice", "reason": "earnings_notice", "prefixes": ["결산실적공시예고"]},
+      {"id": "dart.x.value_up", "reason": "value_up_plan", "prefixes": ["기업가치제고계획"]},
+      {"id": "dart.x.other_mgmt", "reason": "other_management", "prefixes": ["기타경영사항"]},
+      {"id": "dart.x.other_notice", "reason": "notice_only", "prefixes": ["기타안내사항"]}
+    ],
+    "earnings": {
+      "id": "dart.earnings",
+      "consolidated_prefixes": ["연결재무제표기준영업(잠정)실적"],
+      "plain_prefixes": ["영업(잠정)실적"],
+      "plain_note": "A plain name has no 연결재무제표기준 prefix, so its basis is separate. Whether it is a quarterly result or a monthly sales report comes from the reporting period in the body.",
+      "period_pattern": "실적기간\\s*당기실적\\s*(\\d{4})-(\\d{2})-(\\d{2})\\s*~\\s*(\\d{4})-(\\d{2})-(\\d{2})",
+      "unit_sales_months": [1],
+      "monthly_results_pattern": "매출액\\s*당해실적\\s*(\\S+)",
+      "earnings_min_months": 3,
+      "period_rule": "The 당기실적 period must start on a first day and end on a month end. One month gives unit_sales only if the body reports no financial results, meaning the first 매출액 당해실적 cell is - or absent; a one-month body with a figure there is excluded as no_rule. Three or more months gives earnings. Anything else is excluded as no_rule."
+    },
+    "rules": [
+      {
+        "id": "dart.buyback",
+        "category": "buyback",
+        "prefixes": [
+          "자기주식취득결정",
+          "자기주식처분결정",
+          "자기주식취득신탁계약체결결정",
+          "자기주식취득신탁계약해지결정",
+          "주식소각결정"
+        ]
+      },
+      {"id": "dart.dividend", "category": "dividend", "prefixes": ["현금ㆍ현물배당결정"]},
+      {
+        "id": "dart.capital",
+        "category": "capital",
+        "prefixes": [
+          "유상증자결정",
+          "무상증자결정",
+          "감자결정",
+          "전환사채권발행결정",
+          "신주인수권부사채권발행결정",
+          "교환사채권발행결정",
+          "해외증권시장주권등상장",
+          "증권예탁증권(DR)발행결정",
+          "유상증자또는주식관련사채등의발행결과",
+          "유상증자또는주식관련사채등의청약결과",
+          "유상증자신주발행가액",
+          "자기교환사채만기전취득결정"
+        ],
+        "note": "Overseas listing and DR issuance are filed with a new-share offering, so they sit with capital raises. Offering results, subscription results, issue price notices and an early buy-in of the company's own exchangeable bonds are capital events, not share buybacks."
+      },
+      {
+        "id": "dart.deal",
+        "category": "deal",
+        "prefixes": [
+          "타법인주식및출자증권양수결정",
+          "타법인주식및출자증권양도결정",
+          "타법인주식및출자증권취득결정",
+          "타법인주식및출자증권처분결정",
+          "단일판매ㆍ공급계약체결",
+          "영업양수결정",
+          "영업양도결정",
+          "회사합병결정",
+          "회사분할결정",
+          "회사분할합병결정",
+          "주식교환ㆍ이전결정",
+          "신규시설투자등",
+          "유형자산취득결정",
+          "유형자산처분결정",
+          "유형자산양수결정",
+          "유형자산양도결정"
+        ]
+      },
+      {"id": "dart.leadership", "category": "leadership", "prefixes": ["대표이사(대표집행임원)변경"]},
+      {"id": "dart.legal", "category": "legal", "prefixes": ["소송등의제기ㆍ신청", "소송등의판결ㆍ결정"]}
+    ]
+  },
+  "sec": {
+    "correction_forms": ["8-K/A"],
+    "body_items": ["2.02", "7.01", "8.01"],
+    "item_note": "Item numbers are split on commas. A filing's category is the highest-priority category any of its items gives.",
+    "items": {
+      "1.01": {"category": "deal", "id": "sec.item.1.01"},
+      "1.02": {"category": "deal", "id": "sec.item.1.02"},
+      "2.01": {"category": "deal", "id": "sec.item.2.01"},
+      "2.03": {"category": "capital", "id": "sec.item.2.03"},
+      "3.02": {"category": "capital", "id": "sec.item.3.02"},
+      "5.02": {"category": "leadership", "id": "sec.item.5.02"},
+      "1.05": {"category": "legal", "id": "sec.item.1.05"}
+    },
+    "item_exclusions": {
+      "5.07": "shareholder_vote",
+      "5.03": "bylaws_change",
+      "9.01": "exhibits_only",
+      "3.01": "listing_notice",
+      "3.03": "rights_modification"
+    },
+    "earnings_item": {
+      "item": "2.02",
+      "earnings_id": "sec.2.02.results",
+      "unit_sales_id": "sec.2.02.deliveries",
+      "unit_sales_phrases": ["production, deliveries", "production and deliveries"],
+      "results_phrases": ["revenue", "net sales", "earnings per share", "income from operations", "operating income", "net loss"],
+      "results_note": "net income is not a results phrase: Tesla delivery releases only say that net income will be announced later.",
+      "rule": "Item 2.02 is unit_sales when the text holds a production-and-deliveries phrase and no results phrase; otherwise earnings."
+    },
+    "keyword_items": ["7.01", "8.01"],
+    "form_note": "The form is stripped and uppercased before use. A document whose type equals the form (8-K, 8-K/A) or is primary is the primary document.",
+    "keyword_sources": {
+      "primary_document": "full",
+      "exhibit_type_prefixes": ["EX-99"],
+      "exhibit_lead_chars": 2000,
+      "rationale": "Keyword rules read the whole primary document and only the first 2000 characters of each EX-99.* exhibit, after HTML-to-text and SGML header removal. A deep presentation or press release mentions past repurchases, lawsuits and acquisitions in history and risk text that must not decide the category. Underwriting, indenture, opinion and contract exhibits (EX-1, EX-4, EX-5, EX-10 and others) are never read."
+    },
+    "earnings_sources": {
+      "primary_document": "full",
+      "exhibit_type_prefixes": ["EX-99"],
+      "exhibit_lead_chars": null,
+      "rationale": "The Item 2.02 rule needs to know whether a results marker appears anywhere in a release, so it reads the full primary document and full EX-99.* exhibits."
+    },
+    "text_normalisation": [
+      "Remove a leading SGML <DOCUMENT>...<TEXT> header.",
+      "Strip HTML tags and decode entities.",
+      "Apply Unicode NFKC.",
+      "Map U+2010 to U+2015 and U+2212 to a plain hyphen.",
+      "Replace & with ' and '.",
+      "Collapse whitespace and lowercase."
+    ],
+    "exclusion_order": [
+      "no_rule",
+      "trading_plan",
+      "no_keyword_match",
+      "rights_modification",
+      "listing_notice",
+      "bylaws_change",
+      "shareholder_vote",
+      "exhibits_only"
+    ],
+    "exclusion_order_note": "When a filing has several exclusion reasons and no category, the reported reason is the first one in this list, whatever the item order. An item with no rule is reported first so a gap is not hidden behind a routine notice; the exhibits-only reason is the least informative.",
+    "no_keyword_reasons": [
+      {"reason": "trading_plan", "id": "sec.kw.trading_plan", "phrases": ["rule 10b5-1"]}
+    ],
+    "keyword_note": "Lowercase phrases searched in the whitespace-collapsed, lowercased text of the primary document and exhibits. Item 7.01 or 8.01 with no phrase hit is excluded as the first matching no_keyword_reasons entry, else no_keyword_match.",
+    "keyword_rules": [
+      {
+        "id": "sec.kw.buyback",
+        "category": "buyback",
+        "phrases": ["stock repurchase", "share repurchase", "repurchase program"]
+      },
+      {
+        "id": "sec.kw.dividend",
+        "category": "dividend",
+        "phrases": ["cash dividend", "quarterly dividend", "special dividend", "declared a dividend"]
+      },
+      {
+        "id": "sec.kw.capital",
+        "category": "capital",
+        "phrases": [
+          "aggregate principal amount",
+          "notes offering",
+          "underwritten public offering",
+          "depositary shares",
+          "stock offering"
+        ]
+      },
+      {
+        "id": "sec.kw.deal",
+        "category": "deal",
+        "phrases": [
+          "definitive agreement to acquire",
+          "definitive merger agreement",
+          "agreed to acquire",
+          "entered into an agreement to acquire",
+          "completed the acquisition",
+          "completed its acquisition"
+        ]
+      },
+      {
+        "id": "sec.kw.legal",
+        "category": "legal",
+        "phrases": ["lawsuit", "derivative action", "class action", "filed a complaint", "court of chancery", "district court"]
+      }
+    ]
+  }
+}
