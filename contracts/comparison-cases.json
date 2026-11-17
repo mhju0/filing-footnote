@@ -1,0 +1,4202 @@
+{
+  "version": 1,
+  "description": "Shared comparison cases for the Python and Swift calculators. Rules: docs/comparison-rules.md.",
+  "rounding": "ROUND_HALF_UP to two decimal places, ties away from zero, applied only to the rounded_fields",
+  "number_comparison": "Results compare as canonical strings. A rounded field has exactly two fraction digits and a minus sign only when it is below zero, so -0.00 never appears. An exact field is plain decimal notation with no exponent, no trailing fractional zeros, no trailing point and no -0.",
+  "rounded_fields": [
+    "percent_change",
+    "operating_margin",
+    "rate"
+  ],
+  "exact_fields": [
+    "prior_value",
+    "current_value",
+    "delta",
+    "revenue",
+    "operating_income"
+  ],
+  "kinds": [
+    "yoy",
+    "operating_margin",
+    "cross_company"
+  ],
+  "cross_company_measures": [
+    "growth_rate",
+    "operating_margin",
+    "absolute_amount"
+  ],
+  "supported_bases": [
+    "consolidated",
+    "consolidated_entity_total"
+  ],
+  "caveats": [
+    "cross_company_standards_and_year_ends"
+  ],
+  "refusal_reasons": [
+    "ambiguous_request",
+    "unsupported_basis",
+    "metric_out_of_scope",
+    "missing_period",
+    "incompatible_currency",
+    "incompatible_comparison"
+  ],
+  "refusal_details": {
+    "ambiguous_request": [
+      "metric_not_specified",
+      "measure_not_specified",
+      "too_many_facts",
+      "duplicate_period",
+      "single_company"
+    ],
+    "unsupported_basis": [
+      "unsupported_basis"
+    ],
+    "metric_out_of_scope": [
+      "unknown_metric",
+      "metric_not_supported_for_kind"
+    ],
+    "missing_period": [
+      "missing_fact",
+      "non_consecutive_years"
+    ],
+    "incompatible_currency": [
+      "currency_mismatch",
+      "absolute_amount_across_currencies"
+    ],
+    "incompatible_comparison": [
+      "absolute_amount_across_companies",
+      "company_mismatch",
+      "metric_mismatch",
+      "basis_mismatch",
+      "unit_mismatch",
+      "period_end_mismatch",
+      "period_length_mismatch",
+      "overlapping_periods",
+      "nonpositive_baseline"
+    ]
+  },
+  "cases": [
+    {
+      "id": "yoy-samsung-fy2023-revenue",
+      "description": "Samsung Electronics consolidated revenue, FY2023 against FY2022 (verified pilot figures; the expected change is -14.33%).",
+      "input": {
+        "kind": "yoy",
+        "metric": "revenue",
+        "facts": [
+          {
+            "company_id": "dart:00126380",
+            "metric": "revenue",
+            "value": "302231360000000",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2022-01-01",
+            "period_end": "2022-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "dart:00126380",
+            "metric": "revenue",
+            "value": "258935494000000",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "result": {
+          "company_id": "dart:00126380",
+          "metric": "revenue",
+          "prior_value": "302231360000000",
+          "current_value": "258935494000000",
+          "delta": "-43295866000000",
+          "percent_change": "-14.33",
+          "currency": "KRW",
+          "unit": "KRW",
+          "prior_period_start": "2022-01-01",
+          "prior_period_end": "2022-12-31",
+          "current_period_start": "2023-01-01",
+          "current_period_end": "2023-12-31",
+          "prior_is_restated": false,
+          "current_is_restated": false
+        }
+      }
+    },
+    {
+      "id": "yoy-samsung-fy2023-operating-income",
+      "description": "Samsung Electronics consolidated operating income, FY2023 against FY2022 (verified pilot figures).",
+      "input": {
+        "kind": "yoy",
+        "metric": "operating_income",
+        "facts": [
+          {
+            "company_id": "dart:00126380",
+            "metric": "operating_income",
+            "value": "43376630000000",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2022-01-01",
+            "period_end": "2022-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "dart:00126380",
+            "metric": "operating_income",
+            "value": "6566976000000",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "result": {
+          "company_id": "dart:00126380",
+          "metric": "operating_income",
+          "prior_value": "43376630000000",
+          "current_value": "6566976000000",
+          "delta": "-36809654000000",
+          "percent_change": "-84.86",
+          "currency": "KRW",
+          "unit": "KRW",
+          "prior_period_start": "2022-01-01",
+          "prior_period_end": "2022-12-31",
+          "current_period_start": "2023-01-01",
+          "current_period_end": "2023-12-31",
+          "prior_is_restated": false,
+          "current_is_restated": false
+        }
+      }
+    },
+    {
+      "id": "yoy-samsung-fy2023-net-income",
+      "description": "Samsung Electronics consolidated net income, FY2023 against FY2022 (verified pilot figures).",
+      "input": {
+        "kind": "yoy",
+        "metric": "net_income",
+        "facts": [
+          {
+            "company_id": "dart:00126380",
+            "metric": "net_income",
+            "value": "55654077000000",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2022-01-01",
+            "period_end": "2022-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "dart:00126380",
+            "metric": "net_income",
+            "value": "15487100000000",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "result": {
+          "company_id": "dart:00126380",
+          "metric": "net_income",
+          "prior_value": "55654077000000",
+          "current_value": "15487100000000",
+          "delta": "-40166977000000",
+          "percent_change": "-72.17",
+          "currency": "KRW",
+          "unit": "KRW",
+          "prior_period_start": "2022-01-01",
+          "prior_period_end": "2022-12-31",
+          "current_period_start": "2023-01-01",
+          "current_period_end": "2023-12-31",
+          "prior_is_restated": false,
+          "current_is_restated": false
+        }
+      }
+    },
+    {
+      "id": "yoy-microsoft-fy2024-revenue",
+      "description": "Microsoft revenue, fiscal years ending June 30 (verified pilot figures).",
+      "input": {
+        "kind": "yoy",
+        "metric": "revenue",
+        "facts": [
+          {
+            "company_id": "sec:0000789019",
+            "metric": "revenue",
+            "value": "211915000000",
+            "unit": "USD",
+            "currency": "USD",
+            "basis": "consolidated_entity_total",
+            "period_start": "2022-07-01",
+            "period_end": "2023-06-30",
+            "is_restated": false
+          },
+          {
+            "company_id": "sec:0000789019",
+            "metric": "revenue",
+            "value": "245122000000",
+            "unit": "USD",
+            "currency": "USD",
+            "basis": "consolidated_entity_total",
+            "period_start": "2023-07-01",
+            "period_end": "2024-06-30",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "result": {
+          "company_id": "sec:0000789019",
+          "metric": "revenue",
+          "prior_value": "211915000000",
+          "current_value": "245122000000",
+          "delta": "33207000000",
+          "percent_change": "15.67",
+          "currency": "USD",
+          "unit": "USD",
+          "prior_period_start": "2022-07-01",
+          "prior_period_end": "2023-06-30",
+          "current_period_start": "2023-07-01",
+          "current_period_end": "2024-06-30",
+          "prior_is_restated": false,
+          "current_is_restated": false
+        }
+      }
+    },
+    {
+      "id": "yoy-microsoft-fy2024-operating-income",
+      "description": "Microsoft operating income, fiscal years ending June 30 (verified pilot figures).",
+      "input": {
+        "kind": "yoy",
+        "metric": "operating_income",
+        "facts": [
+          {
+            "company_id": "sec:0000789019",
+            "metric": "operating_income",
+            "value": "88523000000",
+            "unit": "USD",
+            "currency": "USD",
+            "basis": "consolidated_entity_total",
+            "period_start": "2022-07-01",
+            "period_end": "2023-06-30",
+            "is_restated": false
+          },
+          {
+            "company_id": "sec:0000789019",
+            "metric": "operating_income",
+            "value": "109433000000",
+            "unit": "USD",
+            "currency": "USD",
+            "basis": "consolidated_entity_total",
+            "period_start": "2023-07-01",
+            "period_end": "2024-06-30",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "result": {
+          "company_id": "sec:0000789019",
+          "metric": "operating_income",
+          "prior_value": "88523000000",
+          "current_value": "109433000000",
+          "delta": "20910000000",
+          "percent_change": "23.62",
+          "currency": "USD",
+          "unit": "USD",
+          "prior_period_start": "2022-07-01",
+          "prior_period_end": "2023-06-30",
+          "current_period_start": "2023-07-01",
+          "current_period_end": "2024-06-30",
+          "prior_is_restated": false,
+          "current_is_restated": false
+        }
+      }
+    },
+    {
+      "id": "yoy-facts-in-reverse-order",
+      "description": "Facts may arrive newest first; the earlier period end is the baseline.",
+      "input": {
+        "kind": "yoy",
+        "metric": "revenue",
+        "facts": [
+          {
+            "company_id": "dart:00126380",
+            "metric": "revenue",
+            "value": "258935494000000",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "dart:00126380",
+            "metric": "revenue",
+            "value": "302231360000000",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2022-01-01",
+            "period_end": "2022-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "result": {
+          "company_id": "dart:00126380",
+          "metric": "revenue",
+          "prior_value": "302231360000000",
+          "current_value": "258935494000000",
+          "delta": "-43295866000000",
+          "percent_change": "-14.33",
+          "currency": "KRW",
+          "unit": "KRW",
+          "prior_period_start": "2022-01-01",
+          "prior_period_end": "2022-12-31",
+          "current_period_start": "2023-01-01",
+          "current_period_end": "2023-12-31",
+          "prior_is_restated": false,
+          "current_is_restated": false
+        }
+      }
+    },
+    {
+      "id": "yoy-eps-fractional-values",
+      "description": "Synthetic earnings per share with fractional values.",
+      "input": {
+        "kind": "yoy",
+        "metric": "eps",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "eps",
+            "value": "9.68",
+            "unit": "USD_PER_SHARE",
+            "currency": "USD",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "eps",
+            "value": "11.80",
+            "unit": "USD_PER_SHARE",
+            "currency": "USD",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "result": {
+          "company_id": "synthetic:a",
+          "metric": "eps",
+          "prior_value": "9.68",
+          "current_value": "11.8",
+          "delta": "2.12",
+          "percent_change": "21.90",
+          "currency": "USD",
+          "unit": "USD_PER_SHARE",
+          "prior_period_start": "2023-01-01",
+          "prior_period_end": "2023-12-31",
+          "current_period_start": "2024-01-01",
+          "current_period_end": "2024-12-31",
+          "prior_is_restated": false,
+          "current_is_restated": false
+        }
+      }
+    },
+    {
+      "id": "yoy-unchanged",
+      "description": "Synthetic: no change gives zero delta and 0.00%.",
+      "input": {
+        "kind": "yoy",
+        "metric": "revenue",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "100",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "100",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "result": {
+          "company_id": "synthetic:a",
+          "metric": "revenue",
+          "prior_value": "100",
+          "current_value": "100",
+          "delta": "0",
+          "percent_change": "0.00",
+          "currency": "KRW",
+          "unit": "KRW",
+          "prior_period_start": "2023-01-01",
+          "prior_period_end": "2023-12-31",
+          "current_period_start": "2024-01-01",
+          "current_period_end": "2024-12-31",
+          "prior_is_restated": false,
+          "current_is_restated": false
+        }
+      }
+    },
+    {
+      "id": "yoy-negative-current-positive-baseline",
+      "description": "A figure that turns negative against a positive baseline is a valid comparison; the sign stays on the delta and the percentage.",
+      "input": {
+        "kind": "yoy",
+        "metric": "operating_income",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "operating_income",
+            "value": "100",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "operating_income",
+            "value": "-50",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "result": {
+          "company_id": "synthetic:a",
+          "metric": "operating_income",
+          "prior_value": "100",
+          "current_value": "-50",
+          "delta": "-150",
+          "percent_change": "-150.00",
+          "currency": "KRW",
+          "unit": "KRW",
+          "prior_period_start": "2023-01-01",
+          "prior_period_end": "2023-12-31",
+          "current_period_start": "2024-01-01",
+          "current_period_end": "2024-12-31",
+          "prior_is_restated": false,
+          "current_is_restated": false
+        }
+      }
+    },
+    {
+      "id": "yoy-leap-year",
+      "description": "A leap year against a common year with the same month-day bounds.",
+      "input": {
+        "kind": "yoy",
+        "metric": "revenue",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "100",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "120",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "result": {
+          "company_id": "synthetic:a",
+          "metric": "revenue",
+          "prior_value": "100",
+          "current_value": "120",
+          "delta": "20",
+          "percent_change": "20.00",
+          "currency": "KRW",
+          "unit": "KRW",
+          "prior_period_start": "2023-01-01",
+          "prior_period_end": "2023-12-31",
+          "current_period_start": "2024-01-01",
+          "current_period_end": "2024-12-31",
+          "prior_is_restated": false,
+          "current_is_restated": false
+        }
+      }
+    },
+    {
+      "id": "yoy-quarter",
+      "description": "Synthetic first quarter against the same quarter a year earlier.",
+      "input": {
+        "kind": "yoy",
+        "metric": "revenue",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "200",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-03-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "250",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2025-01-01",
+            "period_end": "2025-03-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "result": {
+          "company_id": "synthetic:a",
+          "metric": "revenue",
+          "prior_value": "200",
+          "current_value": "250",
+          "delta": "50",
+          "percent_change": "25.00",
+          "currency": "KRW",
+          "unit": "KRW",
+          "prior_period_start": "2024-01-01",
+          "prior_period_end": "2024-03-31",
+          "current_period_start": "2025-01-01",
+          "current_period_end": "2025-03-31",
+          "prior_is_restated": false,
+          "current_is_restated": false
+        }
+      }
+    },
+    {
+      "id": "yoy-repeating-decimal-down",
+      "description": "One third more: 33.333... rounds to 33.33.",
+      "input": {
+        "kind": "yoy",
+        "metric": "revenue",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "3",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "4",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "result": {
+          "company_id": "synthetic:a",
+          "metric": "revenue",
+          "prior_value": "3",
+          "current_value": "4",
+          "delta": "1",
+          "percent_change": "33.33",
+          "currency": "KRW",
+          "unit": "KRW",
+          "prior_period_start": "2023-01-01",
+          "prior_period_end": "2023-12-31",
+          "current_period_start": "2024-01-01",
+          "current_period_end": "2024-12-31",
+          "prior_is_restated": false,
+          "current_is_restated": false
+        }
+      }
+    },
+    {
+      "id": "yoy-repeating-decimal-up",
+      "description": "Two thirds more: 66.666... rounds to 66.67.",
+      "input": {
+        "kind": "yoy",
+        "metric": "revenue",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "3",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "5",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "result": {
+          "company_id": "synthetic:a",
+          "metric": "revenue",
+          "prior_value": "3",
+          "current_value": "5",
+          "delta": "2",
+          "percent_change": "66.67",
+          "currency": "KRW",
+          "unit": "KRW",
+          "prior_period_start": "2023-01-01",
+          "prior_period_end": "2023-12-31",
+          "current_period_start": "2024-01-01",
+          "current_period_end": "2024-12-31",
+          "prior_is_restated": false,
+          "current_is_restated": false
+        }
+      }
+    },
+    {
+      "id": "round-half-up-positive",
+      "description": "Exact result 12.345 rounds to 12.35.",
+      "input": {
+        "kind": "yoy",
+        "metric": "revenue",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "1000",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "1123.45",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "result": {
+          "company_id": "synthetic:a",
+          "metric": "revenue",
+          "prior_value": "1000",
+          "current_value": "1123.45",
+          "delta": "123.45",
+          "percent_change": "12.35",
+          "currency": "KRW",
+          "unit": "KRW",
+          "prior_period_start": "2023-01-01",
+          "prior_period_end": "2023-12-31",
+          "current_period_start": "2024-01-01",
+          "current_period_end": "2024-12-31",
+          "prior_is_restated": false,
+          "current_is_restated": false
+        }
+      }
+    },
+    {
+      "id": "round-half-up-negative",
+      "description": "Exact result -12.345 rounds away from zero to -12.35.",
+      "input": {
+        "kind": "yoy",
+        "metric": "revenue",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "1000",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "876.55",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "result": {
+          "company_id": "synthetic:a",
+          "metric": "revenue",
+          "prior_value": "1000",
+          "current_value": "876.55",
+          "delta": "-123.45",
+          "percent_change": "-12.35",
+          "currency": "KRW",
+          "unit": "KRW",
+          "prior_period_start": "2023-01-01",
+          "prior_period_end": "2023-12-31",
+          "current_period_start": "2024-01-01",
+          "current_period_end": "2024-12-31",
+          "prior_is_restated": false,
+          "current_is_restated": false
+        }
+      }
+    },
+    {
+      "id": "round-below-half",
+      "description": "Exact result 12.34499 rounds down to 12.34.",
+      "input": {
+        "kind": "yoy",
+        "metric": "revenue",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "1000",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "1123.4499",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "result": {
+          "company_id": "synthetic:a",
+          "metric": "revenue",
+          "prior_value": "1000",
+          "current_value": "1123.4499",
+          "delta": "123.4499",
+          "percent_change": "12.34",
+          "currency": "KRW",
+          "unit": "KRW",
+          "prior_period_start": "2023-01-01",
+          "prior_period_end": "2023-12-31",
+          "current_period_start": "2024-01-01",
+          "current_period_end": "2024-12-31",
+          "prior_is_restated": false,
+          "current_is_restated": false
+        }
+      }
+    },
+    {
+      "id": "round-half-up-carry",
+      "description": "Exact result 9.995 rounds to 10.00.",
+      "input": {
+        "kind": "yoy",
+        "metric": "revenue",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "1000",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "1099.95",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "result": {
+          "company_id": "synthetic:a",
+          "metric": "revenue",
+          "prior_value": "1000",
+          "current_value": "1099.95",
+          "delta": "99.95",
+          "percent_change": "10.00",
+          "currency": "KRW",
+          "unit": "KRW",
+          "prior_period_start": "2023-01-01",
+          "prior_period_end": "2023-12-31",
+          "current_period_start": "2024-01-01",
+          "current_period_end": "2024-12-31",
+          "prior_is_restated": false,
+          "current_is_restated": false
+        }
+      }
+    },
+    {
+      "id": "round-half-up-smallest-positive",
+      "description": "Exact result 0.005 rounds to 0.01; banker's rounding would give 0.00.",
+      "input": {
+        "kind": "yoy",
+        "metric": "revenue",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "1000",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "1000.05",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "result": {
+          "company_id": "synthetic:a",
+          "metric": "revenue",
+          "prior_value": "1000",
+          "current_value": "1000.05",
+          "delta": "0.05",
+          "percent_change": "0.01",
+          "currency": "KRW",
+          "unit": "KRW",
+          "prior_period_start": "2023-01-01",
+          "prior_period_end": "2023-12-31",
+          "current_period_start": "2024-01-01",
+          "current_period_end": "2024-12-31",
+          "prior_is_restated": false,
+          "current_is_restated": false
+        }
+      }
+    },
+    {
+      "id": "round-half-up-smallest-negative",
+      "description": "Exact result -0.005 rounds away from zero to -0.01.",
+      "input": {
+        "kind": "yoy",
+        "metric": "revenue",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "1000",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "999.95",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "result": {
+          "company_id": "synthetic:a",
+          "metric": "revenue",
+          "prior_value": "1000",
+          "current_value": "999.95",
+          "delta": "-0.05",
+          "percent_change": "-0.01",
+          "currency": "KRW",
+          "unit": "KRW",
+          "prior_period_start": "2023-01-01",
+          "prior_period_end": "2023-12-31",
+          "current_period_start": "2024-01-01",
+          "current_period_end": "2024-12-31",
+          "prior_is_restated": false,
+          "current_is_restated": false
+        }
+      }
+    },
+    {
+      "id": "round-tiny-negative-is-zero",
+      "description": "A change too small to show rounds to 0.00, never -0.00.",
+      "input": {
+        "kind": "yoy",
+        "metric": "revenue",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "1000000",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "999999.99",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "result": {
+          "company_id": "synthetic:a",
+          "metric": "revenue",
+          "prior_value": "1000000",
+          "current_value": "999999.99",
+          "delta": "-0.01",
+          "percent_change": "0.00",
+          "currency": "KRW",
+          "unit": "KRW",
+          "prior_period_start": "2023-01-01",
+          "prior_period_end": "2023-12-31",
+          "current_period_start": "2024-01-01",
+          "current_period_end": "2024-12-31",
+          "prior_is_restated": false,
+          "current_is_restated": false
+        }
+      }
+    },
+    {
+      "id": "baseline-zero",
+      "description": "No percentage of a zero baseline.",
+      "input": {
+        "kind": "yoy",
+        "metric": "net_income",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "net_income",
+            "value": "0",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "net_income",
+            "value": "500",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "incompatible_comparison",
+        "detail": "nonpositive_baseline"
+      }
+    },
+    {
+      "id": "baseline-negative-to-positive",
+      "description": "No percentage when the baseline is a loss.",
+      "input": {
+        "kind": "yoy",
+        "metric": "net_income",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "net_income",
+            "value": "-500",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "net_income",
+            "value": "1000",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "incompatible_comparison",
+        "detail": "nonpositive_baseline"
+      }
+    },
+    {
+      "id": "baseline-negative-to-negative",
+      "description": "No percentage between two losses.",
+      "input": {
+        "kind": "yoy",
+        "metric": "operating_income",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "operating_income",
+            "value": "-800",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "operating_income",
+            "value": "-200",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "incompatible_comparison",
+        "detail": "nonpositive_baseline"
+      }
+    },
+    {
+      "id": "currency-mismatch-yoy",
+      "description": "A KRW figure against a USD figure.",
+      "input": {
+        "kind": "yoy",
+        "metric": "revenue",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "100",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "120",
+            "unit": "USD",
+            "currency": "USD",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "incompatible_currency",
+        "detail": "currency_mismatch"
+      }
+    },
+    {
+      "id": "currency-mismatch-margin",
+      "description": "Operating margin from revenue and operating income in different currencies.",
+      "input": {
+        "kind": "operating_margin",
+        "metric": "operating_margin",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "1000",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "operating_income",
+            "value": "100",
+            "unit": "USD",
+            "currency": "USD",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "incompatible_currency",
+        "detail": "currency_mismatch"
+      }
+    },
+    {
+      "id": "cross-company-absolute-amount-currencies",
+      "description": "Revenue amounts of a KRW and a USD reporter are never set side by side.",
+      "input": {
+        "kind": "cross_company",
+        "metric": "revenue",
+        "measure": "absolute_amount",
+        "facts": [
+          {
+            "company_id": "dart:00126380",
+            "metric": "revenue",
+            "value": "258935494000000",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "sec:0000789019",
+            "metric": "revenue",
+            "value": "245122000000",
+            "unit": "USD",
+            "currency": "USD",
+            "basis": "consolidated_entity_total",
+            "period_start": "2023-07-01",
+            "period_end": "2024-06-30",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "incompatible_currency",
+        "detail": "absolute_amount_across_currencies"
+      }
+    },
+    {
+      "id": "basis-separate-yoy",
+      "description": "Separate (parent-only) statements are not supported.",
+      "input": {
+        "kind": "yoy",
+        "metric": "revenue",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "100",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "separate",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "120",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "separate",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "unsupported_basis",
+        "detail": "unsupported_basis"
+      }
+    },
+    {
+      "id": "basis-separate-margin",
+      "description": "Operating margin from separate statements is not supported.",
+      "input": {
+        "kind": "operating_margin",
+        "metric": "operating_margin",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "1000",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "separate",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "operating_income",
+            "value": "100",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "separate",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "unsupported_basis",
+        "detail": "unsupported_basis"
+      }
+    },
+    {
+      "id": "basis-mismatch-yoy",
+      "description": "Two supported bases may not be mixed within one company's comparison.",
+      "input": {
+        "kind": "yoy",
+        "metric": "revenue",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "100",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "120",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated_entity_total",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "incompatible_comparison",
+        "detail": "basis_mismatch"
+      }
+    },
+    {
+      "id": "period-end-mismatch",
+      "description": "A December year-end against a June year-end.",
+      "input": {
+        "kind": "yoy",
+        "metric": "revenue",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "100",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2022-07-01",
+            "period_end": "2023-06-30",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "120",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "incompatible_comparison",
+        "detail": "period_end_mismatch"
+      }
+    },
+    {
+      "id": "period-quarter-against-year",
+      "description": "A first quarter against a full year.",
+      "input": {
+        "kind": "yoy",
+        "metric": "revenue",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "400",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "120",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2025-01-01",
+            "period_end": "2025-03-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "incompatible_comparison",
+        "detail": "period_end_mismatch"
+      }
+    },
+    {
+      "id": "period-start-mismatch",
+      "description": "Same year-end but a nine-month period against a twelve-month one.",
+      "input": {
+        "kind": "yoy",
+        "metric": "revenue",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "100",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-04-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "120",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "incompatible_comparison",
+        "detail": "period_length_mismatch"
+      }
+    },
+    {
+      "id": "period-two-year-span",
+      "description": "Matching month-days but a two-year period against a one-year one.",
+      "input": {
+        "kind": "yoy",
+        "metric": "revenue",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "100",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2022-01-01",
+            "period_end": "2022-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "220",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "incompatible_comparison",
+        "detail": "period_length_mismatch"
+      }
+    },
+    {
+      "id": "margin-period-mismatch",
+      "description": "Revenue and operating income from different periods.",
+      "input": {
+        "kind": "operating_margin",
+        "metric": "operating_margin",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "1000",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "operating_income",
+            "value": "100",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "incompatible_comparison",
+        "detail": "period_end_mismatch"
+      }
+    },
+    {
+      "id": "missing-prior-year",
+      "description": "Only the current year is available.",
+      "input": {
+        "kind": "yoy",
+        "metric": "revenue",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "120",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "missing_period",
+        "detail": "missing_fact"
+      }
+    },
+    {
+      "id": "missing-intervening-year",
+      "description": "FY2025 against FY2023 skips a year.",
+      "input": {
+        "kind": "yoy",
+        "metric": "revenue",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "100",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "130",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2025-01-01",
+            "period_end": "2025-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "missing_period",
+        "detail": "non_consecutive_years"
+      }
+    },
+    {
+      "id": "missing-margin-input",
+      "description": "Operating margin without an operating income figure.",
+      "input": {
+        "kind": "operating_margin",
+        "metric": "operating_margin",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "1000",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "missing_period",
+        "detail": "missing_fact"
+      }
+    },
+    {
+      "id": "missing-period-cross-company",
+      "description": "One company in a growth comparison lacks its prior year.",
+      "input": {
+        "kind": "cross_company",
+        "metric": "revenue",
+        "measure": "growth_rate",
+        "facts": [
+          {
+            "company_id": "dart:00126380",
+            "metric": "revenue",
+            "value": "302231360000000",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2022-01-01",
+            "period_end": "2022-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "dart:00126380",
+            "metric": "revenue",
+            "value": "258935494000000",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "sec:0000789019",
+            "metric": "revenue",
+            "value": "245122000000",
+            "unit": "USD",
+            "currency": "USD",
+            "basis": "consolidated_entity_total",
+            "period_start": "2023-07-01",
+            "period_end": "2024-06-30",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "missing_period",
+        "detail": "missing_fact"
+      }
+    },
+    {
+      "id": "restated-prior",
+      "description": "The prior-year figure is a restated one; the label is carried through.",
+      "input": {
+        "kind": "yoy",
+        "metric": "revenue",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "100",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": true
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "110",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "result": {
+          "company_id": "synthetic:a",
+          "metric": "revenue",
+          "prior_value": "100",
+          "current_value": "110",
+          "delta": "10",
+          "percent_change": "10.00",
+          "currency": "KRW",
+          "unit": "KRW",
+          "prior_period_start": "2023-01-01",
+          "prior_period_end": "2023-12-31",
+          "current_period_start": "2024-01-01",
+          "current_period_end": "2024-12-31",
+          "prior_is_restated": true,
+          "current_is_restated": false
+        }
+      }
+    },
+    {
+      "id": "restated-current",
+      "description": "The current figure is restated; the label is carried through.",
+      "input": {
+        "kind": "yoy",
+        "metric": "revenue",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "100",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "90",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": true
+          }
+        ]
+      },
+      "expected": {
+        "result": {
+          "company_id": "synthetic:a",
+          "metric": "revenue",
+          "prior_value": "100",
+          "current_value": "90",
+          "delta": "-10",
+          "percent_change": "-10.00",
+          "currency": "KRW",
+          "unit": "KRW",
+          "prior_period_start": "2023-01-01",
+          "prior_period_end": "2023-12-31",
+          "current_period_start": "2024-01-01",
+          "current_period_end": "2024-12-31",
+          "prior_is_restated": false,
+          "current_is_restated": true
+        }
+      }
+    },
+    {
+      "id": "restated-margin-input",
+      "description": "A restated revenue figure marks the derived margin as restated.",
+      "input": {
+        "kind": "operating_margin",
+        "metric": "operating_margin",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "1000",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": true
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "operating_income",
+            "value": "150",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "result": {
+          "company_id": "synthetic:a",
+          "revenue": "1000",
+          "operating_income": "150",
+          "operating_margin": "15.00",
+          "currency": "KRW",
+          "period_start": "2024-01-01",
+          "period_end": "2024-12-31",
+          "is_restated": true
+        }
+      }
+    },
+    {
+      "id": "margin-samsung-fy2023",
+      "description": "Samsung Electronics FY2023 operating margin (verified pilot figures).",
+      "input": {
+        "kind": "operating_margin",
+        "metric": "operating_margin",
+        "facts": [
+          {
+            "company_id": "dart:00126380",
+            "metric": "revenue",
+            "value": "258935494000000",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "dart:00126380",
+            "metric": "operating_income",
+            "value": "6566976000000",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "result": {
+          "company_id": "dart:00126380",
+          "revenue": "258935494000000",
+          "operating_income": "6566976000000",
+          "operating_margin": "2.54",
+          "currency": "KRW",
+          "period_start": "2023-01-01",
+          "period_end": "2023-12-31",
+          "is_restated": false
+        }
+      }
+    },
+    {
+      "id": "margin-microsoft-fy2024",
+      "description": "Microsoft FY2024 operating margin (verified pilot figures).",
+      "input": {
+        "kind": "operating_margin",
+        "metric": "operating_margin",
+        "facts": [
+          {
+            "company_id": "sec:0000789019",
+            "metric": "revenue",
+            "value": "245122000000",
+            "unit": "USD",
+            "currency": "USD",
+            "basis": "consolidated_entity_total",
+            "period_start": "2023-07-01",
+            "period_end": "2024-06-30",
+            "is_restated": false
+          },
+          {
+            "company_id": "sec:0000789019",
+            "metric": "operating_income",
+            "value": "109433000000",
+            "unit": "USD",
+            "currency": "USD",
+            "basis": "consolidated_entity_total",
+            "period_start": "2023-07-01",
+            "period_end": "2024-06-30",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "result": {
+          "company_id": "sec:0000789019",
+          "revenue": "245122000000",
+          "operating_income": "109433000000",
+          "operating_margin": "44.64",
+          "currency": "USD",
+          "period_start": "2023-07-01",
+          "period_end": "2024-06-30",
+          "is_restated": false
+        }
+      }
+    },
+    {
+      "id": "margin-negative-operating-income",
+      "description": "An operating loss against positive revenue gives a negative margin.",
+      "input": {
+        "kind": "operating_margin",
+        "metric": "operating_margin",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "1000",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "operating_income",
+            "value": "-75",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "result": {
+          "company_id": "synthetic:a",
+          "revenue": "1000",
+          "operating_income": "-75",
+          "operating_margin": "-7.50",
+          "currency": "KRW",
+          "period_start": "2024-01-01",
+          "period_end": "2024-12-31",
+          "is_restated": false
+        }
+      }
+    },
+    {
+      "id": "margin-half-up-positive",
+      "description": "Exact margin 12.345 rounds to 12.35.",
+      "input": {
+        "kind": "operating_margin",
+        "metric": "operating_margin",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "1000",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "operating_income",
+            "value": "123.45",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "result": {
+          "company_id": "synthetic:a",
+          "revenue": "1000",
+          "operating_income": "123.45",
+          "operating_margin": "12.35",
+          "currency": "KRW",
+          "period_start": "2024-01-01",
+          "period_end": "2024-12-31",
+          "is_restated": false
+        }
+      }
+    },
+    {
+      "id": "margin-half-up-negative",
+      "description": "Exact margin -12.345 rounds away from zero to -12.35.",
+      "input": {
+        "kind": "operating_margin",
+        "metric": "operating_margin",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "1000",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "operating_income",
+            "value": "-123.45",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "result": {
+          "company_id": "synthetic:a",
+          "revenue": "1000",
+          "operating_income": "-123.45",
+          "operating_margin": "-12.35",
+          "currency": "KRW",
+          "period_start": "2024-01-01",
+          "period_end": "2024-12-31",
+          "is_restated": false
+        }
+      }
+    },
+    {
+      "id": "margin-revenue-zero",
+      "description": "No margin when revenue is zero.",
+      "input": {
+        "kind": "operating_margin",
+        "metric": "operating_margin",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "0",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "operating_income",
+            "value": "-10",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "incompatible_comparison",
+        "detail": "nonpositive_baseline"
+      }
+    },
+    {
+      "id": "margin-revenue-negative",
+      "description": "No margin when revenue is negative.",
+      "input": {
+        "kind": "operating_margin",
+        "metric": "operating_margin",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "-5",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "operating_income",
+            "value": "1",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "incompatible_comparison",
+        "detail": "nonpositive_baseline"
+      }
+    },
+    {
+      "id": "cross-company-growth-samsung-microsoft",
+      "description": "Revenue growth of a KRW and a USD reporter side by side: rates only, with the standards and year-end caveat.",
+      "input": {
+        "kind": "cross_company",
+        "metric": "revenue",
+        "measure": "growth_rate",
+        "facts": [
+          {
+            "company_id": "dart:00126380",
+            "metric": "revenue",
+            "value": "302231360000000",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2022-01-01",
+            "period_end": "2022-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "dart:00126380",
+            "metric": "revenue",
+            "value": "258935494000000",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "sec:0000789019",
+            "metric": "revenue",
+            "value": "211915000000",
+            "unit": "USD",
+            "currency": "USD",
+            "basis": "consolidated_entity_total",
+            "period_start": "2022-07-01",
+            "period_end": "2023-06-30",
+            "is_restated": false
+          },
+          {
+            "company_id": "sec:0000789019",
+            "metric": "revenue",
+            "value": "245122000000",
+            "unit": "USD",
+            "currency": "USD",
+            "basis": "consolidated_entity_total",
+            "period_start": "2023-07-01",
+            "period_end": "2024-06-30",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "result": {
+          "metric": "revenue",
+          "measure": "growth_rate",
+          "caveat": "cross_company_standards_and_year_ends",
+          "same_period_end": false,
+          "companies": [
+            {
+              "company_id": "dart:00126380",
+              "rate": "-14.33",
+              "period_start": "2023-01-01",
+              "period_end": "2023-12-31",
+              "is_restated": false
+            },
+            {
+              "company_id": "sec:0000789019",
+              "rate": "15.67",
+              "period_start": "2023-07-01",
+              "period_end": "2024-06-30",
+              "is_restated": false
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "cross-company-margin-three",
+      "description": "Operating margins of Samsung Electronics, NAVER and Microsoft.",
+      "input": {
+        "kind": "cross_company",
+        "metric": "operating_margin",
+        "measure": "operating_margin",
+        "facts": [
+          {
+            "company_id": "dart:00126380",
+            "metric": "revenue",
+            "value": "258935494000000",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "dart:00126380",
+            "metric": "operating_income",
+            "value": "6566976000000",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "dart:00266961",
+            "metric": "revenue",
+            "value": "9670643576585",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "dart:00266961",
+            "metric": "operating_income",
+            "value": "1488820269608",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "sec:0000789019",
+            "metric": "revenue",
+            "value": "211915000000",
+            "unit": "USD",
+            "currency": "USD",
+            "basis": "consolidated_entity_total",
+            "period_start": "2022-07-01",
+            "period_end": "2023-06-30",
+            "is_restated": false
+          },
+          {
+            "company_id": "sec:0000789019",
+            "metric": "operating_income",
+            "value": "88523000000",
+            "unit": "USD",
+            "currency": "USD",
+            "basis": "consolidated_entity_total",
+            "period_start": "2022-07-01",
+            "period_end": "2023-06-30",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "result": {
+          "metric": "operating_margin",
+          "measure": "operating_margin",
+          "caveat": "cross_company_standards_and_year_ends",
+          "same_period_end": false,
+          "companies": [
+            {
+              "company_id": "dart:00126380",
+              "rate": "2.54",
+              "period_start": "2023-01-01",
+              "period_end": "2023-12-31",
+              "is_restated": false
+            },
+            {
+              "company_id": "dart:00266961",
+              "rate": "15.40",
+              "period_start": "2023-01-01",
+              "period_end": "2023-12-31",
+              "is_restated": false
+            },
+            {
+              "company_id": "sec:0000789019",
+              "rate": "41.77",
+              "period_start": "2022-07-01",
+              "period_end": "2023-06-30",
+              "is_restated": false
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "cross-company-margin-same-year-end",
+      "description": "Two KRW reporters with the same year-end still carry the caveat.",
+      "input": {
+        "kind": "cross_company",
+        "metric": "operating_margin",
+        "measure": "operating_margin",
+        "facts": [
+          {
+            "company_id": "dart:00126380",
+            "metric": "revenue",
+            "value": "258935494000000",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "dart:00126380",
+            "metric": "operating_income",
+            "value": "6566976000000",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "dart:00266961",
+            "metric": "revenue",
+            "value": "9670643576585",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "dart:00266961",
+            "metric": "operating_income",
+            "value": "1488820269608",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "result": {
+          "metric": "operating_margin",
+          "measure": "operating_margin",
+          "caveat": "cross_company_standards_and_year_ends",
+          "same_period_end": true,
+          "companies": [
+            {
+              "company_id": "dart:00126380",
+              "rate": "2.54",
+              "period_start": "2023-01-01",
+              "period_end": "2023-12-31",
+              "is_restated": false
+            },
+            {
+              "company_id": "dart:00266961",
+              "rate": "15.40",
+              "period_start": "2023-01-01",
+              "period_end": "2023-12-31",
+              "is_restated": false
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "cross-company-growth-restated",
+      "description": "A restated baseline in one company is labelled on that company's rate.",
+      "input": {
+        "kind": "cross_company",
+        "metric": "revenue",
+        "measure": "growth_rate",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "100",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": true
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "110",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:b",
+            "metric": "revenue",
+            "value": "200",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:b",
+            "metric": "revenue",
+            "value": "190",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "result": {
+          "metric": "revenue",
+          "measure": "growth_rate",
+          "caveat": "cross_company_standards_and_year_ends",
+          "same_period_end": true,
+          "companies": [
+            {
+              "company_id": "synthetic:a",
+              "rate": "10.00",
+              "period_start": "2024-01-01",
+              "period_end": "2024-12-31",
+              "is_restated": true
+            },
+            {
+              "company_id": "synthetic:b",
+              "rate": "-5.00",
+              "period_start": "2024-01-01",
+              "period_end": "2024-12-31",
+              "is_restated": false
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "cross-company-absolute-amount-same-currency",
+      "description": "Amounts are not compared across companies even in one currency.",
+      "input": {
+        "kind": "cross_company",
+        "metric": "revenue",
+        "measure": "absolute_amount",
+        "facts": [
+          {
+            "company_id": "dart:00126380",
+            "metric": "revenue",
+            "value": "258935494000000",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "dart:00266961",
+            "metric": "revenue",
+            "value": "9670643576585",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "incompatible_comparison",
+        "detail": "absolute_amount_across_companies"
+      }
+    },
+    {
+      "id": "cross-company-single-company",
+      "description": "A cross-company comparison needs at least two companies.",
+      "input": {
+        "kind": "cross_company",
+        "metric": "revenue",
+        "measure": "growth_rate",
+        "facts": [
+          {
+            "company_id": "dart:00126380",
+            "metric": "revenue",
+            "value": "302231360000000",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2022-01-01",
+            "period_end": "2022-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "dart:00126380",
+            "metric": "revenue",
+            "value": "258935494000000",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "ambiguous_request",
+        "detail": "single_company"
+      }
+    },
+    {
+      "id": "cross-company-nonpositive-baseline",
+      "description": "One company's loss-making baseline refuses the whole comparison.",
+      "input": {
+        "kind": "cross_company",
+        "metric": "net_income",
+        "measure": "growth_rate",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "net_income",
+            "value": "-10",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "net_income",
+            "value": "5",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:b",
+            "metric": "net_income",
+            "value": "10",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:b",
+            "metric": "net_income",
+            "value": "12",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "incompatible_comparison",
+        "detail": "nonpositive_baseline"
+      }
+    },
+    {
+      "id": "cross-company-margin-wrong-metric",
+      "description": "A margin comparison must name the operating_margin metric.",
+      "input": {
+        "kind": "cross_company",
+        "metric": "revenue",
+        "measure": "operating_margin",
+        "facts": [
+          {
+            "company_id": "dart:00126380",
+            "metric": "revenue",
+            "value": "258935494000000",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "dart:00126380",
+            "metric": "operating_income",
+            "value": "6566976000000",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "dart:00266961",
+            "metric": "revenue",
+            "value": "9670643576585",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "dart:00266961",
+            "metric": "operating_income",
+            "value": "1488820269608",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "metric_out_of_scope",
+        "detail": "metric_not_supported_for_kind"
+      }
+    },
+    {
+      "id": "metric-unknown",
+      "description": "A metric outside the vocabulary.",
+      "input": {
+        "kind": "yoy",
+        "metric": "free_cash_flow",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "free_cash_flow",
+            "value": "100",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "free_cash_flow",
+            "value": "120",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "metric_out_of_scope",
+        "detail": "unknown_metric"
+      }
+    },
+    {
+      "id": "metric-margin-yoy",
+      "description": "Year-over-year change of a margin is not offered in v1.",
+      "input": {
+        "kind": "yoy",
+        "metric": "operating_margin",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "operating_margin",
+            "value": "10",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "operating_margin",
+            "value": "12",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "metric_out_of_scope",
+        "detail": "metric_not_supported_for_kind"
+      }
+    },
+    {
+      "id": "metric-margin-kind-wrong-metric",
+      "description": "The operating_margin kind with a reported metric.",
+      "input": {
+        "kind": "operating_margin",
+        "metric": "revenue",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "1000",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "operating_income",
+            "value": "100",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "metric_out_of_scope",
+        "detail": "metric_not_supported_for_kind"
+      }
+    },
+    {
+      "id": "ambiguous-no-metric",
+      "description": "The request names no metric.",
+      "input": {
+        "kind": "yoy",
+        "metric": null,
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "100",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "120",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "ambiguous_request",
+        "detail": "metric_not_specified"
+      }
+    },
+    {
+      "id": "ambiguous-duplicate-period",
+      "description": "An original and a restated figure for the same period, with no choice made.",
+      "input": {
+        "kind": "yoy",
+        "metric": "revenue",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "100",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "102",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": true
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "ambiguous_request",
+        "detail": "duplicate_period"
+      }
+    },
+    {
+      "id": "ambiguous-three-facts",
+      "description": "Three years given for a two-period comparison.",
+      "input": {
+        "kind": "yoy",
+        "metric": "revenue",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "90",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2022-01-01",
+            "period_end": "2022-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "100",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "120",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "ambiguous_request",
+        "detail": "too_many_facts"
+      }
+    },
+    {
+      "id": "ambiguous-no-measure",
+      "description": "A cross-company request that names no measure.",
+      "input": {
+        "kind": "cross_company",
+        "metric": "revenue",
+        "measure": null,
+        "facts": [
+          {
+            "company_id": "dart:00126380",
+            "metric": "revenue",
+            "value": "258935494000000",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "dart:00266961",
+            "metric": "revenue",
+            "value": "9670643576585",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "ambiguous_request",
+        "detail": "measure_not_specified"
+      }
+    },
+    {
+      "id": "ambiguous-two-revenues",
+      "description": "Two revenue figures for one margin.",
+      "input": {
+        "kind": "operating_margin",
+        "metric": "operating_margin",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "1000",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "1010",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": true
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "operating_income",
+            "value": "100",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "ambiguous_request",
+        "detail": "duplicate_period"
+      }
+    },
+    {
+      "id": "incompatible-company",
+      "description": "Year over year across two companies.",
+      "input": {
+        "kind": "yoy",
+        "metric": "revenue",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "100",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:b",
+            "metric": "revenue",
+            "value": "120",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "incompatible_comparison",
+        "detail": "company_mismatch"
+      }
+    },
+    {
+      "id": "incompatible-unit",
+      "description": "Same currency, different unit.",
+      "input": {
+        "kind": "yoy",
+        "metric": "eps",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "eps",
+            "value": "5",
+            "unit": "KRW_PER_SHARE",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "eps",
+            "value": "6",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "incompatible_comparison",
+        "detail": "unit_mismatch"
+      }
+    },
+    {
+      "id": "incompatible-fact-metric",
+      "description": "A fact whose metric differs from the request.",
+      "input": {
+        "kind": "yoy",
+        "metric": "revenue",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "100",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "net_income",
+            "value": "120",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "incompatible_comparison",
+        "detail": "metric_mismatch"
+      }
+    },
+    {
+      "id": "period-overlapping",
+      "description": "Two-year periods a year apart overlap by a year; neither is a baseline for the other.",
+      "input": {
+        "kind": "yoy",
+        "metric": "revenue",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "200",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2022-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "220",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "incompatible_comparison",
+        "detail": "overlapping_periods"
+      }
+    },
+    {
+      "id": "period-february-leap-year-end",
+      "description": "A year ending on February 29 against one ending on February 28: the month-day differs, so v1 refuses.",
+      "input": {
+        "kind": "yoy",
+        "metric": "revenue",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "100",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-03-01",
+            "period_end": "2024-02-29",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "110",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-03-01",
+            "period_end": "2025-02-28",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "incompatible_comparison",
+        "detail": "period_end_mismatch"
+      }
+    },
+    {
+      "id": "cross-company-growth-length-mismatch",
+      "description": "One company's full years against another's first quarters.",
+      "input": {
+        "kind": "cross_company",
+        "metric": "revenue",
+        "measure": "growth_rate",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "100",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "110",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:b",
+            "metric": "revenue",
+            "value": "30",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-03-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:b",
+            "metric": "revenue",
+            "value": "33",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2025-01-01",
+            "period_end": "2025-03-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "incompatible_comparison",
+        "detail": "period_length_mismatch"
+      }
+    },
+    {
+      "id": "cross-company-margin-length-mismatch",
+      "description": "One company's full-year margin against another's quarterly margin.",
+      "input": {
+        "kind": "cross_company",
+        "metric": "operating_margin",
+        "measure": "operating_margin",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "1000",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "operating_income",
+            "value": "100",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:b",
+            "metric": "revenue",
+            "value": "300",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2025-01-01",
+            "period_end": "2025-03-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:b",
+            "metric": "operating_income",
+            "value": "30",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2025-01-01",
+            "period_end": "2025-03-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "incompatible_comparison",
+        "detail": "period_length_mismatch"
+      }
+    },
+    {
+      "id": "order-measure-before-metric",
+      "description": "No measure and no metric: the missing measure is named first.",
+      "input": {
+        "kind": "cross_company",
+        "metric": null,
+        "measure": null,
+        "facts": [
+          {
+            "company_id": "dart:00126380",
+            "metric": "revenue",
+            "value": "258935494000000",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "dart:00266961",
+            "metric": "revenue",
+            "value": "9670643576585",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "ambiguous_request",
+        "detail": "measure_not_specified"
+      }
+    },
+    {
+      "id": "order-metric-before-basis-yoy",
+      "description": "An unknown metric on separate statements: the metric decides.",
+      "input": {
+        "kind": "yoy",
+        "metric": "free_cash_flow",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "free_cash_flow",
+            "value": "100",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "separate",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "free_cash_flow",
+            "value": "120",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "separate",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "metric_out_of_scope",
+        "detail": "unknown_metric"
+      }
+    },
+    {
+      "id": "order-metric-before-basis-margin",
+      "description": "The margin kind with a reported metric on separate statements.",
+      "input": {
+        "kind": "operating_margin",
+        "metric": "revenue",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "1000",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "separate",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "operating_income",
+            "value": "100",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "separate",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "metric_out_of_scope",
+        "detail": "metric_not_supported_for_kind"
+      }
+    },
+    {
+      "id": "order-metric-before-basis-cross-company",
+      "description": "Growth of a margin across companies, one on separate statements.",
+      "input": {
+        "kind": "cross_company",
+        "metric": "operating_margin",
+        "measure": "growth_rate",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "operating_margin",
+            "value": "10",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "separate",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "operating_margin",
+            "value": "12",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "separate",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:b",
+            "metric": "operating_margin",
+            "value": "20",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:b",
+            "metric": "operating_margin",
+            "value": "22",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "metric_out_of_scope",
+        "detail": "metric_not_supported_for_kind"
+      }
+    },
+    {
+      "id": "order-basis-before-absolute-amount",
+      "description": "Amounts in two currencies, one on separate statements: the basis decides.",
+      "input": {
+        "kind": "cross_company",
+        "metric": "revenue",
+        "measure": "absolute_amount",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "100",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "separate",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:b",
+            "metric": "revenue",
+            "value": "100",
+            "unit": "USD",
+            "currency": "USD",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "unsupported_basis",
+        "detail": "unsupported_basis"
+      }
+    },
+    {
+      "id": "order-absolute-amount-before-single-company",
+      "description": "Amounts asked of a single company are refused as an amount comparison.",
+      "input": {
+        "kind": "cross_company",
+        "metric": "revenue",
+        "measure": "absolute_amount",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "100",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "110",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "incompatible_comparison",
+        "detail": "absolute_amount_across_companies"
+      }
+    },
+    {
+      "id": "order-single-company-before-per-company",
+      "description": "One company with one figure: the company count decides.",
+      "input": {
+        "kind": "cross_company",
+        "metric": "revenue",
+        "measure": "growth_rate",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "110",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "ambiguous_request",
+        "detail": "single_company"
+      }
+    },
+    {
+      "id": "order-first-company-decides",
+      "description": "Two companies fail different checks; the first listed decides.",
+      "input": {
+        "kind": "cross_company",
+        "metric": "net_income",
+        "measure": "growth_rate",
+        "facts": [
+          {
+            "company_id": "synthetic:b",
+            "metric": "net_income",
+            "value": "-10",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:b",
+            "metric": "net_income",
+            "value": "5",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "net_income",
+            "value": "12",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "incompatible_comparison",
+        "detail": "nonpositive_baseline"
+      }
+    },
+    {
+      "id": "order-per-company-before-length",
+      "description": "A quarterly company with a loss-making baseline: its own check decides before the period lengths are compared.",
+      "input": {
+        "kind": "cross_company",
+        "metric": "net_income",
+        "measure": "growth_rate",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "net_income",
+            "value": "100",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "net_income",
+            "value": "110",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:b",
+            "metric": "net_income",
+            "value": "-3",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-03-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:b",
+            "metric": "net_income",
+            "value": "4",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2025-01-01",
+            "period_end": "2025-03-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "incompatible_comparison",
+        "detail": "nonpositive_baseline"
+      }
+    },
+    {
+      "id": "order-count-before-metric",
+      "description": "Three figures, one for another metric: the count decides.",
+      "input": {
+        "kind": "yoy",
+        "metric": "revenue",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "90",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2022-01-01",
+            "period_end": "2022-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "100",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "net_income",
+            "value": "120",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "ambiguous_request",
+        "detail": "too_many_facts"
+      }
+    },
+    {
+      "id": "order-yoy-metric-before-company",
+      "description": "Another company and another metric: the metric decides.",
+      "input": {
+        "kind": "yoy",
+        "metric": "revenue",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "100",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:b",
+            "metric": "net_income",
+            "value": "120",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "incompatible_comparison",
+        "detail": "metric_mismatch"
+      }
+    },
+    {
+      "id": "order-yoy-company-before-basis",
+      "description": "Another company on another supported basis: the company decides.",
+      "input": {
+        "kind": "yoy",
+        "metric": "revenue",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "100",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:b",
+            "metric": "revenue",
+            "value": "120",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated_entity_total",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "incompatible_comparison",
+        "detail": "company_mismatch"
+      }
+    },
+    {
+      "id": "order-yoy-basis-before-currency",
+      "description": "Another basis and another currency: the basis decides.",
+      "input": {
+        "kind": "yoy",
+        "metric": "revenue",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "100",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "120",
+            "unit": "USD",
+            "currency": "USD",
+            "basis": "consolidated_entity_total",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "incompatible_comparison",
+        "detail": "basis_mismatch"
+      }
+    },
+    {
+      "id": "order-yoy-unit-before-period-end",
+      "description": "Another unit and another year-end: the unit decides.",
+      "input": {
+        "kind": "yoy",
+        "metric": "eps",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "eps",
+            "value": "5",
+            "unit": "KRW_PER_SHARE",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2022-07-01",
+            "period_end": "2023-06-30",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "eps",
+            "value": "6",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "incompatible_comparison",
+        "detail": "unit_mismatch"
+      }
+    },
+    {
+      "id": "order-yoy-period-start-before-same-period",
+      "description": "Same year-end and year, different start: the length differs before the two are read as one period.",
+      "input": {
+        "kind": "yoy",
+        "metric": "revenue",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "75",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-04-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "100",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "incompatible_comparison",
+        "detail": "period_length_mismatch"
+      }
+    },
+    {
+      "id": "order-yoy-overlap-before-length",
+      "description": "A two-year period starting with the prior year: the overlap decides.",
+      "input": {
+        "kind": "yoy",
+        "metric": "revenue",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "100",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "220",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "incompatible_comparison",
+        "detail": "overlapping_periods"
+      }
+    },
+    {
+      "id": "order-yoy-gap-before-baseline",
+      "description": "A skipped year and a zero baseline: the skipped year decides.",
+      "input": {
+        "kind": "yoy",
+        "metric": "revenue",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "0",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "100",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2025-01-01",
+            "period_end": "2025-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "missing_period",
+        "detail": "non_consecutive_years"
+      }
+    },
+    {
+      "id": "order-margin-metric-before-duplicate",
+      "description": "Two revenue figures and a net income figure: the stray metric decides.",
+      "input": {
+        "kind": "operating_margin",
+        "metric": "operating_margin",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "1000",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "1010",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": true
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "net_income",
+            "value": "80",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "incompatible_comparison",
+        "detail": "metric_mismatch"
+      }
+    },
+    {
+      "id": "order-margin-duplicate-before-missing",
+      "description": "Two revenue figures and no operating income: the duplicate decides.",
+      "input": {
+        "kind": "operating_margin",
+        "metric": "operating_margin",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "1000",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "1010",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": true
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "ambiguous_request",
+        "detail": "duplicate_period"
+      }
+    },
+    {
+      "id": "order-margin-company-before-basis",
+      "description": "Inputs from two companies on two bases: the company decides.",
+      "input": {
+        "kind": "operating_margin",
+        "metric": "operating_margin",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "1000",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:b",
+            "metric": "operating_income",
+            "value": "100",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated_entity_total",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "incompatible_comparison",
+        "detail": "company_mismatch"
+      }
+    },
+    {
+      "id": "order-margin-basis-before-currency",
+      "description": "Inputs on two bases and in two currencies: the basis decides.",
+      "input": {
+        "kind": "operating_margin",
+        "metric": "operating_margin",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "1000",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "operating_income",
+            "value": "100",
+            "unit": "USD",
+            "currency": "USD",
+            "basis": "consolidated_entity_total",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "incompatible_comparison",
+        "detail": "basis_mismatch"
+      }
+    },
+    {
+      "id": "order-margin-unit-before-period-end",
+      "description": "Inputs in two units and from two years: the unit decides.",
+      "input": {
+        "kind": "operating_margin",
+        "metric": "operating_margin",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "1000",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "operating_income",
+            "value": "100",
+            "unit": "KRW_THOUSANDS",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2023-01-01",
+            "period_end": "2023-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "incompatible_comparison",
+        "detail": "unit_mismatch"
+      }
+    },
+    {
+      "id": "order-margin-period-start-before-baseline",
+      "description": "Inputs with different starts and zero revenue: the period decides.",
+      "input": {
+        "kind": "operating_margin",
+        "metric": "operating_margin",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "0",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-04-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "operating_income",
+            "value": "100",
+            "unit": "KRW",
+            "currency": "KRW",
+            "basis": "consolidated",
+            "period_start": "2024-01-01",
+            "period_end": "2024-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "incompatible_comparison",
+        "detail": "period_length_mismatch"
+      }
+    }
+  ]
+}
