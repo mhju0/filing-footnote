@@ -1,0 +1,109 @@
+{
+  "ticker": "MSFT",
+  "cik": 789019,
+  "window": [
+    "2025-11-18",
+    "2026-11-17"
+  ],
+  "rows": [
+    {
+      "accessionNumber": "0001193125-26-448357",
+      "filingDate": "2026-11-05",
+      "reportDate": "2026-11-04",
+      "form": "8-K",
+      "items": "5.02",
+      "primaryDocument": "d177209d8k.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0001193125-26-447173",
+      "filingDate": "2026-11-04",
+      "reportDate": "2026-10-29",
+      "form": "8-K",
+      "items": "8.01,9.01",
+      "primaryDocument": "d178557d8k.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0001193125-26-436149",
+      "filingDate": "2026-10-28",
+      "reportDate": "2026-10-28",
+      "form": "8-K",
+      "items": "8.01,9.01",
+      "primaryDocument": "msft-20261028.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0001193125-26-436122",
+      "filingDate": "2026-10-28",
+      "reportDate": "2026-10-28",
+      "form": "8-K",
+      "items": "2.02,9.01",
+      "primaryDocument": "msft-20261028.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0001193125-26-380280",
+      "filingDate": "2026-09-02",
+      "reportDate": "2026-09-02",
+      "form": "8-K",
+      "items": "7.01,9.01",
+      "primaryDocument": "d291965d8k.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0001193125-26-323632",
+      "filingDate": "2026-07-29",
+      "reportDate": "2026-07-29",
+      "form": "8-K",
+      "items": "2.02,9.01",
+      "primaryDocument": "msft-20260729.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0001193125-26-258667",
+      "filingDate": "2026-06-05",
+      "reportDate": "2026-06-02",
+      "form": "8-K",
+      "items": "5.02",
+      "primaryDocument": "d26760d8k.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0001193125-26-224155",
+      "filingDate": "2026-05-14",
+      "reportDate": "2026-05-13",
+      "form": "8-K",
+      "items": "5.02,9.01",
+      "primaryDocument": "d125909d8k.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0001193125-26-191457",
+      "filingDate": "2026-04-29",
+      "reportDate": "2026-04-29",
+      "form": "8-K",
+      "items": "2.02,9.01",
+      "primaryDocument": "msft-20260429.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0001193125-26-027198",
+      "filingDate": "2026-01-28",
+      "reportDate": "2026-01-28",
+      "form": "8-K",
+      "items": "2.02,9.01",
+      "primaryDocument": "msft-20260128.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0001193125-25-311196",
+      "filingDate": "2025-12-08",
+      "reportDate": "2025-12-05",
+      "form": "8-K",
+      "items": "5.02,5.07",
+      "primaryDocument": "d34077d8k.htm",
+      "primaryDocDescription": "8-K"
+    }
+  ]
+}

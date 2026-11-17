@@ -1,0 +1,25 @@
+{
+  "stock_code": "051910",
+  "corp_code": "00356361",
+  "pblntf_ty": "B",
+  "bgn_de": "20251118",
+  "end_de": "20261117",
+  "status": "000",
+  "message": "정상",
+  "total_count": 1,
+  "partial": false,
+  "page_errors": [],
+  "list": [
+    {
+      "corp_code": "00356361",
+      "corp_name": "LG화학",
+      "stock_code": "051910",
+      "corp_cls": "Y",
+      "report_nm": "주요사항보고서(자기주식취득신탁계약체결결정)",
+      "rcept_no": "20261028000304",
+      "flr_nm": "LG화학",
+      "rcept_dt": "20261028",
+      "rm": ""
+    }
+  ]
+}

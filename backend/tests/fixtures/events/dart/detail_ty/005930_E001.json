@@ -1,0 +1,121 @@
+{
+  "stock_code": "005930",
+  "pblntf_ty": null,
+  "pblntf_detail_ty": "E001",
+  "status": "000",
+  "message": "정상",
+  "total_count": 10,
+  "partial": false,
+  "list": [
+    {
+      "corp_code": "00126380",
+      "corp_name": "삼성전자",
+      "stock_code": "005930",
+      "corp_cls": "Y",
+      "report_nm": "자기주식처분결과보고서",
+      "rcept_no": "20261104000325",
+      "flr_nm": "삼성전자",
+      "rcept_dt": "20261104",
+      "rm": ""
+    },
+    {
+      "corp_code": "00126380",
+      "corp_name": "삼성전자",
+      "stock_code": "005930",
+      "corp_cls": "Y",
+      "report_nm": "자기주식취득결과보고서",
+      "rcept_no": "20261012000421",
+      "flr_nm": "삼성전자",
+      "rcept_dt": "20261012",
+      "rm": ""
+    },
+    {
+      "corp_code": "00126380",
+      "corp_name": "삼성전자",
+      "stock_code": "005930",
+      "corp_cls": "Y",
+      "report_nm": "자기주식처분결과보고서",
+      "rcept_no": "20260716000796",
+      "flr_nm": "삼성전자",
+      "rcept_dt": "20260716",
+      "rm": ""
+    },
+    {
+      "corp_code": "00126380",
+      "corp_name": "삼성전자",
+      "stock_code": "005930",
+      "corp_cls": "Y",
+      "report_nm": "자기주식처분결과보고서",
+      "rcept_no": "20260710000585",
+      "flr_nm": "삼성전자",
+      "rcept_dt": "20260710",
+      "rm": ""
+    },
+    {
+      "corp_code": "00126380",
+      "corp_name": "삼성전자",
+      "stock_code": "005930",
+      "corp_cls": "Y",
+      "report_nm": "자기주식취득결과보고서",
+      "rcept_no": "20260424000778",
+      "flr_nm": "삼성전자",
+      "rcept_dt": "20260424",
+      "rm": ""
+    },
+    {
+      "corp_code": "00126380",
+      "corp_name": "삼성전자",
+      "stock_code": "005930",
+      "corp_cls": "Y",
+      "report_nm": "자기주식처분결과보고서",
+      "rcept_no": "20260325001270",
+      "flr_nm": "삼성전자",
+      "rcept_dt": "20260325",
+      "rm": ""
+    },
+    {
+      "corp_code": "00126380",
+      "corp_name": "삼성전자",
+      "stock_code": "005930",
+      "corp_cls": "Y",
+      "report_nm": "자기주식취득결과보고서",
+      "rcept_no": "20260312000961",
+      "flr_nm": "삼성전자",
+      "rcept_dt": "20260312",
+      "rm": ""
+    },
+    {
+      "corp_code": "00126380",
+      "corp_name": "삼성전자",
+      "stock_code": "005930",
+      "corp_cls": "Y",
+      "report_nm": "자기주식처분결과보고서",
+      "rcept_no": "20260204000592",
+      "flr_nm": "삼성전자",
+      "rcept_dt": "20260204",
+      "rm": ""
+    },
+    {
+      "corp_code": "00126380",
+      "corp_name": "삼성전자",
+      "stock_code": "005930",
+      "corp_cls": "Y",
+      "report_nm": "자기주식처분결과보고서",
+      "rcept_no": "20260129000729",
+      "flr_nm": "삼성전자",
+      "rcept_dt": "20260129",
+      "rm": ""
+    },
+    {
+      "corp_code": "00126380",
+      "corp_name": "삼성전자",
+      "stock_code": "005930",
+      "corp_cls": "Y",
+      "report_nm": "자기주식취득결과보고서",
+      "rcept_no": "20260127000392",
+      "flr_nm": "삼성전자",
+      "rcept_dt": "20260127",
+      "rm": ""
+    }
+  ]
+}

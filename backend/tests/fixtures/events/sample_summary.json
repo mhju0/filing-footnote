@@ -1,0 +1,1548 @@
+{
+  "as_of": "2026-11-17",
+  "window": [
+    "2025-11-18",
+    "2026-11-17"
+  ],
+  "window_note": "365 days inclusive of as_of",
+  "sec_user_agent_check": "contact-style",
+  "request_counts": {
+    "dart": 51,
+    "sec": 19
+  },
+  "partial_list_results": [],
+  "non_ok_statuses": [
+    {
+      "source": "dart",
+      "endpoint": "list.json",
+      "status": "013",
+      "message": "조회된 데이타가 없습니다.",
+      "params": {
+        "corp_code": "00126380",
+        "bgn_de": "20251118",
+        "end_de": "20261117",
+        "page_count": 100,
+        "page_no": 1,
+        "pblntf_detail_ty": "I005"
+      }
+    },
+    {
+      "source": "dart",
+      "endpoint": "tsstkAqDecsn.json",
+      "status": "013",
+      "message": "조회된 데이타가 없습니다.",
+      "params": {
+        "corp_code": "00266961",
+        "bgn_de": "20251118",
+        "end_de": "20261117"
+      }
+    },
+    {
+      "source": "dart",
+      "endpoint": "tsstkAqDecsn.json",
+      "status": "013",
+      "message": "조회된 데이타가 없습니다.",
+      "params": {
+        "corp_code": "00106641",
+        "bgn_de": "20251118",
+        "end_de": "20261117"
+      }
+    },
+    {
+      "source": "dart",
+      "endpoint": "tsstkAqDecsn.json",
+      "status": "013",
+      "message": "조회된 데이타가 없습니다.",
+      "params": {
+        "corp_code": "00126362",
+        "bgn_de": "20251118",
+        "end_de": "20261117"
+      }
+    },
+    {
+      "source": "dart",
+      "endpoint": "tsstkAqDecsn.json",
+      "status": "013",
+      "message": "조회된 데이타가 없습니다.",
+      "params": {
+        "corp_code": "00356361",
+        "bgn_de": "20251118",
+        "end_de": "20261117"
+      }
+    },
+    {
+      "source": "dart",
+      "endpoint": "tsstkAqDecsn.json",
+      "status": "013",
+      "message": "조회된 데이타가 없습니다.",
+      "params": {
+        "corp_code": "00401731",
+        "bgn_de": "20251118",
+        "end_de": "20261117"
+      }
+    },
+    {
+      "source": "dart",
+      "endpoint": "tsstkAqDecsn.json",
+      "status": "013",
+      "message": "조회된 데이타가 없습니다.",
+      "params": {
+        "corp_code": "00877059",
+        "bgn_de": "20251118",
+        "end_de": "20261117"
+      }
+    },
+    {
+      "source": "dart",
+      "endpoint": "tsstkDpDecsn.json",
+      "status": "013",
+      "message": "조회된 데이타가 없습니다.",
+      "params": {
+        "corp_code": "00266961",
+        "bgn_de": "20251118",
+        "end_de": "20261117"
+      }
+    },
+    {
+      "source": "dart",
+      "endpoint": "tsstkDpDecsn.json",
+      "status": "013",
+      "message": "조회된 데이타가 없습니다.",
+      "params": {
+        "corp_code": "00126362",
+        "bgn_de": "20251118",
+        "end_de": "20261117"
+      }
+    },
+    {
+      "source": "dart",
+      "endpoint": "tsstkDpDecsn.json",
+      "status": "013",
+      "message": "조회된 데이타가 없습니다.",
+      "params": {
+        "corp_code": "00356361",
+        "bgn_de": "20251118",
+        "end_de": "20261117"
+      }
+    },
+    {
+      "source": "dart",
+      "endpoint": "tsstkDpDecsn.json",
+      "status": "013",
+      "message": "조회된 데이타가 없습니다.",
+      "params": {
+        "corp_code": "00401731",
+        "bgn_de": "20251118",
+        "end_de": "20261117"
+      }
+    },
+    {
+      "source": "dart",
+      "endpoint": "tsstkDpDecsn.json",
+      "status": "013",
+      "message": "조회된 데이타가 없습니다.",
+      "params": {
+        "corp_code": "00877059",
+        "bgn_de": "20251118",
+        "end_de": "20261117"
+      }
+    }
+  ],
+  "dart": {
+    "corp_codes_resolved": 9,
+    "corpcode_snapshot_already_cached": true,
+    "list_meta": {
+      "005930_B": {
+        "status": "000",
+        "message": "정상",
+        "total_count": 10,
+        "total_page": 1,
+        "partial": false,
+        "rows": 10
+      },
+      "005930_I": {
+        "status": "000",
+        "message": "정상",
+        "total_count": 71,
+        "total_page": 1,
+        "partial": false,
+        "rows": 71
+      },
+      "000660_B": {
+        "status": "000",
+        "message": "정상",
+        "total_count": 13,
+        "total_page": 1,
+        "partial": false,
+        "rows": 13
+      },
+      "000660_I": {
+        "status": "000",
+        "message": "정상",
+        "total_count": 87,
+        "total_page": 1,
+        "partial": false,
+        "rows": 87
+      },
+      "035420_B": {
+        "status": "000",
+        "message": "정상",
+        "total_count": 7,
+        "total_page": 1,
+        "partial": false,
+        "rows": 7
+      },
+      "035420_I": {
+        "status": "000",
+        "message": "정상",
+        "total_count": 57,
+        "total_page": 1,
+        "partial": false,
+        "rows": 57
+      },
+      "005380_B": {
+        "status": "000",
+        "message": "정상",
+        "total_count": 4,
+        "total_page": 1,
+        "partial": false,
+        "rows": 4
+      },
+      "005380_I": {
+        "status": "000",
+        "message": "정상",
+        "total_count": 81,
+        "total_page": 1,
+        "partial": false,
+        "rows": 81
+      },
+      "000270_B": {
+        "status": "000",
+        "message": "정상",
+        "total_count": 2,
+        "total_page": 1,
+        "partial": false,
+        "rows": 2
+      },
+      "000270_I": {
+        "status": "000",
+        "message": "정상",
+        "total_count": 81,
+        "total_page": 1,
+        "partial": false,
+        "rows": 81
+      },
+      "006400_B": {
+        "status": "000",
+        "message": "정상",
+        "total_count": 1,
+        "total_page": 1,
+        "partial": false,
+        "rows": 1
+      },
+      "006400_I": {
+        "status": "000",
+        "message": "정상",
+        "total_count": 43,
+        "total_page": 1,
+        "partial": false,
+        "rows": 43
+      },
+      "051910_B": {
+        "status": "000",
+        "message": "정상",
+        "total_count": 1,
+        "total_page": 1,
+        "partial": false,
+        "rows": 1
+      },
+      "051910_I": {
+        "status": "000",
+        "message": "정상",
+        "total_count": 61,
+        "total_page": 1,
+        "partial": false,
+        "rows": 61
+      },
+      "066570_B": {
+        "status": "000",
+        "message": "정상",
+        "total_count": 3,
+        "total_page": 1,
+        "partial": false,
+        "rows": 3
+      },
+      "066570_I": {
+        "status": "000",
+        "message": "정상",
+        "total_count": 35,
+        "total_page": 1,
+        "partial": false,
+        "rows": 35
+      },
+      "207940_B": {
+        "status": "000",
+        "message": "정상",
+        "total_count": 7,
+        "total_page": 1,
+        "partial": false,
+        "rows": 7
+      },
+      "207940_I": {
+        "status": "000",
+        "message": "정상",
+        "total_count": 62,
+        "total_page": 1,
+        "partial": false,
+        "rows": 62
+      }
+    },
+    "counts": {
+      "005930": {
+        "B": 10,
+        "I": 71
+      },
+      "000660": {
+        "B": 13,
+        "I": 87
+      },
+      "035420": {
+        "B": 7,
+        "I": 57
+      },
+      "005380": {
+        "B": 4,
+        "I": 81
+      },
+      "000270": {
+        "B": 2,
+        "I": 81
+      },
+      "006400": {
+        "B": 1,
+        "I": 43
+      },
+      "051910": {
+        "B": 1,
+        "I": 61
+      },
+      "066570": {
+        "B": 3,
+        "I": 35
+      },
+      "207940": {
+        "B": 7,
+        "I": 62
+      }
+    },
+    "pblntf_detail_ty": {
+      "detail_only": {
+        "I001": {
+          "status": "000",
+          "message": "정상",
+          "total_count": 29,
+          "rows": 29,
+          "partial": false,
+          "report_nm": {
+            "기타경영사항(자율공시)": 11,
+            "현금ㆍ현물배당결정": 4,
+            "풍문또는보도에대한해명(미확정)": 2,
+            "지속가능경영보고서등관련사항(자율공시)": 1,
+            "기업지배구조보고서공시": 1,
+            "주식소각결정": 1,
+            "기업가치제고계획(자율공시)": 1,
+            "정기주주총회결과": 1,
+            "주주총회소집결의": 2,
+            "감사보고서제출": 2,
+            "매출액또는손익구조30%(대규모법인은15%)이상변경": 1,
+            "중대재해발생(종속회사의주요경영사항)": 1,
+            "대표이사(대표집행임원)변경(안내공시)": 1
+          }
+        },
+        "I002": {
+          "status": "000",
+          "message": "정상",
+          "total_count": 17,
+          "rows": 17,
+          "partial": false,
+          "report_nm": {
+            "장래사업ㆍ경영계획(공정공시)": 4,
+            "연결재무제표기준영업(잠정)실적(공정공시)": 12,
+            "수시공시의무관련사항(공정공시)": 1
+          }
+        },
+        "I003": {
+          "status": "000",
+          "message": "정상",
+          "total_count": 5,
+          "rows": 5,
+          "partial": false,
+          "report_nm": {
+            "기업설명회(IR)개최(안내공시)": 5
+          }
+        },
+        "I004": {
+          "status": "000",
+          "message": "정상",
+          "total_count": 20,
+          "rows": 20,
+          "partial": false,
+          "report_nm": {
+            "최대주주등소유주식변동신고서": 20
+          }
+        },
+        "I005": {
+          "status": "013",
+          "message": "조회된 데이타가 없습니다.",
+          "total_count": 0,
+          "rows": 0,
+          "partial": false,
+          "report_nm": {}
+        },
+        "B001": {
+          "status": "000",
+          "message": "정상",
+          "total_count": 10,
+          "rows": 10,
+          "partial": false,
+          "report_nm": {
+            "주요사항보고서(자기주식처분결정)": 6,
+            "주요사항보고서(자기주식취득결정)": 4
+          }
+        },
+        "E001": {
+          "status": "000",
+          "message": "정상",
+          "total_count": 10,
+          "rows": 10,
+          "partial": false,
+          "report_nm": {
+            "자기주식처분결과보고서": 6,
+            "자기주식취득결과보고서": 4
+          }
+        }
+      },
+      "combined_I_plus_I002": {
+        "status": "000",
+        "message": "정상",
+        "total_count": 71,
+        "rows": 71,
+        "partial": false,
+        "report_nm": {
+          "최대주주등소유주식변동신고서": 20,
+          "기업설명회(IR)개최(안내공시)": 5,
+          "기타경영사항(자율공시)": 11,
+          "장래사업ㆍ경영계획(공정공시)": 4,
+          "연결재무제표기준영업(잠정)실적(공정공시)": 12,
+          "현금ㆍ현물배당결정": 4,
+          "수시공시의무관련사항(공정공시)": 1,
+          "풍문또는보도에대한해명(미확정)": 2,
+          "지속가능경영보고서등관련사항(자율공시)": 1,
+          "기업지배구조보고서공시": 1,
+          "주식소각결정": 1,
+          "기업가치제고계획(자율공시)": 1,
+          "정기주주총회결과": 1,
+          "주주총회소집결의": 2,
+          "감사보고서제출": 2,
+          "매출액또는손익구조30%(대규모법인은15%)이상변경": 1,
+          "중대재해발생(종속회사의주요경영사항)": 1,
+          "대표이사(대표집행임원)변경(안내공시)": 1
+        }
+      },
+      "plain_I_total": 71,
+      "plain_B_total": 10,
+      "detail_only_I001_to_I005_sum": 71,
+      "I_detail_sum_equals_plain_I": true,
+      "combined_equals_plain_I": true,
+      "finding": "pblntf_detail_ty filters only when sent without pblntf_ty"
+    },
+    "documents": [
+      {
+        "rcept_no": "20260821000616",
+        "http_status": 200,
+        "bytes": 6073,
+        "zip": true,
+        "members": [
+          [
+            "20260821000616.xml",
+            35399
+          ]
+        ],
+        "main_member": "20260821000616.xml",
+        "main_member_bytes": 35399,
+        "format": "dsd",
+        "head_600": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n\r\n\r\n<DOCUMENT xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:noNamespaceSchemaLocation=\"dart4.xsd\">\n\n<DOCUMENT-NAME ACODE=\"11332\">주요사항보고서(자기주식 취득 결정)</DOCUMENT-NAME>\n<FORMULA-VERSION ADATE=\"20260723\">6.3</FORMULA-VERSION>\n<COMPANY-NAME AREGCIK=\"00126380\">삼성전자</COMPANY-NAME>\n\n\n<BODY ATOCID=\"2\">\n\n<LIBRARY>\n<SECTION-1 ACLASS=\"MANDATORY\" APARTSOURCE=\"SOURCE\">\n<TITLE ATOC=\"Y\" AASSOCNOTE=\"D-0-0-0-0\" ENG=\"Report on Major Issues／Reporting Obligations to the KRX\" ATOCID=\"2\">주요사항보고서 / 거래소 신고의무 사항</TITLE>\n\n<TABLE ACLASS=\"NORMAL\" AFIXTABLE=\"Y\" WIDTH=\"600\"",
+        "dsd_prose": {
+          "sections": 2,
+          "titles": [
+            "주요사항보고서 / 거래소 신고의무 사항",
+            "자기주식 취득 결정"
+          ]
+        },
+        "saved_truncated": false,
+        "decoded_chars": 32761,
+        "label": "b001_buyback",
+        "found": true,
+        "stock_code": "005930",
+        "pblntf_ty": "B",
+        "report_nm": "주요사항보고서(자기주식취득결정)",
+        "rm": ""
+      },
+      {
+        "rcept_no": "20261029000539",
+        "http_status": 200,
+        "bytes": 5150,
+        "zip": true,
+        "members": [
+          [
+            "20261029000539.xml",
+            32276
+          ]
+        ],
+        "main_member": "20261029000539.xml",
+        "main_member_bytes": 32276,
+        "format": "dsd",
+        "head_600": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n\r\n\r\n<DOCUMENT xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:noNamespaceSchemaLocation=\"dart4.xsd\">\n\n<DOCUMENT-NAME ACODE=\"11333\">주요사항보고서(자기주식 처분 결정)</DOCUMENT-NAME>\n<FORMULA-VERSION ADATE=\"20260723\">6.4</FORMULA-VERSION>\n<COMPANY-NAME AREGCIK=\"00126380\">삼성전자</COMPANY-NAME>\n\n\n<BODY ATOCID=\"2\">\n\n<LIBRARY>\n<SECTION-1 ACLASS=\"MANDATORY\" APARTSOURCE=\"SOURCE\">\n<TITLE ATOC=\"Y\" AASSOCNOTE=\"D-0-0-0-0\" ENG=\"Report on Major Issues／Reporting Obligations to the KRX\" ATOCID=\"2\">주요사항보고서 / 거래소 신고의무 사항</TITLE>\n\n<TABLE ACLASS=\"NORMAL\" AFIXTABLE=\"Y\" WIDTH=\"600\"",
+        "dsd_prose": {
+          "sections": 2,
+          "titles": [
+            "주요사항보고서 / 거래소 신고의무 사항",
+            "자기주식 처분 결정"
+          ]
+        },
+        "saved_truncated": false,
+        "decoded_chars": 29860,
+        "label": "b001_any",
+        "found": true,
+        "stock_code": "005930",
+        "pblntf_ty": "B",
+        "report_nm": "주요사항보고서(자기주식처분결정)",
+        "rm": ""
+      },
+      {
+        "rcept_no": "20261029800087",
+        "http_status": 200,
+        "bytes": 2841,
+        "zip": true,
+        "members": [
+          [
+            "20261029800087.xml",
+            22987
+          ]
+        ],
+        "main_member": "20261029800087.xml",
+        "main_member_bytes": 22987,
+        "format": "xforms",
+        "head_600": "<html>\r\n <head> \r\n  <meta content=\"gdi\" http-equiv=\"X-UA-TextLayoutMetrics\"> \r\n  <meta content=\"text/html; charset=euc-kr\" http-equiv=\"Content-Type\"> \r\n  <STYLE>\r\n.xforms * { font-family: 돋움체;}\r\n.xforms_title * { font-size: 13pt; padding : 0 0 10 0;}\r\n\r\n.xforms table {\r\n    font-size: 10px;\r\n    padding:0px;\r\n    border-collapse:collapse;\r\n    color: #3D3D3D;\r\n}\r\n.xforms td {\r\n    padding-left:0px;\r\n    padding-top:0px;\r\n    border-collapse:collapse;\r\n    line-height:22px;\r\n    color: #3D3D3D;\r\n    /*text-align:right;*/\r\n    vertical-align:middle;\r\n    border: 1px solid #7f7f7f;\r\n}\r\n\r\n.xforms ",
+        "dsd_prose": null,
+        "saved_truncated": false,
+        "decoded_chars": 22029,
+        "label": "earnings_prelim",
+        "found": true,
+        "stock_code": "005930",
+        "pblntf_ty": "I",
+        "report_nm": "연결재무제표기준영업(잠정)실적(공정공시)",
+        "rm": "유"
+      },
+      {
+        "rcept_no": "20261029800101",
+        "http_status": 200,
+        "bytes": 2172,
+        "zip": true,
+        "members": [
+          [
+            "20261029800101.xml",
+            10839
+          ]
+        ],
+        "main_member": "20261029800101.xml",
+        "main_member_bytes": 10839,
+        "format": "xforms",
+        "head_600": "<html>\r\n <head> \r\n  <meta content=\"gdi\" http-equiv=\"X-UA-TextLayoutMetrics\"> \r\n  <meta content=\"text/html; charset=euc-kr\" http-equiv=\"Content-Type\"> \r\n  <STYLE>\r\n.xforms * { font-family: 돋움체;}\r\n.xforms_title * { font-size: 13pt; padding : 0 0 10 0;}\r\n\r\n.xforms table {\r\n    font-size: 10px;\r\n    padding:0px;\r\n    border-collapse:collapse;\r\n    color: #3D3D3D;\r\n}\r\n.xforms td {\r\n    padding-left:0px;\r\n    padding-top:0px;\r\n    border-collapse:collapse;\r\n    line-height:22px;\r\n    color: #3D3D3D;\r\n    /*text-align:right;*/\r\n    vertical-align:middle;\r\n    border: 1px solid #7f7f7f;\r\n}\r\n\r\n.xforms ",
+        "dsd_prose": null,
+        "saved_truncated": false,
+        "decoded_chars": 10015,
+        "label": "dividend",
+        "found": true,
+        "stock_code": "005930",
+        "pblntf_ty": "I",
+        "report_nm": "현금ㆍ현물배당결정",
+        "rm": "유"
+      },
+      {
+        "rcept_no": "20260331800004",
+        "http_status": 200,
+        "bytes": 2565,
+        "zip": true,
+        "members": [
+          [
+            "20260331800004.xml",
+            11372
+          ]
+        ],
+        "main_member": "20260331800004.xml",
+        "main_member_bytes": 11372,
+        "format": "xforms",
+        "head_600": "<html>\r\n <head> \r\n  <meta content=\"gdi\" http-equiv=\"X-UA-TextLayoutMetrics\"> \r\n  <meta content=\"text/html; charset=euc-kr\" http-equiv=\"Content-Type\"> \r\n  <STYLE>\r\n.xforms * { font-family: 돋움체;}\r\n.xforms_title * { font-size: 13pt; padding : 0 0 10 0;}\r\n\r\n.xforms table {\r\n    font-size: 10px;\r\n    padding:0px;\r\n    border-collapse:collapse;\r\n    color: #3D3D3D;\r\n}\r\n.xforms td {\r\n    padding-left:0px;\r\n    padding-top:0px;\r\n    border-collapse:collapse;\r\n    line-height:22px;\r\n    color: #3D3D3D;\r\n    /*text-align:right;*/\r\n    vertical-align:middle;\r\n    border: 1px solid #7f7f7f;\r\n}\r\n\r\n.xforms ",
+        "dsd_prose": null,
+        "saved_truncated": false,
+        "decoded_chars": 10148,
+        "label": "share_retirement",
+        "found": true,
+        "stock_code": "005930",
+        "pblntf_ty": "I",
+        "report_nm": "주식소각결정",
+        "rm": "유"
+      },
+      {
+        "rcept_no": "20261103800043",
+        "http_status": 200,
+        "bytes": 1877,
+        "zip": true,
+        "members": [
+          [
+            "20261103800043.xml",
+            8150
+          ]
+        ],
+        "main_member": "20261103800043.xml",
+        "main_member_bytes": 8150,
+        "format": "xforms",
+        "head_600": "<html>\r\n <head> \r\n  <meta content=\"gdi\" http-equiv=\"X-UA-TextLayoutMetrics\"> \r\n  <meta content=\"text/html; charset=euc-kr\" http-equiv=\"Content-Type\"> \r\n  <STYLE>\r\n.xforms * { font-family: 돋움체;}\r\n.xforms_title * { font-size: 13pt; padding : 0 0 10 0;}\r\n\r\n.xforms table {\r\n    font-size: 10px;\r\n    padding:0px;\r\n    border-collapse:collapse;\r\n    color: #3D3D3D;\r\n}\r\n.xforms td {\r\n    padding-left:0px;\r\n    padding-top:0px;\r\n    border-collapse:collapse;\r\n    line-height:22px;\r\n    color: #3D3D3D;\r\n    /*text-align:right;*/\r\n    vertical-align:middle;\r\n    border: 1px solid #7f7f7f;\r\n}\r\n\r\n.xforms ",
+        "dsd_prose": null,
+        "saved_truncated": false,
+        "decoded_chars": 7516,
+        "label": "supply_contract",
+        "found": true,
+        "stock_code": "207940",
+        "pblntf_ty": "I",
+        "report_nm": "단일판매ㆍ공급계약체결",
+        "rm": "유"
+      },
+      {
+        "rcept_no": "20251128800894",
+        "http_status": 200,
+        "bytes": 1623,
+        "zip": true,
+        "members": [
+          [
+            "20251128800894.xml",
+            5838
+          ]
+        ],
+        "main_member": "20251128800894.xml",
+        "main_member_bytes": 5838,
+        "format": "xforms",
+        "head_600": "<html>\r\n <head> \r\n  <meta content=\"gdi\" http-equiv=\"X-UA-TextLayoutMetrics\"> \r\n  <meta content=\"text/html; charset=euc-kr\" http-equiv=\"Content-Type\"> \r\n  <STYLE>\r\n.xforms * { font-family: 돋움체;}\r\n.xforms_title * { font-size: 13pt; padding : 0 0 10 0;}\r\n\r\n.xforms table {\r\n    font-size: 10px;\r\n    padding:0px;\r\n    border-collapse:collapse;\r\n    color: #3D3D3D;\r\n}\r\n.xforms td {\r\n    padding-left:0px;\r\n    padding-top:0px;\r\n    border-collapse:collapse;\r\n    line-height:22px;\r\n    color: #3D3D3D;\r\n    /*text-align:right;*/\r\n    vertical-align:middle;\r\n    border: 1px solid #7f7f7f;\r\n}\r\n\r\n.xforms ",
+        "dsd_prose": null,
+        "saved_truncated": false,
+        "decoded_chars": 5296,
+        "label": "ceo_change",
+        "found": true,
+        "stock_code": "005930",
+        "pblntf_ty": "I",
+        "report_nm": "대표이사(대표집행임원)변경(안내공시)",
+        "rm": "유"
+      }
+    ],
+    "structured": {
+      "tsstkAqDecsn": {
+        "005930": {
+          "status": "000",
+          "message": "정상",
+          "rows": 4
+        },
+        "_example": {
+          "stock_code": "005930",
+          "fields": [
+            "rcept_no",
+            "corp_cls",
+            "corp_code",
+            "corp_name",
+            "od_a_at_t",
+            "od_a_at_b",
+            "adt_a_atn",
+            "aqpln_stk_ostk",
+            "aqpln_stk_estk",
+            "aqpln_prc_ostk",
+            "aqpln_prc_estk",
+            "aqexpd_bgd",
+            "aqexpd_edd",
+            "hdexpd_bgd",
+            "hdexpd_edd",
+            "aq_pp",
+            "aq_mth",
+            "cs_iv_bk",
+            "aq_wtn_div_ostk",
+            "aq_wtn_div_ostk_rt",
+            "aq_wtn_div_estk",
+            "aq_wtn_div_estk_rt",
+            "eaq_ostk",
+            "eaq_ostk_rt",
+            "eaq_estk",
+            "eaq_estk_rt",
+            "aq_dd",
+            "d1_prodlm_ostk",
+            "d1_prodlm_estk"
+          ],
+          "values": {
+            "rcept_no": "20260129000003",
+            "corp_cls": "Y",
+            "corp_code": "00126380",
+            "corp_name": "삼성전자",
+            "od_a_at_t": "6",
+            "od_a_at_b": "-",
+            "adt_a_atn": "-",
+            "aqpln_stk_ostk": "22,000,000",
+            "aqpln_stk_estk": "-",
+            "aqpln_prc_ostk": "3,572,800,000,000",
+            "aqpln_prc_estk": "-",
+            "aqexpd_bgd": "2026년 01월 30일",
+            "aqexpd_edd": "2026년 04월 29일",
+            "hdexpd_bgd": "-",
+            "hdexpd_edd": "-",
+            "aq_pp": "임직원 주식보상",
+            "aq_mth": "유가증권시장을 통한 장내 매수",
+            "cs_iv_bk": "삼성증권 (Samsung Securities Co., Ltd.),신한투자증권 (Shinhan Securities Co., Ltd.),KB증권 (KB Securities Co., Ltd.)",
+            "aq_wtn_div_ostk": "107,973,999",
+            "aq_wtn_div_ostk_rt": "1.8",
+            "aq_wtn_div_estk": "13,603,461",
+            "aq_wtn_div_estk_rt": "1.7",
+            "eaq_ostk": "-",
+            "eaq_ostk_rt": "-",
+            "eaq_estk": "-",
+            "eaq_estk_rt": "-",
+            "aq_dd": "2026년 01월 28일",
+            "d1_prodlm_ostk": "7,289,387",
+            "d1_prodlm_estk": "-"
+          },
+          "rcept_no_in_B_list": true,
+          "list_row_report_nm": "주요사항보고서(자기주식취득결정)",
+          "cross_link_matches_all_rows": true,
+          "decimal_parse_check": {
+            "od_a_at_t": "6",
+            "od_a_at_b": "absent",
+            "adt_a_atn": "absent",
+            "aqpln_stk_ostk": "22000000",
+            "aqpln_stk_estk": "absent",
+            "aqpln_prc_ostk": "3572800000000",
+            "aqpln_prc_estk": "absent",
+            "hdexpd_bgd": "absent",
+            "hdexpd_edd": "absent",
+            "aq_wtn_div_ostk": "107973999",
+            "aq_wtn_div_ostk_rt": "1.8",
+            "aq_wtn_div_estk": "13603461",
+            "aq_wtn_div_estk_rt": "1.7",
+            "eaq_ostk": "absent",
+            "eaq_ostk_rt": "absent",
+            "eaq_estk": "absent",
+            "eaq_estk_rt": "absent",
+            "d1_prodlm_ostk": "7289387",
+            "d1_prodlm_estk": "absent"
+          }
+        },
+        "000660": {
+          "status": "000",
+          "message": "정상",
+          "rows": 2
+        },
+        "035420": {
+          "status": "013",
+          "message": "조회된 데이타가 없습니다.",
+          "rows": 0
+        },
+        "005380": {
+          "status": "000",
+          "message": "정상",
+          "rows": 1
+        },
+        "000270": {
+          "status": "013",
+          "message": "조회된 데이타가 없습니다.",
+          "rows": 0
+        },
+        "006400": {
+          "status": "013",
+          "message": "조회된 데이타가 없습니다.",
+          "rows": 0
+        },
+        "051910": {
+          "status": "013",
+          "message": "조회된 데이타가 없습니다.",
+          "rows": 0
+        },
+        "066570": {
+          "status": "013",
+          "message": "조회된 데이타가 없습니다.",
+          "rows": 0
+        },
+        "207940": {
+          "status": "013",
+          "message": "조회된 데이타가 없습니다.",
+          "rows": 0
+        },
+        "_b_list_cross_match": {
+          "b_list_rows_named": 7,
+          "found_in_structured_rows": 7,
+          "structured_rows_total": 7,
+          "unmatched_b_rcept_nos": []
+        }
+      },
+      "tsstkDpDecsn": {
+        "005930": {
+          "status": "000",
+          "message": "정상",
+          "rows": 6
+        },
+        "_example": {
+          "stock_code": "005930",
+          "fields": [
+            "rcept_no",
+            "corp_cls",
+            "corp_code",
+            "corp_name",
+            "od_a_at_t",
+            "od_a_at_b",
+            "adt_a_atn",
+            "cs_iv_bk",
+            "aq_wtn_div_ostk",
+            "aq_wtn_div_ostk_rt",
+            "aq_wtn_div_estk",
+            "aq_wtn_div_estk_rt",
+            "eaq_ostk",
+            "eaq_ostk_rt",
+            "eaq_estk",
+            "eaq_estk_rt",
+            "dppln_stk_ostk",
+            "dppln_stk_estk",
+            "dpstk_prc_ostk",
+            "dpstk_prc_estk",
+            "dppln_prc_ostk",
+            "dppln_prc_estk",
+            "dpprpd_bgd",
+            "dpprpd_edd",
+            "dp_pp",
+            "dp_m_mkt",
+            "dp_m_ovtm",
+            "dp_m_otc",
+            "dp_m_etc",
+            "dp_dd",
+            "d1_slodlm_ostk",
+            "d1_slodlm_estk"
+          ],
+          "values": {
+            "rcept_no": "20260713000395",
+            "corp_cls": "Y",
+            "corp_code": "00126380",
+            "corp_name": "삼성전자",
+            "od_a_at_t": "5",
+            "od_a_at_b": "0",
+            "adt_a_atn": "-",
+            "cs_iv_bk": "삼성증권 (Samsung Securities Co., Ltd.),신한투자증권 (Shinhan Securities Co., Ltd.),KB증권 (KB Securities Co., Ltd.)",
+            "aq_wtn_div_ostk": "81,003,271",
+            "aq_wtn_div_ostk_rt": "1.4",
+            "aq_wtn_div_estk": "-",
+            "aq_wtn_div_estk_rt": "-",
+            "eaq_ostk": "-",
+            "eaq_ostk_rt": "-",
+            "eaq_estk": "-",
+            "eaq_estk_rt": "-",
+            "dppln_stk_ostk": "1,132,477",
+            "dppln_stk_estk": "-",
+            "dpstk_prc_ostk": "285,000",
+            "dpstk_prc_estk": "-",
+            "dppln_prc_ostk": "322,755,945,000",
+            "dppln_prc_estk": "-",
+            "dpprpd_bgd": "2026년 07월 13일",
+            "dpprpd_edd": "2026년 07월 13일",
+            "dp_pp": "임원 등 성과급의 자기주식 지급",
+            "dp_m_mkt": "-",
+            "dp_m_ovtm": "-",
+            "dp_m_otc": "-",
+            "dp_m_etc": "1,132,477",
+            "dp_dd": "2026년 07월 13일",
+            "d1_slodlm_ostk": "-",
+            "d1_slodlm_estk": "-"
+          },
+          "rcept_no_in_B_list": true,
+          "list_row_report_nm": "주요사항보고서(자기주식처분결정)",
+          "cross_link_matches_all_rows": true,
+          "decimal_parse_check": {
+            "od_a_at_t": "5",
+            "od_a_at_b": "0",
+            "adt_a_atn": "absent",
+            "aq_wtn_div_ostk": "81003271",
+            "aq_wtn_div_ostk_rt": "1.4",
+            "aq_wtn_div_estk": "absent",
+            "aq_wtn_div_estk_rt": "absent",
+            "eaq_ostk": "absent",
+            "eaq_ostk_rt": "absent",
+            "eaq_estk": "absent",
+            "eaq_estk_rt": "absent",
+            "dppln_stk_ostk": "1132477",
+            "dppln_stk_estk": "absent",
+            "dpstk_prc_ostk": "285000",
+            "dpstk_prc_estk": "absent",
+            "dppln_prc_ostk": "322755945000",
+            "dppln_prc_estk": "absent",
+            "dp_m_mkt": "absent",
+            "dp_m_ovtm": "absent",
+            "dp_m_otc": "absent",
+            "dp_m_etc": "1132477",
+            "d1_slodlm_ostk": "absent",
+            "d1_slodlm_estk": "absent"
+          }
+        },
+        "000660": {
+          "status": "000",
+          "message": "정상",
+          "rows": 5
+        },
+        "035420": {
+          "status": "013",
+          "message": "조회된 데이타가 없습니다.",
+          "rows": 0
+        },
+        "005380": {
+          "status": "000",
+          "message": "정상",
+          "rows": 3
+        },
+        "000270": {
+          "status": "000",
+          "message": "정상",
+          "rows": 2
+        },
+        "006400": {
+          "status": "013",
+          "message": "조회된 데이타가 없습니다.",
+          "rows": 0
+        },
+        "051910": {
+          "status": "013",
+          "message": "조회된 데이타가 없습니다.",
+          "rows": 0
+        },
+        "066570": {
+          "status": "013",
+          "message": "조회된 데이타가 없습니다.",
+          "rows": 0
+        },
+        "207940": {
+          "status": "013",
+          "message": "조회된 데이타가 없습니다.",
+          "rows": 0
+        },
+        "_b_list_cross_match": {
+          "b_list_rows_named": 20,
+          "found_in_structured_rows": 16,
+          "structured_rows_total": 16,
+          "unmatched_b_rcept_nos": [
+            {
+              "rcept_no": "20260323001206",
+              "stock_code": "035420",
+              "report_nm": "[기재정정]주요사항보고서(자기주식처분결정)"
+            },
+            {
+              "rcept_no": "20260323001224",
+              "stock_code": "035420",
+              "report_nm": "[기재정정]주요사항보고서(자기주식처분결정)"
+            },
+            {
+              "rcept_no": "20260323001243",
+              "stock_code": "035420",
+              "report_nm": "[기재정정]주요사항보고서(자기주식처분결정)"
+            },
+            {
+              "rcept_no": "20260323001314",
+              "stock_code": "035420",
+              "report_nm": "[기재정정]주요사항보고서(자기주식처분결정)"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "sec": {
+    "per_company": {
+      "AAPL": {
+        "http": 200,
+        "cik": 320193,
+        "rows_8k_8ka": 10,
+        "forms": {
+          "8-K": 9,
+          "8-K/A": 1
+        },
+        "items": {
+          "2.02": 4,
+          "5.02": 4,
+          "5.07": 1,
+          "8.01": 1,
+          "9.01": 6
+        },
+        "recent_count": 1003,
+        "recent_oldest_filing_date": "2015-10-07",
+        "older_files_listed": 1
+      },
+      "MSFT": {
+        "http": 200,
+        "cik": 789019,
+        "rows_8k_8ka": 11,
+        "forms": {
+          "8-K": 11
+        },
+        "items": {
+          "2.02": 4,
+          "5.02": 4,
+          "5.07": 1,
+          "7.01": 1,
+          "8.01": 2,
+          "9.01": 8
+        },
+        "recent_count": 1010,
+        "recent_oldest_filing_date": "2020-09-09",
+        "older_files_listed": 2
+      },
+      "NVDA": {
+        "http": 200,
+        "cik": 1045810,
+        "rows_8k_8ka": 14,
+        "forms": {
+          "8-K": 14
+        },
+        "items": {
+          "1.01": 1,
+          "2.02": 4,
+          "2.03": 1,
+          "5.02": 6,
+          "5.07": 1,
+          "7.01": 1,
+          "8.01": 2,
+          "9.01": 7
+        },
+        "recent_count": 1001,
+        "recent_oldest_filing_date": "2020-09-18",
+        "older_files_listed": 1
+      },
+      "TSLA": {
+        "http": 200,
+        "cik": 1318605,
+        "rows_8k_8ka": 9,
+        "forms": {
+          "8-K": 9
+        },
+        "items": {
+          "1.01": 1,
+          "1.02": 1,
+          "2.02": 8,
+          "2.03": 1,
+          "9.01": 9
+        },
+        "recent_count": 1001,
+        "recent_oldest_filing_date": "2018-06-18",
+        "older_files_listed": 1
+      },
+      "AMZN": {
+        "http": 200,
+        "cik": 1018724,
+        "rows_8k_8ka": 16,
+        "forms": {
+          "8-K": 16
+        },
+        "items": {
+          "1.01": 2,
+          "2.02": 4,
+          "2.03": 1,
+          "5.02": 1,
+          "5.07": 1,
+          "7.01": 3,
+          "8.01": 7,
+          "9.01": 14
+        },
+        "recent_count": 1006,
+        "recent_oldest_filing_date": "2020-11-04",
+        "older_files_listed": 2
+      },
+      "COST": {
+        "http": 200,
+        "cik": 909832,
+        "rows_8k_8ka": 10,
+        "forms": {
+          "8-K": 10
+        },
+        "items": {
+          "2.02": 4,
+          "5.02": 2,
+          "5.07": 1,
+          "8.01": 5,
+          "9.01": 9
+        },
+        "recent_count": 1000,
+        "recent_oldest_filing_date": "2016-11-03",
+        "older_files_listed": 1
+      },
+      "GOOGL": {
+        "http": 200,
+        "cik": 1652044,
+        "rows_8k_8ka": 16,
+        "forms": {
+          "8-K": 16
+        },
+        "items": {
+          "1.01": 2,
+          "2.02": 4,
+          "3.03": 1,
+          "5.02": 5,
+          "5.03": 1,
+          "5.07": 1,
+          "7.01": 1,
+          "8.01": 6,
+          "9.01": 12
+        },
+        "recent_count": 1002,
+        "recent_oldest_filing_date": "2023-09-05",
+        "older_files_listed": 1
+      },
+      "META": {
+        "http": 200,
+        "cik": 1326801,
+        "rows_8k_8ka": 13,
+        "forms": {
+          "8-K": 13
+        },
+        "items": {
+          "1.01": 2,
+          "2.02": 4,
+          "3.03": 1,
+          "5.02": 3,
+          "5.03": 1,
+          "5.07": 1,
+          "8.01": 5,
+          "9.01": 9
+        },
+        "recent_count": 1005,
+        "recent_oldest_filing_date": "2024-07-03",
+        "older_files_listed": 2
+      },
+      "WMT": {
+        "http": 200,
+        "cik": 104169,
+        "rows_8k_8ka": 15,
+        "forms": {
+          "8-K": 13,
+          "8-K/A": 2
+        },
+        "items": {
+          "2.02": 4,
+          "3.01": 1,
+          "5.02": 5,
+          "5.03": 1,
+          "5.07": 1,
+          "7.01": 1,
+          "8.01": 5,
+          "9.01": 10
+        },
+        "recent_count": 1003,
+        "recent_oldest_filing_date": "2023-06-21",
+        "older_files_listed": 2
+      }
+    },
+    "total_items": {
+      "9.01": 84,
+      "2.02": 40,
+      "8.01": 33,
+      "5.02": 30,
+      "5.07": 8,
+      "1.01": 8,
+      "7.01": 7,
+      "2.03": 3,
+      "5.03": 3,
+      "3.03": 2,
+      "1.02": 1,
+      "3.01": 1
+    },
+    "total_8k_8ka_rows": 114,
+    "total_8ka": 3,
+    "filings": [
+      {
+        "label": "apple_2.02",
+        "found": true,
+        "ticker": "AAPL",
+        "accession": "0000320193-26-000024",
+        "filingDate": "2026-11-02",
+        "items": "2.02,9.01",
+        "primaryDocument": "aapl-20261102.htm",
+        "index_json": {
+          "http": 200,
+          "bytes": 1890,
+          "top_keys": [
+            "directory"
+          ],
+          "directory_keys": [
+            "item",
+            "name",
+            "parent-dir"
+          ],
+          "item_count": 17,
+          "item_keys": [
+            "last-modified",
+            "name",
+            "type",
+            "size"
+          ],
+          "first_items": [
+            {
+              "last-modified": "2026-11-02 16:30:23",
+              "name": "0000320193-26-000024-index-headers.html",
+              "type": "text.gif",
+              "size": ""
+            },
+            {
+              "last-modified": "2026-11-02 16:30:23",
+              "name": "0000320193-26-000024-index.html",
+              "type": "text.gif",
+              "size": ""
+            },
+            {
+              "last-modified": "2026-11-02 16:30:23",
+              "name": "0000320193-26-000024.txt",
+              "type": "text.gif",
+              "size": ""
+            },
+            {
+              "last-modified": "2026-11-02 16:30:23",
+              "name": "0000320193-26-000024-xbrl.zip",
+              "type": "compressed.gif",
+              "size": "24734"
+            }
+          ],
+          "type_values": [
+            "compressed.gif",
+            "image2.gif",
+            "text.gif"
+          ],
+          "exhibit_type_present": false
+        },
+        "index_page-index.html": {
+          "http": 200,
+          "bytes": 10623
+        },
+        "index_table_rows": [
+          {
+            "Seq": "1",
+            "Description": "8-K",
+            "Document": "aapl-20261102.htm iXBRL",
+            "href": "/ix?doc=/Archives/edgar/data/320193/000032019326000024/aapl-20261102.htm",
+            "Type": "8-K",
+            "Size": "38214"
+          },
+          {
+            "Seq": "2",
+            "Description": "EX-99.1",
+            "Document": "a8-kex991q4202609262026.htm",
+            "href": "/Archives/edgar/data/320193/000032019326000024/a8-kex991q4202609262026.htm",
+            "Type": "EX-99.1",
+            "Size": "172036"
+          },
+          {
+            "Seq": "7",
+            "Description": "",
+            "Document": "aapl-20261102_g1.jpg",
+            "href": "/Archives/edgar/data/320193/000032019326000024/aapl-20261102_g1.jpg",
+            "Type": "GRAPHIC",
+            "Size": "1264"
+          },
+          {
+            "Seq": "",
+            "Description": "Complete submission text file",
+            "Document": "0000320193-26-000024.txt",
+            "href": "/Archives/edgar/data/320193/000032019326000024/0000320193-26-000024.txt",
+            "Type": "",
+            "Size": "420455"
+          }
+        ],
+        "exhibit_types_in_index_html": [
+          "EX-99.1"
+        ],
+        "primary_fetch": {
+          "url_path": "/Archives/edgar/data/320193/000032019326000024/aapl-20261102.htm",
+          "http": 200,
+          "bytes": 38326,
+          "text_chars": 2218,
+          "text_head_600": "aapl-20261102\nUNITED STATES\nSECURITIES AND EXCHANGE COMMISSION\nWashington, D.C. 20549\nFORM 8-K\nCURRENT REPORT\nPursuant to Section 13 OR 15(d) of The Securities Exchange Act of 1934\nNovember 2, 2026\nDate of Report (Date of earliest event reported)\nApple Inc.\n(Exact name of Registrant as specified in its charter)\nOne Apple Park Way\nMS 927-4GC\nCupertino, California 95014\n(Address of principal executive offices) (Zip Code)\n(408) 996-1010\n(Registrant’s telephone number, including area code)\nNot applicable\n(Former name or former address, if changed since last report.)\nCheck the appropriate box below",
+          "table_tag_count": 14
+        },
+        "ex99_1_document": "a8-kex991q4202609262026.htm",
+        "ex99_1_fetch": {
+          "url_path": "/Archives/edgar/data/320193/000032019326000024/a8-kex991q4202609262026.htm",
+          "http": 200,
+          "bytes": 172148,
+          "text_chars": 6160,
+          "text_head_600": "EX-99.1\n2\na8-kex991q4202609262026.htm\nEX-99.1\nDocument\nExhibit 99.1\nApple reports fourth quarter results\nSeptember quarter records for total company revenue, iPhone revenue, and EPS\nServices revenue reaches new all-time high\nCUPERTINO, CALIFORNIA — Apple® today announced financial results for its fiscal 2026 fourth quarter ended September 26, 2026. The Company posted quarterly revenue of $114.5 billion, up 12 percent year over year. Company gross margin was 47.9 percent, including a favorable impact of approximately 1 percentage point from tariff refunds. Diluted earnings per share was $2.10, ",
+          "analysis": {
+            "table_tag_count": 3,
+            "dollar_figures_outside_tables": 8,
+            "dollar_figures_inside_tables": 45,
+            "numeric_cells_inside_tables": 246,
+            "revenue_sentences_outside_tables": 4,
+            "revenue_sentence_example": "Document Exhibit 99.1 Apple reports fourth quarter results September quarter records for total company revenue, iPhone revenue, and EPS Services revenue reaches new all-time high CUPERTINO, CALIFORNIA — Apple ® today announced financial results for its fiscal 2026 fourth quarter ended September 26, ",
+            "inside_tables_has_net_sales_label": true,
+            "outside_text_chars": 6115,
+            "inside_text_chars": 5715
+          }
+        }
+      },
+      {
+        "label": "item_5.02",
+        "found": true,
+        "ticker": "AAPL",
+        "accession": "0001140361-26-015711",
+        "filingDate": "2026-04-20",
+        "items": "5.02",
+        "primaryDocument": "ef20071035_8k.htm",
+        "index_json": {
+          "http": 200,
+          "bytes": 1773,
+          "top_keys": [
+            "directory"
+          ],
+          "directory_keys": [
+            "item",
+            "name",
+            "parent-dir"
+          ],
+          "item_count": 16,
+          "item_keys": [
+            "last-modified",
+            "name",
+            "type",
+            "size"
+          ],
+          "first_items": [
+            {
+              "last-modified": "2026-04-20 17:29:51",
+              "name": "0001140361-26-015711-index-headers.html",
+              "type": "text.gif",
+              "size": ""
+            },
+            {
+              "last-modified": "2026-04-20 17:29:51",
+              "name": "0001140361-26-015711-index.html",
+              "type": "text.gif",
+              "size": ""
+            },
+            {
+              "last-modified": "2026-04-20 17:29:51",
+              "name": "0001140361-26-015711.txt",
+              "type": "text.gif",
+              "size": ""
+            },
+            {
+              "last-modified": "2026-04-20 17:29:51",
+              "name": "0001140361-26-015711-xbrl.zip",
+              "type": "compressed.gif",
+              "size": "15639"
+            }
+          ],
+          "type_values": [
+            "compressed.gif",
+            "image2.gif",
+            "text.gif"
+          ],
+          "exhibit_type_present": false
+        },
+        "index_page-index.html": {
+          "http": 200,
+          "bytes": 10280
+        },
+        "index_table_rows": [
+          {
+            "Seq": "1",
+            "Description": "8-K",
+            "Document": "ef20071035_8k.htm iXBRL",
+            "href": "/ix?doc=/Archives/edgar/data/320193/000114036126015711/ef20071035_8k.htm",
+            "Type": "8-K",
+            "Size": "38605"
+          },
+          {
+            "Seq": "6",
+            "Description": "GRAPHIC",
+            "Document": "logo_apple.jpg",
+            "href": "/Archives/edgar/data/320193/000114036126015711/logo_apple.jpg",
+            "Type": "GRAPHIC",
+            "Size": "1264"
+          },
+          {
+            "Seq": "",
+            "Description": "Complete submission text file",
+            "Document": "0001140361-26-015711.txt",
+            "href": "/Archives/edgar/data/320193/000114036126015711/0001140361-26-015711.txt",
+            "Type": "",
+            "Size": "239761"
+          }
+        ],
+        "exhibit_types_in_index_html": [],
+        "primary_fetch": {
+          "url_path": "/Archives/edgar/data/320193/000114036126015711/ef20071035_8k.htm",
+          "http": 200,
+          "bytes": 38717,
+          "text_chars": 3056,
+          "text_head_600": "UNITED STATES\nSECURITIES AND EXCHANGE COMMISSION\nWashington, D.C. 20549\nFORM 8-K\nCURRENT REPORT\nPursuant to Section 13 OR 15(d)\nof The Securities Exchange Act of 1934\nApril 17, 2026\nDate of Report (Date of earliest event reported)\nApple Inc.\n(Exact name of Registrant as specified in its charter)\nOne Apple Park Way\nCupertino, California\n95014\n(Address of principal executive offices) (Zip Code)\n(408) 996-1010\n(Registrant’s telephone number, including area code)\nNot applicable\n(Former name or former address, if changed since last report.)\nCheck the appropriate box below if the Form 8-K filing is ",
+          "table_tag_count": 8
+        }
+      },
+      {
+        "label": "item_8.01",
+        "found": true,
+        "ticker": "MSFT",
+        "accession": "0001193125-26-447173",
+        "filingDate": "2026-11-04",
+        "items": "8.01,9.01",
+        "primaryDocument": "d178557d8k.htm",
+        "index_json": {
+          "http": 200,
+          "bytes": 2290,
+          "top_keys": [
+            "directory"
+          ],
+          "directory_keys": [
+            "item",
+            "name",
+            "parent-dir"
+          ],
+          "item_count": 21,
+          "item_keys": [
+            "last-modified",
+            "name",
+            "type",
+            "size"
+          ],
+          "first_items": [
+            {
+              "last-modified": "2026-11-04 16:01:27",
+              "name": "0001193125-26-447173-index-headers.html",
+              "type": "text.gif",
+              "size": ""
+            },
+            {
+              "last-modified": "2026-11-04 16:01:27",
+              "name": "0001193125-26-447173-index.html",
+              "type": "text.gif",
+              "size": ""
+            },
+            {
+              "last-modified": "2026-11-04 16:01:27",
+              "name": "0001193125-26-447173.txt",
+              "type": "text.gif",
+              "size": ""
+            },
+            {
+              "last-modified": "2026-11-04 16:01:27",
+              "name": "0001193125-26-447173-xbrl.zip",
+              "type": "compressed.gif",
+              "size": "116493"
+            }
+          ],
+          "type_values": [
+            "compressed.gif",
+            "image2.gif",
+            "text.gif"
+          ],
+          "exhibit_type_present": false
+        },
+        "index_page-index.html": {
+          "http": 200,
+          "bytes": 11849
+        },
+        "index_table_rows": [
+          {
+            "Seq": "1",
+            "Description": "8-K",
+            "Document": "d178557d8k.htm iXBRL",
+            "href": "/ix?doc=/Archives/edgar/data/789019/000119312526447173/d178557d8k.htm",
+            "Type": "8-K",
+            "Size": "40848"
+          },
+          {
+            "Seq": "2",
+            "Description": "EX-1.1",
+            "Document": "d178557dex11.htm",
+            "href": "/Archives/edgar/data/789019/000119312526447173/d178557dex11.htm",
+            "Type": "EX-1.1",
+            "Size": "191979"
+          },
+          {
+            "Seq": "3",
+            "Description": "EX-4.1",
+            "Document": "d178557dex41.htm",
+            "href": "/Archives/edgar/data/789019/000119312526447173/d178557dex41.htm",
+            "Type": "EX-4.1",
+            "Size": "494794"
+          },
+          {
+            "Seq": "4",
+            "Description": "EX-5.1",
+            "Document": "d178557dex51.htm",
+            "href": "/Archives/edgar/data/789019/000119312526447173/d178557dex51.htm",
+            "Type": "EX-5.1",
+            "Size": "12639"
+          },
+          {
+            "Seq": "5",
+            "Description": "EX-5.2",
+            "Document": "d178557dex52.htm",
+            "href": "/Archives/edgar/data/789019/000119312526447173/d178557dex52.htm",
+            "Type": "EX-5.2",
+            "Size": "13886"
+          },
+          {
+            "Seq": "10",
+            "Description": "GRAPHIC",
+            "Document": "g178557g1103111514655.jpg",
+            "href": "/Archives/edgar/data/789019/000119312526447173/g178557g1103111514655.jpg",
+            "Type": "GRAPHIC",
+            "Size": "2317"
+          },
+          {
+            "Seq": "11",
+            "Description": "GRAPHIC",
+            "Document": "g178557g1103163026460.jpg",
+            "href": "/Archives/edgar/data/789019/000119312526447173/g178557g1103163026460.jpg",
+            "Type": "GRAPHIC",
+            "Size": "6260"
+          },
+          {
+            "Seq": "",
+            "Description": "Complete submission text file",
+            "Document": "0001193125-26-447173.txt",
+            "href": "/Archives/edgar/data/789019/000119312526447173/0001193125-26-447173.txt",
+            "Type": "",
+            "Size": "1065462"
+          }
+        ],
+        "exhibit_types_in_index_html": [
+          "EX-1.1",
+          "EX-4.1",
+          "EX-5.1",
+          "EX-5.2"
+        ],
+        "primary_fetch": {
+          "url_path": "/Archives/edgar/data/789019/000119312526447173/d178557d8k.htm",
+          "http": 200,
+          "bytes": 40960,
+          "text_chars": 5663,
+          "text_head_600": "8-K\nUNITED STATES\nSECURITIES AND EXCHANGE COMMISSION\nWashington, D.C. 20549\nFORM 8-K\nCURRENT REPORT\nPursuant to Section 13 or 15(d)\nof the Securities Exchange Act of 1934\nDate of Report (date of earliest event reported): October 29, 2026\nMICROSOFT CORPORATION\n(Exact name of registrant as specified in its charter)\n(Former name or former address, if changed since last report)\nCheck the appropriate box below if the Form 8-K filing is intended to simultaneously satisfy the filing obligation of the registrant under any of the following provisions (see General Instruction A.2):\nSecurities registered",
+          "table_tag_count": 12
+        }
+      }
+    ],
+    "status_by_host": {
+      "data.sec.gov": {
+        "200": 9
+      },
+      "www.sec.gov": {
+        "200": 10
+      }
+    }
+  }
+}

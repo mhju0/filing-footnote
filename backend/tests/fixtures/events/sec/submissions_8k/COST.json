@@ -1,0 +1,100 @@
+{
+  "ticker": "COST",
+  "cik": 909832,
+  "window": [
+    "2025-11-18",
+    "2026-11-17"
+  ],
+  "rows": [
+    {
+      "accessionNumber": "0000909832-26-000134",
+      "filingDate": "2026-11-10",
+      "reportDate": "2026-11-07",
+      "form": "8-K",
+      "items": "5.02,8.01,9.01",
+      "primaryDocument": "cost-20261107.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0000909832-26-000100",
+      "filingDate": "2026-10-16",
+      "reportDate": "2026-10-13",
+      "form": "8-K",
+      "items": "5.02,9.01",
+      "primaryDocument": "cost-20261013.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0000909832-26-000096",
+      "filingDate": "2026-10-14",
+      "reportDate": "2026-10-14",
+      "form": "8-K",
+      "items": "8.01,9.01",
+      "primaryDocument": "cost-20261014.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0000909832-26-000084",
+      "filingDate": "2026-09-24",
+      "reportDate": "2026-09-24",
+      "form": "8-K",
+      "items": "2.02,9.01",
+      "primaryDocument": "cost-20260924.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0000909832-26-000060",
+      "filingDate": "2026-07-08",
+      "reportDate": "2026-07-07",
+      "form": "8-K",
+      "items": "8.01,9.01",
+      "primaryDocument": "cost-20260707.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0000909832-26-000046",
+      "filingDate": "2026-05-28",
+      "reportDate": "2026-05-28",
+      "form": "8-K",
+      "items": "2.02,9.01",
+      "primaryDocument": "cost-20260528.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0000909832-26-000041",
+      "filingDate": "2026-04-15",
+      "reportDate": "2026-04-15",
+      "form": "8-K",
+      "items": "8.01,9.01",
+      "primaryDocument": "cost-20260415.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0000909832-26-000025",
+      "filingDate": "2026-03-05",
+      "reportDate": "2026-03-05",
+      "form": "8-K",
+      "items": "2.02,9.01",
+      "primaryDocument": "cost-20260305.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0000909832-26-000016",
+      "filingDate": "2026-01-21",
+      "reportDate": "2026-01-15",
+      "form": "8-K",
+      "items": "5.07,8.01",
+      "primaryDocument": "cost-20260115.htm",
+      "primaryDocDescription": "8-K"
+    },
+    {
+      "accessionNumber": "0000909832-25-000164",
+      "filingDate": "2025-12-11",
+      "reportDate": "2025-12-11",
+      "form": "8-K",
+      "items": "2.02,9.01",
+      "primaryDocument": "cost-20251211.htm",
+      "primaryDocDescription": "8-K"
+    }
+  ]
+}

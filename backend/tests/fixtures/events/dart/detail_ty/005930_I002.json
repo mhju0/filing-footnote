@@ -1,0 +1,198 @@
+{
+  "stock_code": "005930",
+  "pblntf_ty": null,
+  "pblntf_detail_ty": "I002",
+  "status": "000",
+  "message": "정상",
+  "total_count": 17,
+  "partial": false,
+  "list": [
+    {
+      "corp_code": "00126380",
+      "corp_name": "삼성전자",
+      "stock_code": "005930",
+      "corp_cls": "Y",
+      "report_nm": "장래사업ㆍ경영계획(공정공시)              ",
+      "rcept_no": "20261029800102",
+      "flr_nm": "삼성전자",
+      "rcept_dt": "20261029",
+      "rm": "유"
+    },
+    {
+      "corp_code": "00126380",
+      "corp_name": "삼성전자",
+      "stock_code": "005930",
+      "corp_cls": "Y",
+      "report_nm": "[기재정정]연결재무제표기준영업(잠정)실적(공정공시)              ",
+      "rcept_no": "20261029800099",
+      "flr_nm": "삼성전자",
+      "rcept_dt": "20261029",
+      "rm": "유"
+    },
+    {
+      "corp_code": "00126380",
+      "corp_name": "삼성전자",
+      "stock_code": "005930",
+      "corp_cls": "Y",
+      "report_nm": "연결재무제표기준영업(잠정)실적(공정공시)              ",
+      "rcept_no": "20261029800087",
+      "flr_nm": "삼성전자",
+      "rcept_dt": "20261029",
+      "rm": "유"
+    },
+    {
+      "corp_code": "00126380",
+      "corp_name": "삼성전자",
+      "stock_code": "005930",
+      "corp_cls": "Y",
+      "report_nm": "연결재무제표기준영업(잠정)실적(공정공시)              ",
+      "rcept_no": "20261008800004",
+      "flr_nm": "삼성전자",
+      "rcept_dt": "20261008",
+      "rm": "유정"
+    },
+    {
+      "corp_code": "00126380",
+      "corp_name": "삼성전자",
+      "stock_code": "005930",
+      "corp_cls": "Y",
+      "report_nm": "수시공시의무관련사항(공정공시)              ",
+      "rcept_no": "20260821800763",
+      "flr_nm": "삼성전자",
+      "rcept_dt": "20260821",
+      "rm": "유"
+    },
+    {
+      "corp_code": "00126380",
+      "corp_name": "삼성전자",
+      "stock_code": "005930",
+      "corp_cls": "Y",
+      "report_nm": "[기재정정]연결재무제표기준영업(잠정)실적(공정공시)              ",
+      "rcept_no": "20260730800103",
+      "flr_nm": "삼성전자",
+      "rcept_dt": "20260730",
+      "rm": "유"
+    },
+    {
+      "corp_code": "00126380",
+      "corp_name": "삼성전자",
+      "stock_code": "005930",
+      "corp_cls": "Y",
+      "report_nm": "연결재무제표기준영업(잠정)실적(공정공시)              ",
+      "rcept_no": "20260730800077",
+      "flr_nm": "삼성전자",
+      "rcept_dt": "20260730",
+      "rm": "유"
+    },
+    {
+      "corp_code": "00126380",
+      "corp_name": "삼성전자",
+      "stock_code": "005930",
+      "corp_cls": "Y",
+      "report_nm": "연결재무제표기준영업(잠정)실적(공정공시)              ",
+      "rcept_no": "20260707800004",
+      "flr_nm": "삼성전자",
+      "rcept_dt": "20260707",
+      "rm": "유정"
+    },
+    {
+      "corp_code": "00126380",
+      "corp_name": "삼성전자",
+      "stock_code": "005930",
+      "corp_cls": "Y",
+      "report_nm": "[기재정정]장래사업ㆍ경영계획(공정공시)              ",
+      "rcept_no": "20260629801230",
+      "flr_nm": "삼성전자",
+      "rcept_dt": "20260629",
+      "rm": "유"
+    },
+    {
+      "corp_code": "00126380",
+      "corp_name": "삼성전자",
+      "stock_code": "005930",
+      "corp_cls": "Y",
+      "report_nm": "장래사업ㆍ경영계획(공정공시)              ",
+      "rcept_no": "20260629801143",
+      "flr_nm": "삼성전자",
+      "rcept_dt": "20260629",
+      "rm": "유정"
+    },
+    {
+      "corp_code": "00126380",
+      "corp_name": "삼성전자",
+      "stock_code": "005930",
+      "corp_cls": "Y",
+      "report_nm": "[기재정정]연결재무제표기준영업(잠정)실적(공정공시)              ",
+      "rcept_no": "20260430800097",
+      "flr_nm": "삼성전자",
+      "rcept_dt": "20260430",
+      "rm": "유"
+    },
+    {
+      "corp_code": "00126380",
+      "corp_name": "삼성전자",
+      "stock_code": "005930",
+      "corp_cls": "Y",
+      "report_nm": "연결재무제표기준영업(잠정)실적(공정공시)              ",
+      "rcept_no": "20260430800083",
+      "flr_nm": "삼성전자",
+      "rcept_dt": "20260430",
+      "rm": "유"
+    },
+    {
+      "corp_code": "00126380",
+      "corp_name": "삼성전자",
+      "stock_code": "005930",
+      "corp_cls": "Y",
+      "report_nm": "연결재무제표기준영업(잠정)실적(공정공시)              ",
+      "rcept_no": "20260407800002",
+      "flr_nm": "삼성전자",
+      "rcept_dt": "20260407",
+      "rm": "유정"
+    },
+    {
+      "corp_code": "00126380",
+      "corp_name": "삼성전자",
+      "stock_code": "005930",
+      "corp_cls": "Y",
+      "report_nm": "[기재정정]연결재무제표기준영업(잠정)실적(공정공시)              ",
+      "rcept_no": "20260129800008",
+      "flr_nm": "삼성전자",
+      "rcept_dt": "20260129",
+      "rm": "유"
+    },
+    {
+      "corp_code": "00126380",
+      "corp_name": "삼성전자",
+      "stock_code": "005930",
+      "corp_cls": "Y",
+      "report_nm": "[기재정정]장래사업ㆍ경영계획(공정공시)              ",
+      "rcept_no": "20260129800009",
+      "flr_nm": "삼성전자",
+      "rcept_dt": "20260129",
+      "rm": "유"
+    },
+    {
+      "corp_code": "00126380",
+      "corp_name": "삼성전자",
+      "stock_code": "005930",
+      "corp_cls": "Y",
+      "report_nm": "연결재무제표기준영업(잠정)실적(공정공시)              ",
+      "rcept_no": "20260129800002",
+      "flr_nm": "삼성전자",
+      "rcept_dt": "20260129",
+      "rm": "유"
+    },
+    {
+      "corp_code": "00126380",
+      "corp_name": "삼성전자",
+      "stock_code": "005930",
+      "corp_cls": "Y",
+      "report_nm": "연결재무제표기준영업(잠정)실적(공정공시)              ",
+      "rcept_no": "20260108800001",
+      "flr_nm": "삼성전자",
+      "rcept_dt": "20260108",
+      "rm": "유정"
+    }
+  ]
+}

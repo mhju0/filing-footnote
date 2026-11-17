@@ -1,0 +1,231 @@
+{
+  "stock_code": "005930",
+  "pblntf_ty": null,
+  "pblntf_detail_ty": "I004",
+  "status": "000",
+  "message": "정상",
+  "total_count": 20,
+  "partial": false,
+  "list": [
+    {
+      "corp_code": "00126380",
+      "corp_name": "삼성전자",
+      "stock_code": "005930",
+      "corp_cls": "Y",
+      "report_nm": "최대주주등소유주식변동신고서              ",
+      "rcept_no": "20261113801935",
+      "flr_nm": "삼성전자",
+      "rcept_dt": "20261113",
+      "rm": "유"
+    },
+    {
+      "corp_code": "00126380",
+      "corp_name": "삼성전자",
+      "stock_code": "005930",
+      "corp_cls": "Y",
+      "report_nm": "최대주주등소유주식변동신고서              ",
+      "rcept_no": "20261104800612",
+      "flr_nm": "삼성전자",
+      "rcept_dt": "20261104",
+      "rm": "유"
+    },
+    {
+      "corp_code": "00126380",
+      "corp_name": "삼성전자",
+      "stock_code": "005930",
+      "corp_cls": "Y",
+      "report_nm": "최대주주등소유주식변동신고서              ",
+      "rcept_no": "20261013800651",
+      "flr_nm": "삼성전자",
+      "rcept_dt": "20261013",
+      "rm": "유"
+    },
+    {
+      "corp_code": "00126380",
+      "corp_name": "삼성전자",
+      "stock_code": "005930",
+      "corp_cls": "Y",
+      "report_nm": "최대주주등소유주식변동신고서              ",
+      "rcept_no": "20261002800981",
+      "flr_nm": "삼성전자",
+      "rcept_dt": "20261002",
+      "rm": "유"
+    },
+    {
+      "corp_code": "00126380",
+      "corp_name": "삼성전자",
+      "stock_code": "005930",
+      "corp_cls": "Y",
+      "report_nm": "최대주주등소유주식변동신고서              ",
+      "rcept_no": "20260918800754",
+      "flr_nm": "삼성전자",
+      "rcept_dt": "20260918",
+      "rm": "유"
+    },
+    {
+      "corp_code": "00126380",
+      "corp_name": "삼성전자",
+      "stock_code": "005930",
+      "corp_cls": "Y",
+      "report_nm": "최대주주등소유주식변동신고서              ",
+      "rcept_no": "20260908800624",
+      "flr_nm": "삼성전자",
+      "rcept_dt": "20260908",
+      "rm": "유"
+    },
+    {
+      "corp_code": "00126380",
+      "corp_name": "삼성전자",
+      "stock_code": "005930",
+      "corp_cls": "Y",
+      "report_nm": "최대주주등소유주식변동신고서              ",
+      "rcept_no": "20260731801296",
+      "flr_nm": "삼성전자",
+      "rcept_dt": "20260731",
+      "rm": "유"
+    },
+    {
+      "corp_code": "00126380",
+      "corp_name": "삼성전자",
+      "stock_code": "005930",
+      "corp_cls": "Y",
+      "report_nm": "최대주주등소유주식변동신고서              ",
+      "rcept_no": "20260721801260",
+      "flr_nm": "삼성전자",
+      "rcept_dt": "20260721",
+      "rm": "유"
+    },
+    {
+      "corp_code": "00126380",
+      "corp_name": "삼성전자",
+      "stock_code": "005930",
+      "corp_cls": "Y",
+      "report_nm": "최대주주등소유주식변동신고서              ",
+      "rcept_no": "20260706800672",
+      "flr_nm": "삼성전자",
+      "rcept_dt": "20260706",
+      "rm": "유"
+    },
+    {
+      "corp_code": "00126380",
+      "corp_name": "삼성전자",
+      "stock_code": "005930",
+      "corp_cls": "Y",
+      "report_nm": "최대주주등소유주식변동신고서              ",
+      "rcept_no": "20260608800918",
+      "flr_nm": "삼성전자",
+      "rcept_dt": "20260608",
+      "rm": "유"
+    },
+    {
+      "corp_code": "00126380",
+      "corp_name": "삼성전자",
+      "stock_code": "005930",
+      "corp_cls": "Y",
+      "report_nm": "최대주주등소유주식변동신고서              ",
+      "rcept_no": "20260508801105",
+      "flr_nm": "삼성전자",
+      "rcept_dt": "20260508",
+      "rm": "유"
+    },
+    {
+      "corp_code": "00126380",
+      "corp_name": "삼성전자",
+      "stock_code": "005930",
+      "corp_cls": "Y",
+      "report_nm": "최대주주등소유주식변동신고서              ",
+      "rcept_no": "20260413800802",
+      "flr_nm": "삼성전자",
+      "rcept_dt": "20260413",
+      "rm": "유"
+    },
+    {
+      "corp_code": "00126380",
+      "corp_name": "삼성전자",
+      "stock_code": "005930",
+      "corp_cls": "Y",
+      "report_nm": "최대주주등소유주식변동신고서              ",
+      "rcept_no": "20260403801246",
+      "flr_nm": "삼성전자",
+      "rcept_dt": "20260403",
+      "rm": "유"
+    },
+    {
+      "corp_code": "00126380",
+      "corp_name": "삼성전자",
+      "stock_code": "005930",
+      "corp_cls": "Y",
+      "report_nm": "최대주주등소유주식변동신고서              ",
+      "rcept_no": "20260324801547",
+      "flr_nm": "삼성전자",
+      "rcept_dt": "20260324",
+      "rm": "유"
+    },
+    {
+      "corp_code": "00126380",
+      "corp_name": "삼성전자",
+      "stock_code": "005930",
+      "corp_cls": "Y",
+      "report_nm": "최대주주등소유주식변동신고서              ",
+      "rcept_no": "20260320800948",
+      "flr_nm": "삼성전자",
+      "rcept_dt": "20260320",
+      "rm": "유"
+    },
+    {
+      "corp_code": "00126380",
+      "corp_name": "삼성전자",
+      "stock_code": "005930",
+      "corp_cls": "Y",
+      "report_nm": "최대주주등소유주식변동신고서              ",
+      "rcept_no": "20260313801958",
+      "flr_nm": "삼성전자",
+      "rcept_dt": "20260313",
+      "rm": "유"
+    },
+    {
+      "corp_code": "00126380",
+      "corp_name": "삼성전자",
+      "stock_code": "005930",
+      "corp_cls": "Y",
+      "report_nm": "최대주주등소유주식변동신고서              ",
+      "rcept_no": "20260306801340",
+      "flr_nm": "삼성전자",
+      "rcept_dt": "20260306",
+      "rm": "유"
+    },
+    {
+      "corp_code": "00126380",
+      "corp_name": "삼성전자",
+      "stock_code": "005930",
+      "corp_cls": "Y",
+      "report_nm": "최대주주등소유주식변동신고서              ",
+      "rcept_no": "20260206802497",
+      "flr_nm": "삼성전자",
+      "rcept_dt": "20260206",
+      "rm": "유"
+    },
+    {
+      "corp_code": "00126380",
+      "corp_name": "삼성전자",
+      "stock_code": "005930",
+      "corp_cls": "Y",
+      "report_nm": "최대주주등소유주식변동신고서              ",
+      "rcept_no": "20260108800667",
+      "flr_nm": "삼성전자",
+      "rcept_dt": "20260108",
+      "rm": "유"
+    },
+    {
+      "corp_code": "00126380",
+      "corp_name": "삼성전자",
+      "stock_code": "005930",
+      "corp_cls": "Y",
+      "report_nm": "최대주주등소유주식변동신고서              ",
+      "rcept_no": "20251204800565",
+      "flr_nm": "삼성전자",
+      "rcept_dt": "20251204",
+      "rm": "유"
+    }
+  ]
+}

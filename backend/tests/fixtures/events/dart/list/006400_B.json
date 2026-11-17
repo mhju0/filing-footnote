@@ -1,0 +1,25 @@
+{
+  "stock_code": "006400",
+  "corp_code": "00126362",
+  "pblntf_ty": "B",
+  "bgn_de": "20251118",
+  "end_de": "20261117",
+  "status": "000",
+  "message": "정상",
+  "total_count": 1,
+  "partial": false,
+  "page_errors": [],
+  "list": [
+    {
+      "corp_code": "00126362",
+      "corp_name": "삼성SDI",
+      "stock_code": "006400",
+      "corp_cls": "Y",
+      "report_nm": "[첨부추가]주요사항보고서(타법인주식및출자증권양도결정)",
+      "rcept_no": "20260821000464",
+      "flr_nm": "삼성SDI",
+      "rcept_dt": "20260821",
+      "rm": ""
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "stock_code": "005930",
+  "pblntf_ty": null,
+  "pblntf_detail_ty": "I003",
+  "status": "000",
+  "message": "정상",
+  "total_count": 5,
+  "partial": false,
+  "list": [
+    {
+      "corp_code": "00126380",
+      "corp_name": "삼성전자",
+      "stock_code": "005930",
+      "corp_cls": "Y",
+      "report_nm": "기업설명회(IR)개최(안내공시)              ",
+      "rcept_no": "20261113801115",
+      "flr_nm": "삼성전자",
+      "rcept_dt": "20261113",
+      "rm": "유"
+    },
+    {
+      "corp_code": "00126380",
+      "corp_name": "삼성전자",
+      "stock_code": "005930",
+      "corp_cls": "Y",
+      "report_nm": "기업설명회(IR)개최(안내공시)              ",
+      "rcept_no": "20261008800028",
+      "flr_nm": "삼성전자",
+      "rcept_dt": "20261008",
+      "rm": "유"
+    },
+    {
+      "corp_code": "00126380",
+      "corp_name": "삼성전자",
+      "stock_code": "005930",
+      "corp_cls": "Y",
+      "report_nm": "기업설명회(IR)개최(안내공시)              ",
+      "rcept_no": "20260707800015",
+      "flr_nm": "삼성전자",
+      "rcept_dt": "20260707",
+      "rm": "유"
+    },
+    {
+      "corp_code": "00126380",
+      "corp_name": "삼성전자",
+      "stock_code": "005930",
+      "corp_cls": "Y",
+      "report_nm": "기업설명회(IR)개최(안내공시)              ",
+      "rcept_no": "20260407800120",
+      "flr_nm": "삼성전자",
+      "rcept_dt": "20260407",
+      "rm": "유"
+    },
+    {
+      "corp_code": "00126380",
+      "corp_name": "삼성전자",
+      "stock_code": "005930",
+      "corp_cls": "Y",
+      "report_nm": "기업설명회(IR)개최(안내공시)              ",
+      "rcept_no": "20260108800002",
+      "flr_nm": "삼성전자",
+      "rcept_dt": "20260108",
+      "rm": "유"
+    }
+  ]
+}

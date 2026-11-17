@@ -1,0 +1,36 @@
+{
+  "stock_code": "000270",
+  "corp_code": "00106641",
+  "pblntf_ty": "B",
+  "bgn_de": "20251118",
+  "end_de": "20261117",
+  "status": "000",
+  "message": "정상",
+  "total_count": 2,
+  "partial": false,
+  "page_errors": [],
+  "list": [
+    {
+      "corp_code": "00106641",
+      "corp_name": "기아",
+      "stock_code": "000270",
+      "corp_cls": "Y",
+      "report_nm": "주요사항보고서(자기주식처분결정)",
+      "rcept_no": "20261030000550",
+      "flr_nm": "기아",
+      "rcept_dt": "20261030",
+      "rm": ""
+    },
+    {
+      "corp_code": "00106641",
+      "corp_name": "기아",
+      "stock_code": "000270",
+      "corp_cls": "Y",
+      "report_nm": "주요사항보고서(자기주식처분결정)",
+      "rcept_no": "20260320001182",
+      "flr_nm": "기아",
+      "rcept_dt": "20260320",
+      "rm": ""
+    }
+  ]
+}
