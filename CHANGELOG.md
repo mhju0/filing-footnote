@@ -1,5 +1,23 @@
 # Changelog
 
+## Filing Footnote 0.1.0 (unreleased)
+
+Filing Footnote merges Filing Digest and Filing Agent into one offline app.
+Nothing in this section has shipped yet.
+
+**Changed**
+- README, AGENTS.md and DESIGN.md describe Filing Footnote. The Ledger visual
+  system is replaced by the Pine, Saffron and Ink palette.
+- The macOS iOS job in CI runs only on manual dispatch.
+
+**Added**
+- `scripts/check.sh`, one command that runs lint and the offline tests and ends
+  with `GATE: PASS` or `GATE: FAIL`.
+- Proposed ADRs 0004 to 0006 on event filings, neutrality guards and the
+  bundled SQLite file with exact decimals.
+
+Entries below this line are Filing Digest history.
+
 All notable changes to Filing Digest, reconstructed from the tagged git
 history. The project is feature-complete and in maintenance mode as of v0.5.1;
 see the Status block in [README.md](README.md) for what maintenance covers.

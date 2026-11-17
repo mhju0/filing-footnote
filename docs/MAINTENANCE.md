@@ -1,3 +1,5 @@
+> This document describes Filing Digest v0.5.2 and is kept as history.
+
 # Maintenance release
 
 The owner closed feature development on 2026-10-06 with the v0.5.2 patch release.

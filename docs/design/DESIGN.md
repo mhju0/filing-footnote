@@ -1,97 +1,52 @@
-# Filing Digest Visual System
+# Filing Footnote Visual System
 
-The implemented “Ledger” system borrows the visual language of annual reports
-and research journals: paper, ink, ruled structure, restrained typography, and
-one green accent. The source of truth is `ios/FilingDigest/Theme.swift` plus the
-asset catalog; this document records the durable design rules.
+Direction: professional and friendly, standard native look. Apple's own apps
+(Stocks, Wallet, Settings) and Stripe or Mercury are the quality bar. Each screen
+shows less and offers one obvious next tap. There is no themed metaphor. This
+replaces the Ledger system inherited from Filing Digest. Older files under
+`explorations/` and `logos/` stay as history. Product rules are in `PRODUCT.md`.
 
-## Principles
+## Palette
 
-- Information density comes from typography and alignment, not filled cards.
-- Financial values use tabular or monospaced numerals.
-- Citation markers are visible, compact, and consistent across answer and
-  source views.
-- Color never carries meaning alone; labels, signs, and source names remain.
-- Loading, empty, error, blocked, and no-results states are first-class screens.
-- Anything that can be tapped looks tapped-able. In a system with no fills and
-  no shadows, the border is the affordance, so it is held to a contrast
-  minimum rather than chosen by eye.
+| Token | Hex | Use |
+|---|---|---|
+| Pine | `#10645B` | Primary: actions, links, selected tab, category marks |
+| Saffron | `#E9A23B` | Accent: only the "새 공시" tag, plus at most one highlight per screen. Text on it is Ink |
+| Ink | `#152A31` | Text and the dark latest-filing card |
+| Tint | `#E7F0EE` | Category mark and selected-row background |
+| Background | `#F5F6F8` | Screen background |
+| Muted | `#5B6475` | Secondary text |
+| Line | `#E6E9EE` | Separators |
 
-## Tokens
+Measured contrast: white on Pine 7.01, Ink on Saffron 6.89, white on Ink 14.92,
+Pine on Tint 6.04. Dark appearance values are chosen and measured before the
+first UI milestone ships.
 
-| Role | Light | Dark | Contrast (light / dark) | Implementation |
-|---|---|---|---|---|
-| Paper | `#F7F4EE` | `#14130F` | ground | `Color("Paper")` |
-| Ink | `#1A1917` | `#ECE9E3` | 16.0:1 / 15.3:1 | `Color("Ink")` |
-| Muted ink | `#53514C` | `#A9A59D` | 7.22:1 / 7.57:1 | `Color("InkMuted")` |
-| Ledger green | `#1D5C45` | `#3E8E6E` | 7.2:1 / 4.7:1 | `AccentColor` |
-| Border | `#8F8B82` | `#6E6B64` | 3.1:1 / 3.5:1 | `Theme.border` |
-| Negative | `#A32A1E` | `#E8776A` | 6.6:1 / 6.4:1 | `Theme.negative` |
-| Hairline | ink at 25% | ink at 25% | n/a | `Theme.hairline` |
+## Rules
 
-Ratios are measured against Paper in the matching appearance. Text tokens clear
-WCAG 2.1 SC 1.4.3 (4.5:1). `Theme.border` clears SC 1.4.11 (3:1) because it
-bounds interactive components. `Theme.hairline` is exempt: it separates content
-and never identifies a control, so the two roles are separate tokens rather
-than one shared gray.
+- SF system fonts only. Numbers use tabular figures.
+- Layout floor is iPhone mini (375 pt wide). Targets are at least 44 pt.
+- Korean wraps only between words (`keep-all` behaviour).
+- Direction is always a sign plus a word ("+6.4% 늘었어요"), never colour alone.
+  Korean markets read red as up, so up and down do not use red or green alone.
+- Not used: cream backgrounds, pill buttons, italic accents, monospace labels.
+- Dynamic Type, VoiceOver labels on every figure and control, light and dark.
 
-The app uses system fonts only:
+## Tabs
 
-- Serif system design for company names and display headings, bound to a text
-  style through `Theme.display(_:weight:)`. A fixed `size:` ignores Dynamic
-  Type and inverts the hierarchy at accessibility sizes.
-- Default system body for prose.
-- Monospaced digits for figures, periods, and metadata.
-- Tracked caption text for section labels.
+기업 · 소식 · 용어
 
-## Components
+## Screens
 
-- **Ledger card:** paper background, one-point border, two-point corner radius,
-  no shadow or gradient.
-- **Ledger button:** the same square, outlined vocabulary as everything else.
-  Replaces the system bordered capsule, which appeared only on error screens,
-  the worst place to look like a different app.
-- **Citation marker:** green square with a high-contrast numeric label and an
-  explicit accessibility label. Tapping one scrolls to the Filing Source it
-  resolves to.
-- **Source badge:** outlined DART/SEC tag; DART uses the accent while SEC uses ink.
-- **Section header:** tracked caption with a horizontal rule, plus an optional
-  trailing count. The corpus is bounded; saying how bounded keeps browsing honest.
-- **Question quote:** serif italic text beside a two-point vertical rule.
-- **Figure callout:** green outline, exact structured values, and readable
-  abbreviated display values.
-- **Filing source sheet:** `SFSafariViewController` tinted to Paper and accent.
-  The original disclosure opens in the app rather than handing the reader to
-  Safari and losing their place.
-- **Answer skeleton:** the asked question stays on screen above ruled
-  placeholder bars, so a slow answer reads as pending rather than lost.
-
-## Interaction and accessibility
-
-- Company browsing is the initial state; filtering happens locally after the
-  bounded corpus is loaded.
-- Digest language changes locally because both summaries are included in the
-  response and `FigureDisplay` owns exhaustive KO/EN metric labels keyed by the
-  transported financial vocabulary.
-- Every metric card carries the Filing Source its value came from and opens it;
-  an `arrow.up.forward` mark distinguishes an openable card from a bordered box
-  that does nothing.
-- Q&A is reachable from a named control on the digest body, not only from a
-  toolbar glyph. The starter screen offers questions the guards can actually
-  answer, so the first attempt is not a guess.
-- Answer UI renders all three backend states (`ok`, `blocked`, `no_results`) and
-  keeps structured figures visible independently of prose. Figures collapse only
-  when narrative succeeded; when prose is blocked they stay expanded, because
-  they are then the entire answer.
-- Error copy names what happened before what to do about it, and never leads
-  with a host, port, or status code.
-- Controls have explicit accessibility labels, content is grouped where useful,
-  and citation markers wrap rather than overflow horizontally.
-- Tap targets are at least 44 points. Dynamic Type scales body content; large
-  numeric rows use a minimum scale factor to avoid clipping.
-- Measure is capped at 640 points and centered, so a paragraph never runs the
-  full width in landscape or on iPad.
-
-Current product captures are maintained in `docs/screenshots/`. Brand marks used
-by the README are `docs/design/logos/mark_light.png` and `mark_dark.png`; the app
-icon lives in the asset catalog.
+1. **Companies list.** Grouped list of companies; tap one.
+2. **Company page.** Dark latest-filing card (Ink), the three most recent filings
+   with category tags, and one 핵심 숫자 row.
+3. **Filing detail.** Three-line summary, 공시에 적힌 숫자, a glossary link, and
+   원문 보기 to open the source filing.
+4. **Annual at a glance.** One line, then four sections: 무슨 사업, 무엇이 바뀌었나,
+   회사가 꼽은 위험, 핵심 숫자.
+5. **Figure.** What the number means, earlier years, and the calculation.
+6. **Compare with last year.** Same company, metric and basis, with the calculation.
+7. **Compare with another company.** Growth rates only, with a caveat about
+   accounting standards and year-ends. No currency conversion.
+8. **Refusal.** Says plainly why a comparison is not possible and what is.

@@ -626,3 +626,23 @@ finite Financial Facts and DART exception redaction, qualifies four security
 pins, and improves the recorded site's accessibility, truthful scope copy and
 lossless font delivery. The local single-user boundary and deferred semantic
 qualification remain. See [audit evidence](audits/2026-11-04-product-audit.md).
+
+## D59 · Filing Footnote: event filings in scope · 2026-11-17 (`PROPOSED`)
+
+Filing Footnote, the merger of Filing Digest and Filing Agent, covers annual
+reports and event filings with a deterministic category list and structured
+facts only. See [ADR 0004](adr/0004-event-filings-in-scope.md).
+
+## D60 · Filing Footnote: neutrality guards · 2026-11-17 (`PROPOSED`)
+
+Generated prose has no digits, no banned evaluative words, no predictions and
+no advice; statements are attributed to the company; failures are withheld;
+the LLM reviewer is advisory; the owner approves what ships. See
+[ADR 0005](adr/0005-neutrality-guards.md).
+
+## D61 · Filing Footnote: bundled SQLite with exact decimals · 2026-11-17 (`PROPOSED`)
+
+A read-only SQLite file built on the owner's Mac replaces the PostgreSQL
+service at run time, and exact decimals supersede the floating-point
+year-over-year path. See
+[ADR 0006](adr/0006-bundled-sqlite-with-exact-decimals.md).

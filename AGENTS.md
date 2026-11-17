@@ -1,67 +1,57 @@
-# Filing Digest
+# Filing Footnote
 
-Current phase: v0.5.2 maintenance. Read `docs/MAINTENANCE.md` before new work.
+Current phase: building Filing Footnote v0.1. Product truth is `PRODUCT.md`; it outranks
+every other document. The code is still Filing Digest's backend and iPhone app until
+Filing Footnote replaces it piece by piece.
 
-Evidence order: current source/tests → current Git state/history →
-`docs/DECISIONS.md` → `docs/ROADMAP.md` → `.memory/handoff.md` → historical
-Claude material only when additional context is needed.
+Check command, from the repository root: `scripts/check.sh`. It must end with
+`GATE: PASS`. It uses `.venv` (Python 3.11; create it and install
+`backend/requirements.lock` plus `ruff==0.15.21`). The KURE model is never loaded in
+tests; offline tests set `EMBEDDING_WARMUP_ENABLED=false`.
 
-Python is exactly 3.11; the virtualenv lives at the repository root. Backend
-dependency intent is maintained in `backend/requirements.txt`; install the
-qualified `backend/requirements.lock`, not `pyproject.toml`.
+## Rules
 
-```sh
-# Install from the repository root in a fresh environment
-python3.11 -m venv .venv
-.venv/bin/pip install -r backend/requirements.lock ruff==0.15.21
+- Generated prose contains no digits. Figures are rendered from structured data.
+- Figures are exact decimals, never float.
+- Be neutral: no hype or judgement words, no predictions, no advice. State what the
+  filing says and attribute it to the company.
+- Only summaries the owner approved ship.
+- `filing-agent` and `filing-digest` are read-only partner repos. Change nothing there.
+- Never commit secrets or `backend/.env`; never print them.
+- Never add a `LICENSE` file or a license field.
+- Record significant decisions in `docs/DECISIONS.md` and `docs/adr/`. Old entries are
+  never edited. Docs dated before 2026-11-17 describe Filing Digest and are history.
 
-# Backend commands, from backend/
-../.venv/bin/python -m uvicorn app.main:app --reload --port 8001
+## Inherited code (still true until replaced)
 
-# Verification from the repository root
-make check
-make test-db
-```
+- `make test-db` creates and removes a unique `*_test` database. Never point
+  destructive persistence tests at the local corpus, and never touch the owner's
+  Homebrew PostgreSQL service; use the Compose database on 5433.
+- Preserve `Decimal` in Financial Facts and `/answer.figures`.
+- `backend/db/init.sql` stays aligned with `backend/app/db/models.py`; existing
+  databases change only through `backend/db/migrations/` SQL.
+- Backend metric vocabulary and the Swift enums match
+  `contracts/financial-vocabulary.json`.
+- DART XML uses `defusedxml`; keep `crtfc_key` redaction in `logging_config.py`.
+- iOS: run one simulator build or test at a time:
+  `xcodebuild test -project ios/FilingDigest.xcodeproj -scheme FilingDigest -destination 'platform=iOS Simulator,id=<UDID>' CODE_SIGNING_ALLOWED=NO`
 
-`make check` keeps live DART and database tests disabled. `make test-db` creates
-and removes a unique `*_test` database; its role needs `CREATEDB` and pgvector
-privileges. Set `TEST_DATABASE_ADMIN_URL` to a separate test connection when
-needed. Never point destructive persistence tests at the local corpus.
+## Agent skills
 
-From the repository root, validate Compose with
-`docker compose --profile container config -q`. The backend container is opt-in.
-This machine's existing `backend/.env` uses Homebrew PostgreSQL on 5432; the
-fresh-clone Compose default is 5433. Preserve the local corpus and back it up
-before applying SQL migrations. Host API port is 8001; container-internal is 8000.
-The API has no authentication; keep it local.
+- Issue tracker: specs and tickets live in GitHub Issues.
+- Triage labels: use the five canonical triage labels.
+- Domain docs: one root `CONTEXT.md` and `docs/adr/`.
 
-For iOS build and tests, select an installed iPhone UDID with
-`xcrun simctl list devices available` (CI contains an automatic resolver):
+## antislop
 
-```sh
-xcodebuild test -project ios/FilingDigest.xcodeproj -scheme FilingDigest \
-  -destination 'platform=iOS Simulator,id=<available-UDID>' CODE_SIGNING_ALLOWED=NO
-```
-
-- Financial values come from structured DART/SEC data. Preserve `Decimal` in
-  Financial Facts and `/answer.figures`; narrative guards must preserve figures.
-  Q&A citations must resolve through chunks to openable Filing Sources.
-- Replace complete Normalized Filings atomically, then index after commit.
-  Retrieval exposes only fully indexed filings. Regulator identity belongs to
-  the filing; chunk locations are source-neutral, serialized in
-  `backend/app/filings/persistence.py`.
-- KURE-v1 vectors are normalized, 1024-dimensional, and searched by cosine;
-  vector indexes use `vector_cosine_ops`.
-- `backend/db/init.sql` defines fresh schemas and must stay aligned with
-  `backend/app/db/models.py`; existing databases use `backend/db/migrations/` SQL.
-- Backend metric vocabulary and the Swift enums must match
-  `contracts/financial-vocabulary.json`; iOS `FigureDisplay` owns KO/EN labels.
-- DART XML uses `defusedxml`; preserve `crtfc_key` redaction in `logging_config.py`.
-- Update `docs/DECISIONS.md` for significant technical/product decisions and
-  `docs/ROADMAP.md` for material roadmap changes; omit routine details.
+Apply the installed `antislop` skill when planning and writing product copy, code
+comments or UI; read `~/.agents/skills/antislop/SKILL.md` first. The owner chose
+DURING mode. Before UI work, read `docs/design/DESIGN.md`.
 
 ## Agent memory
 
 - At session start, read `.memory/README.md` (private, git-ignored).
-- Before ending a session that changed something or left work unfinished, update `.memory/handoff.md`.
-- Product and engineering decisions go in `docs/DECISIONS.md` (and `docs/adr/`); the owner's preferences about agent work go in `.memory/decisions.md`.
+- Before ending a session that changed something or left work unfinished, update
+  `.memory/handoff.md`.
+- Product and engineering decisions go in `docs/DECISIONS.md` and `docs/adr/`; the
+  owner's preferences about agent work go in `.memory/decisions.md`.
