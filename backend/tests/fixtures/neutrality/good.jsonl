@@ -1,0 +1,74 @@
+{"lang": "ko", "company": "삼성전자", "lines": ["삼성전자는 자기주식을 취득하기로 결정했다고 공시했어요", "회사는 임직원 주식보상에 쓰려고 자기주식을 취득한다고 밝혔어요", "회사는 유가증권시장 장내 매수로 자기주식을 취득할 예정이라고 밝혔어요"], "note": "DART 20260821000616 자기주식취득결정; 장내 매수 is the filing's 취득방법 (N7 allow), 예정이라고 is the allowed plan form"}
+{"lang": "ko", "company": "삼성전자", "line": "회사는 향후 주가 변동에 따라 실제 취득 주식 수가 달라질 수 있다고 적었어요", "note": "DART 20260821000616, 기타 투자판단에 참고할 사항"}
+{"lang": "ko", "company": "삼성전자", "line": "회사는 삼성증권, 신한투자증권, KB증권을 위탁투자중개업자로 정했다고 공시했어요", "note": "DART 20260821000616 item 7; Latin letters allowed in Korean lines"}
+{"lang": "ko", "company": "삼성전자", "line": "회사는 취득예정금액을 기준으로 자기주식을 취득할 예정이라고 밝혔어요", "note": "DART 20260821000616; 취득예정금액 is a noun from the form and is not plan-gated"}
+{"lang": "ko", "company": "삼성전자", "lines": ["삼성전자는 임직원 인센티브 지급을 위해 자기주식을 처분하기로 결정했어요", "회사는 목표를 달성한 과제의 개발인력에게 자기주식을 지급한다고 밝혔어요", "회사는 이번 처분이 이전에 공시한 인센티브 지급과 같은 건이라고 적었어요"], "note": "DART 20261029000539 자기주식처분결정"}
+{"lang": "ko", "company": "삼성전자", "line": "회사는 자기주식을 대상자의 개인 계좌로 입고할 예정이라고 밝혔어요", "note": "DART 20261029000539 item 13"}
+{"lang": "ko", "company": "삼성전자", "line": "회사는 장내 매도가 아니어서 매도 주문 한도는 해당하지 않는다고 적었어요", "note": "DART 20261029000539 item 13; 매도 inside the filing's terms 장내 매도 and 매도 주문 (N7 allow)"}
+{"lang": "ko", "company": "삼성전자", "line": "회사는 처분 전 자기주식 보유현황을 표로 보여 줬다고 적었어요", "note": "DART 20261029000539 보유현황 table; 보여 줬다고 is past and is not 보여요 or 보인다"}
+{"lang": "ko", "company": "삼성전자", "lines": ["삼성전자는 연결재무제표 기준 영업 잠정실적을 공시했어요", "회사는 매출액과 영업이익, 당기순이익의 잠정 수치를 보고했어요", "회사는 이 정보가 잠정치여서 확정치와 다를 수 있다고 적었어요"], "note": "DART 20261029800087 연결재무제표기준영업(잠정)실적"}
+{"lang": "ko", "company": "삼성전자", "line": "회사는 영업 잠정실적을 공정공시로 보고했어요", "note": "DART 20261029800087 report name"}
+{"lang": "ko", "company": "삼성전자", "lines": ["삼성전자는 분기 현금배당을 결정했다고 공시했어요", "회사는 보통주와 우선주에 같은 주당 배당금을 정했다고 밝혔어요", "회사는 이번 배당에 주주총회를 열지 않는다고 적었어요"], "note": "DART 20261029800101 현금ㆍ현물배당결정"}
+{"lang": "ko", "company": "삼성전자", "line": "회사는 법에 따라 이사회 결의 후 기한 안에 배당금을 지급할 예정이라고 밝혔어요", "note": "DART 20261029800101 item 11 (자본시장법 제165조의12)"}
+{"lang": "ko", "company": "삼성전자", "line": "회사는 배당금지급 예정일자를 공시했어요", "note": "DART 20261029800101 item 7; 예정일자 is a noun and is not plan-gated"}
+{"lang": "ko", "company": "삼성전자", "line": "회사는 감사위원이 전원 독립이사로 구성되어 있다고 적었어요", "note": "DART 20261029800101 item 11"}
+{"lang": "ko", "company": "삼성전자", "lines": ["삼성전자는 이미 취득한 자기주식을 소각하기로 결정했다고 공시했어요", "회사는 주주가치 제고 등을 목적으로 취득한 자기주식을 소각한다고 밝혔어요", "회사는 이번 소각으로 주식 수만 줄고 자본금은 줄지 않는다고 적었어요"], "note": "DART 20260331800004 주식소각결정"}
+{"lang": "ko", "company": "삼성전자", "line": "회사는 소각 대상에 보통주와 우선주가 모두 포함된다고 공시했어요", "note": "DART 20260331800004 item 1"}
+{"lang": "ko", "company": "삼성전자", "line": "회사는 보유처분계획에 따라 소각 목적의 자기주식을 모두 소각한다고 밝혔어요", "note": "DART 20260331800004 item 11; 보유처분계획에 is a noun and is not plan-gated"}
+{"lang": "ko", "company": "삼성전자", "line": "회사는 소각예정금액이 장부가액 기준이라고 적었어요", "note": "DART 20260331800004 item 11"}
+{"lang": "ko", "company": "삼성바이오로직스", "lines": ["삼성바이오로직스는 의약품 위탁생산계약을 체결했다고 공시했어요", "회사는 계약상대를 글로벌 제약사라고만 밝혔어요", "회사는 경영상 비밀유지를 이유로 계약상대 공개를 미뤘다고 적었어요"], "note": "DART 20261103800043 단일판매ㆍ공급계약체결"}
+{"lang": "ko", "company": "삼성바이오로직스", "line": "회사는 계약기간 종료일이 양사 합의에 따라 바뀔 수 있다고 적었어요", "note": "DART 20261103800043 item 9"}
+{"lang": "ko", "company": "삼성바이오로직스", "line": "회사는 이 계약에 계약금과 선급금이 없다고 공시했어요", "note": "DART 20261103800043 item 6"}
+{"lang": "ko", "company": "삼성바이오로직스", "line": "삼성바이오로직스가 대규모법인에 해당한다고 공시했어요", "note": "DART 20261103800043 item 2; company name with particle 가 as subject"}
+{"lang": "ko", "company": "삼성전자", "lines": ["삼성전자는 노태문 대표이사를 새로 선임했다고 공시했어요", "회사는 전영현 대표이사와 함께 노태문 대표이사가 대표를 맡는다고 밝혔어요", "회사는 변경일자가 이사회 결의일이라고 적었어요"], "note": "DART 20251128800894 대표이사변경"}
+{"lang": "ko", "company": "삼성전자", "line": "회사는 노태문 대표이사가 최대주주의 특수관계인이라고 공시했어요", "note": "DART 20251128800894 약력 table; 최대주주 is allow-listed in N9, so no warning"}
+{"lang": "ko", "company": "삼성전자", "line": "회사는 노태문 대표이사가 DX부문장을 맡고 있다고 밝혔어요", "note": "DART 20251128800894 약력 table"}
+{"lang": "ko", "company": "삼성전자", "line": "회사는 자기주식을 취득한 것으로 보고했어요", "note": "synthetic; past 한 것으로 is not the ~ㄹ 것으로 prediction form"}
+{"lang": "ko", "company": "삼성전자", "line": "회사는 매출 전망을 공시했어요", "note": "synthetic, report type 장래사업ㆍ경영계획 (docs/audits/2026-11-event-sources); 매출 ends in ㄹ, allow-listed in N3"}
+{"lang": "ko", "company": "삼성전자", "line": "회사는 장래사업ㆍ경영계획을 공정공시로 밝혔어요", "note": "synthetic, report name from docs/audits/2026-11-event-sources; 경영계획을 is a noun"}
+{"lang": "ko", "company": "삼성전자", "line": "회사는 사외이사후보추천위원회가 후보를 정했다고 밝혔어요", "note": "synthetic; 추천 inside a committee's legal name (N7 allow)"}
+{"lang": "ko", "company": "삼성전자", "line": "회사는 임원에게 주식매수선택권을 부여하기로 결정했어요", "note": "synthetic; 주식매수선택권 is a legal instrument (N7 allow)"}
+{"lang": "ko", "company": "삼성전자", "line": "회사는 최고경영자 선임을 이사회에서 결정했다고 공시했어요", "note": "synthetic; 최고경영자 is allow-listed in N9"}
+{"lang": "ko", "company": "SK하이닉스", "line": "SK하이닉스는 기업설명회를 연다고 공시했어요", "note": "synthetic, report name 기업설명회(IR)개최 from docs/audits/2026-11-event-sources"}
+{"lang": "ko", "company": "기아", "line": "기아는 지난달 판매대수를 영업 잠정실적으로 공시했어요", "note": "Kia 20261102800493, cited in docs/audits/2026-11-event-sources (monthly sales report)"}
+{"lang": "en", "company": "Apple", "lines": ["Apple said it issued a press release on its quarterly financial results.", "The company reported quarterly revenue, gross margin and diluted earnings per share.", "The company said its gross margin included an effect from tariff refunds."], "note": "SEC 0000320193-26-000024 Item 2.02 and Exhibit 99.1"}
+{"lang": "en", "company": "Apple", "line": "The company said its board of directors declared a cash dividend on its common stock.", "note": "SEC 0000320193-26-000024 Exhibit 99.1"}
+{"lang": "en", "company": "Apple", "line": "The company said the dividend is payable to shareholders of record.", "note": "SEC 0000320193-26-000024 Exhibit 99.1; 'shareholders' clears N7 hold, 'of record' is N9 allow"}
+{"lang": "en", "company": "Apple", "line": "The company stated that the press release is attached as an exhibit to the report.", "note": "SEC 0000320193-26-000024 Item 2.02"}
+{"lang": "en", "company": "Apple", "line": "The company said the information is furnished and is not deemed filed under the Exchange Act.", "note": "SEC 0000320193-26-000024 Item 2.02"}
+{"lang": "en", "company": "Apple", "line": "Apple filed a current report about its quarterly financial results.", "note": "SEC 0000320193-26-000024 cover"}
+{"lang": "en", "company": "Apple", "line": "The company said it generated operating cash flow and returned cash to shareholders in the quarter.", "note": "SEC 0000320193-26-000024 Exhibit 99.1 (CFO quote, restated without the quote's judgement words)"}
+{"lang": "en", "company": "Apple", "lines": ["Apple disclosed that Tim Cook is moving from chief executive officer to executive chair.", "The company said its board appointed John Ternus as chief executive officer.", "The company said Art Levinson is set to become lead independent director."], "note": "SEC 0001140361-26-015711 Item 5.02"}
+{"lang": "en", "company": "Apple", "line": "The company said it intends to file an amendment with additional information.", "note": "SEC 0001140361-26-015711 Item 5.02; 'intends to' is the allowed plan form"}
+{"lang": "en", "company": "Apple", "line": "The company stated there are no family relationships between Mr. Ternus and any director.", "note": "SEC 0001140361-26-015711 Item 5.02"}
+{"lang": "en", "company": "Apple", "line": "The company disclosed that it and Mr. Ternus are entering into its standard indemnification agreement.", "note": "SEC 0001140361-26-015711 Item 5.02"}
+{"lang": "en", "company": "Apple", "line": "The company said Mr. Ternus previously served as senior vice president of hardware engineering.", "note": "SEC 0001140361-26-015711 Item 5.02"}
+{"lang": "en", "company": "Apple", "line": "The company disclosed that the change in its chief executive officer takes effect on the transition date.", "note": "SEC 0001140361-26-015711 Item 5.02"}
+{"lang": "en", "company": "Microsoft", "lines": ["Microsoft said it entered into an underwriting agreement for an offering of notes.", "The company disclosed that the notes include fixed rate and floating rate series.", "The company said the notes were issued under an existing indenture with a trustee."], "note": "SEC 0001193125-26-447173 Item 8.01"}
+{"lang": "en", "company": "Microsoft", "line": "The company said J.P. Morgan, UBS and Wells Fargo acted as representatives of the underwriters.", "note": "SEC 0001193125-26-447173 Item 8.01"}
+{"lang": "en", "company": "Microsoft", "line": "The company filed the underwriting agreement as an exhibit to the report.", "note": "SEC 0001193125-26-447173 Item 8.01"}
+{"lang": "en", "company": "Microsoft", "line": "The company said The Bank of New York Mellon Trust Company acts as trustee for the notes.", "note": "SEC 0001193125-26-447173 Item 8.01"}
+{"lang": "en", "company": "Microsoft", "line": "The company stated that the notes were sold under its registration statement on file with the SEC.", "note": "SEC 0001193125-26-447173 Item 8.01; 'sold' is a fact, N7 sell is narrowed to advice phrasing"}
+{"lang": "en", "company": "Microsoft", "line": "Microsoft said the notes have maturities ranging over several decades.", "note": "SEC 0001193125-26-447173 Item 8.01"}
+{"lang": "en", "company": "Apple", "line": "The company said it sells products and services through its retail and online stores.", "note": "synthetic; bare 'sells' is factual (N7 sell narrowed)"}
+{"lang": "en", "company": "Apple", "line": "The company said it is a holding company for its operating subsidiaries.", "note": "synthetic; 'holding company' (N7 hold narrowed)"}
+{"lang": "en", "company": "Microsoft", "line": "The company said holders of the notes may require it to repurchase them after a change of control.", "note": "synthetic; 'holders' clears N7 hold; 'may require' is not 'may boost'"}
+{"lang": "en", "company": "Apple", "line": "The company said its board recommended that shareholders vote for each proposal.", "note": "synthetic, Item 5.07 style; 'board recommended' is N7 allow"}
+{"lang": "en", "company": "Apple", "line": "The company said it agreed to sell its stake in a joint venture.", "note": "synthetic; 'to sell' is factual"}
+{"lang": "en", "company": "Apple", "line": "The company said it decided to buy back its own shares.", "note": "synthetic; 'buy back' is a buyback fact"}
+{"lang": "en", "company": "Apple", "line": "The company said it recorded revenue from services in the quarter.", "note": "synthetic; 'recorded' is not N9 'record' under word match"}
+{"lang": "en", "company": "Apple", "line": "The company said the threshold for the offering was met.", "note": "synthetic; 'threshold' clears N7 hold by word boundary"}
+{"lang": "en", "company": "Apple", "line": "The company said it plans to pay the dividend on the payment date.", "note": "synthetic; 'plans to' is the allowed plan form"}
+{"lang": "en", "company": "Apple", "line": "The company also reported the record date for the dividend.", "note": "synthetic; adverb 'also' after the subject; 'record date' is N9 allow"}
+{"lang": "en", "company": "Tesla", "line": "Tesla reported its quarterly vehicle deliveries.", "note": "synthetic, inferred Tesla 2.02 delivery reports in docs/audits/2026-11-event-sources"}
+{"lang": "ko", "company": "삼성전자", "line": "회사는 소각 예정인 주식 수를 공시했어요", "note": "DART 20260331800004 item 1; review fix 6: adnominal 예정인 before a noun"}
+{"lang": "ko", "company": "삼성전자", "line": "회사는 계약의 매수인과 매도인을 공시했다고 밝혔어요", "note": "synthetic; review fix 6: 매수인/매도인 are contract parties"}
+{"lang": "ko", "company": "삼성전자", "line": "회사는 반대 주주에게 주식 매수 청구권이 있다고 밝혔어요", "note": "synthetic; review fix 6: spaced 매수 청구권"}
+{"lang": "ko", "company": "삼성전자", "line": "회사는 투자자에게 배당금을 지급할 예정이라고 밝혔어요", "note": "synthetic; 투자자 as an object, not the subject at line start"}
+{"lang": "en", "company": "Apple", "line": "The company said its board approved a plan to repurchase shares.", "note": "synthetic; review fix 6: noun 'a plan to' is not plan-gated"}
+{"lang": "en", "company": "Apple", "line": "The company said it placed a hold on the program.", "note": "synthetic; review fix 6: 'a hold on' is not advice"}
+{"lang": "en", "company": "Boost Mobile", "line": "Boost Mobile said it filed a current report.", "note": "synthetic; review fix 6: company name exempt from N2"}
+{"lang": "en", "company": "Jump Trading", "line": "Jump Trading disclosed that it acquired shares of a listed company.", "note": "synthetic; review fix 6: company name exempt from N2"}
+{"lang": "en", "company": "Apple", "line": "The company disclosed a supply contract for booster vaccines.", "note": "synthetic; review fix 6: 'booster' is a different word from 'boost'"}
+{"lang": "en", "company": "Apple", "line": "Apple Inc. said it issued a press release on its quarterly results.", "note": "SEC 0000320193-26-000024; review fix 3: name plus Inc. suffix"}
+{"lang": "en", "company": "Microsoft", "line": "Microsoft Corporation said it entered into an underwriting agreement.", "note": "SEC 0001193125-26-447173; review fix 3: name plus Corporation suffix"}
