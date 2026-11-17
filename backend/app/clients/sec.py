@@ -28,8 +28,10 @@ unit-tested directly) are split from the thin async I/O methods.
 
 import datetime
 import logging
+import re
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
+from html.parser import HTMLParser
 from typing import Any
 
 import httpx
@@ -43,6 +45,8 @@ logger = logging.getLogger(__name__)
 _TIMEOUT = httpx.Timeout(30.0, connect=10.0)
 
 _SUBMISSIONS_PATH = "/submissions/CIK{cik10}.json"
+# Older pages named in filings.files, e.g. CIK0000320193-submissions-001.json.
+_SUBMISSIONS_FILE_RE = re.compile(r"CIK\d{10}-submissions-\d+\.json")
 _COMPANYFACTS_PATH = "/api/xbrl/companyfacts/CIK{cik10}.json"
 # Served from www.sec.gov, not data.sec.gov -- a different host than
 # settings.sec_base_url, so this is a fixed constant rather than built from it.
@@ -92,6 +96,9 @@ class SecFilingItem:
     filing_date: datetime.date | None
     report_date: datetime.date | None
     primary_document: str
+    # 8-K item numbers as filed, e.g. "2.02,9.01" ("" for forms without items).
+    items: str = ""
+    primary_doc_description: str = ""
 
 
 def _parse_sec_date(raw: str) -> datetime.date | None:
@@ -143,6 +150,13 @@ def parse_submissions_payload(
         recent.get("primaryDocument") if isinstance(recent.get("primaryDocument"), list) else []
     )
 
+    items_col = recent.get("items") if isinstance(recent.get("items"), list) else []
+    descriptions = (
+        recent.get("primaryDocDescription")
+        if isinstance(recent.get("primaryDocDescription"), list)
+        else []
+    )
+
     wanted = {t.strip().upper() for t in filing_types} if filing_types else None
 
     def _at(arr: list, i: int) -> str:
@@ -161,6 +175,8 @@ def parse_submissions_payload(
                 filing_date=_parse_sec_date(_at(filing_dates, i)),
                 report_date=_parse_sec_date(_at(report_dates, i)),
                 primary_document=_at(primary_documents, i),
+                items=_at(items_col, i),
+                primary_doc_description=_at(descriptions, i),
             )
         )
 
@@ -474,6 +490,104 @@ def _archive_url(cik10: str, accession_number: str, primary_document: str) -> st
     return f"{_ARCHIVES_BASE}/{cik_int}/{accn_nodash}/{primary_document}"
 
 
+def filing_index_url(cik10: str, accession_number: str) -> str:
+    """EDGAR ``<accession>-index.html`` page: the only place exhibit types are named.
+
+    [Verified] M1: the ``type`` field of ``index.json`` is an icon label, not a document type.
+    """
+    cik_int = str(int(cik10))
+    accn_nodash = accession_number.replace("-", "")
+    return f"{_ARCHIVES_BASE}/{cik_int}/{accn_nodash}/{accession_number}-index.html"
+
+
+@dataclass(frozen=True)
+class SecIndexDocument:
+    """One row of a filing index's "Document Format Files" table."""
+
+    document: str  # file name, e.g. "a8-kex991q4202609262026.htm"
+    doc_type: str  # "8-K", "EX-99.1", "GRAPHIC", ...
+    description: str
+
+
+class _IndexTableParser(HTMLParser):
+    """Rows of the first ``tableFile`` table whose header has Document and Type columns."""
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.tables: list[list[list[tuple[str, str | None]]]] = []
+        self._classes: list[str] = []
+        self._row: list[tuple[str, str | None]] | None = None
+        self._cell: list[str] | None = None
+        self._href: str | None = None
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        values = dict(attrs)
+        if tag == "table":
+            self.tables.append([])
+            self._classes.append(values.get("class") or "")
+        elif tag == "tr" and self.tables:
+            self._row = []
+            self.tables[-1].append(self._row)
+        elif tag in ("td", "th") and self._row is not None:
+            self._cell = []
+            self._href = None
+        elif tag == "a" and self._cell is not None and self._href is None:
+            self._href = values.get("href")
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag in ("td", "th") and self._cell is not None and self._row is not None:
+            self._row.append((" ".join("".join(self._cell).split()), self._href))
+            self._cell = None
+        elif tag == "tr":
+            self._row = None
+
+    def handle_data(self, data: str) -> None:
+        if self._cell is not None:
+            self._cell.append(data)
+
+
+def _href_basename(href: str | None, fallback: str) -> str:
+    # Inline-XBRL documents link through the viewer: /ix?doc=/Archives/edgar/data/1/2/x.htm
+    if not href:
+        return fallback
+    if "doc=" in href:
+        href = href.split("doc=", 1)[1]
+    return href.rsplit("/", 1)[-1] or fallback
+
+
+def parse_filing_index_html(html: str) -> list[SecIndexDocument]:
+    """Documents listed in an ``-index.html`` page as (document, type, description).
+
+    Only the ``tableFile`` table with Document and Type columns is read; the "Data Files"
+    table (XBRL parts) has no Type column header match and is ignored. Rows with no document
+    name or type are dropped (the "Complete submission text file" row has no type).
+    """
+    parser = _IndexTableParser()
+    parser.feed(html)
+    parser.close()
+    for rows, cls in zip(parser.tables, parser._classes, strict=True):
+        if "tableFile" not in cls or not rows:
+            continue
+        header = [text for text, _ in rows[0]]
+        if "Document" not in header or "Type" not in header:
+            continue
+        col = {name: header.index(name) for name in ("Document", "Type")}
+        desc_col = header.index("Description") if "Description" in header else None
+        documents: list[SecIndexDocument] = []
+        for row in rows[1:]:
+            if len(row) <= max(col.values()):
+                continue
+            text, href = row[col["Document"]]
+            name = _href_basename(href, text)
+            doc_type = row[col["Type"]][0].strip()
+            if not name or not doc_type:
+                continue
+            description = row[desc_col][0] if desc_col is not None and desc_col < len(row) else ""
+            documents.append(SecIndexDocument(name, doc_type, description))
+        return documents
+    return []
+
+
 # -- files/company_tickers.json (search_company) ------------------------------
 
 
@@ -635,6 +749,69 @@ class SecClient:
         resp = await client.get(url, headers=self._headers())
         resp.raise_for_status()
         return parse_submissions_payload(resp.json(), filing_types)
+
+    async def list_filings_window(
+        self, cik: str | int, filing_types: list[str], since: datetime.date
+    ) -> tuple[list[SecFilingItem], list[str]]:
+        """Filings of ``filing_types`` back to ``since``, following older submissions files.
+
+        ``filings.recent`` holds only the newest filings. When its oldest filing date is newer
+        than ``since`` and ``filings.files`` lists older pages, each page that can reach
+        ``since`` is fetched and parsed. Returns the items and problems; a page that cannot be
+        read is a problem, never silently dropped.
+        """
+        cik10 = format_cik(cik)
+        client = self._get_client()
+        url = f"{self._base_url}{_SUBMISSIONS_PATH.format(cik10=cik10)}"
+        logger.info("fetching %s (filing_types=%s)", url, filing_types)
+        resp = await client.get(url, headers=self._headers())
+        resp.raise_for_status()
+        payload = resp.json()
+        items = parse_submissions_payload(payload, filing_types)
+        problems: list[str] = []
+        files = payload["filings"].get("files") or []
+        oldest = min(
+            (i.filing_date for i in parse_submissions_payload(payload) if i.filing_date),
+            default=None,
+        )
+        if oldest is not None and oldest <= since:
+            return items, problems
+        seen = {i.accession_number for i in items}
+        for entry in files if isinstance(files, list) else []:
+            name = entry.get("name") if isinstance(entry, dict) else None
+            if not isinstance(name, str) or not _SUBMISSIONS_FILE_RE.fullmatch(name):
+                problems.append(f"submissions file entry {entry!r}: unexpected name")
+                continue
+            newest = _parse_sec_date(str(entry.get("filingTo") or ""))
+            if newest is not None and newest < since:
+                continue  # entirely older than the window
+            page_url = f"{self._base_url}/submissions/{name}"
+            try:
+                logger.info("fetching %s", page_url)
+                page = await client.get(page_url, headers=self._headers())
+                page.raise_for_status()
+                older = parse_submissions_payload(
+                    {"filings": {"recent": page.json()}}, filing_types
+                )
+            except (httpx.HTTPError, SecApiError, ValueError) as exc:
+                problems.append(f"{cik10} {name}: {exc}")
+                continue
+            for item in older:
+                if item.accession_number not in seen:
+                    seen.add(item.accession_number)
+                    items.append(item)
+        return items, problems
+
+    async def fetch_filing_index(
+        self, cik: str | int, accession_number: str
+    ) -> list[SecIndexDocument]:
+        """Fetch ``<accession>-index.html`` and list its documents with their types."""
+        url = filing_index_url(format_cik(cik), accession_number)
+        client = self._get_client()
+        logger.info("fetching %s", url)
+        resp = await client.get(url, headers=self._headers())
+        resp.raise_for_status()
+        return parse_filing_index_html(resp.text)
 
     async def fetch_company_facts(self, cik: str | int) -> list[SecFinancialItem]:
         """Fetch structured XBRL company facts, mapped to standard metric keys.

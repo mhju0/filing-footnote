@@ -41,15 +41,18 @@ def test_migration_on_the_pre_event_schema_matches_init_sql() -> None:
     if not (url.database or "").endswith("_test"):
         raise RuntimeError("migration test requires a disposable *_test database")
     migration = (ROOT / "db/migrations/0002_event_filings.sql").read_text()
+    sec_migration = (ROOT / "db/migrations/0003_event_filings_sec.sql").read_text()
     with psycopg.connect(url.render_as_string(hide_password=False), autocommit=True) as db:
         db.execute("DROP SCHEMA public CASCADE; CREATE SCHEMA public")
         db.execute((ROOT / "tests/fixtures/legacy-schema-v02.sql").read_text())
         db.execute((ROOT / "db/migrations/0001_normalized_filing_snapshots.sql").read_text())
         assert db.execute("SELECT to_regclass('event_filings')").fetchone()[0] is None
         db.execute(migration)
+        db.execute(sec_migration)
         migrated = _shape(db)
-        # Running it again on the migrated database changes nothing (IF NOT EXISTS).
+        # Running them again on the migrated database changes nothing.
         db.execute(migration)
+        db.execute(sec_migration)
         assert _shape(db) == migrated
 
         db.execute("DROP SCHEMA public CASCADE; CREATE SCHEMA public")

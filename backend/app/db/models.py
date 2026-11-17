@@ -194,7 +194,11 @@ class Financial(Base):
 
 
 class EventFiling(Base):
-    """One DART event filing in the ingest window (M3 staging); see migration 0002."""
+    """One DART or SEC event filing in the ingest window (M3/M4 staging); migrations 0002, 0003.
+
+    For source 'sec', rcept_no is 'sec:<accession>', corp_code the 10-digit CIK, stock_code the
+    ticker and report_nm the form.
+    """
 
     __tablename__ = "event_filings"
     __table_args__ = (
@@ -206,6 +210,7 @@ class EventFiling(Base):
             "correction_link IN ('none', 'linked', 'unlinked', 'not_resolved_excluded')",
             name="event_filings_correction_link_check",
         ),
+        CheckConstraint("source IN ('dart', 'sec')", name="event_filings_source_check"),
         CheckConstraint(
             "(correction_link = 'none' AND original_rcept_no IS NULL AND NOT is_correction) "
             "OR (correction_link = 'linked' AND original_rcept_no IS NOT NULL "
@@ -260,6 +265,12 @@ class EventFiling(Base):
     )
     updated_at: Mapped[datetime.datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=text("now()")
+    )
+    source: Mapped[str] = mapped_column(Text, nullable=False, server_default=text("'dart'"))
+    # Plain text kept for summaries, cut at a fixed limit; body_truncated says it was cut.
+    body_text: Mapped[str | None] = mapped_column(Text)
+    body_truncated: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=text("false")
     )
 
 
