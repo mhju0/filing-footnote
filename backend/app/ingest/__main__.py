@@ -4,6 +4,7 @@ Usage (run from ``backend/`` with the repo venv):
 
     python -m app.ingest --source dart --ticker 005930
     python -m app.ingest --source sec --ticker MSFT
+    python -m app.ingest events --source dart --ticker 005930   # 12 months of event filings
 
 DART and SEC resolve their source-specific identities and build a Normalized
 Filing through their adapters. The shared ingestion module then persists and
@@ -18,6 +19,7 @@ import asyncio
 import datetime
 import logging
 import re
+import sys
 
 from app.clients.dart import DartClient, FilingItem
 from app.clients.sec import SecClient, SecCompanyMatch
@@ -25,6 +27,7 @@ from app.config import get_settings
 from app.db.session import get_async_engine, get_async_session
 from app.ingest import ingest_filing
 from app.ingest.dart import DartFilingAdapter
+from app.ingest.events import main as events_main
 from app.ingest.sec_ingest import SecFilingAdapter
 from app.logging_config import configure_logging
 
@@ -142,6 +145,9 @@ async def _run_sec(ticker: str) -> None:
 
 
 def main() -> None:
+    if sys.argv[1:2] == ["events"]:
+        events_main(sys.argv[2:])
+        return
     parser = argparse.ArgumentParser(
         prog="python -m app.ingest",
         description="Ingest a company's latest annual filing (DART 사업보고서 / SEC 10-K).",

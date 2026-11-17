@@ -149,6 +149,24 @@ def _filing_item_from_row(row: dict[str, Any]) -> FilingItem:
     )
 
 
+@dataclass(frozen=True)
+class FilingListing:
+    """All pages of one ``list.json`` query; ``partial`` is true when any page failed."""
+
+    items: list[FilingItem]
+    total_count: int | None
+    total_page: int
+    page_errors: list[str]
+    partial: bool
+
+
+def _as_int(value: Any, default: int | None) -> int | None:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
 def parse_corpcode_xml(xml_bytes: bytes) -> list[dict[str, str]]:
     """Parse ``CORPCODE.xml`` bytes into listed-company records.
 
@@ -941,12 +959,16 @@ class DartClient:
         pblntf_ty: str | None = None,
         page_no: int = 1,
         page_count: int = 100,
+        pblntf_detail_ty: str | None = None,
     ) -> list[FilingItem]:
         """List filings (공시) for ``corp_code`` via ``list.json`` (§2).
 
         ``bgn_de`` / ``end_de`` are ``YYYYMMDD`` receipt-date bounds. ``pblntf_ty``
-        is the coarse disclosure type (e.g. ``"A"`` = 정기공시). ``page_count`` is
-        capped at 100 by DART.
+        is the coarse disclosure type (e.g. ``"A"`` = 정기공시); ``pblntf_detail_ty``
+        is the fine code (e.g. ``"B001"``). DART ignores the detail code when the
+        coarse type is also sent [Verified, M1 audit], so passing both is refused
+        rather than silently returning the wider list. ``page_count`` is capped at
+        100 by DART.
 
         Returns cleaned :class:`FilingItem` records for a single page. No DB
         write happens here -- persistence is handled by the later ingest step.
@@ -956,9 +978,29 @@ class DartClient:
         - ``013`` (무자료/no data) -> return ``[]`` (not an error).
         - anything else (``010`` bad key, ``020`` rate limit, ...) -> DartApiError.
 
-        This intentionally fetches one page only; callers that need more than
-        ``page_count`` rows must paginate explicitly.
+        This fetches one page only; use :meth:`list_all_filings` to follow
+        ``total_page``.
         """
+        payload = await self._list_payload(
+            corp_code, bgn_de, end_de, pblntf_ty, pblntf_detail_ty, page_no, page_count
+        )
+        return self._parse_list_payload(payload)
+
+    async def _list_payload(
+        self,
+        corp_code: str,
+        bgn_de: str,
+        end_de: str,
+        pblntf_ty: str | None,
+        pblntf_detail_ty: str | None,
+        page_no: int,
+        page_count: int,
+    ) -> Any:
+        if pblntf_ty and pblntf_detail_ty:
+            raise ValueError(
+                "send pblntf_ty or pblntf_detail_ty, not both: DART ignores the detail "
+                "code when the coarse type is present"
+            )
         params: dict[str, str] = {
             "crtfc_key": self._api_key(),
             "corp_code": corp_code,
@@ -969,21 +1011,79 @@ class DartClient:
         }
         if pblntf_ty:
             params["pblntf_ty"] = pblntf_ty
+        if pblntf_detail_ty:
+            params["pblntf_detail_ty"] = pblntf_detail_ty
 
         # crtfc_key is masked; log only the non-secret query shape.
         logger.info(
             "fetching %s/list.json (crtfc_key=***, corp_code=%s, bgn_de=%s, "
-            "end_de=%s, pblntf_ty=%s, page_no=%d)",
+            "end_de=%s, pblntf_ty=%s, pblntf_detail_ty=%s, page_no=%d)",
             self._base_url,
             corp_code,
             bgn_de,
             end_de,
             pblntf_ty or "-",
+            pblntf_detail_ty or "-",
             page_no,
         )
         resp = await self._get("list.json", params)
-        payload = resp.json()
-        return self._parse_list_payload(payload)
+        return resp.json()
+
+    async def list_all_filings(
+        self,
+        corp_code: str,
+        bgn_de: str,
+        end_de: str,
+        pblntf_ty: str | None = None,
+        pblntf_detail_ty: str | None = None,
+        page_count: int = 100,
+    ) -> FilingListing:
+        """Fetch every page of ``list.json`` by following ``total_page``.
+
+        A page that fails (HTTP error, bad status, malformed body) is recorded in
+        ``page_errors`` and ``partial`` is set; the remaining pages are still
+        fetched. Nothing is dropped silently. If page 1 fails the total is unknown,
+        so the listing is returned empty and partial.
+        """
+        if pblntf_ty and pblntf_detail_ty:
+            raise ValueError("send pblntf_ty or pblntf_detail_ty, not both")
+        items: list[FilingItem] = []
+        errors: list[str] = []
+        total_page = 1
+        total_count: int | None = None
+        page_no = 1
+        while page_no <= total_page:
+            try:
+                payload = await self._list_payload(
+                    corp_code,
+                    bgn_de,
+                    end_de,
+                    pblntf_ty,
+                    pblntf_detail_ty,
+                    page_no,
+                    page_count,
+                )
+                page_items = self._parse_list_payload(payload)
+            except (DartApiError, httpx.HTTPError, ValueError) as exc:
+                errors.append(f"page {page_no}: {exc}")
+                page_no += 1
+                continue
+            if page_no == 1 and isinstance(payload, dict):
+                total_page = _as_int(payload.get("total_page"), default=1)
+                total_count = _as_int(payload.get("total_count"), default=None)
+            items.extend(page_items)
+            page_no += 1
+        partial = bool(errors)
+        if total_count is not None and not partial and len(items) != total_count:
+            errors.append(f"expected {total_count} rows, got {len(items)}")
+            partial = True
+        return FilingListing(
+            items=items,
+            total_count=total_count,
+            total_page=total_page,
+            page_errors=errors,
+            partial=partial,
+        )
 
     @staticmethod
     def _parse_list_payload(payload: Any) -> list[FilingItem]:

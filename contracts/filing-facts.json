@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "description": "Structured figures and dates extracted from DART event filings. These values are what the app shows; generated prose never carries numbers. Each endpoint is an OpenDART DS005 major-matters API; its rows join to list.json rows by rcept_no. An absent value is '-' or an empty string in the source and produces no fact. An unparseable value produces a fact row with an error and no value.",
+  "kinds": {
+    "amount": "exact decimal money value in the stated unit",
+    "count": "whole number (shares)",
+    "ratio": "exact decimal percentage",
+    "date": "calendar date; source forms 'YYYY년 MM월 DD일' and 'YYYYMMDD'",
+    "text": "whitespace-normalised source text"
+  },
+  "endpoints": [
+    {
+      "endpoint": "tsstkAqDecsn",
+      "guide": "https://opendart.fss.or.kr/guide/detail.do?apiGrpCd=DS005&apiId=2020038",
+      "category": "buyback",
+      "report_names": ["자기주식취득결정"],
+      "fields": [
+        {"key": "acquire_shares_common", "source_field": "aqpln_stk_ostk", "ko": "취득예정주식 (보통주식)", "en": "Planned acquisition, common shares", "unit": "shares", "kind": "count"},
+        {"key": "acquire_shares_other", "source_field": "aqpln_stk_estk", "ko": "취득예정주식 (기타주식)", "en": "Planned acquisition, other shares", "unit": "shares", "kind": "count"},
+        {"key": "acquire_amount_common", "source_field": "aqpln_prc_ostk", "ko": "취득예정금액 (보통주식)", "en": "Planned acquisition amount, common shares", "unit": "KRW", "kind": "amount"},
+        {"key": "acquire_amount_other", "source_field": "aqpln_prc_estk", "ko": "취득예정금액 (기타주식)", "en": "Planned acquisition amount, other shares", "unit": "KRW", "kind": "amount"},
+        {"key": "acquire_period_start", "source_field": "aqexpd_bgd", "ko": "취득예상기간 시작일", "en": "Acquisition period start", "unit": null, "kind": "date"},
+        {"key": "acquire_period_end", "source_field": "aqexpd_edd", "ko": "취득예상기간 종료일", "en": "Acquisition period end", "unit": null, "kind": "date"},
+        {"key": "acquire_purpose", "source_field": "aq_pp", "ko": "취득목적", "en": "Purpose", "unit": null, "kind": "text"},
+        {"key": "acquire_method", "source_field": "aq_mth", "ko": "취득방법", "en": "Method", "unit": null, "kind": "text"},
+        {"key": "acquire_ratio_common", "source_field": "aq_wtn_div_ostk_rt", "ko": "취득 전 자기주식 보유현황 (배당가능이익 범위 내 취득, 보통주식 비율)", "en": "Treasury shares held before the acquisition (within distributable profit), common, as a share of issued shares", "unit": "percent", "kind": "ratio"},
+        {"key": "decision_date", "source_field": "aq_dd", "ko": "취득결정일", "en": "Acquisition decision date", "unit": null, "kind": "date"}
+      ]
+    },
+    {
+      "endpoint": "tsstkDpDecsn",
+      "guide": "https://opendart.fss.or.kr/guide/detail.do?apiGrpCd=DS005&apiId=2020039",
+      "category": "buyback",
+      "report_names": ["자기주식처분결정"],
+      "fields": [
+        {"key": "dispose_shares_common", "source_field": "dppln_stk_ostk", "ko": "처분예정주식 (보통주식)", "en": "Planned disposal, common shares", "unit": "shares", "kind": "count"},
+        {"key": "dispose_shares_other", "source_field": "dppln_stk_estk", "ko": "처분예정주식 (기타주식)", "en": "Planned disposal, other shares", "unit": "shares", "kind": "count"},
+        {"key": "dispose_price_common", "source_field": "dpstk_prc_ostk", "ko": "처분대상주식 1주당 가격 (보통주식)", "en": "Price per share, common shares", "unit": "KRW", "kind": "amount"},
+        {"key": "dispose_amount_common", "source_field": "dppln_prc_ostk", "ko": "처분예정금액 (보통주식)", "en": "Planned disposal amount, common shares", "unit": "KRW", "kind": "amount"},
+        {"key": "dispose_period_start", "source_field": "dpprpd_bgd", "ko": "처분예정기간 시작일", "en": "Disposal period start", "unit": null, "kind": "date"},
+        {"key": "dispose_period_end", "source_field": "dpprpd_edd", "ko": "처분예정기간 종료일", "en": "Disposal period end", "unit": null, "kind": "date"},
+        {"key": "dispose_purpose", "source_field": "dp_pp", "ko": "처분목적", "en": "Purpose", "unit": null, "kind": "text"},
+        {"key": "decision_date", "source_field": "dp_dd", "ko": "처분결정일", "en": "Disposal decision date", "unit": null, "kind": "date"}
+      ]
+    },
+    {
+      "endpoint": "piicDecsn",
+      "guide": "https://opendart.fss.or.kr/guide/detail.do?apiGrpCd=DS005&apiId=2020023",
+      "category": "capital",
+      "report_names": ["유상증자결정"],
+      "fields": [
+        {"key": "new_shares_common", "source_field": "nstk_ostk_cnt", "ko": "신주의 종류와 수 (보통주식)", "en": "New shares, common", "unit": "shares", "kind": "count"},
+        {"key": "new_shares_other", "source_field": "nstk_estk_cnt", "ko": "신주의 종류와 수 (기타주식)", "en": "New shares, other", "unit": "shares", "kind": "count"},
+        {"key": "par_value", "source_field": "fv_ps", "ko": "1주당 액면가액", "en": "Par value per share", "unit": "KRW", "kind": "amount"},
+        {"key": "shares_before_common", "source_field": "bfic_tisstk_ostk", "ko": "증자전 발행주식총수 (보통주식)", "en": "Shares issued before the capital increase, common", "unit": "shares", "kind": "count"},
+        {"key": "shares_before_other", "source_field": "bfic_tisstk_estk", "ko": "증자전 발행주식총수 (기타주식)", "en": "Shares issued before the capital increase, other", "unit": "shares", "kind": "count"},
+        {"key": "use_facilities", "source_field": "fdpp_fclt", "ko": "자금조달의 목적 (시설자금)", "en": "Proceeds for facilities", "unit": "KRW", "kind": "amount"},
+        {"key": "use_business_acquisition", "source_field": "fdpp_bsninh", "ko": "자금조달의 목적 (영업양수자금)", "en": "Proceeds for business acquisition", "unit": "KRW", "kind": "amount"},
+        {"key": "use_operating", "source_field": "fdpp_op", "ko": "자금조달의 목적 (운영자금)", "en": "Proceeds for operations", "unit": "KRW", "kind": "amount"},
+        {"key": "use_debt_repayment", "source_field": "fdpp_dtrp", "ko": "자금조달의 목적 (채무상환자금)", "en": "Proceeds for debt repayment", "unit": "KRW", "kind": "amount"},
+        {"key": "use_securities_acquisition", "source_field": "fdpp_ocsa", "ko": "자금조달의 목적 (타법인 증권 취득자금)", "en": "Proceeds for acquiring other companies' securities", "unit": "KRW", "kind": "amount"},
+        {"key": "use_other", "source_field": "fdpp_etc", "ko": "자금조달의 목적 (기타자금)", "en": "Proceeds for other uses", "unit": "KRW", "kind": "amount"},
+        {"key": "issue_method", "source_field": "ic_mthn", "ko": "증자방식", "en": "Issue method", "unit": null, "kind": "text"}
+      ]
+    }
+  ]
+}

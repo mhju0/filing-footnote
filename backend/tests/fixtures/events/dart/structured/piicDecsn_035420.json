@@ -1,0 +1,27 @@
+{
+  "status": "000",
+  "message": "정상",
+  "list": [
+    {
+      "rcept_no": "20261103000311",
+      "corp_cls": "Y",
+      "corp_code": "00266961",
+      "corp_name": "NAVER",
+      "nstk_ostk_cnt": "6,558,435",
+      "nstk_estk_cnt": "-",
+      "fv_ps": "100",
+      "bfic_tisstk_ostk": "152,126,544",
+      "bfic_tisstk_estk": "-",
+      "fdpp_fclt": "-",
+      "fdpp_bsninh": "-",
+      "fdpp_op": "-",
+      "fdpp_dtrp": "-",
+      "fdpp_ocsa": "-",
+      "fdpp_etc": "1,341,199,957,500",
+      "ic_mthn": "제3자배정증자",
+      "ssl_at": "N",
+      "ssl_bgd": "-",
+      "ssl_edd": "-"
+    }
+  ]
+}

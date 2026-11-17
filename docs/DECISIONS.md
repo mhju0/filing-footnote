@@ -677,3 +677,15 @@ The owner accepted the build plan's defaults:
   `gemini-2.5-flash-lite` on the paid tier, so filing text is not used for product
   improvement.
 - SEC Item 1.05 (cybersecurity incident) stays in the legal category (소송).
+
+## D65 · DART correction chains · 2026-11-17 (`ACCEPTED`)
+
+A DART correction states the original's name and first filing date, but not its
+receipt number. Ingest links a correction to the one in-scope, non-correction
+filing that matches it on four things: company, base report name, subsidiary
+flag and that date. Otherwise the correction is stored as unlinked, with a note,
+and no link is guessed. Excluded corrections are not resolved. Only the newest
+member of a chain is shown, and never when DART's `rm` field marks it 정 (since
+replaced). A run that cannot read a body keeps the stored link and
+classification. Structured facts attach to the filing DART returns them for,
+which is the newest version.
