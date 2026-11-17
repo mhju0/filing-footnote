@@ -653,3 +653,27 @@ D59 is accepted with the owner's changes from the M1 sample: a separate unit-sal
 category, subsidiary filings kept and flagged, and no per-company limit. The list
 and rules are in `contracts/filing-categories.json`. See
 [ADR 0004](adr/0004-event-filings-in-scope.md).
+
+## D63 · Neutrality word lists accepted · 2026-11-17 (`ACCEPTED`)
+
+D60 is accepted. The owner reviewed the M5 lists and approved the recommended
+additions: more hype words, forecast endings, advice phrases and spelled figures.
+"Will", "would", "set to", "outstanding", "accumulated" and "half" stay allowed,
+because factual filing lines use them. The lists, each narrowing and each
+extension are in `contracts/neutrality-lexicon.json`. See
+[ADR 0005](adr/0005-neutrality-guards.md).
+
+## D64 · v0.1 build defaults · 2026-11-17 (`ACCEPTED`)
+
+The owner accepted the build plan's defaults:
+- SEC event filings show only what code can verify, with a link to the original
+  for figures.
+- The build database is a fresh Compose PostgreSQL on port 5433, re-ingested from
+  the regulators.
+- Annual "at a glance" passages are chosen by section heading, not embedding
+  search.
+- CI runs the backend job on every PR; the macOS job is manual only.
+- The bundle covers the latest 12 months with no per-company cap. Summaries use
+  `gemini-2.5-flash-lite` on the paid tier, so filing text is not used for product
+  improvement.
+- SEC Item 1.05 (cybersecurity incident) stays in the legal category (소송).

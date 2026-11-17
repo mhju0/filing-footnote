@@ -32,7 +32,8 @@ Lang = Literal["ko", "en"]
 LEXICON_PATH = Path(__file__).resolve().parents[3] / "contracts" / "neutrality-lexicon.json"
 
 _EN_SUFFIXES = "s|es|ed|d|ing|ly|ness|en|ened|ening|less"
-_EN_E_SUFFIXES = "e|es|ed|ing|ely|ly"
+_EN_E_SUFFIXES = "e|es|ed|ing|ely|ly|y"
+_EN_Y_SUFFIXES = "y|ies|ied|ying"
 _EN_COMPARATIVE = "er|est"
 
 # number_guard's Korean pattern needs the unit and 원 joined; these add the spaced
@@ -136,6 +137,8 @@ def _term_pattern(term: str, mode: str, adjective: bool = False) -> str:
         if " " in term or "-" in term:
             return rf"\b{_word(term)}s?\b"
         comparative = f"|{_EN_COMPARATIVE}" if adjective else ""
+        if re.search(r"[^aeiou]y$", term):
+            return rf"\b{re.escape(term[:-1])}(?:{_EN_Y_SUFFIXES}{comparative})\b"
         if term.endswith("e"):
             return rf"\b{re.escape(term[:-1])}(?:{_EN_E_SUFFIXES}{comparative})\b"
         return rf"\b{re.escape(term)}(?:{_EN_SUFFIXES}{comparative})?\b"
@@ -152,7 +155,11 @@ def _compile_block(block: dict[str, Any]) -> _Matcher:
     mode = block["match"]
     adjectives = set(block.get("adjectives", ()))
     sources = [_term_pattern(term, mode, term in adjectives) for term in block["terms"]]
-    sources += [rf"[{_RIEUL_FINAL}]\s?{re.escape(word)}" for word in block.get("after_rieul", ())]
+    sources += [
+        rf"[{_RIEUL_FINAL}]\s?{_allow_pattern(word, 'substring')}"
+        for word in block.get("after_rieul", ())
+    ]
+    sources += [_allow_pattern(phrase, mode) for phrase in block.get("phrases", ())]
     sources += block.get("patterns", [])
     allow = [_allow_pattern(phrase, mode) for phrase in block.get("allow", ())]
     return _Matcher(
@@ -171,7 +178,7 @@ def load_lexicon(path: Path = LEXICON_PATH) -> _Lexicon:
     rules = {rule["id"]: rule for rule in raw["rules"]}
     matchers = {
         (rule_id, lang): _compile_block(rules[rule_id][lang])
-        for rule_id in ("N2", "N3", "N7", "N9")
+        for rule_id in ("N1", "N2", "N3", "N7", "N9")
         for lang in ("ko", "en")
     }
     n3, n4, n6 = rules["N3"], rules["N4"], rules["N6"]
@@ -282,6 +289,7 @@ def check_line(
 
     for pattern in _N1_RES:
         found += _regex_violations("N1", pattern, text, lang, line_no)
+    found += _matcher_violations("N1", text, lang, line_no, lex)
 
     # Company names are exempt from N2 only: "Boost Mobile" is a name, "3M" still fails N1.
     found += _matcher_violations(

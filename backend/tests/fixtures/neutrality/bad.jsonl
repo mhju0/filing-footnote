@@ -97,7 +97,7 @@
 {"lang": "ko", "company": "삼성전자", "line": "회사는 자기주식 삼백만 주를 취득하기로 결정했어요", "rules": ["N1"], "note": "review fix 1: spelled share count"}
 {"lang": "en", "company": "Microsoft", "line": "The company said it raised USD two billion from the notes.", "rules": ["N1"], "note": "review fix 2: _SPELLED_PREFIX_RE"}
 {"lang": "en", "company": "Microsoft", "line": "The company said it raised $two billion from the notes.", "rules": ["N1"], "note": "review fix 2: currency symbol + spelled number"}
-{"lang": "en", "company": "Apple", "line": "Shares rallied after the company reported results.", "rules": ["N4"], "note": "review fix 3: company + verb in a subordinate clause"}
+{"lang": "en", "company": "Apple", "line": "Shares rallied after the company reported results.", "rules": ["N2", "N4"], "note": "review fix 3: company + verb in a subordinate clause; N2 since the owner approved 'rally'"}
 {"lang": "en", "company": "Apple", "line": "Investors said the company reported results.", "rules": ["N4"], "note": "review fix 3: third party is the subject"}
 {"lang": "en", "company": "Apple", "line": "Critics argue the company disclosed too little.", "rules": ["N4"], "note": "review fix 3: third party is the subject"}
 {"lang": "ko", "company": "삼성전자", "line": "증권회사는 자기주식 취득을 결정했어요", "rules": ["N4"], "note": "review fix 4: 회사는 inside another word"}
@@ -110,3 +110,54 @@
 {"lang": "en", "company": "Boost Mobile", "line": "Boost Mobile said demand was strong.", "rules": ["N2"], "note": "review fix 6: the name is exempt from N2, other words are not"}
 {"lang": "en", "company": "3M", "line": "3M said it filed a current report.", "rules": ["N1"], "note": "known limitation: a digit in a company name still fails N1; the pipeline writes The company instead"}
 {"lang": "en", "company": "Apple", "line": "The company filed a Form 8-K.", "rules": ["N1"], "note": "known limitation: form names with digits fail N1; the pipeline writes 'a current report'"}
+{"lang": "ko", "company": "삼성전자", "line": "회사는 영업이익이 껑충 뛰었다고 공시했어요", "rules": ["N2"], "note": "owner-approved 2026-11-17: 껑충"}
+{"lang": "ko", "company": "삼성전자", "line": "회사는 순이익이 곤두박질쳤다고 공시했어요", "rules": ["N2"], "note": "owner-approved 2026-11-17: 곤두박질"}
+{"lang": "ko", "company": "삼성전자", "line": "회사는 깜짝 배당을 결정했어요", "rules": ["N2"], "note": "owner-approved 2026-11-17: 깜짝"}
+{"lang": "ko", "company": "삼성전자", "line": "회사는 매출이 급증했다고 공시했어요", "rules": ["N2"], "note": "owner-approved 2026-11-17: 급증"}
+{"lang": "ko", "company": "삼성전자", "line": "회사는 영업이익이 급감했다고 공시했어요", "rules": ["N2"], "note": "owner-approved 2026-11-17: 급감"}
+{"lang": "ko", "company": "삼성전자", "line": "회사는 놀라운 실적을 보고했어요", "rules": ["N2"], "note": "owner-approved 2026-11-17: 놀라운"}
+{"lang": "ko", "company": "삼성전자", "line": "회사는 눈부신 성과를 공시했어요", "rules": ["N2"], "note": "owner-approved 2026-11-17: 눈부신"}
+{"lang": "ko", "company": "삼성전자", "line": "회사는 실적 부진을 보고했어요", "rules": ["N2"], "note": "owner-approved 2026-11-17: 부진"}
+{"lang": "ko", "company": "삼성전자", "line": "회사는 반도체 사업의 전망이 밝다고 밝혔어요", "rules": ["N2"], "note": "owner-approved 2026-11-17: 전망이 밝"}
+{"lang": "en", "company": "Apple", "line": "The company said its shares rallied after the release.", "rules": ["N2"], "note": "owner-approved 2026-11-17: rally (rallied)"}
+{"lang": "en", "company": "Apple", "line": "The company said its margins plummeted.", "rules": ["N2"], "note": "owner-approved 2026-11-17: plummet"}
+{"lang": "en", "company": "Apple", "line": "The company reported huge demand for its phones.", "rules": ["N2"], "note": "owner-approved 2026-11-17: huge"}
+{"lang": "en", "company": "Apple", "line": "The company said results were remarkably consistent.", "rules": ["N2"], "note": "owner-approved 2026-11-17: remarkable (remarkably)"}
+{"lang": "en", "company": "Apple", "line": "The company reported robust services revenue.", "rules": ["N2"], "note": "owner-approved 2026-11-17: robust"}
+{"lang": "en", "company": "Apple", "line": "The company reported a stellar quarter.", "rules": ["N2"], "note": "owner-approved 2026-11-17: stellar"}
+{"lang": "en", "company": "Apple", "line": "The company reported a blowout quarter.", "rules": ["N2"], "note": "owner-approved 2026-11-17: blowout"}
+{"lang": "en", "company": "Apple", "line": "The company said demand spiked in the quarter.", "rules": ["N2"], "note": "owner-approved 2026-11-17: spike (spiked)"}
+{"lang": "en", "company": "Apple", "line": "The company said its shares tanked.", "rules": ["N2"], "note": "owner-approved 2026-11-17: phrase tanked"}
+{"lang": "en", "company": "Apple", "line": "The company said its shares rocketed.", "rules": ["N2"], "note": "owner-approved 2026-11-17: phrase rocketed"}
+{"lang": "en", "company": "Apple", "line": "The company reported solid results for the quarter.", "rules": ["N2"], "note": "owner-approved 2026-11-17: phrase solid results"}
+{"lang": "ko", "company": "삼성전자", "line": "회사는 매출이 늘어날 것이라고 밝혔어요", "rules": ["N3"], "note": "owner-approved 2026-11-17: ~ㄹ 것이다"}
+{"lang": "ko", "company": "삼성전자", "line": "회사는 실적이 좋아질 거예요라고 밝혔어요", "rules": ["N3"], "note": "owner-approved 2026-11-17: ~ㄹ 거예요"}
+{"lang": "ko", "company": "삼성전자", "line": "회사는 배당이 늘어날 듯하다고 밝혔어요", "rules": ["N3"], "note": "owner-approved 2026-11-17: ~ㄹ 듯"}
+{"lang": "ko", "company": "삼성전자", "line": "회사는 수주가 늘어날 것 같다고 밝혔어요", "rules": ["N3"], "note": "owner-approved 2026-11-17: ~ㄹ 것 같"}
+{"lang": "ko", "company": "삼성바이오로직스", "line": "회사는 계약이 연장될 가능성이 있다고 밝혔어요", "rules": ["N3"], "note": "owner-approved 2026-11-17: 가능성이 있"}
+{"lang": "ko", "company": "삼성전자", "line": "회사는 실적이 좋아지리라 밝혔어요", "rules": ["N3"], "note": "owner-approved 2026-11-17: ~리라"}
+{"lang": "en", "company": "Apple", "line": "The company said margins might improve.", "rules": ["N3"], "note": "owner-approved 2026-11-17: might"}
+{"lang": "en", "company": "Apple", "line": "The company said it anticipates higher sales.", "rules": ["N3"], "note": "owner-approved 2026-11-17: anticipat*"}
+{"lang": "en", "company": "Apple", "line": "The company said it forecasts higher sales.", "rules": ["N3"], "note": "owner-approved 2026-11-17: forecast*"}
+{"lang": "en", "company": "Apple", "line": "The company said it is poised to expand services.", "rules": ["N3"], "note": "owner-approved 2026-11-17: poised"}
+{"lang": "en", "company": "Apple", "line": "The company said it is on track to meet its targets.", "rules": ["N3"], "note": "owner-approved 2026-11-17: on track"}
+{"lang": "en", "company": "Apple", "line": "The company said it expected higher sales in the holiday season.", "rules": ["N3"], "note": "owner-approved 2026-11-17: expect* generalised (expected)"}
+{"lang": "ko", "company": "삼성전자", "line": "회사는 지금이 주식을 살 때라고 밝혔어요", "rules": ["N7"], "note": "owner-approved 2026-11-17: 살 때"}
+{"lang": "ko", "company": "삼성전자", "line": "회사는 자사 주식이 투자할 만하다고 밝혔어요", "rules": ["N7"], "note": "owner-approved 2026-11-17: 투자할 만"}
+{"lang": "ko", "company": "삼성전자", "line": "회사는 주가가 저평가되어 있다고 밝혔어요", "rules": ["N7"], "note": "owner-approved 2026-11-17: 저평가"}
+{"lang": "ko", "company": "삼성전자", "line": "회사는 주가가 고평가되어 있다고 밝혔어요", "rules": ["N7"], "note": "owner-approved 2026-11-17: 고평가"}
+{"lang": "ko", "company": "삼성전자", "line": "회사는 이번 계약이 주목할 만하다고 밝혔어요", "rules": ["N7"], "note": "owner-approved 2026-11-17: 주목할 만"}
+{"lang": "ko", "company": "삼성전자", "line": "회사는 지금이 매수 기회라고 밝혔어요", "rules": ["N7"], "note": "owner-approved 2026-11-17: phrase 매수 기회 (bare 매수 is N7 too)"}
+{"lang": "ko", "company": "삼성전자", "line": "회사는 주주에게 좋은 투자 기회라고 밝혔어요", "rules": ["N7"], "note": "owner-approved 2026-11-17: phrase 투자 기회"}
+{"lang": "en", "company": "Apple", "line": "The company said its shares are worth a look.", "rules": ["N7"], "note": "owner-approved 2026-11-17: worth a look"}
+{"lang": "en", "company": "Apple", "line": "The company said it is a good time to invest.", "rules": ["N7"], "note": "owner-approved 2026-11-17: good time to invest"}
+{"lang": "en", "company": "Apple", "line": "The company said its shares trade at an attractive valuation.", "rules": ["N7"], "note": "owner-approved 2026-11-17: attractive valuation"}
+{"lang": "en", "company": "Apple", "line": "The company said the price drop is a buying opportunity.", "rules": ["N7"], "note": "owner-approved 2026-11-17: buying opportunity"}
+{"lang": "en", "company": "Apple", "line": "The company said its stock is a must-buy.", "rules": ["N7"], "note": "owner-approved 2026-11-17: must-buy"}
+{"lang": "en", "company": "Apple", "line": "The company said its shares look cheap.", "rules": ["N7"], "note": "owner-approved 2026-11-17: cheap"}
+{"lang": "en", "company": "Apple", "line": "The company said its dividend doubled.", "rules": ["N1"], "note": "owner-approved 2026-11-17: doubled"}
+{"lang": "ko", "company": "삼성전자", "line": "회사는 배당금을 두 배로 늘리기로 결정했어요", "rules": ["N1"], "note": "owner-approved 2026-11-17: 두 배"}
+{"lang": "ko", "company": "삼성전자", "line": "회사는 보유 자기주식의 절반을 소각하기로 결정했어요", "rules": ["N1"], "note": "owner-approved 2026-11-17: 절반"}
+{"lang": "ko", "company": "삼성전자", "line": "회사는 삼분기 잠정실적을 공시했어요", "rules": ["N1"], "note": "owner-approved 2026-11-17: 삼분기"}
+{"lang": "ko", "company": "삼성전자", "line": "회사는 증권사 세 곳을 위탁투자중개업자로 정했다고 공시했어요", "rules": ["N1"], "note": "owner-approved 2026-11-17: native count 세 곳"}
+{"lang": "ko", "company": "삼성전자", "line": "회사는 대표이사 한 명을 새로 선임했다고 공시했어요", "rules": ["N1"], "note": "owner-approved 2026-11-17: native count 한 명"}

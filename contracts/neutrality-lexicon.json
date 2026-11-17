@@ -1,5 +1,5 @@
 {
-  "about": "Neutrality guard lexicon for generated Filing Footnote summaries. Read by backend/app/llm/neutrality_guard.py. Every rule has an id; severity 'fail' blocks a line, 'warn' only reports it. Match modes: 'substring' finds the term anywhere (Korean); 'word' needs word boundaries, case-insensitive, spaces match any whitespace (English); 'inflected_word' is 'word' plus English verb and noun endings (-s, -es, -ed, -ing, -ly, -ness, -en, -less; a final e is dropped before -ing/-ed), and comparative -er/-est only for terms in 'adjectives'. A hit that lies wholly inside an 'allow' phrase is ignored; in Korean allow phrases a space matches an optional space (장내 매수 also covers 장내매수). Company names the caller passes are also exempt from N2 (not from N1). 'narrowed' records every listed word that no longer matches as a bare word, with the reason; 'added' records everything beyond the M5 plan list.",
+  "about": "Neutrality guard lexicon for generated Filing Footnote summaries. Read by backend/app/llm/neutrality_guard.py. Every rule has an id; severity 'fail' blocks a line, 'warn' only reports it. Match modes: 'substring' finds the term anywhere (Korean); 'word' needs word boundaries, case-insensitive, spaces match any whitespace (English); 'inflected_word' is 'word' plus English verb and noun endings (-s, -es, -ed, -ing, -ly, -ness, -en, -less; a final e is dropped before -ing/-ed/-y; a final consonant + y becomes -ies/-ied), and comparative -er/-est only for terms in 'adjectives'. 'phrases' are matched as written, without endings (in Korean a space matches an optional space); 'patterns' are regular expressions. A hit that lies wholly inside an 'allow' phrase is ignored; in Korean allow phrases a space matches an optional space (장내 매수 also covers 장내매수). Company names the caller passes are also exempt from N2 (not from N1). 'narrowed' records every listed word that no longer matches as a bare word, with the reason; 'added' records everything beyond the M5 plan list.",
   "version": 1,
   "updated": "2026-11-17",
   "rules": [
@@ -7,7 +7,7 @@
       "id": "N1",
       "title": "No digits",
       "severity": "fail",
-      "note": "Implemented in code by reuse: NFKC normalisation then any \\d (digest_narrative._ANY_DIGIT_RE), plus spelled financial numbers (number_guard._SPELLED_FINANCIAL_RE, _SPELLED_PREFIX_RE, _KOREAN_SPELLED_RE). Counts spelled without a unit or currency ('three quarters', '세 곳', '두 배') are not caught. Known limitation: a company or form name with a digit (3M, Form 8-K, 10-K) always fails; the pipeline must have the model write 회사/The company or the name without digits.",
+      "note": "Implemented in code by reuse: NFKC normalisation then any \\d (digest_narrative._ANY_DIGIT_RE), plus spelled financial numbers (number_guard._SPELLED_FINANCIAL_RE, _SPELLED_PREFIX_RE, _KOREAN_SPELLED_RE), plus the ko/en lists below. English counts spelled without a unit or currency ('three quarters') are not caught. Known limitation: a company or form name with a digit (3M, Form 8-K, 10-K) always fails; the pipeline must have the model write 회사/The company or the name without digits.",
       "sources": [
         "app.digest_narrative._ANY_DIGIT_RE",
         "app.llm.number_guard._SPELLED_FINANCIAL_RE",
@@ -17,8 +17,20 @@
       "added": [
         {"term": "Korean numeral + 만/억/조/천/백, optional space, then 원/달러/퍼센트/% (천억 원, 삼조 원) or 주 (삼백만 주)", "reason": "number_guard._KOREAN_SPELLED_RE needs the unit and 원 joined; spaced amounts passed. Defined in neutrality_guard.py, number_guard.py unchanged. 원 followed by 칙/가/본/료/화/래/인/격/자/천 is a separate word (원칙, 원가) and does not count."},
         {"term": "numeral + 만/억/조/천 before 규모/어치/명/건/개/주/원/달러 (일조 규모)", "reason": "bare spelled magnitude used as an amount"},
-        {"term": "$, €, £ or ₩ followed by a spelled number ($two billion)", "reason": "_CURRENCY_PREFIX_RE needs digits; _SPELLED_PREFIX_RE needs a currency code"}
-      ]
+        {"term": "$, €, £ or ₩ followed by a spelled number ($two billion)", "reason": "_CURRENCY_PREFIX_RE needs digits; _SPELLED_PREFIX_RE needs a currency code"},
+        {"term": "ko: 절반, 삼분기, 두 배, native count 한/두/세/네 + 곳/명/건/개/배; en: doubled", "reason": "owner-approved 2026-11-17"}
+      ],
+      "ko": {
+        "match": "substring",
+        "terms": ["절반", "삼분기"],
+        "phrases": ["두 배"],
+        "patterns": ["(?<![가-힣])(?:한|두|세|네)\\s?(?:곳|명|건|개|배)(?=$|[^가-힣]|[의를을이가는은와과로에씩도만])"],
+        "note": "Native counts: the counter must stand alone or take a particle, so 한 개발, 두 배당, 세 건물 are clear; a syllable before 한/두/세/네 (달성한, 공시한) also clears it."
+      },
+      "en": {
+        "match": "word",
+        "terms": ["doubled"]
+      }
     },
     {
       "id": "N2",
@@ -26,16 +38,23 @@
       "severity": "fail",
       "ko": {
         "match": "substring",
-        "terms": ["급등", "급락", "폭등", "폭락", "호재", "악재", "충격", "우려", "쇼크", "서프라이즈", "대박", "최악", "파격", "역대급", "청신호", "적신호", "훈풍", "먹구름"],
-        "note": "No allow list. 우려 and 충격 have no innocent compound likely in a filing summary; a filing's own use of 우려 is still a judgement word and is not quoted."
+        "terms": ["급등", "급락", "폭등", "폭락", "호재", "악재", "충격", "우려", "쇼크", "서프라이즈", "대박", "최악", "파격", "역대급", "청신호", "적신호", "훈풍", "먹구름", "껑충", "곤두박질", "깜짝", "급증", "급감", "놀라운", "눈부신", "부진"],
+        "phrases": ["전망이 밝"],
+        "note": "No allow list. 우려 and 충격 have no innocent compound likely in a filing summary; a filing's own use of 우려 is still a judgement word and is not quoted.",
+        "added": [
+          {"term": "껑충, 곤두박질, 깜짝, 급증, 급감, 놀라운, 눈부신, 부진; phrase 전망이 밝", "reason": "owner-approved 2026-11-17"}
+        ]
       },
       "en": {
         "match": "inflected_word",
-        "terms": ["surge", "soar", "skyrocket", "jump", "plunge", "slump", "tumble", "crash", "boost", "worrying", "alarming", "flaw", "stunning", "massive", "strong", "weak", "disappointing", "impressive", "record-breaking", "blockbuster"],
+        "terms": ["surge", "soar", "skyrocket", "jump", "plunge", "slump", "tumble", "crash", "boost", "worrying", "alarming", "flaw", "stunning", "massive", "strong", "weak", "disappointing", "impressive", "record-breaking", "blockbuster", "rally", "plummet", "huge", "remarkable", "robust", "stellar", "blowout", "spike"],
+        "phrases": ["tanked", "rocketed", "solid results"],
         "adjectives": ["strong", "weak"],
         "note": "Endings catch surged, soaring, strongly, weaker, weakest, weakness, flawless. Comparative -er/-est is applied only to adjectives, because -er on a verb makes a different word (booster, jumper). Word boundaries keep 'surgery' and 'Armstrong' clear. Company names passed by the caller (Boost Mobile, Jump Trading) are exempt.",
         "added": [
-          {"term": "adjectives: strong, weak", "reason": "Limits -er/-est to the two adjectives so 'booster' passes and 'weakest' fails."}
+          {"term": "adjectives: strong, weak", "reason": "Limits -er/-est to the two adjectives so 'booster' passes and 'weakest' fails."},
+          {"term": "rally, plummet, huge, remarkable, robust, stellar, blowout, spike (with endings)", "reason": "owner-approved 2026-11-17"},
+          {"term": "phrases only: tanked, rocketed, solid results", "reason": "owner-approved 2026-11-17; bare tank, rocket and solid have factual senses (storage tank, rocket launch, solid-state)"}
         ]
       }
     },
@@ -46,14 +65,16 @@
       "ko": {
         "match": "substring",
         "terms": ["전망된다", "예상된다", "기대된다", "보인다", "할 것으로", "보여요", "예상돼요", "기대돼요", "전망이에요", "전망돼요", "전망이다", "전망입니다", "전망됩니다", "예상됩니다", "기대됩니다", "보입니다"],
-        "after_rieul": ["것으로", "전망"],
+        "after_rieul": ["것으로", "전망", "것이", "거예요", "거에요", "겁니다", "듯", "것 같"],
+        "phrases": ["가능성이 있", "리라"],
         "allow": ["매출 전망"],
         "plan_gated": ["(?:예정|계획)(?:이에요|이예요|이다|입니다|이며|이고|이었|이라고|이래요|임|으로)"],
         "plan_allowed": ["(?:예정|계획)이라고"],
         "note": "after_rieul: any syllable ending in ㄹ (할, 될, 오를, 늘어날), an optional space, then the word; this is the plan's '~ㄹ 전망'. Past forms (한 것으로, 보인) do not match. 보인다 also blocks the literal sense 'shows'; write 보여 줬다고 instead. plan_gated: 예정/계획 used as a predicate must be the quoted form 예정이라고/계획이라고 in a line that passes N4. Nouns from the forms (예정일, 예정금액, 보유처분계획을) and the adnominal 예정인 before a noun (소각 예정인 주식 수) are not gated.",
         "added": [
           {"term": "전망돼요, 전망이다, 전망입니다, 전망됩니다, 예상됩니다, 기대됩니다, 보입니다", "reason": "Other endings of the listed words; the plan named the 해요체 forms only."},
-          {"term": "plan_gated forms 이에요/이예요/이다/입니다/이며/이고/이었/이라고/이래요/임/으로 after 예정 or 계획", "reason": "The plan names only the allowed forms; these are the predicate forms that must be rewritten as 예정이라고/계획이라고."}
+          {"term": "plan_gated forms 이에요/이예요/이다/입니다/이며/이고/이었/이라고/이래요/임/으로 after 예정 or 계획", "reason": "The plan names only the allowed forms; these are the predicate forms that must be rewritten as 예정이라고/계획이라고."},
+          {"term": "after_rieul 것이, 거예요, 거에요, 겁니다 (~ㄹ 것이다/거예요), 듯 (~ㄹ 듯), 것 같 (~ㄹ 것 같); phrases 가능성이 있, 리라", "reason": "owner-approved 2026-11-17"}
         ],
         "narrowed": [
           {"term": "~ㄹ 전망", "now_matches": "any ㄹ-final syllable + 전망, except inside 매출 전망", "reason": "매출 (revenue) ends in ㄹ, so '회사는 매출 전망을 공시했어요', a company-stated outlook, would fail. Only that noun is allow-listed."}
@@ -61,14 +82,16 @@
       },
       "en": {
         "match": "word",
-        "terms": ["is expected to", "are expected to", "will likely", "is likely to", "are likely to", "analyst", "analysts", "could", "may boost", "expects to"],
+        "terms": ["is expected to", "are expected to", "will likely", "is likely to", "are likely to", "analyst", "analysts", "could", "may boost", "expects to", "might", "poised", "on track"],
+        "patterns": ["\\bexpect(?:s|ed|ing|ation|ations)?\\b", "\\banticipat\\w*", "\\bforecast\\w*"],
         "plan_gated": ["(?<!\\ba\\s)(?<!\\ban\\s)(?<!\\bthe\\s)(?<!\\bits\\s)(?<!\\btheir\\s)\\b(?:plans?|planned|planning|intends?|intended|intending|aims?|aimed|aiming)\\s+to\\b"],
         "plan_allowed": ["\\b(?:plans|intends)\\s+to\\b"],
         "note": "'could' fails everywhere, including inside quotation marks: summaries do not quote risk factors. 'will' on its own is not listed and does not fail; owner to decide. plan_gated: a stated plan may appear only as 'plans to' / 'intends to' in a line that passes N4. After a/an/the/its/their the word is a noun ('a plan to repurchase shares') and is not gated.",
         "added": [
           {"term": "are expected to, are likely to, analyst", "reason": "Plural and singular forms of listed phrases."},
           {"term": "expects to", "reason": "A company forecast, not a stated plan; the plan allows 'plans to' and 'intends to' only."},
-          {"term": "plan_gated: plan(s|ned|ning), intend(s|ed|ing), aim(s|ed|ing) + to", "reason": "The plan names only the allowed forms; these are the other plan verbs that must be rewritten as 'plans to'/'intends to'."}
+          {"term": "plan_gated: plan(s|ned|ning), intend(s|ed|ing), aim(s|ed|ing) + to", "reason": "The plan names only the allowed forms; these are the other plan verbs that must be rewritten as 'plans to'/'intends to'."},
+          {"term": "might, poised, on track; patterns expect* (expects, expected, expecting, expectation(s)), anticipat*, forecast*", "reason": "owner-approved 2026-11-17; 'plans to' and 'intends to' stay allowed"}
         ]
       }
     },
@@ -125,19 +148,22 @@
       "severity": "fail",
       "ko": {
         "match": "substring",
-        "terms": ["매수", "매도", "추천", "투자하세요", "사야", "팔아야", "유망"],
+        "terms": ["매수", "매도", "추천", "투자하세요", "사야", "팔아야", "유망", "저평가", "고평가"],
+        "phrases": ["살 때", "투자할 만", "주목할 만", "매수 기회", "투자 기회"],
         "allow": ["장내 매수", "장외 매수", "장내 매도", "장외 매도", "매수 주문", "매도 주문", "공개 매수", "매수 선택권", "매수 청구권", "매도 청구권", "매도 가능", "매수인", "매도인", "추천 위원회"],
         "narrowed": [
           {"term": "매수, 매도", "now_matches": "every use except the filing's own terms in allow", "reason": "Filings use them for the method, party or instrument: 장내 매수 (on-market purchase, the buyback filing's 취득방법), 매도 주문수량 한도, 공개매수 (tender offer), 주식매수선택권 (stock options), 주식매수청구권 (appraisal right), 매도가능 (available-for-sale), 매수인/매도인 (buyer/seller in a contract). Bare 매수/매도 still fail; summaries write 취득/처분 for the company's own trades."},
           {"term": "추천", "now_matches": "every use except inside 추천위원회", "reason": "사외이사후보추천위원회 is a board committee's legal name. 이사회가 추천한 후보 still fails; write 이사회가 정한 후보."}
         ],
         "added": [
-          {"term": "allow: 매수인, 매도인, spaced 매수 청구권/매수 선택권/매도 청구권", "reason": "Contract parties and the spaced spelling of the legal rights."}
+          {"term": "allow: 매수인, 매도인, spaced 매수 청구권/매수 선택권/매도 청구권", "reason": "Contract parties and the spaced spelling of the legal rights."},
+          {"term": "저평가, 고평가; phrases 살 때, 투자할 만, 주목할 만", "reason": "owner-approved 2026-11-17"},
+          {"term": "phrases only: 매수 기회, 투자 기회", "reason": "owner-approved 2026-11-17; bare 기회 is generic (사업 기회)"}
         ]
       },
       "en": {
         "match": "word",
-        "terms": ["recommend", "recommends", "recommended", "recommending", "recommendation", "recommendations", "should invest", "undervalued", "overvalued", "bullish", "bearish"],
+        "terms": ["recommend", "recommends", "recommended", "recommending", "recommendation", "recommendations", "should invest", "undervalued", "overvalued", "bullish", "bearish", "worth a look", "good time to invest", "attractive valuation", "buying opportunity", "must-buy", "cheap"],
         "allow": ["board recommended that shareholders vote", "board recommends that shareholders vote", "board of directors recommended that shareholders vote", "board of directors recommends that shareholders vote", "board recommended a vote", "board recommends a vote"],
         "patterns": [
           "\\b(?:should|must|ought\\s+to)\\s+(?:(?:consider|think\\s+about)\\s+)?(?:buy|sell|hold|buying|selling|holding)\\b",
@@ -158,7 +184,8 @@
         ],
         "added": [
           {"term": "recommends, recommended, recommending, recommendation, recommendations", "reason": "Inflections of 'recommend', listed because this rule uses word match."},
-          {"term": "patterns 'buying/selling (the/its/more) stock/shares' and 'investor(s) (should/to) buy/sell/hold'", "reason": "Catch advice that sits next to a board recommendation."}
+          {"term": "patterns 'buying/selling (the/its/more) stock/shares' and 'investor(s) (should/to) buy/sell/hold'", "reason": "Catch advice that sits next to a board recommendation."},
+          {"term": "worth a look, good time to invest, attractive valuation, buying opportunity, must-buy, cheap", "reason": "owner-approved 2026-11-17"}
         ]
       }
     },
