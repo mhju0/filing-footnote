@@ -18,6 +18,7 @@ import html
 import json
 import logging
 import re
+from collections.abc import Callable
 from dataclasses import dataclass
 from decimal import Decimal
 from functools import lru_cache
@@ -196,12 +197,18 @@ class StructuredResult:
 
 
 async def fetch_structured_events(
-    client: DartClient, endpoint: str, corp_code: str, bgn_de: str, end_de: str
+    client: DartClient,
+    endpoint: str,
+    corp_code: str,
+    bgn_de: str,
+    end_de: str,
+    on_body: Callable[[bytes], None] | None = None,
 ) -> StructuredResult:
     """Fetch one structured endpoint for a company and extract the contract's facts.
 
     Status ``013`` (no data) is an empty result. Any other non-``000`` status raises
-    ``DartApiError``. A row without ``rcept_no`` cannot be joined to a filing and is reported
+    ``DartApiError``. ``on_body`` receives the response body as received once it has parsed.
+    A row without ``rcept_no`` cannot be joined to a filing and is reported
     in ``errors`` instead of being dropped.
     """
     endpoint_spec(endpoint)  # unknown endpoints fail before any request
@@ -221,7 +228,10 @@ async def fetch_structured_events(
             "end_de": end_de,
         },
     )
-    return parse_structured_payload(endpoint, resp.json())
+    result = parse_structured_payload(endpoint, resp.json())
+    if on_body is not None:
+        on_body(resp.content)
+    return result
 
 
 def parse_structured_payload(endpoint: str, payload: Any) -> StructuredResult:

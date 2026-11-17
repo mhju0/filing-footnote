@@ -5,7 +5,9 @@
 For one company and the last 12 months it
 
 1. lists the 주요사항보고 (B) and 거래소공시 (I) filings, every page;
-2. classifies each with ``classify_dart`` (fetching the body only when the contract needs it);
+2. classifies each with ``classify_dart`` (fetching the body when the contract needs it) and
+   fetches the body of every in-scope filing too, keeping its plain text in ``body_text``,
+   cut at ``TEXT_STORE_LIMIT`` (the summaries step reads it);
 3. links each in-scope ``[기재정정]`` filing to its original and marks the newest version of a
    chain as the one to show (older versions are kept);
 4. fetches the structured endpoints named in ``contracts/filing-facts.json`` and extracts facts;
@@ -20,6 +22,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import datetime
+import json
 import logging
 import zipfile
 from collections import Counter
@@ -42,10 +45,18 @@ from app.clients.dart_events import (
     parse_correction_target,
     read_event_document,
 )
+from app.clients.sec_8k import TEXT_STORE_LIMIT
 from app.config import get_settings
 from app.db.models import EventFiling, FilingFact
 from app.db.session import get_async_engine, get_async_session
 from app.filings.categories import Classification, classify_dart, normalise_dart_name
+from app.ingest.pinned import (
+    SAVE_PINNED_HELP,
+    PinnedStore,
+    dart_structured_path,
+    format_pinned,
+    open_pinned_store,
+)
 from app.logging_config import configure_logging
 
 logger = logging.getLogger(__name__)
@@ -227,6 +238,9 @@ class EventRecord:
     # True when a body this run needed could not be read; stored classification and link then
     # stay as they are instead of being replaced by this run's incomplete answer.
     degraded: bool = False
+    # Plain text of the filing, set only when this run read it. None leaves a stored text alone.
+    body_text: str | None = None
+    body_truncated: bool = False
 
     @property
     def key(self) -> str:
@@ -237,7 +251,7 @@ class EventRecord:
         chain = self.chain
         assert chain is not None
         item, cls = self.item, self.classification
-        return {
+        row = {
             "rcept_no": item.rcept_no,
             "corp_code": item.corp_code,
             "stock_code": item.stock_code or None,
@@ -259,6 +273,15 @@ class EventRecord:
             "is_latest": chain.is_latest,
             "errors": self.errors,
         }
+        if self.body_text is not None:
+            row["body_text"] = self.body_text
+            row["body_truncated"] = self.body_truncated
+        return row
+
+
+def store_body_text(text: str, limit: int = TEXT_STORE_LIMIT) -> tuple[str, bool]:
+    """The text kept for storage and whether it was cut at ``limit`` characters."""
+    return (text, False) if len(text) <= limit else (text[:limit], True)
 
 
 @dataclass
@@ -276,6 +299,11 @@ class EventIngestSummary:
     unmatched_facts: list[str] = field(default_factory=list)
     # Partial list pages, failed endpoints, filings whose body could not be read.
     problems: list[str] = field(default_factory=list)
+    # DART only (None: not counted). Document requests made, bodies stored, bodies cut at
+    # TEXT_STORE_LIMIT.
+    documents_fetched: int | None = None
+    bodies_stored: int = 0
+    bodies_truncated: int = 0
 
     @property
     def ok(self) -> bool:
@@ -291,9 +319,12 @@ async def collect_dart_events(
     window: tuple[datetime.date, datetime.date],
     *,
     request_interval: float = 0.0,
+    pinned: PinnedStore | None = None,
+    stock_code: str | None = None,
 ) -> tuple[list[EventRecord], EventIngestSummary]:
+    """``pinned`` saves each structured response under ``stock_code`` (the 6-digit code)."""
     bgn, end = (d.strftime("%Y%m%d") for d in window)
-    summary = EventIngestSummary(corp_code, window)
+    summary = EventIngestSummary(corp_code, window, documents_fetched=0)
 
     items: dict[str, FilingItem] = {}
     for pblntf_ty in EVENT_TYPES:
@@ -310,6 +341,7 @@ async def collect_dart_events(
         """The parsed body, or an error string. Fetched at most once per filing."""
         if rcept_no not in documents:
             await _pause(request_interval)
+            summary.documents_fetched = (summary.documents_fetched or 0) + 1
             try:
                 payload = await client.fetch_document(rcept_no)
                 documents[rcept_no] = read_event_document(payload.content)
@@ -337,6 +369,22 @@ async def collect_dart_events(
                     )
         records.append(record)
 
+    # Every in-scope filing keeps its text for the summaries step; excluded ones need none.
+    # A failed read leaves body_text unset, so a stored text is kept.
+    for record in records:
+        if record.classification.category is None:
+            continue
+        body = await document(record.item.rcept_no)
+        if isinstance(body, str):
+            if body not in record.errors:
+                record.errors.append(body)
+            continue
+        if not body.text:  # nothing was extracted: leave the stored text alone
+            continue
+        record.body_text, record.body_truncated = store_body_text(body.text, TEXT_STORE_LIMIT)
+        summary.bodies_stored += 1
+        summary.bodies_truncated += record.body_truncated
+
     entries: list[ChainInput] = []
     for record in records:
         in_scope = record.classification.category is not None
@@ -346,7 +394,8 @@ async def collect_dart_events(
             body = await document(record.item.rcept_no)
             if isinstance(body, str):
                 target_error = body
-                record.errors.append(body)
+                if body not in record.errors:
+                    record.errors.append(body)
                 record.degraded = True
             else:
                 target = parse_correction_target(body.text)
@@ -379,8 +428,13 @@ async def collect_dart_events(
     )
     for endpoint in endpoints:
         await _pause(request_interval)
+        save: dict = {}
+        if pinned is not None and stock_code:
+            save["on_body"] = _structured_sink(
+                pinned, dart_structured_path(endpoint, stock_code), summary.problems
+            )
         try:
-            result = await fetch_structured_events(client, endpoint, corp_code, bgn, end)
+            result = await fetch_structured_events(client, endpoint, corp_code, bgn, end, **save)
         except (DartApiError, httpx.HTTPError, ValueError) as exc:
             # Facts already stored for this endpoint's filings stay untouched.
             summary.problems.append(f"{endpoint}: {exc}")
@@ -418,6 +472,21 @@ async def collect_dart_events(
         summary.facts_written += len(record.facts or [])
         summary.fact_errors += sum(1 for f in record.facts or [] if f.error)
     return records, summary
+
+
+def _structured_sink(
+    pinned: PinnedStore, relative: str, problems: list[str]
+) -> Callable[[bytes], None]:
+    """Stage a structured response. A "no data" answer (status 013) never replaces a file."""
+
+    def on_body(body: bytes) -> None:
+        try:
+            no_data = str(json.loads(body).get("status", "")).strip() == "013"
+        except (ValueError, AttributeError):
+            no_data = False
+        pinned.sink(relative, problems, only_if_absent=no_data)(body)
+
+    return on_body
 
 
 async def _pause(seconds: float) -> None:
@@ -529,25 +598,30 @@ async def persist_events(
                 )
 
         ids: dict[str, int] = {}
-        for rows_, columns in (
-            ([v for k, v in rows.items() if k not in frozen and k not in keep_link], None),
-            ([v for k, v in rows.items() if k in frozen], _DESCRIPTIVE_COLUMNS),
-            (
-                [v for k, v in rows.items() if k in keep_link],
-                [c for c in next(iter(rows.values())) if c not in _CHAIN_COLUMNS],
-            ),
+        for group, mode in (
+            ([v for k, v in rows.items() if k not in frozen and k not in keep_link], "full"),
+            ([v for k, v in rows.items() if k in frozen], "frozen"),
+            ([v for k, v in rows.items() if k in keep_link], "keep_link"),
         ):
-            if not rows_:
-                continue
-            stmt = pg_insert(EventFiling)
-            update_columns = {c: stmt.excluded[c] for c in (columns or rows_[0]) if c != "rcept_no"}
-            update_columns["updated_at"] = func.now()
-            result = await session.execute(
-                stmt.values(rows_)
-                .on_conflict_do_update(index_elements=["rcept_no"], set_=update_columns)
-                .returning(EventFiling.rcept_no, EventFiling.id)
-            )
-            ids.update(dict(result.all()))
+            # One statement per set of columns: a record that read no body text leaves
+            # body_text out of its row, so the stored text is kept.
+            batches: dict[tuple[str, ...], list[dict]] = {}
+            for row in group:
+                batches.setdefault(tuple(row), []).append(row)
+            for columns, rows_ in batches.items():
+                if mode == "frozen":
+                    columns = _DESCRIPTIVE_COLUMNS
+                elif mode == "keep_link":
+                    columns = tuple(c for c in columns if c not in _CHAIN_COLUMNS)
+                stmt = pg_insert(EventFiling)
+                update_columns = {c: stmt.excluded[c] for c in columns if c != "rcept_no"}
+                update_columns["updated_at"] = func.now()
+                result = await session.execute(
+                    stmt.values(rows_)
+                    .on_conflict_do_update(index_elements=["rcept_no"], set_=update_columns)
+                    .returning(EventFiling.rcept_no, EventFiling.id)
+                )
+                ids.update(dict(result.all()))
 
         refreshed = [r for r in records if r.facts is not None]
         if not refreshed:
@@ -585,15 +659,19 @@ async def run_dart_events(
     *,
     today: datetime.date | None = None,
     request_interval: float = 0.0,
+    pinned: PinnedStore | None = None,
 ) -> EventIngestSummary:
     corp_code = await client.resolve_corp_code(ticker)
     if corp_code is None:
         raise SystemExit(f"ticker {ticker!r} not found in DART corpCode map")
     window = window_bounds(today or datetime.date.today())
     records, summary = await collect_dart_events(
-        client, corp_code, window, request_interval=request_interval
+        client, corp_code, window, request_interval=request_interval, pinned=pinned,
+        stock_code=ticker,
     )
     summary.problems.extend(await persist_events(session_factory, records))
+    if pinned is not None:  # the rows are committed; only now may the pinned files change
+        summary.problems.extend(pinned.commit())
     return summary
 
 
@@ -611,16 +689,24 @@ def format_summary(summary: EventIngestSummary) -> str:
         f"not_resolved_excluded={summary.not_resolved_excluded}",
         f"facts: written={summary.facts_written} with_errors={summary.fact_errors}",
     ]
+    if summary.documents_fetched is not None:
+        lines.append(
+            f"documents fetched={summary.documents_fetched} "
+            f"bodies stored={summary.bodies_stored} "
+            f"cut at {TEXT_STORE_LIMIT} characters={summary.bodies_truncated}"
+        )
     if summary.unmatched_facts:
         lines.append(f"facts without a listed filing: {len(summary.unmatched_facts)}")
     lines.extend(f"PROBLEM {p}" for p in summary.problems)
     return "\n".join(lines)
 
 
-async def _run(ticker: str) -> EventIngestSummary:
+async def _run(ticker: str, pinned: PinnedStore | None = None) -> EventIngestSummary:
     client = DartClient(get_settings())
     try:
-        return await run_dart_events(client, ticker, get_async_session, request_interval=0.35)
+        return await run_dart_events(
+            client, ticker, get_async_session, request_interval=0.35, pinned=pinned
+        )
     finally:
         await client.aclose()
         await get_async_engine().dispose()
@@ -637,15 +723,19 @@ def main(argv: list[str]) -> None:
         required=True,
         help="DART: 6-digit stock code, e.g. 005930; SEC: symbol, e.g. AAPL",
     )
+    parser.add_argument("--save-pinned", metavar="DIR", **SAVE_PINNED_HELP)
     args = parser.parse_args(argv)
     configure_logging()
+    pinned = open_pinned_store(args.save_pinned)
     if args.source == "sec":
         from app.ingest.sec_events import format_sec_summary, run_sec_cli  # imports this module
 
-        summary = asyncio.run(run_sec_cli(args.ticker))
+        summary = asyncio.run(run_sec_cli(args.ticker, pinned))
         print(format_sec_summary(summary))
     else:
-        summary = asyncio.run(_run(args.ticker))
+        summary = asyncio.run(_run(args.ticker, pinned))
         print(format_summary(summary))
+    if pinned is not None:
+        print(format_pinned(pinned))
     if not summary.ok:
         raise SystemExit(1)

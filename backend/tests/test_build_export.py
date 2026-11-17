@@ -915,10 +915,22 @@ def test_event_source_hash_covers_the_stored_body_when_there_is_one(data) -> Non
     assert source_hash(_with_rows(data, **{AMENDED: {"body_text": body + " "}}), AMENDED) != base
     # The list row is not hashed when a body is stored.
     assert source_hash(_with_rows(data, **{AMENDED: {"rm": "x"}}), AMENDED) == base
-    # A DART row has no body: its placeholder hashes the list row.
+    # A DART row the ingest stored a body for hashes the body, not the list row.
     dart = "dart:20260430800097"
-    placeholder = source_hash(data, dart)
-    assert source_hash(_with_rows(data, **{"20260430800097": {"rm": ""}}), dart) != placeholder
+    dart_body = next(e for e in data.events if _event_id(e) == dart).body_text
+    assert dart_body
+    with_body = source_hash(data, dart)
+    assert source_hash(_with_rows(data, **{"20260430800097": {"rm": ""}}), dart) == with_body
+    assert source_hash(
+        _with_rows(data, **{"20260430800097": {"body_text": dart_body + " "}}), dart
+    ) != with_body
+    # A DART row without a stored body: its placeholder hashes the list row.
+    no_body = {"body_text": None}
+    placeholder = source_hash(_with_rows(data, **{"20260430800097": no_body}), dart)
+    assert placeholder != with_body
+    assert source_hash(
+        _with_rows(data, **{"20260430800097": {**no_body, "rm": ""}}), dart
+    ) != placeholder
 
 
 # item 5: annual scope

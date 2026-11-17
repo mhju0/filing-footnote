@@ -784,3 +784,83 @@ def test_dart_orphan_corrections_of_a_missing_original_have_exactly_one_latest(c
             assert by[_NAVER_C1][3] is False
 
     run(scenario())
+
+
+_UNREAD = "20260727800009"  # in scope, not a correction: its category does not need the body
+
+
+def _text_body(tmp_path, text: str):
+    path = tmp_path / "body.xml"
+    path.write_text(f"<html><body><p>{text}</p></body></html>", encoding="utf-8")
+    return path
+
+
+_BODIES = (
+    "SELECT rcept_no, body_text, body_truncated, category IS NOT NULL FROM event_filings "
+    "ORDER BY rcept_no"
+)
+
+
+def test_dart_body_text_is_stored_for_in_scope_rows_only_and_a_failed_refetch_keeps_it(
+    tmp_path,
+) -> None:
+    from app.clients.dart import DartApiError
+
+    async def scenario():
+        async with _database() as (factory, engine):
+            first = FakeDartClient(
+                "035420",
+                documents={"20261103000311": BODY, _UNREAD: _text_body(tmp_path, "원문 하나")},
+            )
+            await run_dart_events(first, "035420", factory, today=TODAY)
+            rows = {r[0]: r for r in await _rows(engine, _BODIES)}
+            in_scope = [r for r in rows.values() if r[3]]
+            assert in_scope and all(r[1] for r in in_scope)  # every in-scope row has text
+            assert all(r[1] is None for r in rows.values() if not r[3])  # excluded rows: none
+            assert rows[_UNREAD][1] == "원문 하나" and rows[_UNREAD][2] is False
+            assert len(rows["20261103000311"][1]) > 1000
+
+            # A re-run whose fetch of that filing fails: the stored text stays, the run fails.
+            down = FakeDartClient(
+                "035420",
+                documents={"20261103000311": BODY},
+                broken={_UNREAD: DartApiError("document.xml unavailable")},
+            )
+            second = await run_dart_events(down, "035420", factory, today=TODAY)
+            assert not second.ok
+            assert any(p.startswith(f"document {_UNREAD}") for p in second.problems)
+            kept = {r[0]: r for r in await _rows(engine, _BODIES)}
+            assert kept[_UNREAD][1] == "원문 하나"  # not NULL, not the placeholder
+            assert {k: v[1:3] for k, v in kept.items() if k != _UNREAD} == {
+                k: v[1:3] for k, v in rows.items() if k != _UNREAD
+            }
+
+            # A healthy run replaces it with the new text.
+            third = FakeDartClient(
+                "035420",
+                documents={"20261103000311": BODY, _UNREAD: _text_body(tmp_path, "원문 둘")},
+            )
+            await run_dart_events(third, "035420", factory, today=TODAY)
+            latest = {r[0]: r for r in await _rows(engine, _BODIES)}
+            assert latest[_UNREAD][1] == "원문 둘"
+
+    run(scenario())
+
+
+def test_a_new_row_whose_first_fetch_fails_is_stored_without_text_beside_rows_with_text() -> None:
+    from app.clients.dart import DartApiError
+
+    async def scenario():
+        async with _database() as (factory, engine):
+            down = FakeDartClient(
+                "035420",
+                documents={"20261103000311": BODY},
+                broken={_UNREAD: DartApiError("document.xml unavailable")},
+            )
+            summary = await run_dart_events(down, "035420", factory, today=TODAY)
+            assert not summary.ok
+            rows = {r[0]: r for r in await _rows(engine, _BODIES)}
+            assert rows[_UNREAD][1] is None
+            assert rows["20261103000311"][1]  # same statement set, other rows keep their text
+
+    run(scenario())

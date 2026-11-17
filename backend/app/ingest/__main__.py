@@ -28,6 +28,7 @@ from app.db.session import get_async_engine, get_async_session
 from app.ingest import ingest_filing
 from app.ingest.dart import DartFilingAdapter
 from app.ingest.events import main as events_main
+from app.ingest.pinned import SAVE_PINNED_HELP, PinnedStore, format_pinned, open_pinned_store
 from app.ingest.sec_ingest import SecFilingAdapter
 from app.logging_config import configure_logging
 
@@ -75,7 +76,7 @@ def match_ticker(matches: list[SecCompanyMatch], ticker: str) -> SecCompanyMatch
     raise ValueError(f"ticker {ticker!r} not found in SEC company_tickers")
 
 
-async def _run_dart(ticker: str) -> None:
+async def _run_dart(ticker: str, pinned: PinnedStore | None = None) -> None:
     client = DartClient(get_settings())
     try:
         corp_code = await client.resolve_corp_code(ticker)
@@ -105,6 +106,7 @@ async def _run_dart(ticker: str) -> None:
                 filing_item=item,
                 bsns_year=bsns_year,
                 reprt_code=_ANNUAL_REPRT_CODE,
+                pinned=pinned,
             ),
             get_async_session,
         )
@@ -116,12 +118,13 @@ async def _run_dart(ticker: str) -> None:
             result.chunks_written,
             result.embeddings_backfilled,
         )
+        _commit_pinned(pinned)
     finally:
         await client.aclose()
         await get_async_engine().dispose()
 
 
-async def _run_sec(ticker: str) -> None:
+async def _run_sec(ticker: str, pinned: PinnedStore | None = None) -> None:
     client = SecClient(get_settings())
     try:
         matches = await client.search_company(ticker)
@@ -129,7 +132,7 @@ async def _run_sec(ticker: str) -> None:
         logger.info("selected %s (CIK %s)", match.title, match.cik)
 
         result = await ingest_filing(
-            SecFilingAdapter(client=client, cik=match.cik), get_async_session
+            SecFilingAdapter(client=client, cik=match.cik, pinned=pinned), get_async_session
         )
         logger.info(
             "done: company=%s filing=%s financials=%d chunks=%d embeddings=%d",
@@ -139,9 +142,21 @@ async def _run_sec(ticker: str) -> None:
             result.chunks_written,
             result.embeddings_backfilled,
         )
+        _commit_pinned(pinned)
     finally:
         await client.aclose()
         await get_async_engine().dispose()
+
+
+def _commit_pinned(pinned: PinnedStore | None) -> None:
+    """Write the staged pinned files once the filing is stored; a problem fails the run."""
+    if pinned is None:
+        return
+    problems = pinned.commit()
+    for problem in problems:
+        print(f"PROBLEM {problem}")
+    if problems:
+        raise SystemExit(1)
 
 
 def main() -> None:
@@ -158,16 +173,20 @@ def main() -> None:
         required=True,
         help="stock ticker (DART: 6-digit code e.g. 005930; SEC: symbol e.g. MSFT)",
     )
+    parser.add_argument("--save-pinned", metavar="DIR", **SAVE_PINNED_HELP)
     args = parser.parse_args()
 
     # configure_logging (not bare basicConfig): installs the crtfc_key masking
     # filters so httpx URL logs never leak the DART API key from the CLI path.
     configure_logging()
 
+    pinned = open_pinned_store(args.save_pinned)
     if args.source == "dart":
-        asyncio.run(_run_dart(args.ticker))
+        asyncio.run(_run_dart(args.ticker, pinned))
     else:
-        asyncio.run(_run_sec(args.ticker))
+        asyncio.run(_run_sec(args.ticker, pinned))
+    if pinned is not None:
+        print(format_pinned(pinned))
 
 
 if __name__ == "__main__":

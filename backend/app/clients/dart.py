@@ -31,6 +31,7 @@ import json
 import logging
 import re
 import zipfile
+from collections.abc import Callable
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
@@ -1132,6 +1133,7 @@ class DartClient:
         bsns_year: str,
         reprt_code: str,
         fs_div: str = "CFS",
+        on_body: Callable[[bytes], None] | None = None,
     ) -> list[FinancialItem]:
         """Fetch full financial statements via ``fnlttSinglAcntAll.json`` (§3).
 
@@ -1175,8 +1177,10 @@ class DartClient:
             fs_div,
         )
         resp = await self._get("fnlttSinglAcntAll.json", params)
-        payload = resp.json()
-        return self._parse_financials_payload(payload)
+        items = self._parse_financials_payload(resp.json())
+        if on_body is not None and items:
+            on_body(resp.content)  # the body as received, after it parsed to rows
+        return items
 
     @staticmethod
     def _parse_financials_payload(payload: Any) -> list[FinancialItem]:

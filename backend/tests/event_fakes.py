@@ -16,8 +16,10 @@ BLANK_BODY = "<html><body><p>본문 없음</p></body></html>".encode()
 
 
 class _Response:
-    def __init__(self, payload: Any) -> None:
+    def __init__(self, payload: Any, content: bytes | None = None) -> None:
         self._payload = payload
+        # The body as received; a saved fixture is served byte for byte.
+        self.content = content if content is not None else json.dumps(payload).encode()
 
     def json(self) -> Any:
         return self._payload
@@ -89,7 +91,8 @@ class FakeDartClient:
         path = DART / "structured" / f"{name}_{self.stock_code}.json"
         if not path.exists():
             return _Response({"status": "013", "message": "조회된 데이타가 없습니다."})
-        return _Response(json.loads(path.read_text()))
+        raw = path.read_bytes()
+        return _Response(json.loads(raw), raw)
 
     async def aclose(self) -> None:
         return None

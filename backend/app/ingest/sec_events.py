@@ -31,7 +31,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.clients.dart_events import ExtractedFact, load_facts_contract
 from app.clients.rate_limit import RequestLimiter, rate_limited_client
-from app.clients.sec import SecClient, SecFilingItem, filing_index_url
+from app.clients.sec import SecClient, SecFilingItem, filing_index_url, format_cik
 from app.clients.sec_8k import TEXT_STORE_LIMIT, read_8k, store_text
 from app.config import get_settings
 from app.db.models import EventFiling, FilingFact
@@ -44,6 +44,7 @@ from app.ingest.events import (
     persist_events,
     window_bounds,
 )
+from app.ingest.pinned import PinnedStore, sec_submissions_path
 
 logger = logging.getLogger(__name__)
 
@@ -286,11 +287,15 @@ async def collect_sec_events(
     company: str,
     window: tuple[datetime.date, datetime.date],
     stored: list[SecChainInput] | None = None,
+    pinned: PinnedStore | None = None,
 ) -> tuple[list[SecEventRecord], SecEventSummary]:
     """``stored`` are earlier-stored non-correction filings of this company (the ones that left
     the window included); they only serve as candidates for an amendment's original."""
     summary = SecEventSummary(cik, window)
-    listed, list_problems = await client.list_filings_window(cik, SEC_FORMS, window[0])
+    save: dict = {}
+    if pinned is not None:
+        save["on_body"] = pinned.sink(sec_submissions_path(format_cik(cik)), summary.problems)
+    listed, list_problems = await client.list_filings_window(cik, SEC_FORMS, window[0], **save)
     summary.problems.extend(f"list: {p}" for p in list_problems)
     filings: list[SecFilingItem] = []
     for filing in listed:
@@ -423,6 +428,7 @@ async def run_sec_events(
     session_factory: Callable[[], AsyncSession],
     *,
     today: datetime.date | None = None,
+    pinned: PinnedStore | None = None,
 ) -> SecEventSummary:
     matches = await client.search_company(ticker)
     match = next((m for m in matches if m.ticker.upper() == ticker.upper()), None)
@@ -431,9 +437,11 @@ async def run_sec_events(
     window = window_bounds(today or datetime.date.today())
     stored = await load_stored_originals(session_factory, match.cik)
     records, summary = await collect_sec_events(
-        client, match.cik, match.ticker, match.title, window, stored
+        client, match.cik, match.ticker, match.title, window, stored, pinned
     )
     summary.problems.extend(await persist_events(session_factory, records))
+    if pinned is not None:  # the rows are committed; only now may the pinned file change
+        summary.problems.extend(pinned.commit())
     return summary
 
 
@@ -450,11 +458,11 @@ def format_sec_summary(summary: SecEventSummary) -> str:
     return "\n".join(lines[:split] + extra + lines[split:])
 
 
-async def run_sec_cli(ticker: str) -> SecEventSummary:
+async def run_sec_cli(ticker: str, pinned: PinnedStore | None = None) -> SecEventSummary:
     http = rate_limited_client(RequestLimiter())
     client = SecClient(get_settings(), http)
     try:
-        return await run_sec_events(client, ticker, get_async_session)
+        return await run_sec_events(client, ticker, get_async_session, pinned=pinned)
     finally:
         await http.aclose()
         await get_async_engine().dispose()

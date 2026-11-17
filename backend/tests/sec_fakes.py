@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from pathlib import Path
 
 import httpx
@@ -73,9 +74,15 @@ class FakeSecClient:
         return listed + [e for e in self.extras if filing_types is None or e.form in filing_types]
 
     async def list_filings_window(
-        self, cik: str, filing_types: list[str], since: object
+        self,
+        cik: str,
+        filing_types: list[str],
+        since: object,
+        on_body: Callable[[bytes], None] | None = None,
     ) -> tuple[list[SecFilingItem], list[str]]:
         self.calls.append(("window", cik))
+        if on_body is not None:
+            on_body(json.dumps(submissions_payload(self.ticker, self.accessions)).encode())
         return await self.list_filings(cik, filing_types), list(self.list_problems)
 
     async def fetch_filing_index(self, cik: str, accession: str) -> list[SecIndexDocument]:
