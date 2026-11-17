@@ -42,6 +42,18 @@ so that nothing stale sits at the path the app build reads.
 downloaded for a build and is git-ignored. The synthetic fixtures the tests use live in
 `backend/tests/fixtures/build/pinned/` and are tracked.
 
+Each ingest command writes these files with `--save-pinned DIR`, after the database
+commit for that run, so a failed run leaves the earlier file alone. A "no data" answer
+never replaces an existing file, and an annual body that parsed to no rows is not saved.
+Two limits:
+
+- A heavy SEC filer whose 8-Ks need older submissions pages cannot be pinned. The layout
+  holds one `sec/submissions/CIK<cik10>.json` per company, which would lack the older
+  filings, so nothing is saved for it and the run reports a problem.
+- A structured DART file covers only the window of the last run that saved it. Build with
+  `--as-of` equal to the ingest date, or filings from the part of the window an earlier
+  file covered will fail verification.
+
 ## DART period dates
 
 OpenDART's annual financial rows carry no period dates. The exporter takes them from the
@@ -57,14 +69,14 @@ such a company needs a fix before it is added.
 
 ## Event source hash
 
-`filings.source_text_sha256` for an event filing with a stored body (an SEC 8-K whose
-text M4 kept in `event_filings.body_text`) is the SHA-256 of that body text and each
-fact's key, source field and raw text. A DART event filing stores no body, so its value
-is a placeholder: the SHA-256 of the regulator's list row (filing key, company, report
-name, filing date, `rm`, SEC items) and the same fact fields. No bundle was released
-with the earlier placeholder-only rule, so `schema_version` stays 1. When DART bodies
-are stored and hashed too, bump `schema_version`, because the same filing then gets a
-different value.
+`filings.source_text_sha256` for an event filing with a stored body is the SHA-256 of
+that body text and each fact's key, source field and raw text. SEC 8-Ks have stored
+bodies since M4, and in-scope DART event filings since the ingest change of 2026-11-17.
+A filing without a stored body, such as one ingested before that change or one whose
+document could not be fetched, gets a placeholder instead: the SHA-256 of the
+regulator's list row (filing key, company, report name, filing date, `rm`, SEC items)
+and the same fact fields. No bundle has been released yet, so `schema_version` stays 1.
+After the first release, a change to what this hash covers bumps `schema_version`.
 
 ## Which filings are exported
 

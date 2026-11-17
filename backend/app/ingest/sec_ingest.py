@@ -46,6 +46,7 @@ from app.filings.model import (
 from app.financials.model import FinancialFact, ReportingPeriod
 from app.financials.vocabulary import PeriodKind, ReportedMetric
 from app.ingest.chunking import Chunk, chunk_document
+from app.ingest.pinned import PinnedStore, sec_companyfacts_path
 
 logger = logging.getLogger(__name__)
 
@@ -224,6 +225,7 @@ class SecFilingAdapter:
     client: SecClient
     cik: str | int
     accession_number: str | None = None
+    pinned: PinnedStore | None = None
 
     async def fetch(self) -> NormalizedFiling:
         """Return a complete snapshot without opening a database session."""
@@ -240,7 +242,10 @@ class SecFilingAdapter:
         sections = extract_10k_prose(document.raw_bytes)
         chunks = chunk_document(sections)
 
-        facts = await self.client.fetch_company_facts(self.cik)
+        save: dict = {}
+        if self.pinned is not None:
+            save["on_body"] = self.pinned.sink(sec_companyfacts_path(cik10))
+        facts = await self.client.fetch_company_facts(self.cik, **save)
         own_facts = [
             fact
             for fact in facts

@@ -29,6 +29,7 @@ unit-tested directly) are split from the thin async I/O methods.
 import datetime
 import logging
 import re
+from collections.abc import Callable
 from dataclasses import dataclass
 from decimal import Decimal, InvalidOperation
 from html.parser import HTMLParser
@@ -249,8 +250,18 @@ def parse_sec_amount(raw: Any) -> int | None:
         try:
             return int(text)
         except ValueError:
-            logger.warning("companyfacts: unparseable amount %r; storing None", raw)
-            return None
+            pass
+        # A decimal literal ("383285000000.0", "3.83285E11") is exact when it is whole;
+        # a fractional amount is refused. Ingest and verify both read floats as text, so
+        # they reach this branch alike.
+        try:
+            exact = Decimal(text)
+        except InvalidOperation:
+            exact = None
+        if exact is not None and exact.is_finite() and exact == exact.to_integral_value():
+            return int(exact)
+        logger.warning("companyfacts: unparseable amount %r; storing None", raw)
+        return None
     return None
 
 
@@ -751,7 +762,11 @@ class SecClient:
         return parse_submissions_payload(resp.json(), filing_types)
 
     async def list_filings_window(
-        self, cik: str | int, filing_types: list[str], since: datetime.date
+        self,
+        cik: str | int,
+        filing_types: list[str],
+        since: datetime.date,
+        on_body: Callable[[bytes], None] | None = None,
     ) -> tuple[list[SecFilingItem], list[str]]:
         """Filings of ``filing_types`` back to ``since``, following older submissions files.
 
@@ -759,6 +774,10 @@ class SecClient:
         than ``since`` and ``filings.files`` lists older pages, each page that can reach
         ``since`` is fetched and parsed. Returns the items and problems; a page that cannot be
         read is a problem, never silently dropped.
+
+        ``on_body`` receives the main submissions body as received. When older pages are
+        needed it is not called and a problem says so: the pinned layout holds one file per
+        company, which would not contain the older filings.
         """
         cik10 = format_cik(cik)
         client = self._get_client()
@@ -775,8 +794,11 @@ class SecClient:
             default=None,
         )
         if oldest is not None and oldest <= since:
+            if on_body is not None:
+                on_body(resp.content)
             return items, problems
         seen = {i.accession_number for i in items}
+        pages_needed = False
         for entry in files if isinstance(files, list) else []:
             name = entry.get("name") if isinstance(entry, dict) else None
             if not isinstance(name, str) or not _SUBMISSIONS_FILE_RE.fullmatch(name):
@@ -785,6 +807,7 @@ class SecClient:
             newest = _parse_sec_date(str(entry.get("filingTo") or ""))
             if newest is not None and newest < since:
                 continue  # entirely older than the window
+            pages_needed = True
             page_url = f"{self._base_url}/submissions/{name}"
             try:
                 logger.info("fetching %s", page_url)
@@ -800,6 +823,14 @@ class SecClient:
                 if item.accession_number not in seen:
                     seen.add(item.accession_number)
                     items.append(item)
+        if on_body is not None:
+            if pages_needed:
+                problems.append(
+                    f"pinned sec/submissions/CIK{cik10}.json: older submissions pages were "
+                    "needed; the pinned layout holds only the main file, so nothing was saved"
+                )
+            else:
+                on_body(resp.content)
         return items, problems
 
     async def fetch_filing_index(
@@ -813,7 +844,9 @@ class SecClient:
         resp.raise_for_status()
         return parse_filing_index_html(resp.text)
 
-    async def fetch_company_facts(self, cik: str | int) -> list[SecFinancialItem]:
+    async def fetch_company_facts(
+        self, cik: str | int, on_body: Callable[[bytes], None] | None = None
+    ) -> list[SecFinancialItem]:
         """Fetch structured XBRL company facts, mapped to standard metric keys.
 
         ★ Numbers must come only from this structured API, never from LLM text.
@@ -826,7 +859,12 @@ class SecClient:
         logger.info("fetching %s", url)
         resp = await client.get(url, headers=self._headers())
         resp.raise_for_status()
-        return parse_companyfacts_payload(resp.json())
+        # Numbers are read as text, as app.build.verify reads the pinned file, so the two
+        # accept or refuse the same value.
+        items = parse_companyfacts_payload(resp.json(parse_float=str))
+        if on_body is not None and items:
+            on_body(resp.content)  # the body as received, after it parsed to rows
+        return items
 
     async def fetch_document(
         self, cik: str | int, accession_number: str, primary_document: str

@@ -212,10 +212,15 @@ def _build_10k_html(
     return html.encode("utf-8")
 
 
-def test_extract_10k_returns_two_ordered_prose_sections() -> None:
+def test_extract_10k_returns_items_1_and_7_then_risk_factors() -> None:
     sections = extract_10k_prose(_build_10k_html())
-    assert len(sections) == 2
-    item1, item7 = sections
+    assert [s.section_title for s in sections] == [
+        "Item 1. Business",
+        "Item 7. Management's Discussion and Analysis",
+        "Item 1A. Risk Factors",
+    ]
+    assert [s.order for s in sections] == [0, 1, 2]
+    item1, item7, _risk = sections
     # Canonical titles + gap-free document order (0, 1).
     assert item1.section_title == "Item 1. Business"
     assert item1.order == 0
@@ -288,7 +293,7 @@ def test_html_to_text_strips_nested_tables_and_keeps_surrounding_prose() -> None
 def test_extract_10k_toc_links_not_mistaken_for_headings() -> None:
     # The TOC "Item 1. Business" / "Item 7. MD&A" links are short; the extracted
     # sections are the full body regions, so both clear the length floor by far.
-    item1, item7 = extract_10k_prose(_build_10k_html())
+    item1, item7, *_ = extract_10k_prose(_build_10k_html())
     assert len(item1.content) > _MIN_LEN_SANITY
     assert len(item7.content) > _MIN_LEN_SANITY
 
@@ -308,7 +313,7 @@ def test_extract_10k_backward_cross_reference_kept_in_body_not_boundary() -> Non
     # The backward "Item 1. Business" ref lives inside Item 7's body; it has no
     # Item 1A after it, so it is not treated as an Item 1 heading -- yet its
     # surrounding MD&A prose stays part of Item 7.
-    item1, item7 = extract_10k_prose(_build_10k_html())
+    item1, item7, *_ = extract_10k_prose(_build_10k_html())
     assert "demand remained strong" in item7.content
     # Item 1 is still the Part I region, not this later reference.
     assert item1.content.startswith("Item 1.")
@@ -374,3 +379,64 @@ def test_risk_cross_reference_is_not_a_section_boundary():
     raw = _build_10k_html().replace(b'Business</p>', b'Business</p><p>See Item 1A of Part I for risks.</p>', 1)
     sections = extract_10k_prose(raw)
     assert _BIZ_TAIL_SENTINEL in sections[0].content
+
+
+def test_item_1a_is_its_own_section_with_its_own_boundaries() -> None:
+    risk = extract_10k_prose(_build_10k_html())[2]
+    assert re.match(r"^Item 1A\. Risk", risk.section_title)
+    assert risk.content.startswith("Item 1A. Risk Factors")
+    assert _RISK_SENTINEL in risk.content
+    # It stops at Item 2 and takes nothing from Items 1 or 7.
+    assert "Properties" not in risk.content and "Cupertino" not in risk.content
+    for other in (_BIZ_SENTINEL, _BIZ_TAIL_SENTINEL, _MDNA_SENTINEL, _MKT_SENTINEL):
+        assert other not in risk.content
+
+
+def test_items_1_and_7_boundaries_are_the_same_with_item_1a_extracted() -> None:
+    item1, item7, _ = extract_10k_prose(_build_10k_html())
+    assert _RISK_SENTINEL not in item1.content  # Item 1 still ends at the Item 1A heading
+    assert item1.content.endswith("closes the business section discussion.")
+    assert _MKT_SENTINEL not in item7.content  # Item 7 still ends at Item 7A
+
+
+def test_item_1a_survives_heading_only_tables_and_other_separators() -> None:
+    table = re.sub(
+        r"<p><b>(Item.*?)</b>(.*?)</p>",
+        r"<table><tr><td>\1</td><td>\2</td></tr></table>",
+        _build_10k_html().decode(),
+    )
+    risk = extract_10k_prose(table.encode())[2]
+    assert _RISK_SENTINEL in risk.content and "Cupertino" not in risk.content
+    dashed = _build_10k_html().decode().replace("Item 1A.", "Item 1A\u2014")
+    assert _RISK_SENTINEL in extract_10k_prose(dashed.encode())[2].content
+
+
+def test_a_filing_without_a_usable_item_1a_still_ingests_items_1_and_7() -> None:
+    raw = _build_10k_html()
+    no_end = raw.replace(b"<p><b>Item 2.</b> Properties</p>", b"")
+    assert [s.order for s in extract_10k_prose(no_end)] == [0, 1]  # no end boundary: omitted
+    short = raw.replace(_RISK_SENTINEL.encode() + b" " + _FILLER.encode(), b"Not required.")
+    assert [s.section_title for s in extract_10k_prose(short)][:2] == [
+        "Item 1. Business",
+        "Item 7. Management's Discussion and Analysis",
+    ]
+    assert len(extract_10k_prose(short)) == 2
+
+
+def test_a_risk_cross_reference_inside_item_1a_is_not_a_second_section() -> None:
+    raw = _build_10k_html().replace(
+        _RISK_SENTINEL.encode(),
+        b"See Item 1A. Risk Factors above. " + _RISK_SENTINEL.encode(),
+        1,
+    )
+    risk = [s for s in extract_10k_prose(raw) if s.section_title.startswith("Item 1A")]
+    assert len(risk) == 1 and risk[0].content.startswith("Item 1A. Risk Factors")
+
+
+def test_item_1a_chunks_carry_its_title_and_order_without_a_schema_change() -> None:
+    from app.ingest.chunking import chunk_document
+
+    chunks = chunk_document(extract_10k_prose(_build_10k_html()))
+    risk = [c for c in chunks if c.section_title == "Item 1A. Risk Factors"]
+    assert risk and {c.section_order for c in risk} == {2}
+    assert {c.section_order for c in chunks if c.section_title.startswith("Item 1.")} == {0}

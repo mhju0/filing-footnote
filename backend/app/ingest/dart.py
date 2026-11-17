@@ -36,6 +36,7 @@ from app.filings.model import (
 from app.financials.model import FinancialFact, ReportingPeriod
 from app.financials.vocabulary import PeriodKind, ReportedMetric
 from app.ingest.chunking import Chunk, chunk_document
+from app.ingest.pinned import PinnedStore, dart_annual_path
 
 logger = logging.getLogger(__name__)
 
@@ -243,11 +244,18 @@ class DartFilingAdapter:
     bsns_year: str
     reprt_code: str
     fs_div: str = "CFS"
+    pinned: PinnedStore | None = None
 
     async def fetch(self) -> NormalizedFiling:
         """Return a complete snapshot without opening a database session."""
+        save: dict = {}
+        if self.pinned is not None:
+            relative = dart_annual_path(
+                self.corp_code, self.bsns_year, self.reprt_code, self.fs_div
+            )
+            save["on_body"] = self.pinned.sink(relative)
         financial_items = await self.client.fetch_financials(
-            self.corp_code, self.bsns_year, self.reprt_code, self.fs_div
+            self.corp_code, self.bsns_year, self.reprt_code, self.fs_div, **save
         )
         name_en = await _fetch_company_eng_name(self.client, self.corp_code)
         document = await self.client.fetch_document(self.filing_item.rcept_no)

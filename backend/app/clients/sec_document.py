@@ -5,12 +5,13 @@ fetched 10-K primary document's raw bytes into the *same* neutral
 :class:`app.clients.dart.ProseSection` list that DART's ``extract_dsd_prose``
 produces, so the downstream chunking/persist layer is source-agnostic.
 
-Scope is deliberately narrow -- ONLY two items are extracted:
+Scope is deliberately narrow -- ONLY three items are extracted:
 - **Item 1 (Business)**       -- what the company does.
 - **Item 7 (MD&A)**           -- Management's Discussion and Analysis.
-Every other item (1A Risk Factors, 7A Market Risk, 8 Financials, ...) is out of
-scope; the sub-item headings ``Item 1A`` / ``Item 7A`` are used only as the
-*end boundaries* of Items 1 and 7 respectively.
+- **Item 1A (Risk Factors)**  -- kept as its own section, after the other two.
+Every other item (7A Market Risk, 8 Financials, ...) is out of scope; the
+sub-item headings ``Item 1A`` / ``Item 7A`` are also the *end boundaries* of
+Items 1 and 7 respectively (unchanged by the Item 1A section).
 
 Approach (docs task scope):
 1. Decode the bytes (modern 10-K primary docs are UTF-8 inline-XBRL HTML).
@@ -115,6 +116,12 @@ _LARGE_DOC_WARN_BYTES = 8_000_000
 # citation label independent of per-filer heading wording.
 _ITEM1_TITLE = "Item 1. Business"
 _ITEM7_TITLE = "Item 7. Management's Discussion and Analysis"
+_ITEM1A_TITLE = "Item 1A. Risk Factors"
+
+# Item 1A is kept when it is at least this long. Unlike Items 1 and 7 it is not fail-loud:
+# a filer may state that risk factors are not required, and a filing without a usable
+# Item 1A still ingests (without that section).
+_MIN_RISK_CHARS = 200
 
 # Unicode spaces that HTML entities (&nbsp; -> \xa0) and typography introduce;
 # folded to a plain space before whitespace collapsing so ``Item\xa01.`` matches.
@@ -122,8 +129,9 @@ _UNICODE_SPACES = ("\xa0", " ", " ", " ", " ", " ", " ")
 
 
 _HEADING_TABLE_RE = re.compile(
-    r"item\s+(1|1A|7|7A)\s*[.\-–—:]?\s+"
-    r"(business|risk factors|management['’]s discussion and analysis"
+    r"item\s+(1|1A|1B|1C|2|7|7A)\s*[.\-–—:]?\s+"
+    r"(business|risk factors|unresolved staff comments|cybersecurity|properties|"
+    r"management['’]s discussion and analysis"
     r"(?: of financial condition and results of operations)?|"
     r"quantitative and qualitative disclosures about market risk)\.?",
     re.IGNORECASE,
@@ -316,6 +324,33 @@ def _locate_item(
     return best
 
 
+_RISK_START_RE = re.compile(r"^item\s+1A\s*[.\-–—:]?\s*risk\s+factors\b", re.I | re.M)
+_RISK_END_RE = re.compile(
+    r"^item\s+(?:1B\s*[.\-–—:]?\s*unresolved|1C\s*[.\-–—:]?\s*cybersecurity|"
+    r"2\s*[.\-–—:]?\s*properties)",
+    re.I | re.M,
+)
+
+
+def _extract_risk_factors(text: str) -> str | None:
+    """Item 1A's prose, or ``None`` when it cannot be located or is too short.
+
+    The heading must start a line, which skips cross-references in running text. The end is
+    the next line-initial Item 1B, 1C or 2 heading; of the candidate regions (a table of
+    contents entry and the body) the longest wins, as for Items 1 and 7.
+    """
+    ends = [m.start() for m in _RISK_END_RE.finditer(text)]
+    best: tuple[int, int] | None = None
+    for match in _RISK_START_RE.finditer(text):
+        end = next((e for e in ends if e > match.start()), None)
+        if end is not None and (best is None or end - match.start() > best[1] - best[0]):
+            best = (match.start(), end)
+    if best is None:
+        return None
+    content = text[best[0] : best[1]].strip()
+    return content if len(content) >= _MIN_RISK_CHARS else None
+
+
 def _extract_item(text: str, label: str, num: str, sub: str, hint: str) -> str:
     """Return one item's prose, or raise :class:`SecDocumentParseError` (fail-loud).
 
@@ -342,15 +377,18 @@ def _extract_item(text: str, label: str, num: str, sub: str, hint: str) -> str:
 
 
 def extract_10k_prose(raw_bytes: bytes) -> list[ProseSection]:
-    """Extract Item 1 (Business) and Item 7 (MD&A) prose from a 10-K primary doc.
+    """Extract Item 1 (Business), Item 7 (MD&A) and Item 1A (Risk Factors) from a 10-K.
 
-    Returns exactly two :class:`ProseSection` records in document order
-    (``order`` 0 = Item 1, 1 = Item 7), each carrying a canonical
-    ``section_title`` and the item's tag-stripped prose as ``content``.
+    Returns :class:`ProseSection` records ``order`` 0 = Item 1, 1 = Item 7 and, when it can
+    be located (see :func:`_extract_risk_factors`), 2 = Item 1A. Items 1 and 7 keep their
+    positions so stored chunks of earlier ingests do not move. Each carries a canonical
+    ``section_title`` and the item's tag-stripped prose as ``content``:
+    ``Item 1. Business``, ``Item 7. Management's Discussion and Analysis``,
+    ``Item 1A. Risk Factors``.
 
     ★ Fail-loud: raises :class:`SecDocumentParseError` (naming the item) if either
     item is missing or its text is under :data:`_MIN_ITEM_CHARS`. Other items are
-    out of scope; ``Item 1A`` / ``Item 7A`` serve only as end boundaries.
+    out of scope; Item 1A is optional as described above.
     """
     if len(raw_bytes) > _LARGE_DOC_WARN_BYTES:
         logger.warning(
@@ -365,7 +403,13 @@ def extract_10k_prose(raw_bytes: bytes) -> list[ProseSection]:
     logger.info(
         "extract_10k_prose: Item 1 = %d chars, Item 7 = %d chars", len(item1), len(item7)
     )
-    return [
+    sections = [
         ProseSection(section_title=_ITEM1_TITLE, content=item1, order=0),
         ProseSection(section_title=_ITEM7_TITLE, content=item7, order=1),
     ]
+    risk = _extract_risk_factors(text)
+    if risk is None:
+        logger.warning("extract_10k_prose: no usable Item 1A (Risk Factors); section omitted")
+    else:
+        sections.append(ProseSection(section_title=_ITEM1A_TITLE, content=risk, order=2))
+    return sections

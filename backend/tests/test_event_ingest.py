@@ -9,14 +9,17 @@ from decimal import Decimal
 
 import pytest
 
+from app.clients import sec_8k
 from app.clients.dart import DartApiError
-from app.clients.dart_events import CorrectionTarget
+from app.clients.dart_events import CorrectionTarget, read_event_document
 from app.filings.categories import classify_dart
+from app.ingest import events
 from app.ingest.events import (
     ChainInput,
     collect_dart_events,
     format_summary,
     resolve_chains,
+    store_body_text,
     window_bounds,
 )
 from tests.event_fakes import DART, FakeDartClient
@@ -302,20 +305,16 @@ def test_excluded_filings_are_kept_with_a_reason_and_counted() -> None:
         assert record.classification.excluded_reason
     assert sum(summary.excluded.values()) == len(excluded)
     assert sum(summary.by_category.values()) + len(excluded) == summary.listed
-    # A body is fetched only for in-scope corrections (to link them) and for names the
-    # contract cannot decide without it (plain 영업(잠정)실적), never per excluded filing.
+    # A body is fetched for every in-scope filing (its text is stored) and for names the
+    # contract cannot decide without it (plain 영업(잠정)실적), never for another excluded one.
     fetched = {c[1] for c in client.calls if c[0] == "document"}
-    corrections = {
-        r.item.rcept_no
-        for r in records
-        if r.classification.category is not None and r.classification.is_correction
-    }
+    in_scope = {r.item.rcept_no for r in records if r.classification.category is not None}
     needs_body = {
         r.item.rcept_no
         for r in records
         if classify_dart(r.item.report_nm).excluded_reason == "needs_body"
     }
-    assert needs_body and fetched == corrections | needs_body
+    assert needs_body and fetched == in_scope | needs_body
     # The saved M2 bodies decide every one of them.
     for rcept in needs_body:
         record = next(r for r in records if r.item.rcept_no == rcept)
@@ -418,7 +417,7 @@ def test_the_cli_exits_non_zero_when_a_body_could_not_be_read(monkeypatch, capsy
 
     _, summary = collect(FakeDartClient("035420", missing="fail", use_classifier_documents=False))
 
-    async def fake_run(ticker: str):
+    async def fake_run(ticker: str, pinned=None):
         return summary
 
     monkeypatch.setattr(events, "_run", fake_run)
@@ -442,3 +441,102 @@ def test_a_real_exchange_correction_links_to_its_original_end_to_end() -> None:
     assert fix.chain.original_rcept_no == "20260819800340"
     assert fix.chain.first_filed_at == D(2026, 8, 19)
     assert (original.chain.is_latest, fix.chain.is_latest) == (False, True)
+
+
+# -- body text of in-scope filings (M3 follow-up) -------------------------------------------------
+
+UNREAD = "20260727800009"  # 주식소각결정: in scope, not a correction, no body needed to classify
+
+
+def test_the_text_limit_is_the_one_the_sec_ingest_uses() -> None:
+    assert events.TEXT_STORE_LIMIT is sec_8k.TEXT_STORE_LIMIT
+
+
+def test_store_body_text_cuts_exactly_over_the_limit_and_says_so() -> None:
+    assert store_body_text("abcde", 5) == ("abcde", False)
+    assert store_body_text("abcdef", 5) == ("abcde", True)
+    assert store_body_text("", 5) == ("", False)
+
+
+def test_in_scope_filings_get_their_plain_text_and_excluded_ones_do_not() -> None:
+    client = FakeDartClient("035420", documents={"20261103000311": CORRECTION_BODY})
+    records, summary = collect(client)
+    in_scope = [r for r in records if r.classification.category is not None]
+    excluded = [r for r in records if r.classification.category is None]
+    assert in_scope and excluded
+
+    for record in in_scope:
+        assert record.body_text, record.key
+        row = record.to_row()
+        assert row["body_text"] == record.body_text and row["body_truncated"] is False
+    # The text is what the existing reader makes of the saved body, not a placeholder.
+    chosen = next(r for r in in_scope if r.key == "20261103000311")
+    assert chosen.body_text == read_event_document(CORRECTION_BODY.read_bytes()).text
+    assert len(chosen.body_text) > 1000
+
+    for record in excluded:
+        assert record.body_text is None
+        assert "body_text" not in record.to_row()  # a stored text is not overwritten
+    assert summary.bodies_stored == len(in_scope)
+    assert summary.bodies_truncated == 0
+
+
+def test_a_long_body_is_cut_at_the_limit_and_flagged(monkeypatch) -> None:
+    monkeypatch.setattr(events, "TEXT_STORE_LIMIT", 100)
+    client = FakeDartClient("035420", documents={"20261103000311": CORRECTION_BODY})
+    records, summary = collect(client)
+    full = read_event_document(CORRECTION_BODY.read_bytes()).text
+    chosen = next(r for r in records if r.key == "20261103000311")
+    assert chosen.body_text == full[:100]
+    assert chosen.body_truncated is True
+    assert chosen.to_row()["body_truncated"] is True
+    short = next(r for r in records if r.key == UNREAD)
+    assert short.body_text == "본문 없음" and short.body_truncated is False
+    assert all(len(r.body_text) <= 100 for r in records if r.body_text)
+    cut = sum(1 for r in records if r.body_truncated)
+    assert cut == summary.bodies_truncated and cut > 1  # the long bodies, not the 5-character ones
+    assert f"cut at 100 characters={cut}" in format_summary(summary)
+
+
+def test_the_summary_counts_every_document_request_once() -> None:
+    client = FakeDartClient("035420", documents={"20261103000311": CORRECTION_BODY})
+    records, summary = collect(client)
+    requested = [c[1] for c in client.calls if c[0] == "document"]
+    assert len(requested) == len(set(requested))  # never fetched twice
+    in_scope = {r.key for r in records if r.classification.category is not None}
+    needs_body = {
+        r.key for r in records if classify_dart(r.item.report_nm).excluded_reason == "needs_body"
+    }
+    assert summary.documents_fetched == len(requested) == len(in_scope | needs_body)
+    assert f"documents fetched={len(requested)} bodies stored={len(in_scope)}" in format_summary(
+        summary
+    )
+
+
+def test_a_failed_fetch_sets_no_text_and_is_a_problem_without_freezing_the_chain() -> None:
+    broken = {UNREAD: DartApiError("document.xml unavailable")}
+    client = FakeDartClient("035420", documents={"20261103000311": CORRECTION_BODY}, broken=broken)
+    records, summary = collect(client)
+    record = next(r for r in records if r.key == UNREAD)
+    assert record.body_text is None and "body_text" not in record.to_row()
+    assert not record.degraded  # its category never depended on the body
+    assert record.classification.category is not None
+    assert any(p.startswith(f"document {UNREAD}") for p in summary.problems)
+    assert any("unavailable" in e for e in record.errors)
+    assert not summary.ok
+    healthy = next(r for r in records if r.key == "20260727000001")
+    assert healthy.body_text
+    # The failed request still counts: it was made.
+    assert summary.documents_fetched == len({c[1] for c in client.calls if c[0] == "document"})
+
+
+def test_an_empty_extracted_body_leaves_the_text_unset_not_an_empty_string(tmp_path) -> None:
+    empty = tmp_path / "empty.xml"
+    empty.write_text("<html><body>  </body></html>", encoding="utf-8")
+    client = FakeDartClient("035420", documents={"20261103000311": CORRECTION_BODY, UNREAD: empty})
+    records, summary = collect(client)
+    record = next(r for r in records if r.key == UNREAD)
+    assert record.body_text is None and "body_text" not in record.to_row()
+    assert summary.bodies_stored == len(
+        [r for r in records if r.classification.category is not None]
+    ) - 1
