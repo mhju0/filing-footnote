@@ -1,3 +1,5 @@
+> This document describes Filing Digest v0.5.2 and is kept as history.
+
 # Roadmap
 
 Current baseline: v0.5.2 maintenance closeout (2026-10-06).

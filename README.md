@@ -1,82 +1,55 @@
-<div align="center">
+# Filing Footnote
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="docs/design/logos/mark_dark.png">
-  <img src="docs/design/logos/mark_light.png" width="130" alt="Filing Digest citation-bracket mark">
-</picture>
+In progress: plain, neutral summaries of what Korean (DART) and US (SEC) companies officially filed, with the original filing one tap away.
 
-# Filing Digest
+한국(DART)과 미국(SEC) 기업이 공식 제출한 사업보고서와 이벤트 공시를 중립적인 말로 요약해 주는 앱을 만들고 있습니다.
 
-Explore key figures from Korean and US company filings, with the original sources.
+Filing Footnote continues Filing Digest and Filing Agent, two earlier projects by the same owner, and merges them into one offline app for iPhone, iPad and Mac.
 
-**[Open the walkthrough](https://mhju0.github.io/filing-digest/)** · [한국어](https://mhju0.github.io/filing-digest/?lang=ko) · [English](https://mhju0.github.io/filing-digest/?lang=en)
+## What it is · 소개
 
-[Sister project: Filing Agent](https://github.com/mhju0/filing-agent)
+Planned: the app will summarise annual reports and event filings (buybacks, dividends, earnings releases, executive changes) in neutral words. Every figure will be an exact decimal taken from structured filing data, and every statement will be attributed to the company that made it. The owner's principle is to never exaggerate: no hype, no judgement words, no predictions, no advice.
 
-[![CI](https://github.com/mhju0/filing-digest/actions/workflows/ci.yml/badge.svg)](https://github.com/mhju0/filing-digest/actions/workflows/ci.yml)
-![Python 3.11](https://img.shields.io/badge/Python-3.11-3776ab.svg)
-![iOS 17+](https://img.shields.io/badge/iOS-17%2B-black.svg)
+계획: 앱은 사업보고서와 이벤트 공시(자사주, 배당, 실적 발표, 임원 변동 등)를 중립적인 말로 요약할 예정입니다. 모든 숫자는 공시의 정형 데이터에서 가져온 정확한 소수로 보여 주고, 모든 서술은 해당 회사의 말로 표시합니다. 과장하지 않는다는 원칙에 따라 홍보성 표현, 평가 표현, 예측, 투자 조언을 쓰지 않습니다.
 
-<br>
+The finished app will run from a bundled read-only SQLite file built on the owner's Mac. A small read-only API will serve the same file. Running it will cost nothing.
 
-<img src="docs/screenshots/digest-apple-en.png" width="300" alt="Apple's FY2025 digest in English: revenue of 416.2B USD, up 6.4% year over year, with operating income, net income, EPS and a summary">
+## Status · 현재 상태
 
-</div>
+**Status:** v0.5.2 code base inherited from Filing Digest; Filing Footnote v0.1 is in progress.
 
-Filing Digest is an iPhone app for reading Korean (DART) and US (SEC) annual filings. Key figures and AI explanations sit side by side, and any figure, citation or source row opens the regulator's original document.
+| Area | Today | Planned for v0.1 |
+|---|---|---|
+| Backend | Filing Digest's FastAPI and PostgreSQL service, annual filings only | Event-filing pipeline; read-only API over the SQLite file |
+| Data file | None | Bundled SQLite file with exact decimals |
+| App | Filing Digest's iPhone app (SwiftUI) | One SwiftUI app for iPhone, iPad and Mac |
+| Checks | `scripts/check.sh` runs lint and offline backend tests | Contract tests for the SQLite file and the text guards |
 
-The walkthrough is a recorded, read-only tour of the app. It makes no API calls.
+The code in this repository is still Filing Digest's backend and iPhone app. The event-filing pipeline, the SQLite build and the multiplatform app are planned and not built. [PRODUCT.md](PRODUCT.md) describes the intended product; [docs/adr/](docs/adr/) holds the proposed decisions.
 
-**Status:** v0.5.2 · Maintenance · API v0.4 · database schema v0.3
+## Run the checks
 
-[Maintenance policy and release limits](docs/MAINTENANCE.md)
-
-## How it works
-
-- Figures come from structured DART and SEC data and never pass through the model. Backend code calculates comparisons and ratios.
-- KURE-v1 embeddings and pgvector find relevant passages. Gemini Flash-Lite writes the explanation using numbered labels that are mapped back to real passages.
-- Guards check the citations and financial expressions in generated text before it reaches the app. If a check fails, the explanation is withheld and the figures still show. The guards do not prove that every sentence is supported by its cited passage.
-- Questions that fall below a calibrated similarity threshold (0.42) never reach the model.
-
-## Key facts
-
-| | |
-|---|---|
-| Stack | FastAPI · PostgreSQL 16 + pgvector · KURE-v1 · Gemini Flash-Lite · SwiftUI (no third-party packages) · Docker Compose |
-| Coverage | 18 companies (9 DART, 9 SEC) and 23 annual filings in the owner's [local qualification](docs/COVERAGE.md) of Sept 9, 2026. The database is not distributed; a fresh checkout starts empty |
-| Tests | 460 offline tests passed on Oct 2, 2026. CI also runs the PostgreSQL suites and the iOS unit and UI tests |
-| Evaluation | A 24-case golden set run against the live API passed 24/24 on Oct 3, 2026 with Gemini Flash-Lite on the 18-company corpus (retrieval Hit@1 0.900, Hit@3 1.000, MRR 0.950). Questions cover only Apple, Microsoft and Samsung Electronics: 14 full-answer and 10 retrieval cases |
-
-## Run locally
-
-Requires Python 3.11, Docker with Compose, Xcode 16 or newer, and your own DART and Gemini keys. No production data or API keys are included.
+Requires Python 3.11.
 
 ```bash
 python3.11 -m venv .venv
-.venv/bin/pip install -r backend/requirements.lock
-cp backend/.env.example backend/.env    # add your keys
-docker compose up -d db
-cd backend && ../.venv/bin/python -m uvicorn app.main:app --reload --port 8001
+.venv/bin/pip install -r backend/requirements.lock ruff==0.15.21
+scripts/check.sh
 ```
 
-[DEVELOPMENT.md](docs/DEVELOPMENT.md) covers environment variables, ingestion, database upgrades, tests, the API and running on a device.
-
-## Limits
-
-- Annual filings only: supported DART DSD prose and selected SEC 10-K Item 1 and Item 7 sections. This is not whole-document retrieval.
-- It is a local, single-user service with no authentication. Do not expose it to the public internet.
-- Generated wording varies between runs; figures do not.
+The last line is `GATE: PASS` or `GATE: FAIL`. The checks run offline: no database, no API keys, and the embedding model is not loaded. The PostgreSQL suite (`make test-db`) is separate and needs a local PostgreSQL with pgvector.
 
 ## Documentation
 
 | Document | Contents |
 |---|---|
-| [MAINTENANCE.md](docs/MAINTENANCE.md) | Frozen baseline, permitted fixes and interview operating checks |
-| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | Component boundaries, schema decisions, API contract |
-| [CONTEXT.md](CONTEXT.md) | Domain glossary: the vocabulary the code is named after |
-| [docs/adr/](docs/adr/) | Architecture decisions and the alternatives they replaced |
-| [DESIGN.md](docs/design/DESIGN.md) | The implemented visual system and its accessibility floor |
-| [RELEASE_READINESS.md](docs/RELEASE_READINESS.md) | Release qualification and remaining limits |
+| [PRODUCT.md](PRODUCT.md) | What the product is, who it is for, and its commitments |
+| [DESIGN.md](docs/design/DESIGN.md) | Visual system and screens |
+| [docs/adr/](docs/adr/) | Architecture decisions |
+| [DECISIONS.md](docs/DECISIONS.md) | Decision ledger; entries before D59 describe Filing Digest |
+| [CONTEXT.md](CONTEXT.md) | Domain glossary |
+
+Other files under `docs/` describe Filing Digest v0.5.2 and are kept as history.
 
 ## License
 

@@ -1,3 +1,5 @@
+> This document describes Filing Digest v0.5.2 and is kept as history.
+
 # Release qualification · 2026-09-09
 
 The owner approved the remediation sequence and company expansion after the

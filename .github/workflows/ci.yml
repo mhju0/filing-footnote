@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
 
 jobs:
   backend:
@@ -44,6 +45,8 @@ jobs:
         run: make test-db PYTHON=python
 
   ios:
+    # Manual only: the private repo does not spend paid macOS minutes.
+    if: github.event_name == 'workflow_dispatch'
     runs-on: macos-15
     timeout-minutes: 20
     steps:
