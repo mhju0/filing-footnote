@@ -1,6 +1,9 @@
 # DART corpCode snapshot cache (regenerable from the ~3.5MB corpCode.xml ZIP).
 backend/data/corpcode_snapshot.json
 
+# Downloaded regulator responses the M8 export verifies against (make data PINNED=...).
+backend/data/pinned/
+
 # Offline eval harness run output (regenerable, not for the repo).
 backend/evals/reports/
 
@@ -27,6 +30,9 @@ dist/
 
 # Xcode / Swift
 build/
+# The M8 build step's source and test fixtures are not build output.
+!backend/app/build/
+!backend/tests/fixtures/build/
 DerivedData/
 *.xcuserstate
 xcuserdata/
