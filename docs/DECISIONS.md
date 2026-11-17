@@ -701,3 +701,17 @@ sources only. Event filings follow D64 and D65. A release build re-checks every
 figure and fact against pinned regulator responses and re-runs the neutrality
 guard, and it never relies on the build's own flags. ADR 0006 is accepted with
 this milestone; the file format is described in `docs/build-bundle.md`.
+
+## D67 · Annual summary sections and their sources · 2026-11-17 (`ACCEPTED`)
+
+The latest annual report's summaries cover four sections: `one_line`, `business`,
+`changes` and `risks`. Each is written from the report's own text, picked by
+section heading, never by search. `risks` uses only a heading the company gives
+to its business or investment risks (SEC Item 1A; DART headings such as
+투자위험 or 위험요소), never 위험관리 및 파생거래, which covers hedging. A report
+without such a heading has no `risks` summary, and none is required for it; the
+build does not write one from other text. One shared rule in
+`backend/app/build/model.py` decides the sections for both the summary step and
+the exporter. A summary's key covers its source text, prompt version, model,
+section and lexicon version, and a release refuses an approved summary whose key
+no longer matches the current source.
