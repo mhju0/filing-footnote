@@ -60,6 +60,14 @@ _Avoid_: Financial fact, reported metric
 A Normalized Filing whose Filing Chunks are ready for semantic retrieval. A Normalized Filing may be available for digests and structured facts before it becomes an Indexed Filing.
 _Avoid_: Saved filing, embedded filing
 
+**Event Filing**:
+A Corporate Filing made between annual reports to disclose one decision or result, such as a buyback, a dividend, preliminary results or an executive change (DART 주요사항보고서 and exchange disclosures, SEC 8-K).
+_Avoid_: News, announcement
+
+**Filing Category**:
+The one label from the fixed list in `contracts/filing-categories.json` that deterministic rules assign to an Event Filing. A filing that matches no rule is excluded with a named reason, never given a nearby category.
+_Avoid_: Tag, topic, type
+
 **Evidence Integrity Failure**:
 A state in which a claim's Citation cannot resolve through its Filing Chunk to an openable Filing Source. The claim is not safe to present as grounded evidence.
 _Avoid_: No results, missing citation

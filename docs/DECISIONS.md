@@ -646,3 +646,10 @@ A read-only SQLite file built on the owner's Mac replaces the PostgreSQL
 service at run time, and exact decimals supersede the floating-point
 year-over-year path. See
 [ADR 0006](adr/0006-bundled-sqlite-with-exact-decimals.md).
+
+## D62 · Filing categories accepted · 2026-11-17 (`ACCEPTED`)
+
+D59 is accepted with the owner's changes from the M1 sample: a separate unit-sales
+category, subsidiary filings kept and flagged, and no per-company limit. The list
+and rules are in `contracts/filing-categories.json`. See
+[ADR 0004](adr/0004-event-filings-in-scope.md).
