@@ -19,6 +19,7 @@ import uuid
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
     BigInteger,
+    Boolean,
     CheckConstraint,
     Date,
     DateTime,
@@ -187,6 +188,127 @@ class Financial(Base):
         BigInteger, nullable=False, server_default=text("1")
     )
     source: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=text("now()")
+    )
+
+
+class EventFiling(Base):
+    """One DART event filing in the ingest window (M3 staging); see migration 0002."""
+
+    __tablename__ = "event_filings"
+    __table_args__ = (
+        CheckConstraint(
+            "(category IS NULL) <> (excluded_reason IS NULL)",
+            name="event_filings_category_xor_reason_check",
+        ),
+        CheckConstraint(
+            "correction_link IN ('none', 'linked', 'unlinked', 'not_resolved_excluded')",
+            name="event_filings_correction_link_check",
+        ),
+        CheckConstraint(
+            "(correction_link = 'none' AND original_rcept_no IS NULL AND NOT is_correction) "
+            "OR (correction_link = 'linked' AND original_rcept_no IS NOT NULL "
+            "AND is_correction) "
+            "OR (correction_link IN ('unlinked', 'not_resolved_excluded') "
+            "AND original_rcept_no IS NULL AND is_correction)",
+            name="event_filings_link_shape_check",
+        ),
+        Index("idx_event_filings_corp_filed", "corp_code", text("filed_at DESC")),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        server_default=text("gen_random_uuid()"),
+    )
+    rcept_no: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
+    corp_code: Mapped[str] = mapped_column(Text, nullable=False)
+    stock_code: Mapped[str | None] = mapped_column(Text)
+    corp_name: Mapped[str] = mapped_column(Text, nullable=False)
+    report_nm: Mapped[str] = mapped_column(Text, nullable=False)
+    filed_at: Mapped[datetime.date | None] = mapped_column(Date)
+    rm: Mapped[str] = mapped_column(Text, nullable=False, server_default=text("''"))
+    url: Mapped[str | None] = mapped_column(Text)
+    # Exactly one of category / excluded_reason is set (classifier contract).
+    category: Mapped[str | None] = mapped_column(Text)
+    excluded_reason: Mapped[str | None] = mapped_column(Text)
+    subsidiary: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=text("false")
+    )
+    is_correction: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=text("false")
+    )
+    matched_rule: Mapped[str] = mapped_column(Text, nullable=False)
+    basis: Mapped[str | None] = mapped_column(Text)
+    # 'none' (an original), 'linked' (original_rcept_no set), 'unlinked' (an in-scope correction
+    # whose original could not be determined; correction_note says why), 'not_resolved_excluded'
+    # (a correction the classifier excluded; its chain is not resolved).
+    correction_link: Mapped[str] = mapped_column(
+        Text, nullable=False, server_default=text("'none'")
+    )
+    original_rcept_no: Mapped[str | None] = mapped_column(Text)
+    correction_first_filed_at: Mapped[datetime.date | None] = mapped_column(Date)
+    correction_note: Mapped[str | None] = mapped_column(Text)
+    # The newest version of a correction chain is the one shown; older versions are kept.
+    is_latest: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=text("true")
+    )
+    errors: Mapped[list] = mapped_column(JSONB, nullable=False, server_default=text("'[]'"))
+    created_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=text("now()")
+    )
+    updated_at: Mapped[datetime.datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=text("now()")
+    )
+
+
+class FilingFact(Base):
+    """One structured figure/date from an event filing (M3 staging); see migration 0002."""
+
+    __tablename__ = "filing_facts"
+    __table_args__ = (
+        UniqueConstraint(
+            "event_filing_id", "key", name="filing_facts_event_filing_id_key_key"
+        ),
+        CheckConstraint(
+            "kind IN ('amount', 'date', 'count', 'ratio', 'text')",
+            name="filing_facts_kind_check",
+        ),
+        CheckConstraint(
+            "(error IS NOT NULL AND value_decimal IS NULL AND value_date IS NULL "
+            "AND value_text IS NULL) "
+            "OR (error IS NULL AND ("
+            "(kind IN ('amount', 'count', 'ratio') AND value_decimal IS NOT NULL "
+            "AND value_date IS NULL AND value_text IS NULL) "
+            "OR (kind = 'date' AND value_date IS NOT NULL AND value_decimal IS NULL "
+            "AND value_text IS NULL) "
+            "OR (kind = 'text' AND value_text IS NOT NULL AND value_decimal IS NULL "
+            "AND value_date IS NULL)))",
+            name="filing_facts_value_shape_check",
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        server_default=text("gen_random_uuid()"),
+    )
+    event_filing_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("event_filings.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    key: Mapped[str] = mapped_column(Text, nullable=False)
+    kind: Mapped[str] = mapped_column(Text, nullable=False)
+    unit: Mapped[str | None] = mapped_column(Text)
+    source_field: Mapped[str] = mapped_column(Text, nullable=False)
+    raw: Mapped[str] = mapped_column(Text, nullable=False)
+    # Unconstrained numeric: exact decimals, never rounded to a column scale.
+    value_decimal: Mapped[decimal.Decimal | None] = mapped_column(Numeric)
+    value_date: Mapped[datetime.date | None] = mapped_column(Date)
+    value_text: Mapped[str | None] = mapped_column(Text)
+    error: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime.datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=text("now()")
     )
