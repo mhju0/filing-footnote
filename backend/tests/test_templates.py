@@ -1,4 +1,4 @@
-"""Template summaries for table filings (D77): wording, direction, guard, cache key, generate."""
+"""Template summaries for table filings (D78): wording, direction, guard, cache key, generate."""
 
 from __future__ import annotations
 
@@ -282,7 +282,7 @@ def test_the_exporter_and_the_summary_build_agree_on_the_template_key() -> None:
             event = build.events[target.filing_id]
             assert export.current_input_sha256(build, target.filing_id, "summary") == (
                 summary_input_sha256(event_source_text(event), MODEL, "summary",
-                                     summaries.PROMPT_VERSION, load_lexicon().version))  # fmt: skip
+                                     summaries.EVENT_PROMPT_VERSION, load_lexicon().version))  # fmt: skip
 
 
 # -- generate ------------------------------------------------------------------------------------

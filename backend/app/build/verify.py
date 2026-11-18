@@ -7,7 +7,7 @@ directory in order:
 - ``sec/companyfacts/CIK<10-digit cik>.json``
 - ``dart/structured/<endpoint>_<stock_code>.json`` (event facts, M3 layout)
 - ``sec/submissions/CIK<10-digit cik>.json`` (8-K facts: items and event date)
-- ``dart/document/<rcept_no>.xml`` (event facts read from a filing's table, D77)
+- ``dart/document/<rcept_no>.xml`` (event facts read from a filing's table, D78)
 
 A pinned response is parsed and its row selected by the same code the ingest uses, and the
 figure must equal the stored value exactly, as a ``Decimal`` and as its canonical string. Any

@@ -61,6 +61,7 @@ from app.build.bundle import (
 )
 from app.build.model import (
     DECIMAL_VALUE_KINDS,
+    EVENT_PROMPT_VERSION,
     FACT_VALUE_KINDS,
     LANGS,
     PROMPT_VERSION,
@@ -113,6 +114,7 @@ CURRENCY = {"DART": "KRW", "SEC": "USD"}
 REGULATOR_ORDER = {"DART": 0, "SEC": 1}
 DEFAULT_LLM_MODEL = "qwen/qwen3.8-27b"  # D68
 DEFAULT_PROMPT_VERSION = PROMPT_VERSION
+DEFAULT_EVENT_PROMPT_VERSION = EVENT_PROMPT_VERSION
 
 _ANNUAL_PERIOD_RE = re.compile(r"([0-9]{4})-annual")
 _REPORTED_METRICS = frozenset(m.value for m in ReportedMetric)
@@ -125,6 +127,8 @@ class BuildOptions:
     allow_unapproved: bool = False
     llm_model: str = DEFAULT_LLM_MODEL
     prompt_version: str = DEFAULT_PROMPT_VERSION
+    # Keys event summaries; prompt_version keys annual ones (D78).
+    event_prompt_version: str = DEFAULT_EVENT_PROMPT_VERSION
 
 
 @dataclass
@@ -190,6 +194,10 @@ def build_bundle(data: BuildInput, options: BuildOptions, pinned_dirs: Sequence[
     summary_rows = _summaries(build, company_rows)
     if not options.allow_unapproved and options.prompt_version == NO_PROMPT_VERSION:
         build.problems.append(f"release build refused: --prompt-version is {NO_PROMPT_VERSION!r}")
+    if not options.allow_unapproved and options.event_prompt_version == NO_PROMPT_VERSION:
+        build.problems.append(
+            f"release build refused: --event-prompt-version is {NO_PROMPT_VERSION!r}"
+        )
     if build.problems:
         raise BuildError(build.problems)
 
@@ -752,7 +760,8 @@ def current_input_sha256(build: _Build, filing_id: str, section: str) -> str | N
     if build.filing_kinds[filing_id] == "event":
         event = build.events[filing_id]
         return event_summary_key(event, event_source_text(event), build.options.llm_model,
-                                 build.options.prompt_version, load_lexicon().version)  # fmt: skip
+                                 build.options.event_prompt_version,
+                                 load_lexicon().version)  # fmt: skip
     source = annual_source_text(build.annual[filing_id].filing, section)
     if source is None:
         return None
@@ -966,7 +975,12 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--prompt-version",
         default=DEFAULT_PROMPT_VERSION,
-        help=f"a release refuses {NO_PROMPT_VERSION!r}",
+        help=f"the annual summaries' prompt version; a release refuses {NO_PROMPT_VERSION!r}",
+    )
+    parser.add_argument(
+        "--event-prompt-version",
+        default=DEFAULT_EVENT_PROMPT_VERSION,
+        help=f"the event summaries' prompt version; a release refuses {NO_PROMPT_VERSION!r}",
     )
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument(
@@ -1004,6 +1018,7 @@ def run(
             allow_unapproved=args.allow_unapproved,
             llm_model=args.llm_model,
             prompt_version=args.prompt_version,
+            event_prompt_version=args.event_prompt_version,
         )
         bundle = build_bundle(load(args), options, args.pinned or [DEFAULT_PINNED_DIR])
         report = write_bundle(bundle, args.out, report_path)

@@ -30,12 +30,20 @@ DECIMAL_VALUE_KINDS = frozenset({"amount", "shares", "ratio"})
 # The summary prompt's version. It is part of the summary cache key (summary_input_sha256), so
 # bump it on any change to a prompt, the schema or the source-text layout. It lives here so the
 # exporter's default and the summary build read the one value (D72).
-PROMPT_VERSION = "m6-2026-11-19-a"
+PROMPT_VERSION = "m6-2026-11-18-b"
+# The event prompt's version, which keys the event ``summary`` section in place of
+# PROMPT_VERSION, so a change to the event prompt alone keeps every annual summary (D78).
+EVENT_PROMPT_VERSION = "m6-2026-11-19-a"
 
 LANGS = ("ko", "en")
 SUMMARY_SECTIONS = {"event": ("summary",), "annual": ("one_line", "business", "changes", "risks")}
 # Sections written as three lines, checked as one summary by the neutrality guard.
 THREE_LINE_SECTIONS = frozenset({"summary"})
+
+
+def section_prompt_version(section: str, prompt_version: str, event_prompt_version: str) -> str:
+    """The prompt version in the cache key of ``section``: the event one for an event section."""
+    return event_prompt_version if section in SUMMARY_SECTIONS["event"] else prompt_version
 
 
 class BuildError(Exception):

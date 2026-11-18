@@ -33,7 +33,7 @@ pytestmark = pytest.mark.skipif(not TEST_DATABASE_URL, reason="TEST_DATABASE_URL
 
 BODY = DART / "correction" / "20261103000311.xml"
 TODAY = datetime.date(2026, 11, 17)
-# Facts read from the tables of NAVER's four saved 영업(잠정)실적 bodies (D77), 24 each.
+# Facts read from the tables of NAVER's four saved 영업(잠정)실적 bodies (D78), 24 each.
 TABLE_FACTS = 96
 
 
@@ -163,7 +163,7 @@ def test_ingest_stores_every_filing_chain_and_exact_facts() -> None:
             assert all(v[-1] is None for v in facts.values())
             assert "use_facilities" not in facts  # "-" in the source
             n_facts = (await _rows(engine, "SELECT count(*) FROM filing_facts"))[0][0]
-            # The other facts are read from NAVER's four 영업(잠정)실적 tables (D77).
+            # The other facts are read from NAVER's four 영업(잠정)실적 tables (D78).
             assert n_facts == summary.facts_written == len(facts) + TABLE_FACTS
             table = {
                 r[0]: r[1:]

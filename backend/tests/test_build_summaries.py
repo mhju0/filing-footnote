@@ -117,9 +117,9 @@ def test_a_clean_response_is_staged_in_both_languages(tmp_path) -> None:
                                                         CLEAN["ko_line3"]]  # fmt: skip
     assert ko["violations"] == [] and ko["reviewer_flags"] == []
     assert ko["input_sha256"] == input_sha256(SOURCE, MODEL, "summary")
-    assert (ko["model"], ko["prompt_version"]) == (MODEL, summaries.PROMPT_VERSION)
+    assert (ko["model"], ko["prompt_version"]) == (MODEL, summaries.EVENT_PROMPT_VERSION)
     assert ko["lexicon_version"] == load_lexicon().version
-    assert summaries.PROMPT_VERSION != "none"
+    assert "none" not in (summaries.PROMPT_VERSION, summaries.EVENT_PROMPT_VERSION)
     # One call returns both languages; the first request is the generator, the second the reviewer.
     first, second = client.requests
     assert first["messages"][0]["content"] == summaries.event_system_prompt()
@@ -280,8 +280,15 @@ def test_the_cache_key_covers_source_prompt_model_section_and_lexicon(monkeypatc
     monkeypatch.setattr(summaries, "load_lexicon", lambda: SimpleNamespace(version=99))
     assert input_sha256(SOURCE, MODEL, "summary") != base
     monkeypatch.undo()
-    monkeypatch.setattr(summaries, "PROMPT_VERSION", "m6-other")
+    annual = input_sha256(SOURCE, MODEL, "business")
+    # The event prompt's version keys event summaries only, and the annual one annual only (D78).
+    monkeypatch.setattr(summaries, "EVENT_PROMPT_VERSION", "m6-other")
     assert input_sha256(SOURCE, MODEL, "summary") != base
+    assert input_sha256(SOURCE, MODEL, "business") == annual
+    monkeypatch.undo()
+    monkeypatch.setattr(summaries, "PROMPT_VERSION", "m6-other")
+    assert input_sha256(SOURCE, MODEL, "business") != annual
+    assert input_sha256(SOURCE, MODEL, "summary") == base
 
 
 def test_reviewer_flags_are_stored_and_never_change_the_state(tmp_path) -> None:
@@ -580,7 +587,9 @@ def test_prompts_cover_the_second_pilot_mistakes() -> None:
         assert "Greater China is 중화권" in prompt  # Apple 10-K wrote 대만
         assert "never ~할 것이라고" in prompt  # Microsoft 8-K tripped N3
     assert "at most three" in summaries.annual_system_prompt("one_line")  # Apple one_line ran long
-    assert summaries.PROMPT_VERSION == "m6-2026-11-19-a"
+    # Only the event prompt changed in D78; the annual summaries keep their version.
+    assert summaries.PROMPT_VERSION == "m6-2026-11-18-b"
+    assert summaries.EVENT_PROMPT_VERSION == "m6-2026-11-19-a"
 
 
 def test_prompt_word_lists_come_from_the_lexicon() -> None:

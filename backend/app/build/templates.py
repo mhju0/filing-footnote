@@ -1,4 +1,4 @@
-"""Template summaries for event filings whose content is a regular table (D77).
+"""Template summaries for event filings whose content is a regular table (D78).
 
 A DART filing in a templated category whose table facts parsed
 (:mod:`app.clients.dart_tables`) gets its three Korean and three English lines from the fixed

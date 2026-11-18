@@ -236,7 +236,7 @@ def test_dart_events_save_each_structured_endpoint_once_and_the_facts_check(tmp_
         "dart/structured/piicDecsn_035420.json",
         "dart/structured/tsstkDpDecsn_035420.json",
     ]
-    # The bodies whose table gave facts (D77) are saved as received.
+    # The bodies whose table gave facts (D78) are saved as received.
     assert sorted(p for p in store.saved if p.startswith("dart/document/")) == [
         f"dart/document/{r}.xml" for r in NAVER_RESULTS
     ]

@@ -22,13 +22,14 @@ annual report the exporter takes as the latest figure source
 what is required: a report with no risk heading (DART) or no Item 1A (SEC) has no ``risks``.
 
 Cache: ``input_sha256`` (:func:`app.build.model.summary_input_sha256`) covers the source text,
-:data:`PROMPT_VERSION`, the model, the section and the neutrality lexicon version. A key
+the prompt version (:data:`PROMPT_VERSION` for an annual section, :data:`EVENT_PROMPT_VERSION`
+for an event summary), the model, the section and the neutrality lexicon version. A key
 already in the staged or approved file makes no call. A cached staged summary is re-checked by
 the guard and becomes ``withheld`` when it now fails. Every call, and every cache hit, is
 appended to ``data/summaries/calls.jsonl`` with the model, token counts, estimated cost,
 purpose and cache result; prompts, headers and keys are never logged.
 
-Templates (D77): an event whose table facts parsed (:mod:`app.build.templates`) gets fixed
+Templates (D78): an event whose table facts parsed (:mod:`app.build.templates`) gets fixed
 Korean and English lines and no model or reviewer call. Its row is staged with model
 ``template`` and the template version as ``prompt_version`` when the guard passes, withheld
 when it does not, and is logged to ``calls.jsonl`` with cache ``template``. A template counts
@@ -71,6 +72,7 @@ from app.build.export import (
     event_scope,
 )
 from app.build.model import (
+    EVENT_PROMPT_VERSION,
     LANGS,
     PROMPT_VERSION,
     THREE_LINE_SECTIONS,
@@ -80,6 +82,7 @@ from app.build.model import (
     annual_sections,
     annual_source_text,
     event_source_text,
+    section_prompt_version,
     summary_input_sha256,
 )
 from app.build.templates import (
@@ -107,8 +110,9 @@ APPROVED_PATH = SUMMARIES_DIR / "approved.jsonl"
 CALLS_PATH = SUMMARIES_DIR / "calls.jsonl"
 FIXTURES_DIR = BACKEND_DIR / "tests" / "fixtures" / "neutrality"
 
-# PROMPT_VERSION lives in app.build.model (D72); bump it there on any change to a prompt, the
-# schema or the source-text layout: it is part of the cache key.
+# PROMPT_VERSION and EVENT_PROMPT_VERSION live in app.build.model (D72, D78); bump the one whose
+# prompt changes, or both on a change to the schema or the source-text layout. Each is part of
+# the cache key.
 
 DEFAULT_MAX_CALLS = 10
 # Worst case per summary: the first call, one retry, one reviewer call.
@@ -436,7 +440,7 @@ class Target:
     source_text: str | None
     skip_reason: str | None = None
     category: str | None = None  # an event's category, for its prompt guidance
-    # The fixed wording of an event whose table facts parsed (D77); no model call is made.
+    # The fixed wording of an event whose table facts parsed (D78); no model call is made.
     template: TemplateSummary | None = None
 
 
@@ -504,8 +508,13 @@ def pick_filings(targets: Sequence[Target], filing_ids: Sequence[str]) -> list[T
 # -- cache key and staged file -------------------------------------------------------------------
 
 
+def prompt_version(section: str) -> str:
+    """The prompt version of ``section``: EVENT_PROMPT_VERSION for an event, else PROMPT_VERSION."""
+    return section_prompt_version(section, PROMPT_VERSION, EVENT_PROMPT_VERSION)
+
+
 def input_sha256(source_text: str, model: str, section: str) -> str:
-    return summary_input_sha256(source_text, model, section, PROMPT_VERSION,
+    return summary_input_sha256(source_text, model, section, prompt_version(section),
                                 load_lexicon().version)  # fmt: skip
 
 
@@ -833,8 +842,10 @@ def _rows(
     lines: dict[str, list[str]],
     violations: dict[str, list[dict[str, Any]]],
     flags: list[dict[str, Any]] | None,
-    prompt_version: str = PROMPT_VERSION,
+    version: str | None = None,
 ) -> list[dict[str, Any]]:
+    """One row per language; ``version`` is the prompt version, the section's by default."""
+    version = version or prompt_version(target.section)
     rows = []
     for lang in LANGS:
         padded = lines[lang] + [None] * (3 - len(lines[lang]))
@@ -856,7 +867,7 @@ def _rows(
                 "reviewer_flags": None if flags is None else [f for f in flags
                                                               if f["lang"] == lang],
                 "model": model,
-                "prompt_version": prompt_version,
+                "prompt_version": version,
                 "lexicon_version": load_lexicon().version,
             }
         )  # fmt: skip
@@ -895,7 +906,7 @@ async def generate_one(
 
 
 def template_rows(target: Target, key: str) -> list[dict[str, Any]]:
-    """Stage a template summary (D77): the guard decides staged or withheld; there is no model
+    """Stage a template summary (D78): the guard decides staged or withheld; there is no model
     or reviewer call, so ``reviewer_flags`` is None and only the owner approves it."""
     assert target.template is not None
     lines = target.template.lines
@@ -1160,6 +1171,7 @@ async def _run_generate(args: argparse.Namespace, settings: Any) -> None:
         if client is not None:
             await client.aclose()
     print(f"model: {model}  prompt_version: {PROMPT_VERSION}  "
+          f"event_prompt_version: {EVENT_PROMPT_VERSION}  "
           f"lexicon_version: {load_lexicon().version}  as_of: {args.as_of}")  # fmt: skip
     for item in result.no_source_text:
         print(f"no_source_text {item}")

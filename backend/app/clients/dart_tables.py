@@ -174,6 +174,23 @@ def _stated_unit(text: str) -> str:
     return match.group(1).strip()
 
 
+def _is_correction_header(row: Sequence[str]) -> bool:
+    return [_squash(c) for c in row[:3]] == ["정정항목", "정정전", "정정후"]
+
+
+def _form_start(rows: Rows) -> int:
+    """The first row of the form itself. A correction lists its changed items first, in a
+    정정항목 | 정정전 | 정정후 block that ends at the first row of fewer than three cells; without
+    a correction the form starts at row zero."""
+    try:
+        index = _index_of(rows, _is_correction_header) + 1
+    except TableShapeError:
+        return 0
+    while index < len(rows) and len(rows[index]) >= 3:
+        index += 1
+    return index
+
+
 def _period(rows: Rows, label: str) -> tuple[str, str] | None:
     """``당기실적 | 2026-07-01 | ~ | 2026-09-30`` -> the two date cells."""
     for row in rows:
@@ -194,11 +211,59 @@ _METRICS = {
 }
 
 
+_RESULT_COLUMNS = {"당기실적": "current", "전기실적": "prior_period", "전년동기실적": "year_ago"}
+
+
+def _is_change_cell(cell: str) -> bool:
+    text = _squash(cell)
+    return text.startswith(("증감율", "증감률")) or text == "흑자적자전환여부"
+
+
+def _result_columns(top: Sequence[str], sub: Sequence[str]) -> dict[str, int]:
+    """The data column of each 실적 heading, found from the header text.
+
+    The header's first row names the groups after 구분; its second row has one cell per data
+    column: a period under each 실적 heading, and 증감율 and 흑자적자전환여부 cells under each
+    대비 heading. A heading that is missing, listed twice or unknown, or a second row that does
+    not account for every data column, is not this table."""
+    columns: dict[str, int] = {}
+    position = 0
+    for name in (_squash(cell) for cell in top[1:]):
+        if name.endswith("대비"):
+            span = 0
+            while position + span < len(sub) and _is_change_cell(sub[position + span]):
+                span += 1
+            if span == 0:
+                raise TableShapeError(f"no change columns under {name!r}")
+            position += span
+        elif name in _RESULT_COLUMNS and name not in columns:
+            if position >= len(sub) or _is_change_cell(sub[position]):
+                raise TableShapeError(f"no period column under {name!r}")
+            columns[name] = position
+            position += 1
+        else:
+            raise TableShapeError(f"unexpected or repeated results heading {name!r}")
+    if position != len(sub) or set(columns) != set(_RESULT_COLUMNS):
+        raise TableShapeError("the results header does not match its columns")
+    return columns
+
+
+def _data_cells(cells: Sequence[str], width: int) -> Sequence[str]:
+    if len(cells) != width:
+        raise TableShapeError(f"row has {len(cells)} data cells, the header {width}")
+    return cells
+
+
 def _results(rows: Rows) -> list[ExtractedFact]:
     facts = _Facts("results")
     header = _index_of(
         rows, lambda r: _squash(r[0]) == "구분" and "당기실적" in r and "전년동기실적" in r
     )
+    if header + 1 >= len(rows):
+        raise TableShapeError("the results header has no second row")
+    sub = rows[header + 1]
+    columns = _result_columns(rows[header], sub)
+    current, prior, year_ago = (columns[name] for name in _RESULT_COLUMNS)
     unit = _stated_unit(" ".join(rows[header - 1]))
     for label, prefix in (("당기실적", "results_period"), ("전년동기실적", "results_year_ago")):
         period = _period(rows[:header], label)
@@ -219,14 +284,14 @@ def _results(rows: Rows) -> list[ExtractedFact]:
             if first not in _METRICS:
                 raise TableShapeError(f"unknown results row {row[0]!r}")
             metric = _METRICS[first]
-            cells = row[2:]
-            facts.add(f"results_{metric}_current", _cell(cells, 0), unit)
-            facts.add(f"results_{metric}_prior_period", _cell(cells, 1), unit)
-            facts.add(f"results_{metric}_year_ago", _cell(cells, 4), unit)
+            cells = _data_cells(row[2:], len(sub))
+            facts.add(f"results_{metric}_current", cells[current], unit)
+            facts.add(f"results_{metric}_prior_period", cells[prior], unit)
+            facts.add(f"results_{metric}_year_ago", cells[year_ago], unit)
         elif first == "누계실적" and metric is not None:
-            cells = row[1:]
-            facts.add(f"results_{metric}_cumulative", _cell(cells, 0), unit)
-            facts.add(f"results_{metric}_cumulative_year_ago", _cell(cells, 4), unit)
+            cells = _data_cells(row[1:], len(sub))
+            facts.add(f"results_{metric}_cumulative", cells[current], unit)
+            facts.add(f"results_{metric}_cumulative_year_ago", cells[year_ago], unit)
             metric = None
         else:
             raise TableShapeError(f"unexpected results row {row[0]!r}")
@@ -241,7 +306,8 @@ _CHANGE_METRICS = {k: v for k, v in _METRICS.items() if v != "net_income_attribu
 
 def _change(rows: Rows) -> list[ExtractedFact]:
     facts = _Facts("change")
-    kind_row = _index_of(rows, lambda r: _label(r[0]) == "재무제표의종류")
+    # A correction's changed items come first and are not read: only the form's own cells.
+    kind_row = _index_of(rows, lambda r: _label(r[0]) == "재무제표의종류", _form_start(rows))
     facts.add("change_statement", _cell(rows[kind_row], 1))
     period = _index_of(rows, lambda r: _label(r[0]) == "결산기간", kind_row)
     for offset, prefix in ((1, "start"), (2, "end")):
@@ -282,6 +348,29 @@ _SEGMENTS = {
 }
 
 
+_UNIT_COLUMNS = _RESULT_COLUMNS  # the monthly table has the results table's three headings
+_CUMULATIVE_UNIT_COLUMNS = {"당기누적": "cumulative", "전년동기누적": "cumulative_year_ago"}
+
+
+def _unit_columns(header: Sequence[str], names: dict[str, str]) -> dict[str, int]:
+    """The column of each heading in ``names``, found by the text it starts with (``당기실적
+    ('26.10월)``). 대비 columns (증감율) are not headings. A heading that is missing or found
+    twice is not this table."""
+    columns: dict[str, int] = {}
+    for index, cell in enumerate(header[1:], start=1):
+        text = _squash(cell)
+        if "대비" in text:
+            continue
+        for name in names:
+            if text.startswith(name):
+                if name in columns:
+                    raise TableShapeError(f"sales heading {name!r} listed twice")
+                columns[name] = index
+    if set(columns) != set(names):
+        raise TableShapeError(f"sales headings {sorted(set(names) - set(columns))!r} missing")
+    return columns
+
+
 def _units(rows: Rows) -> list[ExtractedFact]:
     facts = _Facts("units")
 
@@ -291,16 +380,12 @@ def _units(rows: Rows) -> list[ExtractedFact]:
 
     monthly = _index_of(rows, is_header)
     cumulative = _index_of(rows, is_header, monthly + 1)
-    if "누적" not in _squash(_cell(rows[cumulative], 1)):
-        raise TableShapeError("the second sales table is not cumulative")
     period = _period(rows[:monthly], "당기실적")
     if period is not None:
         facts.add("units_period_start", period[0])
         facts.add("units_period_end", period[1])
-    for header, columns in (
-        (monthly, (("current", 1), ("prior_period", 2), ("year_ago", 5))),
-        (cumulative, (("cumulative", 1), ("cumulative_year_ago", 5))),
-    ):
+    for header, names in ((monthly, _UNIT_COLUMNS), (cumulative, _CUMULATIVE_UNIT_COLUMNS)):
+        columns = _unit_columns(rows[header], names)
         unit = _stated_unit(_squash(rows[header][0]))
         seen = set()
         for row in rows[header + 1 :]:
@@ -311,8 +396,9 @@ def _units(rows: Rows) -> list[ExtractedFact]:
             if segment in seen:
                 raise TableShapeError(f"segment {label!r} listed twice")
             seen.add(segment)
-            for name, column in columns:
-                facts.add(f"units_{segment}_{name}", _cell(row, column), unit)
+            _data_cells(row, len(rows[header]))
+            for heading, name in names.items():
+                facts.add(f"units_{segment}_{name}", row[columns[heading]], unit)
         if "total" not in seen:
             raise TableShapeError("no total row")
     return facts.result()
@@ -323,8 +409,8 @@ def _units(rows: Rows) -> list[ExtractedFact]:
 
 def _dividend(rows: Rows) -> list[ExtractedFact]:
     facts = _Facts("dividend")
-    # A correction lists the changed items first; the form itself starts at 배당구분.
-    start = _index_of(rows, lambda r: _label(r[0]) == "배당구분")
+    # A correction's changed items come first and are not read; the form starts at 배당구분.
+    start = _index_of(rows, lambda r: _label(r[0]) == "배당구분", _form_start(rows))
     form = rows[start:]
     pending: str | None = None  # the item whose 종류주식 row follows
     for row in form:
@@ -370,6 +456,21 @@ _OUTLOOK_METRICS = {k: v for k, v in _METRICS.items() if v != "net_income_attrib
 OUTLOOK_YEARS = 3
 OUTLOOK_ITEMS = 6
 OUTLOOK_CHANGES = 6
+# Units an outlook row may state: the money units of DART forms, 대 and 대수 for vehicles, %.
+OUTLOOK_UNITS = frozenset({"조원", "억원", "백만원", "천원", "원", "대", "대수", "%"})
+_PAREN_RE = re.compile(r"\([^()]*\)")
+
+
+def _item_unit(label: str, table_unit: str) -> str | None:
+    """The unit of an outlook item row: a known unit in its last parentheses (판매목표(대수)),
+    else the table's unit when the row is a results metric (매출액(연결)); otherwise None,
+    since the table's money unit cannot be assumed for a ratio or any other row."""
+    stated = _PAREN_UNIT_RE.search(label)
+    if stated is not None and _squash(stated.group(1)) in OUTLOOK_UNITS:
+        return _squash(stated.group(1))
+    if _squash(_PAREN_RE.sub("", label)) in _OUTLOOK_METRICS:
+        return table_unit
+    return None
 
 
 def _outlook(rows: Rows) -> list[ExtractedFact]:
@@ -379,6 +480,8 @@ def _outlook(rows: Rows) -> list[ExtractedFact]:
         lambda r: _squash(r[0]).startswith("구분(단위") and any(_YEAR_RE.match(c) for c in r[1:]),
     )
     unit = _stated_unit(rows[header][0])
+    if unit not in OUTLOOK_UNITS:
+        raise TableShapeError(f"unknown outlook unit {unit!r}")
     years = [c.strip() for c in rows[header][1:] if _YEAR_RE.match(c.strip())]
     if not 1 <= len(years) <= OUTLOOK_YEARS:
         raise TableShapeError(f"unexpected outlook years {years!r}")
@@ -413,9 +516,11 @@ def _outlook(rows: Rows) -> list[ExtractedFact]:
             if label.startswith("-") and parent is not None:
                 item_label, item_unit = f"{parent[0]}{first}", parent[1]
             else:
-                stated = _PAREN_UNIT_RE.search(first)
-                item_label, item_unit = first, stated.group(1) if stated else unit
+                item_label, item_unit = first, _item_unit(first, unit)
                 parent = (first, item_unit)
+            if item_unit is None:
+                index += 1
+                continue  # no unit is known for this row (a ratio, a share count): not stored
             values = [_decimal(_cell(row[1:], year)) for year in range(len(years))]
             if any(v is not None for v in values):
                 items += 1
@@ -438,8 +543,7 @@ def _outlook_changes(rows: Rows, cells: list[tuple[Decimal, str]], facts: _Facts
     """A correction's 정정전/정정후 rows whose two cells are numbers. A row is kept only when its
     corrected value is a value of the forecast table with one unit, which gives it that unit."""
     try:
-        start = _index_of(rows, lambda r: [_squash(c) for c in r[:3]] == ["정정항목", "정정전",
-                                                                         "정정후"])  # fmt: skip
+        start = _index_of(rows, _is_correction_header)
     except TableShapeError:
         return
     changes = 0

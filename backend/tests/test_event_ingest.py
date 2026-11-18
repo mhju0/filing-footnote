@@ -285,7 +285,7 @@ def test_naver_corrected_rights_issue_chain_and_facts() -> None:
     )
 
     # The structured endpoint returns the newest version only; the facts attach to it. The
-    # preliminary results get their facts from their own tables (D77).
+    # preliminary results get their facts from their own tables (D78).
     assert [r.item.rcept_no for r in records if r.facts and r.base_key == "유상증자결정"] == [
         "20261103000311"
     ]
@@ -337,7 +337,7 @@ def test_excluded_filings_are_kept_with_a_reason_and_counted(stock: str) -> None
 def test_in_scope_filings_without_a_structured_endpoint_or_table_get_no_facts() -> None:
     client = FakeDartClient("035420", documents={"20261103000311": CORRECTION_BODY})
     records, _ = collect(client)
-    # NAVER's four saved 영업(잠정)실적 bodies are results tables (D77); its other results
+    # NAVER's four saved 영업(잠정)실적 bodies are results tables (D78); its other results
     # filings have no saved body here (a blank one), so no table and no facts.
     assert {r.item.rcept_no for r in records if r.facts and r.base_key != "유상증자결정"} == set(
         NAVER_RESULTS
