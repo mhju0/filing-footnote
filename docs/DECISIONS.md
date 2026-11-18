@@ -665,6 +665,8 @@ extension are in `contracts/neutrality-lexicon.json`. See
 
 ## D64 · v0.1 build defaults · 2026-11-17 (`ACCEPTED`)
 
+Summary model superseded by D68.
+
 The owner accepted the build plan's defaults:
 - SEC event filings show only what code can verify, with a link to the original
   for figures.
@@ -715,3 +717,21 @@ build does not write one from other text. One shared rule in
 the exporter. A summary's key covers its source text, prompt version, model,
 section and lexicon version, and a release refuses an approved summary whose key
 no longer matches the current source.
+
+## D68 · Groq replaces Gemini for build-time summaries · 2026-11-18 (`ACCEPTED`)
+
+The owner chose Groq `qwen/qwen3.8-27b` for the build-time summaries, replacing D64's
+`gemini-2.5-flash-lite`. That Gemini model returned HTTP 404 for a new account, and
+`gemini-3.5-flash-lite` returned HTTP 503. A three-filing pilot on Groq passed the
+neutrality guard. Groq's data-use terms were not checked; the filings are public.
+
+- The settings and the exporter default to Groq's OpenAI-compatible endpoint and this
+  model. Prompts, schemas, the guard and the reviewer are unchanged.
+- The free tier limits output tokens per minute to 1000 and checks `max_tokens` against
+  that limit before it generates. Summaries ask for at most 768 tokens and reviews for 512.
+  The command line waits 61 seconds between calls (`--call-interval`).
+- A request refused with HTTP 429 waits 61 seconds and is sent once more. It does not count
+  against `--max-calls`, because nothing was generated. A second refusal stops the run.
+- Prompt version `m6-2026-11-18-a`: an event summary names the people the filing names
+  (romanised in English, family name first), and no line repeats another line's fact.
+- Groq has no price table here, so the cost reads "cost unknown".

@@ -1,6 +1,6 @@
 """OpenAI-compatible chat-completions adapter for the LLM provider seam.
 
-The configured provider (Gemini by default) exposes an OpenAI-compatible REST
+The configured provider (Groq by default) exposes an OpenAI-compatible REST
 surface, so this adapter is a thin ``httpx.AsyncClient`` POST to
 ``{llm_base_url}/chat/completions`` -- deliberately no ``openai`` SDK
 dependency. It implements :class:`app.llm.base.LLMClient`.

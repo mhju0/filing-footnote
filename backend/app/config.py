@@ -29,15 +29,15 @@ class Settings(BaseSettings):
     dart_api_key: SecretStr | None = None
     dart_base_url: str = "https://opendart.fss.or.kr/api"
 
-    # LLM provider (Gemini by default) -- OpenAI-compatible chat completions. The LLM writes only
+    # LLM provider (Groq by default, D68) -- OpenAI-compatible chat completions. The LLM writes only
     # narrative (numbers come from the structured filing API); this is the one
     # provider seam (see app.llm). llm_api_key is a secret -- never log it; it
     # travels only in the Authorization header. base_url is the OpenAI-compatible
     # root (adapter appends /chat/completions); model is configurable -- the exact
     # model name may change independently of this default.
     llm_api_key: SecretStr | None = None
-    llm_base_url: str = "https://generativelanguage.googleapis.com/v1beta/openai"
-    llm_model: str = "gemini-3.5-flash-lite"
+    llm_base_url: str = "https://api.groq.com/openai/v1"
+    llm_model: str = "qwen/qwen3.8-27b"
 
     # SEC EDGAR -- requires a User-Agent with contact info (name + email).
     sec_base_url: str = "https://data.sec.gov"

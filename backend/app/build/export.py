@@ -106,7 +106,7 @@ ANNUAL_FORMS: dict[tuple[str, str], str] = {
 ANNUAL_CATEGORY = "annual"
 CURRENCY = {"DART": "KRW", "SEC": "USD"}
 REGULATOR_ORDER = {"DART": 0, "SEC": 1}
-DEFAULT_LLM_MODEL = "gemini-2.5-flash-lite"
+DEFAULT_LLM_MODEL = "qwen/qwen3.8-27b"  # D68
 DEFAULT_PROMPT_VERSION = NO_PROMPT_VERSION
 
 _ANNUAL_PERIOD_RE = re.compile(r"([0-9]{4})-annual")
