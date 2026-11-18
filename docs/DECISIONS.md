@@ -1020,7 +1020,7 @@ Decided and left open:
   and the lexicon is unchanged.
 - The new fact keys have no iOS labels yet; the app work is outside this change.
 
-## D79 · The Footnote app shell replaces the Filing Digest app · 2026-11-19 (`ACCEPTED`)
+## D80 · The Footnote app shell replaces the Filing Digest app · 2026-11-19 (`ACCEPTED`)
 
 Roadmap I3 to I6. One SwiftUI target, "Footnote", builds for iPhone, iPad and native Mac
 (iOS 18, macOS 15, Swift 6 strict concurrency) and reads only the bundled
