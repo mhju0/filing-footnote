@@ -797,3 +797,18 @@ The owner decided that the app shows the latest five events per company.
 - A database build reads owner-approved rows from `backend/data/summaries/approved.jsonl`
   (`source.read_summaries`); a missing file means no approved summaries. A release names
   every approved row whose input hash no longer matches and fails.
+
+## D73 · Ingest takes a corrected annual report · 2026-11-18 (`ACCEPTED`)
+
+Ingest picked the newest title starting with 사업보고서, so a corrected report titled
+[기재정정]사업보고서 was never ingested. DART's statements API (fnlttSinglAcntAll) returns
+only the newest version's rows, so the original could never match its pinned figures.
+On the real data, LG Electronics and Samsung Biologics failed the build.
+
+- Ingest strips the DART correction prefix (`correction_prefix_pattern` in
+  `contracts/filing-categories.json`) before it checks the title, so the newest version
+  wins, as the export's annual scope already does (D66).
+- The inherited test that rejected [기재정정] on purpose is replaced; a correction is
+  marked `is_corrected` in the bundle rather than refused.
+- Both companies were re-ingested; a development bundle now builds on the real data
+  (18 companies, 108 filings, 127 figures).

@@ -25,6 +25,7 @@ from app.clients.dart import DartClient, FilingItem
 from app.clients.sec import SecClient, SecCompanyMatch
 from app.config import get_settings
 from app.db.session import get_async_engine, get_async_session
+from app.filings.categories import load_contract
 from app.ingest import ingest_filing
 from app.ingest.dart import DartFilingAdapter
 from app.ingest.events import main as events_main
@@ -45,13 +46,15 @@ _LOOKBACK_DAYS = 450
 def select_latest_annual(filings: list[FilingItem]) -> tuple[FilingItem, str]:
     """Pick the newest 사업보고서 from a list.json page and its business year.
 
-    Pure: filters ``report_nm`` starting with "사업보고서", derives
+    Pure: filters ``report_nm`` starting with "사업보고서" after any correction prefix such
+    as "[기재정정]" (D73: DART's statements API returns the newest version's rows), derives
     ``bsns_year`` from the "(YYYY.MM)" suffix, orders by ``rcept_dt``.
     Raises ``ValueError`` when the page has no parseable annual report.
     """
+    prefix_re = re.compile(load_contract()["dart"]["correction_prefix_pattern"])
     candidates: list[tuple[datetime.date, FilingItem, str]] = []
     for item in filings:
-        if not item.report_nm.startswith("사업보고서"):
+        if not prefix_re.sub("", item.report_nm).lstrip().startswith("사업보고서"):
             continue
         match = _REPORT_YEAR_RE.search(item.report_nm)
         if match is None or item.rcept_dt is None:
