@@ -29,4 +29,10 @@ run() {
 
 run "lint" make lint PYTHON="$PYTHON" RUFF="$RUFF"
 run "offline tests" make test PYTHON="$PYTHON"
+# FootnoteKit runs on the host Mac with swift test (no simulator); other hosts skip it.
+if [ "$(uname -s)" = "Darwin" ]; then
+  run "FootnoteKit tests" swift test --package-path ios/FootnoteKit
+else
+  echo "== FootnoteKit tests skipped: swift test needs macOS"
+fi
 # Contract tests are added here.
