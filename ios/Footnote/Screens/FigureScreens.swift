@@ -89,7 +89,7 @@ struct FigureView: View {
 
     private var spokenHeader: String {
         var parts = [PageCopy.figureContext(page.company, basis: page.basis, fiscalYear: page.fiscalYear, language)
-            .replacingOccurrences(of: Copy.dot, with: ", "), page.metric.name(language)]
+            .spokenSeparators, page.metric.name(language)]
         if let current = page.current {
             parts.append(PageCopy.exact(current, language))
             if current.isRestated { parts.append(PageCopy.restatedTag(language)) }

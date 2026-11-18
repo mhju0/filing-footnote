@@ -66,18 +66,24 @@ struct SelectableRow<Label: View>: View {
     let value: String
     let selection: Binding<String?>?
     let route: Route
+    /// Set inside the selection tag, so it never wraps the tagged row.
+    var identifier: String?
     @ViewBuilder let label: Label
 
     var body: some View {
         if let selection {
             let isSelected = selection.wrappedValue == value
             #if os(macOS)
+            // The selection tag goes last, so no wrapper can hide it from the list; the id
+            // lets a list scroll to the row.
             label
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .contentShape(Rectangle())
-                .tag(value)
                 .listRowBackground(isSelected ? Theme.tint : Theme.surface)
                 .accessibilityAddTraits(isSelected ? .isSelected : [])
+                .accessibilityIdentifier(identifier ?? value)
+                .id(value)
+                .tag(value)
             #else
             Button {
                 selection.wrappedValue = value
@@ -91,10 +97,13 @@ struct SelectableRow<Label: View>: View {
             .buttonStyle(.plain)
             .listRowBackground(isSelected ? Theme.tint : Theme.surface)
             .accessibilityAddTraits(isSelected ? .isSelected : [])
+            .accessibilityIdentifier(identifier ?? value)
+            .id(value)
             #endif
         } else {
             NavigationLink(value: route) { label }
                 .listRowBackground(Theme.surface)
+                .accessibilityIdentifier(identifier ?? value)
         }
     }
 }

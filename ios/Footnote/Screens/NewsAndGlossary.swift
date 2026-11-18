@@ -8,12 +8,8 @@ struct NewsView: View {
     @Environment(\.language) private var language
     @Environment(\.filingSelection) private var selection
     let store: BundleStore
-    private let feed: NewsFeed
 
-    init(store: BundleStore) {
-        self.store = store
-        feed = NewsFeed(store: store)
-    }
+    private var feed: NewsFeed { store.newsFeed }
 
     var body: some View {
         ScrollViewReader { proxy in
@@ -44,7 +40,6 @@ struct NewsView: View {
                                         .map { Titles.name(of: $0, language: language) },
                                     showsDate: false)
                             }
-                            .id(filing.id)
                         }
                     } header: {
                         Text(words: dayTitle(day.date))
@@ -91,11 +86,12 @@ struct GlossaryView: View {
             SelectionList(selection: selection) {
                 ForEach(store.sortedGlossary(language: language)) { entry in
                     if let selection {
-                        SelectableRow(value: entry.termKey, selection: selection, route: .glossary(entry.termKey)) {
+                        SelectableRow(
+                            value: entry.termKey, selection: selection, route: .glossary(entry.termKey),
+                            identifier: "glossary-\(entry.termKey)"
+                        ) {
                             GlossaryTermRow(entry: entry)
                         }
-                        .id(entry.termKey)
-                        .accessibilityIdentifier("glossary-\(entry.termKey)")
                     } else {
                         GlossaryEntryRow(entry: entry, isFocused: entry.termKey == focus)
                             .id(entry.termKey)

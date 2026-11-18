@@ -336,10 +336,18 @@ struct NewsGlossaryAppTests {
     /// break opportunity is the ordinary space after it.
     @Test func dotStaysWithTheWordBeforeIt() throws {
         #expect(Copy.dot == "\u{00A0}· ")
+        #expect(Copy.dot == Titles.separator)
         let company = try #require(try BundleStore(contentsOf: fixtureURL).companies.first)
         let line = PageCopy.figureContext(company, basis: "consolidated", fiscalYear: 2025, .ko)
         #expect(!line.contains(" ·"))
         #expect(line.contains("\u{00A0}· "))
+    }
+
+    /// VoiceOver hears a pause for each separator, not the dot.
+    @Test func separatorsAreSpokenAsPauses() {
+        #expect("삼성전자\u{00A0}· 연결 기준\u{00A0}· 2025 회계연도".spokenSeparators
+            == "삼성전자, 연결 기준, 2025 회계연도")
+        #expect("Revenue".spokenSeparators == "Revenue")
     }
 
     @Test func newsNoteCountsTheFilings() {

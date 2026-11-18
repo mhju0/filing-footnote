@@ -23,6 +23,8 @@ struct NewsFeedTests {
         let dates = feed.filings.map(\.filedOn)
         #expect(dates == dates.sorted(by: >))
         #expect(feed.filings.allSatisfy { $0.kind == .event })
+        // The store builds the same feed once, when it is opened.
+        #expect(store.newsFeed.filings == feed.filings)
     }
 
     /// A filing outside the company page's 12-month window is not in the feed either.

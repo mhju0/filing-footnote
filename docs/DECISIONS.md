@@ -1353,6 +1353,8 @@ owner's final check.
   title, no preview line) with the company's name in place of the date the day heading
   gives. A note under the feed says how many it shows; an empty feed shows board 19's "no
   filings in the last 12 months" line.
+- Day grouping uses each filer's own filing date as the regulator records it (KST for DART,
+  EDGAR's US Eastern date for SEC), with no time-zone conversion.
 - There is no loading state: the app opens its bundled file before the first screen
   (DESIGN.md, board 19). The empty states are the feed above and, for the glossary, the
   existing rule that the tab, the sidebar row and every glossary link are hidden while the

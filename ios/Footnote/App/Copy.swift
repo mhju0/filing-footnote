@@ -24,9 +24,8 @@ enum Copy {
     }
 
     static let noBreak = "\u{00A0}"
-    /// A middle dot held to the word before it by a no-break space, so a line never starts
-    /// with `·` (D86). A line may end on `word ·`; the next part starts the next line.
-    static let dot = "\u{00A0}· "
+    /// The shared separator (`Titles.separator`, D86).
+    static let dot = Titles.separator
 
     static func dataDate(_ date: CivilDate, _ language: Language) -> String {
         let day = unbroken(Formatting.monthDay(date, language: language))
