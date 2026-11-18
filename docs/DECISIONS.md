@@ -1019,3 +1019,80 @@ Decided and left open:
   the outlook wording and not loosen N3: the templates and the outlook prompt write outlook,
   and the lexicon is unchanged.
 - The new fact keys have no iOS labels yet; the app work is outside this change.
+
+## D79 · Two fiscal years per figure; the prior annual report is the restatement source · 2026-11-19 (`ACCEPTED`)
+
+The roadmap's two-years-per-figure item. The owner delegated the choices (2026-11-19, owner delegated): two fiscal years
+per figure for every company, and the previous annual report as the source of the value a
+later comparative may restate. A development export had two years for the nine DART
+companies and one for the nine SEC companies, and four DART companies had no net income.
+
+- Figures cover two fiscal years per company: the year of its latest annual filing and the
+  year before. The newest filing that states a figure is its source. An older annual filing
+  is the source only when the latest one does not state that year; values for earlier
+  years are not exported (`figures_older_than_two_years` in the build report).
+- SEC: a 10-K's prior-year comparative is stored and exported with its own period dates
+  and fiscal year. It comes from companyfacts facts whose `accn` is that 10-K, from the
+  same tag as the 10-K's own-year fact, with a full-year duration that ends the day before
+  the own year starts (`parse_companyfacts_payload(..., with_prior=True)`, which ingest and
+  verify both use). D75's mapping is unchanged: `NetIncomeLoss` feeds
+  `net_income_attributable`, `ProfitLoss` feeds `net_income` only where reported, and
+  there is no fallback between them.
+- DART: SK hynix, Samsung SDI, NAVER and Samsung Biologics file one statement of
+  comprehensive income (`sj_div` CIS) and no IS rows. The profit-loss dedup kept only IS
+  rows, so their `ifrs-full_ProfitLoss` and `ifrs-full_ProfitLossAttributableToOwnersOfParent`
+  were dropped. Dedup now keeps the IS row and falls back to the CIS row. Exact account ids
+  only; no metric is derived.
+- Restatement: `python -m app.ingest --source dart|sec --ticker T --prior` ingests the
+  annual report before the latest one (DART: the newest version of the previous
+  business year's 사업보고서 and its fnlttSinglAcntAll; SEC: the 10-K filed before the
+  latest, skipped with its reason when it does not cover the latest 10-K's fiscal year
+  minus one). The latest DART report is the newest version of the latest business year,
+  so a late correction of an older year is not the latest. `is_restated` is 1 when the
+  latest report's comparative for a year differs from the value that year's own report
+  stated under the same regulator tag. The original value is also read from its own pinned
+  response, and the build report lists each restated figure with both tags and its
+  original (`restated_figures`).
+- A different value under a different tag is not a restatement: the build report lists it
+  as `tag_changed`, and the figure is exported with `is_restated` 0.
+- A prior-year figure whose own year has no annual report stating it is
+  `restatement_unchecked` in the build report, and a release build fails on it.
+- Decided by the lead under the owner's delegation (2026-11-19): a DART report with no
+  diluted EPS row whose basic EPS row is labelled as basic and diluted states its diluted
+  EPS by that line, because the filing itself says the value is both. The label must be
+  기본및희석주당이익 or 기본및희석주당순이익 exactly once whitespace is removed, optionally
+  after the common-share qualifier 보통주 (Samsung SDI's FY2024 report labels the row
+  보통주 기본및희석주당이익); a plain 기본주당이익 row does not count. The value is read from
+  the pinned response and used only to check the later diluted comparative
+  (`combined_eps_checks` in the build report); no diluted figure is exported from it.
+- One basis per company and fiscal year: when a year has a restated figure, that year's
+  figures that only the earlier report states are `mixed_basis` in the build report and
+  are not exported.
+- A previous DART report that is not well-formed XML (Kia's corrected 2024 사업보고서,
+  rcept 20250313001390) is ingested with `--prior` for its figures only: its prose gives
+  no chunks. A parse error on the latest report still fails the ingest.
+- The build report names every company and reported metric without both years
+  (`figure_gaps`), with the reason `not_stated` (the filings do not state it) or
+  `mixed_basis`.
+- Pinned responses stay git-ignored (`backend/data/pinned/`); the prior-year files were
+  saved there with `--save-pinned`.
+- Known limitation: `app.build.verify` re-reads each exported value and tag from its pinned
+  response but does not re-check `is_restated`. The bundle does not carry the original
+  filing and value, which are only in the build report; carrying them would change the
+  bundle schema the app reads.
+
+Development export on 2026-11-19 after the re-ingest: `figures=193`; all eighteen
+companies have two fiscal years; `restated_figures` counts four (LG Chem and Samsung
+Biologics, revenue and operating income for 2024); `tag_changed` none. `mixed_basis`
+leaves out three FY2024 figures stated only by the earlier report: LG Chem diluted EPS,
+Samsung Biologics EPS and diluted EPS. `restatement_unchecked` names none: Samsung SDI's
+FY2024 diluted EPS is checked against the combined line of its FY2024 report (the same
+value, so not restated; `combined_eps_checks` counts one). A release-mode export fails
+only on the missing summary approvals. `figure_gaps` names fifteen:
+
+- DART, not stated: diluted EPS for Kia and LG Electronics (both years) and LG Chem (2025);
+  EPS and diluted EPS for Samsung Biologics in 2025, which reports only continuing and
+  discontinued operations EPS.
+- DART, mixed basis: the three FY2024 figures above.
+- SEC, not stated: `net_income` (`ProfitLoss`) for Apple, Microsoft, Amazon, NVIDIA, Meta
+  and Alphabet (both years) and Costco (the latest year).

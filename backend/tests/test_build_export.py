@@ -41,7 +41,15 @@ from app.build.templates import event_template, template_input_sha256
 from app.build.verify import PinnedResponses, VerifyError, check_bundle, link_problems
 from app.filings.categories import load_contract as load_categories_contract
 from app.llm.neutrality_guard import load_lexicon
-from tests.build_seed import AS_OF, PINNED_BUILD, PINNED_DIRS, event_input, fixture_build_input
+from tests.build_seed import (
+    APPLE_PRIOR,
+    AS_OF,
+    PINNED_BUILD,
+    PINNED_DIRS,
+    SAMSUNG_PRIOR,
+    event_input,
+    fixture_build_input,
+)
 
 BUILD_DIR = Path(__file__).resolve().parents[1] / "app" / "build"
 SAMSUNG_2025 = "20260310000123"
@@ -482,7 +490,9 @@ def test_fact_kinds_map_to_section_four_value_kinds(data) -> None:
     assert shares[3:] == ("shares", "18000000", "shares", "opendart:tsstkAqDecsn.aqpln_stk_ostk")
 
 
-def test_newer_filing_wins_and_an_earlier_different_value_is_restated(data) -> None:
+def test_newer_filing_wins_and_an_earlier_different_value_is_restated(data, tmp_path) -> None:
+    # The FY2025 report's comparative for 2024 (258935494000000) differs from the value the
+    # FY2024 report stated as its own year: the figure is restated, from the newer report.
     older = AnnualFilingRow("DART", "20250311000001", "00126380", "business_report",
                             "사업보고서 (2024.12)", "2024-annual", datetime.date(2025, 3, 11),
                             "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20250311000001",
@@ -492,12 +502,226 @@ def test_newer_filing_wins_and_an_earlier_different_value_is_restated(data) -> N
     changed = dataclasses.replace(
         data, annual_filings=data.annual_filings + (older,), financials=data.financials + (own,)
     )
-    bundle = build_bundle(changed, _options(), PINNED_DIRS)
+    pinned = _dart_pinned(tmp_path, 2024, older.filing_key,
+                          [("ifrs-full_Revenue", "258935000000000", "")])  # fmt: skip
+    bundle = build_bundle(changed, _options(), (pinned, *PINNED_DIRS))
     figure = next(
         r for r in bundle.rows["figures"] if r[0].startswith("dart:00126380|revenue|2024")
     )
     assert figure[2] == f"dart:{SAMSUNG_2025}"
     assert figure[7] == "258935494000000" and figure[11] == 1
+    restated = bundle.report["restated_figures"]
+    assert restated["count"] == 1
+    assert restated["figures"][0]["regulator_tag"] == "ifrs-full_Revenue"
+    assert restated["figures"][0]["originals"] == [{
+        "filing_id": f"dart:{older.filing_key}", "value": "258935000000000",
+        "regulator_tag": "ifrs-full_Revenue",
+        "pinned": "dart/fnlttSinglAcntAll/00126380_2024_11011_CFS.json"}]  # fmt: skip
+    # Every other figure matched across the two reports, so none else is restated.
+    assert sum(r[11] for r in bundle.rows["figures"]) == 1
+
+
+def test_a_restated_original_is_read_from_its_own_pinned_response(data, tmp_path) -> None:
+    older = "20250311000001"
+    changed = _with_annual(data, [_dart_annual(older, datetime.date(2025, 3, 11), 2024)],
+                           [_dart_revenue(older, 2024, "258935000000000")])  # fmt: skip
+    # The seed's FY2024 response belongs to another receipt, so it cannot vouch for this one.
+    with pytest.raises(BuildError, match=r"00126380_2024_11011_CFS.json: rows belong to "
+                                         rf"\['{SAMSUNG_PRIOR}'\], not {older}"):  # fmt: skip
+        build_bundle(changed, _options(), PINNED_DIRS)
+    pinned = _dart_pinned(tmp_path, 2024, older, [("ifrs-full_Revenue", "258935000000001", "")])
+    with pytest.raises(BuildError, match="revenue is 258935000000001, stored 258935000000000"):
+        build_bundle(changed, _options(), (pinned, *PINNED_DIRS))
+
+
+def test_figures_cover_two_fiscal_years_and_gaps_are_named(data, tmp_path) -> None:
+    # An FY2024 report states 2024 and 2023; the company's latest report is FY2025, so 2023
+    # is outside the two years and is not exported.
+    older = "20250311000001"
+    pinned = _dart_pinned(tmp_path, 2024, older,
+                          [("ifrs-full_Revenue", "258935494000000", "250000000000000")])  # fmt: skip
+    changed = _with_annual(data, [_dart_annual(older, datetime.date(2025, 3, 11), 2024)],
+                           [_dart_revenue(older, 2024, "258935494000000"),
+                            _dart_revenue(older, 2023, "250000000000000")])  # fmt: skip
+    bundle = build_bundle(changed, _options(), (pinned, *PINNED_DIRS))
+    years = {(r[1], r[3]): set() for r in bundle.rows["figures"]}
+    for r in bundle.rows["figures"]:
+        years[(r[1], r[3])].add(r[4])
+    assert years[("dart:00126380", "revenue")] == {2024, 2025}
+    assert bundle.report["figures_older_than_two_years"] == 1
+    assert years[("sec:0000320193", "revenue")] == {2024, 2025}
+    # Samsung states all six metrics for both years. The seed's Apple 10-Ks state FY2024
+    # revenue only, and Apple reports no ProfitLoss at all.
+    apple = "sec:0000320193"
+    assert bundle.report["figure_gaps"] == [
+        {"company_id": apple, "metric": metric, "missing_years": missing, "reason": "not_stated"}
+        for metric, missing in (("operating_income", [2024]), ("net_income", [2024, 2025]),
+                                ("net_income_attributable", [2024]), ("eps", [2024]),
+                                ("eps_diluted", [2024]))
+    ]  # fmt: skip
+
+
+def test_sec_prior_year_comparative_is_exported_and_restates_the_older_10k(
+    data, tmp_path
+) -> None:
+    # The FY2025 10-K's comparative for FY2024 revenue is a figure with its own period dates.
+    bundle = build_bundle(data, _options(), PINNED_DIRS)
+    prior = _figure(bundle, "sec:0000320193|revenue|2024-09-28")
+    assert prior[2] == "sec:0000320193-25-000079"
+    assert (prior[4], prior[5], prior[7], prior[11]) == (2024, "2023-10-01", "391035000000", 0)
+    assert prior[12] == "RevenueFromContractWithCustomerExcludingAssessedTax"
+
+    # The FY2024 10-K stated a different FY2024 revenue: the figure is restated.
+    changed = _apple_prior_revenue(data, tmp_path, "RevenueFromContractWithCustomerExcludingAssessedTax")
+    bundle = build_bundle(changed, _options(), (tmp_path, *PINNED_DIRS))
+    restated = _figure(bundle, "sec:0000320193|revenue|2024-09-28")
+    assert restated[2] == "sec:0000320193-25-000079"
+    assert (restated[7], restated[11]) == ("391035000000", 1)
+    [entry] = bundle.report["restated_figures"]["figures"]
+    assert entry["originals"][0]["filing_id"] == f"sec:{APPLE_PRIOR}"
+    assert entry["originals"][0]["value"] == "391000000000"
+    assert bundle.report["tag_changed"]["count"] == 0
+
+
+def _apple_prior_revenue(data: BuildInput, directory: Path, tag: str) -> BuildInput:
+    """The seed with Apple's FY2024 10-K stating FY2024 revenue as 391000000000 under ``tag``
+    (the FY2025 10-K's comparative is 391035000000)."""
+    path = PINNED_BUILD / "sec" / "companyfacts" / "CIK0000320193.json"
+    facts = json.loads(path.read_text())
+    gaap = facts["facts"]["us-gaap"]
+    revenue = gaap["RevenueFromContractWithCustomerExcludingAssessedTax"]["units"]["USD"]
+    [prior] = [e for e in revenue if e["accn"] == APPLE_PRIOR]
+    revenue.remove(prior)
+    gaap.setdefault(tag, {"units": {"USD": []}})["units"]["USD"].append(
+        {**prior, "val": 391000000000}
+    )
+    target = directory / "sec" / "companyfacts" / "CIK0000320193.json"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(json.dumps(facts), encoding="utf-8")
+    financials = tuple(
+        dataclasses.replace(f, value=Decimal("391000000000"))
+        if (f.filing_key, f.metric) == (APPLE_PRIOR, "revenue") else f
+        for f in data.financials
+    )  # fmt: skip
+    return dataclasses.replace(data, financials=financials)
+
+
+def test_an_earlier_value_under_another_tag_is_tag_changed_not_restated(data, tmp_path) -> None:
+    changed = _apple_prior_revenue(data, tmp_path, "Revenues")
+    bundle = build_bundle(changed, _options(), (tmp_path, *PINNED_DIRS))
+    figure = _figure(bundle, "sec:0000320193|revenue|2024-09-28")
+    assert (figure[7], figure[11]) == ("391035000000", 0)
+    assert bundle.report["restated_figures"]["count"] == 0
+    [entry] = bundle.report["tag_changed"]["figures"]
+    assert entry["regulator_tag"] == "RevenueFromContractWithCustomerExcludingAssessedTax"
+    assert entry["originals"] == [{
+        "filing_id": f"sec:{APPLE_PRIOR}", "value": "391000000000", "regulator_tag": "Revenues",
+        "pinned": "sec/companyfacts/CIK0000320193.json"}]  # fmt: skip
+
+
+def _without_filings(data: BuildInput, *keys: str) -> BuildInput:
+    return dataclasses.replace(
+        data,
+        annual_filings=tuple(f for f in data.annual_filings if f.filing_key not in keys),
+        financials=tuple(f for f in data.financials if f.filing_key not in keys),
+    )
+
+
+def test_a_prior_year_figure_without_its_own_years_report_is_unchecked(data) -> None:
+    no_prior = _without_filings(data, SAMSUNG_PRIOR, APPLE_PRIOR)
+    bundle = build_bundle(no_prior, _options(), PINNED_DIRS)
+    unchecked = bundle.report["restatement_unchecked"]
+    # Samsung's six FY2024 comparatives and Apple's FY2024 revenue; the latest years are
+    # each stated by their own report.
+    assert unchecked["count"] == 7
+    assert {(f["id"].split("|")[0], f["fiscal_year"]) for f in unchecked["figures"]} == {
+        ("dart:00126380", 2024), ("sec:0000320193", 2024)}  # fmt: skip
+    assert _figure(bundle, "dart:00126380|revenue|2024")[11] == 0
+    assert build_bundle(data, _options(), PINNED_DIRS).report["restatement_unchecked"] == {
+        "count": 0, "figures": []}  # fmt: skip
+    with pytest.raises(BuildError, match="restatement_unchecked") as raised:
+        build_bundle(_all_approved(no_prior, bundle),
+                     _options(allow_unapproved=False, prompt_version="v1"), PINNED_DIRS)  # fmt: skip
+    assert len([p for p in raised.value.problems if "restatement_unchecked" in p]) == 7
+
+
+def _sdi_shape(data: BuildInput, tmp_path: Path, label: str, value: str):
+    """Samsung SDI's shape on the seed: the FY2024 report has no diluted EPS row and one
+    basic EPS row labelled ``label``; the FY2025 report states a FY2024 diluted EPS of 2131."""
+    no_diluted = dataclasses.replace(data, financials=tuple(
+        f for f in data.financials
+        if not (f.filing_key == SAMSUNG_PRIOR and f.metric == "eps_diluted")))  # fmt: skip
+    pinned = _dart_pinned(tmp_path, 2024, SAMSUNG_PRIOR,
+                          [("ifrs-full_BasicEarningsLossPerShare", value, "", label)])  # fmt: skip
+    return build_bundle(no_diluted, _options(), (pinned, *PINNED_DIRS))
+
+
+@pytest.mark.parametrize("value, restated", [("2131", 0), ("2100", 1)])
+def test_a_combined_basic_and_diluted_line_checks_the_diluted_comparative(
+    data, tmp_path, value, restated
+) -> None:
+    bundle = _sdi_shape(data, tmp_path, "보통주 기본및희석주당이익", value)
+    diluted = [r for r in bundle.rows["figures"] if r[3] == "eps_diluted" and r[4] == 2024]
+    # Checked against the combined line; no figure is made from it.
+    assert [(r[2], r[7], r[11]) for r in diluted] == [(f"dart:{SAMSUNG_2025}", "2131", restated)]
+    assert bundle.report["restatement_unchecked"]["count"] == 0
+    [check] = bundle.report["combined_eps_checks"]["figures"]
+    assert check["original"] == {
+        "filing_id": f"dart:{SAMSUNG_PRIOR}", "value": value,
+        "regulator_tag": "ifrs-full_BasicEarningsLossPerShare",
+        "pinned": "dart/fnlttSinglAcntAll/00126380_2024_11011_CFS.json",
+        "combined_basic_and_diluted": True}  # fmt: skip
+    assert bundle.report["restated_figures"]["count"] == restated
+
+
+def test_a_plain_basic_eps_line_does_not_check_the_diluted_comparative(data, tmp_path) -> None:
+    bundle = _sdi_shape(data, tmp_path, "보통주 기본주당이익", "2131")
+    assert bundle.report["combined_eps_checks"]["count"] == 0
+    [unchecked] = bundle.report["restatement_unchecked"]["figures"]
+    assert unchecked["id"] == "dart:00126380|eps_diluted|2024-12-31|consolidated"
+
+
+@pytest.mark.parametrize("label, combined", [
+    ("기본및희석주당이익", True), ("기본및희석주당순이익", True), ("기본 및 희석 주당이익", True),
+    ("보통주 기본및희석주당이익", True), ("보통주기본 및 희석주당순이익", True),
+    ("기본주당이익", False), ("보통주 기본주당손익", False), ("희석주당이익", False),
+    ("우선주 기본및희석주당이익", False), ("계속영업기본및희석주당이익", False),
+    ("기본및희석주당이익(손실)", False),
+])  # fmt: skip
+def test_combined_eps_label_is_an_exact_match(label, combined) -> None:
+    assert verify.is_combined_eps_label(label) is combined
+
+
+def test_a_year_with_a_restated_figure_drops_figures_only_its_original_report_states(
+    data, tmp_path
+) -> None:
+    # Samsung Biologics' shape: the FY2025 report restates FY2024 revenue and does not state
+    # FY2024 EPS; only the FY2024 report does, on the old basis, so it is left out.
+    latest = tuple(f for f in data.financials
+                   if not (f.filing_key == SAMSUNG_2025 and f.metric == "eps"
+                           and f.fiscal_year == 2024))  # fmt: skip
+    financials = tuple(
+        dataclasses.replace(f, value=Decimal("258935000000000"))
+        if (f.filing_key, f.metric) == (SAMSUNG_PRIOR, "revenue") else f
+        for f in latest
+    )  # fmt: skip
+    pinned = _dart_pinned(tmp_path, 2024, SAMSUNG_PRIOR,
+                          [("ifrs-full_Revenue", "258935000000000", ""),
+                           ("ifrs-full_BasicEarningsLossPerShare", "2131", "")])  # fmt: skip
+    bundle = build_bundle(dataclasses.replace(data, financials=financials), _options(),
+                          (pinned, *PINNED_DIRS))  # fmt: skip
+    assert _figure(bundle, "dart:00126380|revenue|2024")[11] == 1
+    ids = {row[0] for row in bundle.rows["figures"]}
+    assert "dart:00126380|eps|2024-12-31|consolidated" not in ids
+    assert "dart:00126380|eps|2025-12-31|consolidated" in ids
+    assert "dart:00126380|operating_income|2024-12-31|consolidated" in ids
+    assert bundle.report["mixed_basis"] == {"count": 1, "figures": [{
+        "id": "dart:00126380|eps|2024-12-31|consolidated", "value": "2131",
+        "filing_id": f"dart:{SAMSUNG_PRIOR}", "fiscal_year": 2024,
+        "restated_by": [f"dart:{SAMSUNG_2025}"]}]}  # fmt: skip
+    assert {"company_id": "dart:00126380", "metric": "eps", "missing_years": [2024],
+            "reason": "mixed_basis"} in bundle.report["figure_gaps"]  # fmt: skip
+    assert f"dart:{SAMSUNG_PRIOR}" not in {row[0] for row in bundle.rows["filings"]}
 
 
 # -- exact decimals and schema -------------------------------------------------------------------
@@ -560,16 +784,17 @@ def _pinned_args(*dirs: Path) -> list[str]:
 
 
 def _dart_pinned(directory: Path, year: int, rcept_no: str,
-                 rows: list[tuple[str, str, str]]) -> Path:  # fmt: skip
-    """A synthetic fnlttSinglAcntAll response: (account_id, thstrm_amount, frmtrm_amount)."""
+                 rows: list[tuple[str, ...]]) -> Path:  # fmt: skip
+    """A synthetic fnlttSinglAcntAll response: (account_id, thstrm_amount, frmtrm_amount),
+    optionally with the row's account_nm last."""
     path = directory / "dart" / "fnlttSinglAcntAll" / f"00126380_{year}_11011_CFS.json"
     path.parent.mkdir(parents=True, exist_ok=True)
     items = [
         {"rcept_no": rcept_no, "reprt_code": "11011", "bsns_year": str(year),
-         "corp_code": "00126380", "sj_div": "IS", "sj_nm": "손익계산서", "account_id": account,
-         "account_nm": "영업수익", "thstrm_amount": this, "frmtrm_amount": prior,
-         "ord": str(order), "currency": "KRW"}
-        for order, (account, this, prior) in enumerate(rows, start=1)
+         "corp_code": "00126380", "sj_div": "IS", "sj_nm": "손익계산서", "account_id": row[0],
+         "account_nm": row[3] if len(row) > 3 else "영업수익", "thstrm_amount": row[1],
+         "frmtrm_amount": row[2], "ord": str(order), "currency": "KRW"}
+        for order, row in enumerate(rows, start=1)
     ]  # fmt: skip
     path.write_text(json.dumps({"status": "000", "message": "정상", "list": items}),
                     encoding="utf-8")  # fmt: skip
@@ -999,17 +1224,20 @@ def test_event_source_hash_covers_the_stored_body_when_there_is_one(data) -> Non
 def test_older_annual_filing_is_exported_as_a_figure_source_without_summaries(
     data, tmp_path
 ) -> None:
-    older = "20250311000001"
-    pinned = _dart_pinned(tmp_path / "pinned", 2024, older,
-                          [("ifrs-full_Revenue", "258935000000000", "250000000000000")])  # fmt: skip
-    changed = _with_annual(data, [_dart_annual(older, datetime.date(2025, 3, 11), 2024)],
-                           [_dart_revenue(older, 2024, "258935000000000"),
-                            _dart_revenue(older, 2023, "250000000000000")])  # fmt: skip
+    # The latest (FY2025) report does not state the 2024 operating income here, so the seed's
+    # FY2024 report's own-year value is the source of that figure (two years per company, D79).
+    older = SAMSUNG_PRIOR
+    latest_rows = tuple(f for f in data.financials
+                        if not (f.filing_key == SAMSUNG_2025 and f.metric == "operating_income"
+                                and f.fiscal_year == 2024))  # fmt: skip
+    assert len(latest_rows) == len(data.financials) - 1
+    changed = dataclasses.replace(data, financials=latest_rows)
+    pinned = tmp_path / "pinned"
     dirs = (pinned, *PINNED_DIRS)
     bundle = build_bundle(changed, _options(), dirs)
     filings = {row[0]: row for row in bundle.rows["filings"]}
     assert filings[f"dart:{older}"][2] == "annual" and filings[f"dart:{older}"][8] == "FY2024"
-    assert _figure(bundle, "dart:00126380|revenue|2023")[2] == f"dart:{older}"
+    assert _figure(bundle, "dart:00126380|operating_income|2024")[2] == f"dart:{older}"
     assert _figure(bundle, "dart:00126380|revenue|2024")[2] == f"dart:{SAMSUNG_2025}"
     assert f"dart:{older}" not in bundle.report["summaries"]["filings_without_approved_summaries"]
 
@@ -1027,10 +1255,13 @@ def test_older_annual_filing_is_exported_as_a_figure_source_without_summaries(
 def test_annual_filing_that_is_no_figure_source_is_not_exported(data) -> None:
     older = "20250311000001"
     changed = _with_annual(data, [_dart_annual(older, datetime.date(2025, 3, 11), 2024)],
-                           [_dart_revenue(older, 2024, "258935000000000")])  # fmt: skip
+                           [_dart_revenue(older, 2024, "258935494000000")])  # fmt: skip
     bundle = build_bundle(changed, _options(), PINNED_DIRS)
     assert f"dart:{older}" not in {row[0] for row in bundle.rows["filings"]}
-    assert bundle.report["annual_filings_without_figures"]["ids"] == [f"dart:{older}"]
+    # It replaced the seed's FY2024 report; Apple's FY2024 10-K is no figure source either.
+    assert bundle.report["annual_filings_without_figures"]["ids"] == [
+        f"dart:{older}", f"sec:{APPLE_PRIOR}"]  # fmt: skip
+    assert bundle.report["annual_versions_replaced"]["ids"] == [f"dart:{SAMSUNG_PRIOR}"]
 
 
 def test_annual_correction_replaces_its_original(data, tmp_path) -> None:
