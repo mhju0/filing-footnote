@@ -99,6 +99,71 @@ struct CompanyPageTests {
         #expect(page.months.first?.year == 2026)
         #expect(page.months.last?.year == 2025)
         #expect(page.notices.isEmpty)
+        // Not capped: notices count from the first day of the 12-month window.
+        #expect(page.noticesSince == Support.date("2025-11-18"))
+        let start = CompanyPage.windowStart(endingOn: store.meta.dataAsOf)
+        #expect(page.filings.allSatisfy { $0.filedOn >= start && $0.filedOn <= store.meta.dataAsOf })
+    }
+
+    @Test(arguments: [
+        ("2026-11-17", "2025-11-18"), ("2028-02-29", "2027-03-01"), ("2026-12-31", "2026-01-01"),
+        ("2026-03-01", "2025-03-02"),
+    ])
+    func windowStart(_ end: String, _ start: String) {
+        #expect(CompanyPage.windowStart(endingOn: Support.date(end)) == Support.date(start))
+    }
+
+    /// Fewer than ten filings: every notice in the 12-month window, not only those since the
+    /// oldest listed filing.
+    @Test func uncappedPageCountsNoticesFromTheWindowStart() throws {
+        let store = try Support.editedFixture(
+            "DELETE FROM filings WHERE company_id = 'dart:00126380' AND kind = 'event' AND filed_on < '2026-10-01'")
+        let page = try #require(CompanyPage(store: store, companyID: BundleStoreTests.samsung))
+        #expect(!page.isCapped)
+        #expect(page.noticesSince == Support.date("2025-11-18"))
+        #expect(page.notices.count == 9)
+    }
+
+    /// No event filings at all: the notices row still has its notices.
+    @Test func noticesWithoutEventFilings() throws {
+        let store = try Support.editedFixture(
+            "DELETE FROM filings WHERE company_id = 'dart:00126380' AND kind = 'event'")
+        let page = try #require(CompanyPage(store: store, companyID: BundleStoreTests.samsung))
+        #expect(page.filings.isEmpty)
+        #expect(page.notices.count == 9)
+    }
+
+    /// Filings outside the 12 months ending on the data date are not listed.
+    @Test func filingsOutsideTheWindowAreLeftOut() throws {
+        let store = try Support.editedFixture(
+            "UPDATE filings SET filed_on = '2025-11-17' WHERE id = 'dart:20261029000539'")
+        let page = try #require(CompanyPage(store: store, companyID: BundleStoreTests.samsung))
+        #expect(!page.filings.contains { $0.id == "dart:20261029000539" })
+    }
+
+    /// The restated tag follows the figure: here the prior year's revenue is restated.
+    @Test func restatedPriorYear() throws {
+        let store = try Support.editedFixture(
+            "UPDATE figures SET is_restated = 1 WHERE company_id = 'dart:00126380' AND metric = 'revenue' AND fiscal_year = 2024")
+        let page = try #require(CompanyPage(store: store, companyID: BundleStoreTests.samsung))
+        let report = try #require(page.periodicReports.first)
+        #expect(report.restated.map(\.fiscalYear) == [2024])
+        let plain = try #require(CompanyPage(store: self.store, companyID: BundleStoreTests.samsung))
+        #expect(plain.periodicReports.first?.restated.isEmpty == true)
+    }
+
+    /// Consolidated first, then the filing's own figure, whatever order the bundle lists them.
+    @Test func prefersConsolidatedRevenue() throws {
+        let store = try Support.editedFixture("""
+            INSERT INTO figures (id, company_id, filing_id, metric, fiscal_year, period_start, period_end,
+                value, unit, currency, basis, is_restated, regulator_tag)
+            SELECT id || ':entity', company_id, filing_id, metric, fiscal_year, period_start, period_end,
+                '1', unit, currency, 'consolidated_entity_total', is_restated, regulator_tag
+            FROM figures WHERE company_id = 'dart:00126380' AND metric = 'revenue' AND fiscal_year = 2025
+            """)
+        let page = try #require(CompanyPage(store: store, companyID: BundleStoreTests.samsung))
+        #expect(page.periodicReports.first?.revenue?.basis == "consolidated")
+        #expect(page.periodicReports.first?.change?.percentChange == Support.decimal("16.2"))
     }
 
     @Test func unknownCompany() {
@@ -140,5 +205,39 @@ struct FormattingAdditionTests {
     @Test(arguments: [("917385", "917,385"), ("0.125", "0.125"), ("-1234", "\u{2212}1,234"), ("0", "0")])
     func numbers(_ value: String, _ expected: String) {
         #expect(Formatting.number(Support.decimal(value)) == expected)
+    }
+
+    /// The spoken change takes its direction from the same rounded value the line shows.
+    @Test(arguments: [
+        ("0.003", "0.00% 변동 없어요", "전년과 같아요", "no change from the year before"),
+        ("-0.004", "0.00% 변동 없어요", "전년과 같아요", "no change from the year before"),
+        ("0.005", "+0.01% 늘었어요", "전년보다 0.01퍼센트 늘었어요", "up 0.01 percent from the year before"),
+        ("-3.4512", "\u{2212}3.45% 줄었어요", "전년보다 3.45퍼센트 줄었어요", "down 3.45 percent from the year before"),
+    ])
+    func spokenChange(_ value: String, _ shown: String, _ ko: String, _ en: String) {
+        #expect(Formatting.percentChange(Support.decimal(value), language: .ko) == shown)
+        #expect(Formatting.percentChangeSpoken(Support.decimal(value), language: .ko) == ko)
+        #expect(Formatting.percentChangeSpoken(Support.decimal(value), language: .en) == en)
+    }
+}
+
+@Suite("Title parity")
+struct TitleParityTests {
+    @Test func refilingDetailInBothLanguages() {
+        #expect(Titles.dartDetail("2025년 재공시", .ko) == "2025년 재공시")
+        #expect(Titles.dartDetail("2025년 재공시", .en) == "2025 refiling")
+        #expect(Titles.dartDetail("기술수출 계약 개정 체결", .ko) == "기술수출 계약 개정 체결")
+        #expect(Titles.dartDetail("기술수출 계약 개정 체결", .en) == nil)
+    }
+
+    /// An unknown report name falls back to its category in both languages.
+    @Test func unknownNameUsesTheCategory() throws {
+        let store = try Support.editedFixture(
+            "UPDATE filings SET title_original = '처음보는보고서(자율공시) (2025년 재공시)' WHERE id = 'dart:20261029000539'")
+        let filing = try #require(store.filing(id: "dart:20261029000539"))
+        let ko = filing.category.label(.ko)
+        let en = filing.category.label(.en)
+        #expect(Titles.title(for: filing, language: .ko) == "\(ko) 관련 공시 · 2025년 재공시")
+        #expect(Titles.title(for: filing, language: .en) == "\(en) filing · 2025 refiling")
     }
 }

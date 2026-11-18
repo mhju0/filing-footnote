@@ -87,15 +87,32 @@ public enum Formatting {
     /// English `+6.29%, up`, `−3.45%, down`, `0.00%, no change`.
     /// The value is rounded half-up to two places first.
     public static func percentChange(_ percent: Decimal, language: Language) -> String {
+        let (sign, digits) = roundedChange(percent)
+        switch sign {
+        case 1: return language == .ko ? "+\(digits)% 늘었어요" : "+\(digits)%, up"
+        case -1: return language == .ko ? "\(minus)\(digits)% 줄었어요" : "\(minus)\(digits)%, down"
+        default: return language == .ko ? "\(digits)% 변동 없어요" : "\(digits)%, no change"
+        }
+    }
+
+    /// The change from the year before as VoiceOver reads it, with the direction taken from
+    /// the same rounded value the visible line shows: Korean `전년보다 6.29퍼센트 늘었어요`,
+    /// English `up 6.29 percent from the year before`; `전년과 같아요` / `no change from the
+    /// year before` when it rounds to zero.
+    public static func percentChangeSpoken(_ percent: Decimal, language: Language) -> String {
+        let (sign, digits) = roundedChange(percent)
+        switch sign {
+        case 1: return language == .ko ? "전년보다 \(digits)퍼센트 늘었어요" : "up \(digits) percent from the year before"
+        case -1: return language == .ko ? "전년보다 \(digits)퍼센트 줄었어요" : "down \(digits) percent from the year before"
+        default: return language == .ko ? "전년과 같아요" : "no change from the year before"
+        }
+    }
+
+    /// The sign (1, 0 or -1) and two-place magnitude of a change rounded half-up to two places.
+    private static func roundedChange(_ percent: Decimal) -> (sign: Int, digits: String) {
         let rounded = DecimalText.roundHalfUp(percent, scale: 2)
-        let digits = DecimalText.twoPlaces(rounded < 0 ? -rounded : rounded) + "%"
-        if rounded > 0 {
-            return language == .ko ? "+\(digits) 늘었어요" : "+\(digits), up"
-        }
-        if rounded < 0 {
-            return language == .ko ? "\(minus)\(digits) 줄었어요" : "\(minus)\(digits), down"
-        }
-        return language == .ko ? "\(digits) 변동 없어요" : "\(digits), no change"
+        let digits = DecimalText.twoPlaces(rounded < 0 ? -rounded : rounded)
+        return (rounded > 0 ? 1 : rounded < 0 ? -1 : 0, digits)
     }
 
     /// A rate such as an operating margin: two places, the true minus sign, no direction word.

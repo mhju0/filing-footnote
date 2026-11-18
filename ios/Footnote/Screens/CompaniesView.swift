@@ -77,7 +77,7 @@ struct SidebarView: View {
             Section {
                 Label(language("소식", "News"), systemImage: "newspaper")
                     .tag(Item.news)
-                if !store.glossary.isEmpty {
+                if !store.glossary(language: language).isEmpty {
                     Label(language("용어", "Glossary"), systemImage: "book")
                         .tag(Item.glossary)
                 }

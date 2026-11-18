@@ -138,16 +138,23 @@ public enum Titles {
         if name.base == "영업(잠정)실적" && filing.category == .unitSales {
             titles = ("판매 실적 (잠정)", "Preliminary unit sales")
         }
-        switch language {
-        case .ko:
-            var title = titles?.ko ?? name.base
-            if name.subsidiary { title += " (자회사)" }
-            if let detail = name.detail { title += " · " + detail }
-            return title
-        case .en:
-            let title = titles?.en ?? filing.category.label(.en)
-            return name.subsidiary ? title + " (subsidiary)" : title
+        // An unknown report name gets its category's title in both languages, as SEC does.
+        var title = titles.map { language == .ko ? $0.ko : $0.en }
+            ?? (language == .ko ? "\(filing.category.label(.ko)) 관련 공시" : "\(filing.category.label(.en)) filing")
+        if name.subsidiary { title += language == .ko ? " (자회사)" : " (subsidiary)" }
+        if let detail = name.detail.flatMap({ dartDetail($0, language) }) { title += " · " + detail }
+        return title
+    }
+
+    /// The parenthesised note after a DART report name. A refiling note reads in both
+    /// languages; free text the company wrote in Korean has no English form, so the English
+    /// title leaves it out.
+    static func dartDetail(_ detail: String, _ language: Language) -> String? {
+        let refiling = "년 재공시"
+        if detail.hasSuffix(refiling), let year = Int(detail.dropLast(refiling.count)) {
+            return language == .ko ? "\(year)년 재공시" : "\(year) refiling"
         }
+        return language == .ko ? detail : nil
     }
 
     // MARK: SEC events

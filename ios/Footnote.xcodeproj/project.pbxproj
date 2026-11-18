@@ -10,7 +10,6 @@
 		05B0C535A82EA0204E4A4EDC /* Rows.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8575F228C62CB53EBF709A57 /* Rows.swift */; };
 		38E071F6C439E5A6631C71EF /* CompanyPageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1451043C5F97E78360D49B1A /* CompanyPageView.swift */; };
 		560DD57B7A30749322B92205 /* OriginalLinks.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5763354F725A9825C8F45BA /* OriginalLinks.swift */; };
-		60BE93428ED9B86E8052DC59 /* filing-facts.json in Resources */ = {isa = PBXBuildFile; fileRef = EB9B3BFD6243225971A5DB3F /* filing-facts.json */; };
 		65603A66B51C890443BF4D11 /* FootnoteTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CEB9F0F6A890E7BA9ADA8CB /* FootnoteTests.swift */; };
 		7043A98ED52874F41EE22664 /* Copy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49ED7013F79313CBCC67F084 /* Copy.swift */; };
 		781D6855D576B83F9B7FDDB6 /* NewsAndGlossary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C57CE2A69841013D54DA95C /* NewsAndGlossary.swift */; };
@@ -19,6 +18,7 @@
 		7F5D19558056B19C0D92F257 /* CompaniesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83D0E13ABF3BD2C1B509E51D /* CompaniesView.swift */; };
 		845DF390B5E0D3CFD0789B56 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC289A12582A8B34DF6AD1CD /* Theme.swift */; };
 		86CD4D1EB16C9CC2ECCAD48E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A5158F1E7A83D45A03BF2540 /* Assets.xcassets */; };
+		A650145FEDFAB26885379208 /* filing-facts.json in Resources */ = {isa = PBXBuildFile; fileRef = FE38B31209FBFAD5D8F880A1 /* filing-facts.json */; };
 		A6F115BDD483A134FE63EA0E /* FootnoteKit in Frameworks */ = {isa = PBXBuildFile; productRef = 9F673E045A19D40A0571831C /* FootnoteKit */; };
 		B814FA6CDF2D69882E5FFA79 /* KeepAll.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B925AA3157EEF14E56E6451 /* KeepAll.swift */; };
 		D084464B24495E5CC5F57423 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FD17E58353EA488866917BB /* RootView.swift */; };
@@ -56,8 +56,8 @@
 		A5158F1E7A83D45A03BF2540 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		D0E3DC947AE76FA1DBF99AFA /* footnote.sqlite */ = {isa = PBXFileReference; lastKnownFileType = file; path = footnote.sqlite; sourceTree = "<group>"; };
 		DC289A12582A8B34DF6AD1CD /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
-		EB9B3BFD6243225971A5DB3F /* filing-facts.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "filing-facts.json"; sourceTree = "<group>"; };
 		F5763354F725A9825C8F45BA /* OriginalLinks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OriginalLinks.swift; sourceTree = "<group>"; };
+		FE38B31209FBFAD5D8F880A1 /* filing-facts.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = "filing-facts.json"; path = "../contracts/filing-facts.json"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -130,7 +130,7 @@
 		83486EDDDFA94726E8FBA29C = {
 			isa = PBXGroup;
 			children = (
-				89D2D4ECAE77C47BF3DC5A78 /* agent-a9327764988ef0713 */,
+				FC80EF6B755EF7FABFC658B6 /* Contracts */,
 				6FBD892E9D199F54CF5E7516 /* Footnote */,
 				84EB635B5C3524867494DEAD /* FootnoteKit */,
 				990F4E0BD20FE68F9E4C9316 /* FootnoteTests */,
@@ -145,15 +145,6 @@
 				A1643BB8E868AC34AF3266BB /* Tests */,
 			);
 			path = FootnoteKit;
-			sourceTree = "<group>";
-		};
-		89D2D4ECAE77C47BF3DC5A78 /* agent-a9327764988ef0713 */ = {
-			isa = PBXGroup;
-			children = (
-				E36DE9F7099BF00E6607B21C /* contracts */,
-			);
-			name = "agent-a9327764988ef0713";
-			path = ..;
 			sourceTree = "<group>";
 		};
 		990F4E0BD20FE68F9E4C9316 /* FootnoteTests */ = {
@@ -191,14 +182,6 @@
 			path = FootnoteKitTests;
 			sourceTree = "<group>";
 		};
-		E36DE9F7099BF00E6607B21C /* contracts */ = {
-			isa = PBXGroup;
-			children = (
-				EB9B3BFD6243225971A5DB3F /* filing-facts.json */,
-			);
-			path = contracts;
-			sourceTree = "<group>";
-		};
 		FC5E2FB9B288632A9A250237 /* App */ = {
 			isa = PBXGroup;
 			children = (
@@ -209,6 +192,14 @@
 				7FD17E58353EA488866917BB /* RootView.swift */,
 			);
 			path = App;
+			sourceTree = "<group>";
+		};
+		FC80EF6B755EF7FABFC658B6 /* Contracts */ = {
+			isa = PBXGroup;
+			children = (
+				FE38B31209FBFAD5D8F880A1 /* filing-facts.json */,
+			);
+			name = Contracts;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -302,7 +293,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				86CD4D1EB16C9CC2ECCAD48E /* Assets.xcassets in Resources */,
-				60BE93428ED9B86E8052DC59 /* filing-facts.json in Resources */,
+				A650145FEDFAB26885379208 /* filing-facts.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -326,7 +317,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "set -euo pipefail\n# FOOTNOTE_BUNDLE (a build setting) wins, then ios/Footnote/Resources/footnote.sqlite\n# (git-ignored), then the FootnoteKit test fixture so a clean checkout builds.\nsource=\"${FOOTNOTE_BUNDLE:-${SRCROOT}/Footnote/Resources/footnote.sqlite}\"\nif [ ! -f \"$source\" ]; then\n  source=\"${SRCROOT}/FootnoteKit/Tests/FootnoteKitTests/Fixtures/footnote.sqlite\"\n  echo \"note: no data bundle at ios/Footnote/Resources/footnote.sqlite; using the FootnoteKit test fixture\"\nfi\ndestination=\"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/footnote.sqlite\"\nmkdir -p \"$(dirname \"$destination\")\"\ncp \"$source\" \"$destination\"\n";
+			shellScript = "set -euo pipefail\n# FOOTNOTE_BUNDLE (a build setting) wins, then ios/Footnote/Resources/footnote.sqlite\n# (git-ignored), then, in debug builds only, the FootnoteKit test fixture so a clean\n# checkout builds.\nsource=\"${FOOTNOTE_BUNDLE:-${SRCROOT}/Footnote/Resources/footnote.sqlite}\"\nif [ ! -f \"$source\" ]; then\n  if [ \"${CONFIGURATION}\" = \"Release\" ]; then\n    echo \"error: a Release build needs a release data bundle at $source\"\n    exit 1\n  fi\n  source=\"${SRCROOT}/FootnoteKit/Tests/FootnoteKitTests/Fixtures/footnote.sqlite\"\n  echo \"note: no data bundle at ios/Footnote/Resources/footnote.sqlite; using the FootnoteKit test fixture\"\nfi\nif [ \"${CONFIGURATION}\" = \"Release\" ]; then\n  unapproved=\"$(/usr/bin/sqlite3 -readonly \"$source\" 'SELECT allow_unapproved FROM build_meta' 2>&1)\" || {\n    echo \"error: cannot read build_meta from $source: $unapproved\"\n    exit 1\n  }\n  if [ \"$unapproved\" != \"0\" ]; then\n    echo \"error: $source is a development bundle (allow_unapproved=$unapproved); a Release build ships only owner-approved summaries\"\n    exit 1\n  fi\nfi\ndestination=\"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/footnote.sqlite\"\nmkdir -p \"$(dirname \"$destination\")\"\ncp \"$source\" \"$destination\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 

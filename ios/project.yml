@@ -30,8 +30,10 @@ targets:
         excludes:
           # A development bundle copied here by hand; the build phase below copies it.
           - Resources/footnote.sqlite
-      # Korean and English fact names, shared with the backend.
+      # Korean and English fact names, shared with the backend. The explicit group keeps
+      # the project from naming a group after the checkout's folder.
       - path: ../contracts/filing-facts.json
+        group: Contracts
         buildPhase: resources
     dependencies:
       - package: FootnoteKit
@@ -41,11 +43,26 @@ targets:
         script: |
           set -euo pipefail
           # FOOTNOTE_BUNDLE (a build setting) wins, then ios/Footnote/Resources/footnote.sqlite
-          # (git-ignored), then the FootnoteKit test fixture so a clean checkout builds.
+          # (git-ignored), then, in debug builds only, the FootnoteKit test fixture so a clean
+          # checkout builds.
           source="${FOOTNOTE_BUNDLE:-${SRCROOT}/Footnote/Resources/footnote.sqlite}"
           if [ ! -f "$source" ]; then
+            if [ "${CONFIGURATION}" = "Release" ]; then
+              echo "error: a Release build needs a release data bundle at $source"
+              exit 1
+            fi
             source="${SRCROOT}/FootnoteKit/Tests/FootnoteKitTests/Fixtures/footnote.sqlite"
             echo "note: no data bundle at ios/Footnote/Resources/footnote.sqlite; using the FootnoteKit test fixture"
+          fi
+          if [ "${CONFIGURATION}" = "Release" ]; then
+            unapproved="$(/usr/bin/sqlite3 -readonly "$source" 'SELECT allow_unapproved FROM build_meta' 2>&1)" || {
+              echo "error: cannot read build_meta from $source: $unapproved"
+              exit 1
+            }
+            if [ "$unapproved" != "0" ]; then
+              echo "error: $source is a development bundle (allow_unapproved=$unapproved); a Release build ships only owner-approved summaries"
+              exit 1
+            fi
           fi
           destination="${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/footnote.sqlite"
           mkdir -p "$(dirname "$destination")"

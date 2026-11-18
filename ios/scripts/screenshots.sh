@@ -25,6 +25,7 @@ xcrun simctl status_bar "$udid" override --time 9:41 --batteryState charged --ba
 hyundai="dart:00164742"
 apple="sec:0000320193"
 buyback="dart:20261029000247"
+lgchem="dart:00356361"
 
 # name | route | language | appearance | content size
 shots=(
@@ -35,6 +36,8 @@ shots=(
   "company-hyundai-ko-dark|company=$hyundai|ko|dark|large"
   "company-apple-ko-light|company=$apple|ko|light|large"
   "company-apple-en-dark|company=$apple|en|dark|large"
+  "company-lgchem-ko-light|company=$lgchem|ko|light|large"
+  "company-lgchem-en-dark|company=$lgchem|en|dark|large"
   "notices-hyundai-ko-light|notices=$hyundai|ko|light|large"
   "notices-hyundai-en-dark|notices=$hyundai|en|dark|large"
   "filing-buyback-ko-light|filing=$hyundai|$buyback|ko|light|large"

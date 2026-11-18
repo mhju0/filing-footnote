@@ -31,10 +31,10 @@ struct FilingDetailView: View {
                     .listRowBackground(Theme.surface)
                 }
             }
-            if !facts.isEmpty {
+            if !factRows.isEmpty {
                 Section(language("공시의 숫자", "Numbers in the filing")) {
-                    ForEach(facts, id: \.position) { fact in
-                        FactRow(fact: fact, label: label(fact), value: value(fact))
+                    ForEach(factRows) { row in
+                        FactRow(label: row.label, value: row.value)
                     }
                 }
             }
@@ -100,10 +100,44 @@ struct FilingDetailView: View {
         return store.summary(forFiling: filing.id, language: language, section: section)?.lines ?? []
     }
 
-    /// Numbers and dates the filing states, at most six. Text fields (a stated purpose, the
-    /// SEC item list) belong to the sentences of the full filing page.
-    private var facts: [FilingFact] {
-        Array(store.facts(forFiling: filing.id).filter { $0.value.kind != .text }.prefix(Self.maxFacts))
+    /// Numbers and dates the filing states, at most six rows. Text fields (a stated purpose,
+    /// the SEC item list) belong to the sentences of the full filing page. A period that
+    /// starts and ends on the same day is one row.
+    private var factRows: [FactLine] {
+        let facts = store.facts(forFiling: filing.id).filter { $0.value.kind != .text }
+        return Self.foldSingleDays(facts).prefix(Self.maxFacts).map { fact, singleDay in
+            FactLine(id: fact.position, label: singleDay ? singleDayLabel(fact) : label(fact), value: value(fact))
+        }
+    }
+
+    /// Drops the `_end` fact of each `_start`/`_end` pair that names the same day, and marks
+    /// its start as a single day.
+    nonisolated static func foldSingleDays(_ facts: [FilingFact]) -> [(fact: FilingFact, singleDay: Bool)] {
+        var ends: Set<Int> = []
+        var starts: Set<Int> = []
+        for fact in facts where fact.key.hasSuffix("_start") {
+            guard case .date(let start) = fact.value,
+                  let end = facts.first(where: { $0.key == String(fact.key.dropLast(6)) + "_end" }),
+                  case .date(let endDate) = end.value, endDate == start
+            else { continue }
+            starts.insert(fact.position)
+            ends.insert(end.position)
+        }
+        return facts.filter { !ends.contains($0.position) }.map { ($0, starts.contains($0.position)) }
+    }
+
+    /// Single-day names for the periods filings most often state as one day.
+    private static let singleDay: [String: (ko: String, en: String)] = [
+        "dispose_period_start": ("처분 예정일", "Disposal date"),
+        "acquire_period_start": ("취득 예정일", "Acquisition date"),
+    ]
+
+    private func singleDayLabel(_ start: FilingFact) -> String {
+        if let names = Self.singleDay[start.key] { return language(names.ko, names.en) }
+        let base = label(start)
+        return language(
+            base.replacingOccurrences(of: " 시작일", with: "") + " (하루)",
+            base.replacingOccurrences(of: " start", with: "") + " (one day)")
     }
 
     private func label(_ fact: FilingFact) -> String {
@@ -127,8 +161,13 @@ struct FilingDetailView: View {
     }
 }
 
+struct FactLine: Identifiable {
+    let id: Int
+    let label: String
+    let value: String
+}
+
 struct FactRow: View {
-    let fact: FilingFact
     let label: String
     let value: String
 

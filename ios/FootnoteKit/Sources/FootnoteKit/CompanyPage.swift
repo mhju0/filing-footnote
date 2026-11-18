@@ -14,31 +14,42 @@ public struct CompanyPage: Sendable {
     public let months: [FilingMonth]
     /// Notices filed in the span the listed event filings cover, newest first.
     public let notices: [Notice]
-    /// The first day of that span: the oldest listed event filing's date.
-    public let noticesSince: CivilDate?
+    /// The first day of that span: the oldest listed event filing's date when ten are
+    /// listed, otherwise the first day of the 12-month window.
+    public let noticesSince: CivilDate
+    /// True when ten filings are listed, so older ones in the 12-month window may be left out.
+    public let isCapped: Bool
 
     public init?(store: BundleStore, companyID: String) {
         guard let company = store.company(id: companyID) else { return nil }
         self.company = company
-        dataAsOf = store.meta.dataAsOf
+        let dataAsOf = store.meta.dataAsOf
+        self.dataAsOf = dataAsOf
         periodicReports = store.annualFilings(forCompany: companyID)
             .prefix(Self.maxPeriodicReports)
             .map { PeriodicReport(filing: $0, store: store) }
-        let events = Array(store.eventFilings(forCompany: companyID).prefix(Self.maxFilings))
+        let windowStart = Self.windowStart(endingOn: dataAsOf)
+        let inWindow = store.eventFilings(forCompany: companyID)
+            .filter { $0.filedOn >= windowStart && $0.filedOn <= dataAsOf }
+        let events = Array(inWindow.prefix(Self.maxFilings))
         months = FilingMonth.group(events)
-        let since = events.last?.filedOn
+        isCapped = inWindow.count >= Self.maxFilings
+        let since = isCapped ? events.last?.filedOn ?? windowStart : windowStart
         noticesSince = since
-        notices = since.map { since in
-            store.notices(forCompany: companyID).filter {
-                $0.filedOn >= since && $0.filedOn <= store.meta.dataAsOf
-            }
-        } ?? []
+        notices = store.notices(forCompany: companyID).filter { $0.filedOn >= since && $0.filedOn <= dataAsOf }
+    }
+
+    /// The first day of the 12 months ending on `date`, both ends inclusive: the day after
+    /// the same day a year before (28 February for 29 February). The backend's event ingest
+    /// uses the same window (`backend/app/ingest/events.py`, `window_bounds`).
+    public static func windowStart(endingOn date: CivilDate) -> CivilDate {
+        let year = date.year - 1
+        let sameDay = CivilDate(year: year, month: date.month, day: date.day)
+            ?? CivilDate(year: year, month: date.month, day: 28)!
+        return sameDay.nextDay
     }
 
     public var filings: [Filing] { months.flatMap(\.filings) }
-
-    /// True when ten filings are listed, so older ones in the 12-month window may be left out.
-    public var isCapped: Bool { filings.count >= Self.maxFilings }
 
     /// Notice categories by how many there are, most first; ties keep category order.
     public var noticeCounts: [(category: NoticeCategory, count: Int)] {
@@ -59,23 +70,34 @@ public struct CompanyPage: Sendable {
 public struct PeriodicReport: Sendable, Hashable {
     public let filing: Filing
     public let revenue: Figure?
+    /// The year before's revenue on the same basis, when the change could be worked out.
+    public let prior: Figure?
     public let change: YearOverYear?
+
+    /// The figures on this row that a later report restated, current year first.
+    public var restated: [Figure] { [revenue, prior].compactMap { $0 }.filter(\.isRestated) }
 
     init(filing: Filing, store: BundleStore) {
         self.filing = filing
         let revenues = store.figures(forCompany: filing.companyID, metric: .revenue)
             .filter { Calculator.supportedBases.contains($0.basis) }
-        let current = revenues.first { $0.filingID == filing.id && filingYear(filing) == $0.fiscalYear }
-            ?? revenues.first { $0.fiscalYear == filingYear(filing) }
+        // Consolidated first, then the figure this filing itself states.
+        func rank(_ figure: Figure) -> (Int, Int) {
+            (figure.basis == "consolidated" ? 0 : 1, figure.filingID == filing.id ? 0 : 1)
+        }
+        let current = revenues.filter { $0.fiscalYear == filingYear(filing) }
+            .min { rank($0) < rank($1) }
         revenue = current
         guard let current,
               let prior = revenues.first(where: {
                   $0.fiscalYear == current.fiscalYear - 1 && $0.basis == current.basis
               })
         else {
+            prior = nil
             change = nil
             return
         }
+        self.prior = prior
         switch Calculator.yearOverYear(metric: "revenue", facts: [prior.fact, current.fact]) {
         case .result(let result): change = result
         case .refusal: change = nil

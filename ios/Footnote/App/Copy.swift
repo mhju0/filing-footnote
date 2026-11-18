@@ -18,13 +18,22 @@ extension Language {
 /// Copy that depends on data. The approved wording is board 19 (state copy) and board 14
 /// (company page); every string has a Korean and an English form.
 enum Copy {
+    /// Joins a date's parts with no-break spaces, so `11월 19일` never splits across lines.
+    static func unbroken(_ text: String) -> String {
+        text.replacingOccurrences(of: " ", with: noBreak)
+    }
+
+    static let noBreak = "\u{00A0}"
+    /// A middle dot that stays with the word after it, so no line ends on a lone `·`.
+    static let dot = " ·\u{00A0}"
+
     static func dataDate(_ date: CivilDate, _ language: Language) -> String {
-        let day = Formatting.monthDay(date, language: language)
-        return language("\(day)까지 낸 공시", "Filings up to \(day)")
+        let day = unbroken(Formatting.monthDay(date, language: language))
+        return language("\(day)까지 낸\(noBreak)공시", "Filings up to \(day)")
     }
 
     static func companySubtitle(_ company: Company, dataAsOf: CivilDate, _ language: Language) -> String {
-        "\(company.ticker) · " + dataDate(dataAsOf, language)
+        company.ticker + dot + dataDate(dataAsOf, language)
     }
 
     static func noticesRow(count: Int, _ language: Language) -> String {
@@ -35,21 +44,26 @@ enum Copy {
     static func noticeBreakdown(_ counts: [(category: NoticeCategory, count: Int)], _ language: Language) -> String {
         counts.prefix(3)
             .map { $0.count > 1 ? "\($0.category.label(language)) \($0.count)" : $0.category.label(language) }
-            .joined(separator: " · ")
+            .joined(separator: dot)
     }
 
-    static func noticesIntro(count: Int, since: CivilDate?, _ language: Language) -> String {
+    /// `since` carries its year when it falls in an earlier year than the data date.
+    static func noticesIntro(count: Int, since: CivilDate, dataAsOf: CivilDate, _ language: Language) -> String {
         let base = language(
             "일정이나 절차를 알리는 공시예요. 요약하지 않고 날짜와 원문만 보여 줘요.",
             "Filings that announce a date or a procedure. Shown with the date and the original only, no summary.")
-        guard let since else { return base }
         // No-break spaces keep the count with its date, so neither ends a line alone.
-        let day = Formatting.monthDay(since, language: language).replacingOccurrences(of: " ", with: "\u{00A0}")
+        let day = unbroken(since.year == dataAsOf.year
+            ? Formatting.monthDay(since, language: language)
+            : Formatting.fullDate(since, language: language))
         return base + " " + language(
-            "\(day)부터 낸 \(count)건이에요.", "\(count)\u{00A0}since\u{00A0}\(day).")
+            "\(day)부터 낸 \(count)건이에요.", "\(count)\(noBreak)since\(noBreak)\(day).")
     }
 
     static func endNote(listed: Int, capped: Bool, _ language: Language) -> String {
+        if listed == 0 {
+            return language("최근 1년 동안 낸 공시가 없어요.", "No filings in the last 12 months.")
+        }
         if capped {
             return language(
                 "최근 1년 공시 가운데 최근 \(CompanyPage.maxFilings)건이에요.",
@@ -71,7 +85,7 @@ enum Copy {
     }
 
     static func filedOn(_ date: CivilDate, _ language: Language) -> String {
-        let day = Formatting.fullDate(date, language: language)
+        let day = unbroken(Formatting.fullDate(date, language: language))
         return language("\(day) 공시", "Filed \(day)")
     }
 
@@ -85,9 +99,23 @@ enum Copy {
         var line = language("매출", "Revenue") + " "
             + Formatting.amount(revenue.value, currency: revenue.currency ?? currency, language: language)
         if let change = report.change {
-            line += " · " + Formatting.percentChange(change.percentChange, language: language)
+            line += dot + Formatting.percentChange(change.percentChange, language: language)
         }
         return line
+    }
+
+    /// The note under a periodic row whose revenue or prior-year revenue a later report
+    /// restated (DESIGN.md G1: a 정정됨 / Restated tag beside the value and a note below).
+    static func restatedNote(_ report: PeriodicReport, _ language: Language) -> String? {
+        let notes = report.restated.map { figure in
+            let fromThisReport = figure.filingID == report.filing.id
+            return language(
+                "\(figure.fiscalYear) 회계연도 매출은 "
+                    + (fromThisReport ? "이 보고서가 정정한 값이에요." : "정정된 값이에요."),
+                "FY\(figure.fiscalYear) revenue is "
+                    + (fromThisReport ? "as restated in this report." : "a restated value."))
+        }
+        return notes.isEmpty ? nil : notes.joined(separator: " ")
     }
 
     /// What VoiceOver reads for the revenue line: the amount, then the change in words.
@@ -96,14 +124,7 @@ enum Copy {
         let amount = Formatting.amount(revenue.value, currency: revenue.currency ?? currency, language: language)
         let year = language("\(revenue.fiscalYear) 회계연도 매출 \(amount)", "Revenue for fiscal \(revenue.fiscalYear), \(amount)")
         guard let change = report.change else { return year }
-        let rounded = DecimalText.twoPlaces(change.percentChange < 0 ? -change.percentChange : change.percentChange)
-        let words: String = if change.percentChange > 0 {
-            language("전년보다 \(rounded)퍼센트 늘었어요", "up \(rounded) percent from the year before")
-        } else if change.percentChange < 0 {
-            language("전년보다 \(rounded)퍼센트 줄었어요", "down \(rounded) percent from the year before")
-        } else {
-            language("전년과 같아요", "no change from the year before")
-        }
+        let words = Formatting.percentChangeSpoken(change.percentChange, language: language)
         return year + ", " + words
     }
 }

@@ -56,6 +56,13 @@ public struct CivilDate: Sendable, Hashable, Comparable, CustomStringConvertible
         return era * 146_097 + dayOfEra - 719_468
     }
 
+    /// The following calendar day.
+    public var nextDay: CivilDate {
+        if let next = CivilDate(year: year, month: month, day: day + 1) { return next }
+        if let next = CivilDate(year: year, month: month + 1, day: 1) { return next }
+        return CivilDate(year: year + 1, month: 1, day: 1) ?? self
+    }
+
     /// Whole days from `self` to `other`; positive when `other` is later.
     public func days(to other: CivilDate) -> Int { other.dayNumber - dayNumber }
 

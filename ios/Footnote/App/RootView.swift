@@ -92,15 +92,18 @@ struct PhoneTabs: View {
                         }
                 }
             }
-            // The glossary tab appears once the bundle holds glossary rows (R-24: no tab
-            // without a real destination).
-            if !store.glossary.isEmpty {
+            // The glossary tab appears once the bundle holds glossary rows in the current
+            // language (R-24: no tab without a real destination).
+            if !store.glossary(language: language).isEmpty {
                 Tab(language("용어", "Glossary"), systemImage: "book", value: TabID.glossary) {
                     NavigationStack {
                         GlossaryView(store: store)
                     }
                 }
             }
+        }
+        .onChange(of: language) {
+            if tab == .glossary && store.glossary(language: language).isEmpty { tab = .companies }
         }
     }
 }
@@ -141,6 +144,11 @@ struct SplitShell: View {
             .environment(\.showsLanguageButton, false)
         }
         .onChange(of: sidebar) { filingID = nil }
+        .onChange(of: language) {
+            if sidebar == .glossary && store.glossary(language: language).isEmpty {
+                sidebar = store.companies.first.map { .company($0.id) }
+            }
+        }
     }
 
     @ViewBuilder private var content: some View {

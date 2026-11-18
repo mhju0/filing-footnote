@@ -132,7 +132,8 @@ struct NoticesSheet: View {
                         NoticeRow(notice: notice, regulator: page.company.regulator)
                     }
                 } header: {
-                    Text(words: Copy.noticesIntro(count: page.notices.count, since: page.noticesSince, language))
+                    Text(words: Copy.noticesIntro(
+                        count: page.notices.count, since: page.noticesSince, dataAsOf: page.dataAsOf, language))
                         .font(.footnote)
                         .foregroundStyle(Theme.muted)
                         .textCase(nil)

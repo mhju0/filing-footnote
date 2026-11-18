@@ -126,9 +126,20 @@ struct PeriodicRow: View {
                 .foregroundStyle(Theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
             if let line = Copy.revenueLine(report, currency: company.currency, language) {
-                Text(words: line)
+                FlowLayout {
+                    Text(words: line)
+                        .font(.footnote)
+                        .monospacedDigit()
+                        .foregroundStyle(Theme.muted)
+                        .fixedSize(horizontal: false, vertical: true)
+                    if !report.restated.isEmpty {
+                        TagView(text: language("정정됨", "Restated"), kind: .corrected)
+                    }
+                }
+            }
+            if let note = Copy.restatedNote(report, language) {
+                Text(words: note)
                     .font(.footnote)
-                    .monospacedDigit()
                     .foregroundStyle(Theme.muted)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -146,6 +157,9 @@ struct PeriodicRow: View {
         if report.filing.isCorrected { parts.append(language("정정됨", "Corrected")) }
         if let figure = Copy.revenueSpoken(report, currency: company.currency, language) {
             parts.append(figure)
+        }
+        if let note = Copy.restatedNote(report, language) {
+            parts.append(language("정정됨", "Restated") + ". " + note)
         }
         return parts.joined(separator: ", ")
     }

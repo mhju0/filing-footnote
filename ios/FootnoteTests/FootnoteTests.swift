@@ -1,4 +1,5 @@
 import Foundation
+import SQLite3
 import FootnoteKit
 import Testing
 @testable import Footnote
@@ -80,8 +81,8 @@ struct CopyTests {
 
     @Test func dataDate() throws {
         let date = try #require(CivilDate(iso: "2026-11-18"))
-        #expect(Copy.dataDate(date, .ko) == "11월 18일까지 낸 공시")
-        #expect(Copy.dataDate(date, .en) == "Filings up to Nov 18")
+        #expect(Copy.dataDate(date, .ko) == "11월\u{00A0}18일까지 낸\u{00A0}공시")
+        #expect(Copy.dataDate(date, .en) == "Filings up to Nov\u{00A0}18")
     }
 
     @Test func links() {
@@ -94,8 +95,8 @@ struct CopyTests {
         let store = try BundleStore(contentsOf: fixtureURL)
         let page = try #require(CompanyPage(store: store, companyID: "dart:00126380"))
         let report = try #require(page.periodicReports.first)
-        #expect(Copy.revenueLine(report, currency: "KRW", .ko) == "매출 300조 8,709억원 · +16.20% 늘었어요")
-        #expect(Copy.revenueLine(report, currency: "KRW", .en) == "Revenue ₩300.87 trillion · +16.20%, up")
+        #expect(Copy.revenueLine(report, currency: "KRW", .ko) == "매출 300조 8,709억원 ·\u{00A0}+16.20% 늘었어요")
+        #expect(Copy.revenueLine(report, currency: "KRW", .en) == "Revenue ₩300.87 trillion ·\u{00A0}+16.20%, up")
         #expect(Copy.revenueSpoken(report, currency: "KRW", .en)
             == "Revenue for fiscal 2025, ₩300.87 trillion, up 16.20 percent from the year before")
     }
@@ -106,13 +107,61 @@ struct CopyTests {
         for language in Language.allCases {
             let strings = [
                 Copy.dataDate(date, language), Copy.noticesRow(count: 3, language),
-                Copy.noticesIntro(count: 3, since: date, language),
+                Copy.noticesIntro(count: 3, since: date, dataAsOf: date, language),
                 Copy.endNote(listed: 9, capped: false, language), Copy.endNote(listed: 10, capped: true, language),
                 Copy.allFilingsLink(.dart, language), Copy.openOriginal(.sec, language),
                 Copy.filedOn(date, language), Copy.market(.dart, language),
             ]
             for string in strings { #expect(!string.contains("\u{2014}"), "\(string)") }
         }
+    }
+}
+
+@Suite("Filing page")
+struct FilingPageTests {
+    /// A disposal planned for one day is one row; a purchase over a range keeps both dates.
+    @Test func singleDayPeriodsFold() throws {
+        let store = try BundleStore(contentsOf: fixtureURL)
+        let disposal = FilingDetailView.foldSingleDays(store.facts(forFiling: "dart:20261029000539"))
+        #expect(!disposal.contains { $0.fact.key == "dispose_period_end" })
+        #expect(disposal.first { $0.fact.key == "dispose_period_start" }?.singleDay == true)
+        let purchase = FilingDetailView.foldSingleDays(store.facts(forFiling: "dart:20260821000616"))
+        #expect(purchase.contains { $0.fact.key == "acquire_period_end" })
+        #expect(purchase.first { $0.fact.key == "acquire_period_start" }?.singleDay == false)
+    }
+
+    /// A restated prior-year revenue gets a note naming the year and this report.
+    @Test func restatedNote() throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("restated-\(UUID().uuidString).sqlite")
+        try FileManager.default.copyItem(at: fixtureURL, to: url)
+        var db: OpaquePointer?
+        #expect(sqlite3_open(url.path, &db) == SQLITE_OK)
+        #expect(sqlite3_exec(db, """
+            UPDATE figures SET is_restated = 1
+            WHERE company_id = 'dart:00126380' AND metric = 'revenue' AND fiscal_year = 2024
+            """, nil, nil, nil) == SQLITE_OK)
+        sqlite3_close(db)
+        let store = try BundleStore(contentsOf: url)
+        let report = try #require(CompanyPage(store: store, companyID: "dart:00126380")?.periodicReports.first)
+        #expect(Copy.restatedNote(report, .ko) == "2024 회계연도 매출은 이 보고서가 정정한 값이에요.")
+        #expect(Copy.restatedNote(report, .en) == "FY2024 revenue is as restated in this report.")
+        let plain = try #require(CompanyPage(store: try BundleStore(contentsOf: fixtureURL), companyID: "dart:00126380"))
+        #expect(Copy.restatedNote(plain.periodicReports[0], .ko) == nil)
+    }
+
+    @Test func endNoteWithNoFilings() {
+        #expect(Copy.endNote(listed: 0, capped: false, .ko) == "최근 1년 동안 낸 공시가 없어요.")
+        #expect(Copy.endNote(listed: 0, capped: false, .en) == "No filings in the last 12 months.")
+    }
+
+    /// The notices intro names the year when the span starts in an earlier year.
+    @Test func noticesIntroYear() throws {
+        let since = try #require(CivilDate(iso: "2025-11-20"))
+        let asOf = try #require(CivilDate(iso: "2026-11-19"))
+        #expect(Copy.noticesIntro(count: 9, since: since, dataAsOf: asOf, .ko)
+            .hasSuffix("2025년\u{00A0}11월\u{00A0}20일부터 낸 9건이에요."))
+        #expect(Copy.noticesIntro(count: 9, since: since, dataAsOf: asOf, .en)
+            .hasSuffix("9\u{00A0}since\u{00A0}Nov\u{00A0}20,\u{00A0}2025."))
     }
 }
 

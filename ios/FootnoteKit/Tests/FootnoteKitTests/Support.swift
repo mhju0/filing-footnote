@@ -1,4 +1,5 @@
 import Foundation
+import SQLite3
 import Testing
 @testable import FootnoteKit
 
@@ -32,6 +33,23 @@ enum Support {
     static func decimal(_ text: String) -> Decimal { DecimalText.parsePlain(text)! }
 
     static func date(_ text: String) -> CivilDate { CivilDate(iso: text)! }
+
+    struct EditFailed: Error { let message: String }
+
+    /// A store over a temporary copy of the fixture after one SQL edit, for cases the fixture
+    /// does not hold (a restated figure, a company with few filings).
+    static func editedFixture(_ sql: String) throws -> BundleStore {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("footnote-\(UUID().uuidString).sqlite")
+        try FileManager.default.copyItem(at: fixtureURL, to: url)
+        var db: OpaquePointer?
+        guard sqlite3_open(url.path, &db) == SQLITE_OK else { throw EditFailed(message: "open") }
+        defer { sqlite3_close(db) }
+        guard sqlite3_exec(db, sql, nil, nil, nil) == SQLITE_OK else {
+            throw EditFailed(message: String(cString: sqlite3_errmsg(db)))
+        }
+        return try BundleStore(contentsOf: url)
+    }
 }
 
 /// JSON without binary floating point: the contracts carry numbers as strings, and the only
