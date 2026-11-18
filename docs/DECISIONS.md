@@ -1130,6 +1130,40 @@ project, unit and UI tests and networking are deleted; the repository history ke
 - CI's manual `ios` job now tests the Footnote scheme on a simulator and builds it for the
   Mac. `ios/scripts/screenshots.sh` captures the screen set in
   `docs/screenshots/footnote/`.
-- Open: the dev bundle has no prior-year revenue for US companies, so their annual row
-  shows revenue without a change; quarterly reports are not in the bundle; no summary is
-  approved yet, so every filing shows the in-review state.
+- Open: a company whose fiscal year ends on a different day each year (Apple's 52 or
+  53 weeks) shows revenue without a change, because the calculator refuses periods whose
+  ends differ; quarterly reports are not in the bundle; no summary is approved yet, so
+  every filing shows the in-review state.
+
+## D81 · Glossary contract and export, wording awaiting approval · 2026-11-19 (`PROPOSED`)
+
+The roadmap's D4 item. The bundle already had a `glossary` table (`term_key`, `lang`,
+`term`, `plain`, `formal`) that the exporter left empty. The design wording rule applies:
+the plain word first, the formal term beside it. The drafting is the agent's; the owner has
+not approved any wording.
+
+- `contracts/glossary.json` holds one entry per `term_key` with a ko and an en
+  `{term, plain, formal|null}` and an `approved` flag. Every entry is `approved: false`;
+  only the owner sets it. The keys are `metric_<key>` for each reported and derived metric
+  in `financial-vocabulary.json`, `category_<key>` for each event, notice and annual
+  category in `filing-categories.json`, `refusal_<reason>` for each refusal reason in
+  `comparison-cases.json`, and `notices`, `basis_consolidated`, `basis_separate`,
+  `restated`, `k_ifrs`, `us_gaap` and `fiscal_year_end`. The annual report entry is
+  `category_annual`; the form name "10-K" is left out of its text because the guard bans
+  digits.
+- Wording is one or two short sentences, plain Korean in 해요체, neutral, no digits. Every
+  text passes the same neutrality guard as a summary line (`check_line`, run per sentence;
+  N4 attribution does not apply to a definition, and a Korean term may be a Latin
+  abbreviation). A test fails when a metric, category or refusal reason has no entry, when
+  a category's term differs from the categories contract label, or when an entry lacks a
+  language.
+- Export: `app.build.glossary` turns the entries into rows. A development build
+  (`--allow-unapproved`) writes every entry, as it does for summaries, and marks the file in
+  `build_meta.allow_unapproved`. A release build refuses while any entry is unapproved.
+  Until the owner approves the wording, no release build can pass.
+- `research_and_development` is in `family-glossary.json` only; it is not in the financial
+  vocabulary or any figure, so it has no glossary entry.
+- Not done: `app.build.verify --release` does not re-check glossary rows in a finished
+  file; the release export is the gate.
+- Open: the owner reviews the wording (the pull request lists every entry) and approves
+  entries by editing the `approved` flags.

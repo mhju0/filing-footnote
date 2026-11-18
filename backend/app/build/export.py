@@ -17,6 +17,9 @@ line fails the neutrality guard, and when ``--prompt-version`` is ``none``.
 ``--allow-unapproved`` is for development builds only and is recorded in
 ``build_meta.allow_unapproved``; ``python -m app.build.verify --release`` refuses such a file.
 Summaries not yet approved are never written, because ``review_state`` must be ``approved``.
+Glossary entries (``contracts/glossary.json``, D81) follow the same split: a release build
+refuses while any entry is unapproved and every build runs the neutrality guard on them; a
+development build writes the unapproved entries too, since ``allow_unapproved`` marks the file.
 
 Event filings: the version of each correction chain shown is the newest one filed on or
 before ``--as-of``; ingest's ``is_latest`` is not used. At most ten events per company are
@@ -67,6 +70,7 @@ from app.build.bundle import (
     TABLES,
     content_sha256,
 )
+from app.build.glossary import glossary_problems, glossary_rows, load_glossary, release_problems
 from app.build.model import (
     DECIMAL_VALUE_KINDS,
     EVENT_PROMPT_VERSION,
@@ -206,6 +210,10 @@ def build_bundle(data: BuildInput, options: BuildOptions, pinned_dirs: Sequence[
         build.problems.append(
             f"release build refused: --event-prompt-version is {NO_PROMPT_VERSION!r}"
         )
+    glossary = load_glossary()
+    build.problems.extend(glossary_problems(glossary))
+    if not options.allow_unapproved:
+        build.problems.extend(release_problems(glossary))
     if build.problems:
         raise BuildError(build.problems)
 
@@ -216,7 +224,7 @@ def build_bundle(data: BuildInput, options: BuildOptions, pinned_dirs: Sequence[
         "filing_summaries": summary_rows,
         "filing_facts": build.facts,
         "figures": build.figures,
-        "glossary": [],
+        "glossary": glossary_rows(glossary, allow_unapproved=options.allow_unapproved),
     }
     # Insert order is primary-key order; the loops above build rows in other orders.
     for table, table_rows in rows.items():
@@ -791,8 +799,12 @@ def _figures(build: _Build) -> None:
         same_tag, other_tag = [], []
         for c, oc in original_checks:
             (same_tag if oc.regulator_tag == check.regulator_tag else other_tag).append(
-                {"filing_id": c.filing_id, "value": canonical_decimal(c.row.value),
-                 "regulator_tag": oc.regulator_tag, "pinned": oc.pinned}  # fmt: skip
+                {
+                    "filing_id": c.filing_id,
+                    "value": canonical_decimal(c.row.value),
+                    "regulator_tag": oc.regulator_tag,
+                    "pinned": oc.pinned,
+                }  # fmt: skip
             )
         lookup_problem = None
         if not own_report and metric == ReportedMetric.eps_diluted.value:
@@ -862,9 +874,7 @@ def _figures(build: _Build) -> None:
     build.report["figure_gaps"] = _figure_gaps(build, excluded)
 
 
-def _figure_gaps(
-    build: _Build, excluded: set[tuple[str, str, int]]
-) -> list[dict[str, Any]]:
+def _figure_gaps(build: _Build, excluded: set[tuple[str, str, int]]) -> list[dict[str, Any]]:
     """Each company and reported metric without a figure for both of its two fiscal years.
     The reason is ``not_stated`` (the ingested filings do not state it) or ``mixed_basis``
     (stated only by an earlier report for a year with restated figures, so not exported)."""
