@@ -1,0 +1,652 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		05B0C535A82EA0204E4A4EDC /* Rows.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8575F228C62CB53EBF709A57 /* Rows.swift */; };
+		38E071F6C439E5A6631C71EF /* CompanyPageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1451043C5F97E78360D49B1A /* CompanyPageView.swift */; };
+		560DD57B7A30749322B92205 /* OriginalLinks.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5763354F725A9825C8F45BA /* OriginalLinks.swift */; };
+		65603A66B51C890443BF4D11 /* FootnoteTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CEB9F0F6A890E7BA9ADA8CB /* FootnoteTests.swift */; };
+		7043A98ED52874F41EE22664 /* Copy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49ED7013F79313CBCC67F084 /* Copy.swift */; };
+		781D6855D576B83F9B7FDDB6 /* NewsAndGlossary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C57CE2A69841013D54DA95C /* NewsAndGlossary.swift */; };
+		7A2EBE33CBD6625CCD57D766 /* LaunchRoute.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3A9AF1B5B791CDDF55DC3F9 /* LaunchRoute.swift */; };
+		7AED2A94CD63157964A8A416 /* FootnoteApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B556BB1B771BF080EF4BA9A /* FootnoteApp.swift */; };
+		7F5D19558056B19C0D92F257 /* CompaniesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83D0E13ABF3BD2C1B509E51D /* CompaniesView.swift */; };
+		845DF390B5E0D3CFD0789B56 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC289A12582A8B34DF6AD1CD /* Theme.swift */; };
+		86CD4D1EB16C9CC2ECCAD48E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A5158F1E7A83D45A03BF2540 /* Assets.xcassets */; };
+		A650145FEDFAB26885379208 /* filing-facts.json in Resources */ = {isa = PBXBuildFile; fileRef = FE38B31209FBFAD5D8F880A1 /* filing-facts.json */; };
+		A6F115BDD483A134FE63EA0E /* FootnoteKit in Frameworks */ = {isa = PBXBuildFile; productRef = 9F673E045A19D40A0571831C /* FootnoteKit */; };
+		B814FA6CDF2D69882E5FFA79 /* KeepAll.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B925AA3157EEF14E56E6451 /* KeepAll.swift */; };
+		D084464B24495E5CC5F57423 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FD17E58353EA488866917BB /* RootView.swift */; };
+		DDA675971087F266809D199A /* FactLabels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17DABD04C86B387AB9155CAA /* FactLabels.swift */; };
+		E4FDB3841AF5B3BFA18CA247 /* footnote.sqlite in Resources */ = {isa = PBXBuildFile; fileRef = D0E3DC947AE76FA1DBF99AFA /* footnote.sqlite */; };
+		F40E85FCAA71B7C1ED0BD355 /* FilingDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6AFE5BC27B355E36B6905461 /* FilingDetailView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		1B9362A29A7FADA8685D7C21 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A2579260045569C0A9B2DA24 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 90DD80BB07D8CE762826605A;
+			remoteInfo = Footnote;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		0935B3701FCD891C689475F4 /* Footnote.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Footnote.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		0B925AA3157EEF14E56E6451 /* KeepAll.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeepAll.swift; sourceTree = "<group>"; };
+		0CEB9F0F6A890E7BA9ADA8CB /* FootnoteTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FootnoteTests.swift; sourceTree = "<group>"; };
+		0DD3DC3BFB1504B093423E4F /* FootnoteTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = FootnoteTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		1451043C5F97E78360D49B1A /* CompanyPageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompanyPageView.swift; sourceTree = "<group>"; };
+		17DABD04C86B387AB9155CAA /* FactLabels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FactLabels.swift; sourceTree = "<group>"; };
+		27D5005BC7B8E88740C8D624 /* FootnoteKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = FootnoteKit; path = FootnoteKit; sourceTree = SOURCE_ROOT; };
+		49ED7013F79313CBCC67F084 /* Copy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Copy.swift; sourceTree = "<group>"; };
+		4B556BB1B771BF080EF4BA9A /* FootnoteApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FootnoteApp.swift; sourceTree = "<group>"; };
+		6AFE5BC27B355E36B6905461 /* FilingDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilingDetailView.swift; sourceTree = "<group>"; };
+		7C57CE2A69841013D54DA95C /* NewsAndGlossary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewsAndGlossary.swift; sourceTree = "<group>"; };
+		7FD17E58353EA488866917BB /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		83D0E13ABF3BD2C1B509E51D /* CompaniesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompaniesView.swift; sourceTree = "<group>"; };
+		8575F228C62CB53EBF709A57 /* Rows.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Rows.swift; sourceTree = "<group>"; };
+		A3A9AF1B5B791CDDF55DC3F9 /* LaunchRoute.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchRoute.swift; sourceTree = "<group>"; };
+		A5158F1E7A83D45A03BF2540 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		D0E3DC947AE76FA1DBF99AFA /* footnote.sqlite */ = {isa = PBXFileReference; lastKnownFileType = file; path = footnote.sqlite; sourceTree = "<group>"; };
+		DC289A12582A8B34DF6AD1CD /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		F5763354F725A9825C8F45BA /* OriginalLinks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OriginalLinks.swift; sourceTree = "<group>"; };
+		FE38B31209FBFAD5D8F880A1 /* filing-facts.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = "filing-facts.json"; path = "../contracts/filing-facts.json"; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		F279CA40DC749A61F42A6545 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A6F115BDD483A134FE63EA0E /* FootnoteKit in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		27F5C325669AB3EDE4C30FF2 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				0B925AA3157EEF14E56E6451 /* KeepAll.swift */,
+				F5763354F725A9825C8F45BA /* OriginalLinks.swift */,
+				8575F228C62CB53EBF709A57 /* Rows.swift */,
+				DC289A12582A8B34DF6AD1CD /* Theme.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+		2F5563CDC63EB300F8F4FECC /* Fixtures */ = {
+			isa = PBXGroup;
+			children = (
+				D0E3DC947AE76FA1DBF99AFA /* footnote.sqlite */,
+			);
+			path = Fixtures;
+			sourceTree = "<group>";
+		};
+		3F506E4B2E76495E49888867 /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+				27D5005BC7B8E88740C8D624 /* FootnoteKit */,
+			);
+			name = Packages;
+			sourceTree = "<group>";
+		};
+		5545F8B344221D4747BD0A89 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				A5158F1E7A83D45A03BF2540 /* Assets.xcassets */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		63EA327D71412513E913F14F /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				0935B3701FCD891C689475F4 /* Footnote.app */,
+				0DD3DC3BFB1504B093423E4F /* FootnoteTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		6FBD892E9D199F54CF5E7516 /* Footnote */ = {
+			isa = PBXGroup;
+			children = (
+				FC5E2FB9B288632A9A250237 /* App */,
+				27F5C325669AB3EDE4C30FF2 /* Components */,
+				5545F8B344221D4747BD0A89 /* Resources */,
+				A17F2AFEEEA92AB82E1E0BFD /* Screens */,
+			);
+			path = Footnote;
+			sourceTree = "<group>";
+		};
+		83486EDDDFA94726E8FBA29C = {
+			isa = PBXGroup;
+			children = (
+				FC80EF6B755EF7FABFC658B6 /* Contracts */,
+				6FBD892E9D199F54CF5E7516 /* Footnote */,
+				84EB635B5C3524867494DEAD /* FootnoteKit */,
+				990F4E0BD20FE68F9E4C9316 /* FootnoteTests */,
+				3F506E4B2E76495E49888867 /* Packages */,
+				63EA327D71412513E913F14F /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		84EB635B5C3524867494DEAD /* FootnoteKit */ = {
+			isa = PBXGroup;
+			children = (
+				A1643BB8E868AC34AF3266BB /* Tests */,
+			);
+			path = FootnoteKit;
+			sourceTree = "<group>";
+		};
+		990F4E0BD20FE68F9E4C9316 /* FootnoteTests */ = {
+			isa = PBXGroup;
+			children = (
+				0CEB9F0F6A890E7BA9ADA8CB /* FootnoteTests.swift */,
+			);
+			path = FootnoteTests;
+			sourceTree = "<group>";
+		};
+		A1643BB8E868AC34AF3266BB /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				BB019DB4C8A30FFFF30E685C /* FootnoteKitTests */,
+			);
+			path = Tests;
+			sourceTree = "<group>";
+		};
+		A17F2AFEEEA92AB82E1E0BFD /* Screens */ = {
+			isa = PBXGroup;
+			children = (
+				83D0E13ABF3BD2C1B509E51D /* CompaniesView.swift */,
+				1451043C5F97E78360D49B1A /* CompanyPageView.swift */,
+				6AFE5BC27B355E36B6905461 /* FilingDetailView.swift */,
+				7C57CE2A69841013D54DA95C /* NewsAndGlossary.swift */,
+			);
+			path = Screens;
+			sourceTree = "<group>";
+		};
+		BB019DB4C8A30FFFF30E685C /* FootnoteKitTests */ = {
+			isa = PBXGroup;
+			children = (
+				2F5563CDC63EB300F8F4FECC /* Fixtures */,
+			);
+			path = FootnoteKitTests;
+			sourceTree = "<group>";
+		};
+		FC5E2FB9B288632A9A250237 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				49ED7013F79313CBCC67F084 /* Copy.swift */,
+				17DABD04C86B387AB9155CAA /* FactLabels.swift */,
+				4B556BB1B771BF080EF4BA9A /* FootnoteApp.swift */,
+				A3A9AF1B5B791CDDF55DC3F9 /* LaunchRoute.swift */,
+				7FD17E58353EA488866917BB /* RootView.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		FC80EF6B755EF7FABFC658B6 /* Contracts */ = {
+			isa = PBXGroup;
+			children = (
+				FE38B31209FBFAD5D8F880A1 /* filing-facts.json */,
+			);
+			name = Contracts;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		90DD80BB07D8CE762826605A /* Footnote */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 546968A754B818C0A9CCEC4B /* Build configuration list for PBXNativeTarget "Footnote" */;
+			buildPhases = (
+				EFE00E2EDD694C691933E56B /* Sources */,
+				FD0F8B10BEE13AC7CE133AF7 /* Copy data bundle */,
+				FD8BB8A911BDB75E3A83C9BF /* Resources */,
+				F279CA40DC749A61F42A6545 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Footnote;
+			packageProductDependencies = (
+				9F673E045A19D40A0571831C /* FootnoteKit */,
+			);
+			productName = Footnote;
+			productReference = 0935B3701FCD891C689475F4 /* Footnote.app */;
+			productType = "com.apple.product-type.application";
+		};
+		A0BAD32C6E89CEE9AA69294F /* FootnoteTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 05663F7EC0C6A073F911D324 /* Build configuration list for PBXNativeTarget "FootnoteTests" */;
+			buildPhases = (
+				16ED94F117A176818891CBEE /* Sources */,
+				C6623AC4178BD535696ED877 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				E9E165ECEF435AC73B006717 /* PBXTargetDependency */,
+			);
+			name = FootnoteTests;
+			packageProductDependencies = (
+			);
+			productName = FootnoteTests;
+			productReference = 0DD3DC3BFB1504B093423E4F /* FootnoteTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A2579260045569C0A9B2DA24 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+				};
+			};
+			buildConfigurationList = C9E18983E62A5E1B6A94D9DC /* Build configuration list for PBXProject "Footnote" */;
+			developmentRegion = ko;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				ko,
+			);
+			mainGroup = 83486EDDDFA94726E8FBA29C;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				22E5FC38242CB2498250B719 /* XCLocalSwiftPackageReference "FootnoteKit" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 63EA327D71412513E913F14F /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				90DD80BB07D8CE762826605A /* Footnote */,
+				A0BAD32C6E89CEE9AA69294F /* FootnoteTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		C6623AC4178BD535696ED877 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E4FDB3841AF5B3BFA18CA247 /* footnote.sqlite in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		FD8BB8A911BDB75E3A83C9BF /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				86CD4D1EB16C9CC2ECCAD48E /* Assets.xcassets in Resources */,
+				A650145FEDFAB26885379208 /* filing-facts.json in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		FD0F8B10BEE13AC7CE133AF7 /* Copy data bundle */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Copy data bundle";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -euo pipefail\n# FOOTNOTE_BUNDLE (a build setting) wins, then ios/Footnote/Resources/footnote.sqlite\n# (git-ignored), then, in debug builds only, the FootnoteKit test fixture so a clean\n# checkout builds.\nsource=\"${FOOTNOTE_BUNDLE:-${SRCROOT}/Footnote/Resources/footnote.sqlite}\"\nif [ ! -f \"$source\" ]; then\n  if [ \"${CONFIGURATION}\" = \"Release\" ]; then\n    echo \"error: a Release build needs a release data bundle at $source\"\n    exit 1\n  fi\n  source=\"${SRCROOT}/FootnoteKit/Tests/FootnoteKitTests/Fixtures/footnote.sqlite\"\n  echo \"note: no data bundle at ios/Footnote/Resources/footnote.sqlite; using the FootnoteKit test fixture\"\nfi\nif [ \"${CONFIGURATION}\" = \"Release\" ]; then\n  unapproved=\"$(/usr/bin/sqlite3 -readonly \"$source\" 'SELECT allow_unapproved FROM build_meta' 2>&1)\" || {\n    echo \"error: cannot read build_meta from $source: $unapproved\"\n    exit 1\n  }\n  if [ \"$unapproved\" != \"0\" ]; then\n    echo \"error: $source is a development bundle (allow_unapproved=$unapproved); a Release build ships only owner-approved summaries\"\n    exit 1\n  fi\nfi\ndestination=\"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/footnote.sqlite\"\nmkdir -p \"$(dirname \"$destination\")\"\ncp \"$source\" \"$destination\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		16ED94F117A176818891CBEE /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				65603A66B51C890443BF4D11 /* FootnoteTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		EFE00E2EDD694C691933E56B /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7F5D19558056B19C0D92F257 /* CompaniesView.swift in Sources */,
+				38E071F6C439E5A6631C71EF /* CompanyPageView.swift in Sources */,
+				7043A98ED52874F41EE22664 /* Copy.swift in Sources */,
+				DDA675971087F266809D199A /* FactLabels.swift in Sources */,
+				F40E85FCAA71B7C1ED0BD355 /* FilingDetailView.swift in Sources */,
+				7AED2A94CD63157964A8A416 /* FootnoteApp.swift in Sources */,
+				B814FA6CDF2D69882E5FFA79 /* KeepAll.swift in Sources */,
+				7A2EBE33CBD6625CCD57D766 /* LaunchRoute.swift in Sources */,
+				781D6855D576B83F9B7FDDB6 /* NewsAndGlossary.swift in Sources */,
+				560DD57B7A30749322B92205 /* OriginalLinks.swift in Sources */,
+				D084464B24495E5CC5F57423 /* RootView.swift in Sources */,
+				05B0C535A82EA0204E4A4EDC /* Rows.swift in Sources */,
+				845DF390B5E0D3CFD0789B56 /* Theme.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		E9E165ECEF435AC73B006717 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 90DD80BB07D8CE762826605A /* Footnote */;
+			targetProxy = 1B9362A29A7FADA8685D7C21 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		377FCBC51967A27009BE68C4 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.filingfootnote.footnote.tests;
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Footnote.app/Footnote";
+				"TEST_HOST[sdk=macosx*]" = "$(BUILT_PRODUCTS_DIR)/Footnote.app/Contents/MacOS/Footnote";
+			};
+			name = Release;
+		};
+		864EA16C5E3E5B8A1F9DADFF /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MARKETING_VERSION = 0.5.2;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		B803FB35679D456DA578D009 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = NO;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Footnote;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.finance";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.filingfootnote.footnote;
+				PRODUCT_NAME = Footnote;
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		BD96B5CE01E143FCE1B9518B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = NO;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Footnote;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.finance";
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.filingfootnote.footnote;
+				PRODUCT_NAME = Footnote;
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		C1B7565D12DA94A21694274F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				MACOSX_DEPLOYMENT_TARGET = 15.0;
+				MARKETING_VERSION = 0.5.2;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		CEE1FC37E949D31BAE898E6E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.filingfootnote.footnote.tests;
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Footnote.app/Footnote";
+				"TEST_HOST[sdk=macosx*]" = "$(BUILT_PRODUCTS_DIR)/Footnote.app/Contents/MacOS/Footnote";
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		05663F7EC0C6A073F911D324 /* Build configuration list for PBXNativeTarget "FootnoteTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CEE1FC37E949D31BAE898E6E /* Debug */,
+				377FCBC51967A27009BE68C4 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		546968A754B818C0A9CCEC4B /* Build configuration list for PBXNativeTarget "Footnote" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BD96B5CE01E143FCE1B9518B /* Debug */,
+				B803FB35679D456DA578D009 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		C9E18983E62A5E1B6A94D9DC /* Build configuration list for PBXProject "Footnote" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				864EA16C5E3E5B8A1F9DADFF /* Debug */,
+				C1B7565D12DA94A21694274F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		22E5FC38242CB2498250B719 /* XCLocalSwiftPackageReference "FootnoteKit" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = FootnoteKit;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		9F673E045A19D40A0571831C /* FootnoteKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = FootnoteKit;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = A2579260045569C0A9B2DA24 /* Project object */;
+}

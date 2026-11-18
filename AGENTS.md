@@ -34,7 +34,12 @@ tests; offline tests set `EMBEDDING_WARMUP_ENABLED=false`.
   `contracts/financial-vocabulary.json`.
 - DART XML uses `defusedxml`; keep `crtfc_key` redaction in `logging_config.py`.
 - iOS: run one simulator build or test at a time:
-  `xcodebuild test -project ios/FilingDigest.xcodeproj -scheme FilingDigest -destination 'platform=iOS Simulator,id=<UDID>' CODE_SIGNING_ALLOWED=NO`
+  `xcodebuild test -project ios/Footnote.xcodeproj -scheme Footnote -destination 'platform=iOS Simulator,id=<UDID>' CODE_SIGNING_ALLOWED=NO`
+  (Mac: `-destination 'platform=macOS'`). `ios/project.yml` is the source; after
+  editing it, run `xcodegen generate --spec ios/project.yml` and commit the
+  regenerated `ios/Footnote.xcodeproj`. A dev data bundle goes in git-ignored
+  `ios/Footnote/Resources/footnote.sqlite`; without it the app uses the FootnoteKit
+  fixture. Never commit a real bundle.
 
 ## Agent skills
 
