@@ -71,4 +71,15 @@ if command -v xcodegen >/dev/null 2>&1; then
 else
   echo "== Xcode project check skipped: xcodegen is not installed"
 fi
+
+# Companies are compared by growth rates and margins only; the app never converts one
+# currency into another (D84). Fail when app code names an exchange rate or a conversion.
+no_currency_conversion() {
+  if grep -rnEi 'exchange_?rate|fx_?rate|conversion_?rate|convert(ed)?_?(currency|amount)|currency_?conver' \
+    --include='*.swift' ios/Footnote ios/FootnoteKit/Sources; then
+    echo "app code names a currency conversion" >&2
+    return 1
+  fi
+}
+run "no currency conversion in the app" no_currency_conversion
 # Contract tests are added here.
