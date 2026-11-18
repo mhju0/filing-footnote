@@ -74,18 +74,13 @@ def classify_sec_row(accession: str) -> Classification:
 # -- coverage over every fixture row -----------------------------------------------------------
 
 # Names the owner has not placed in a category or an exclusion. They are excluded as no_rule.
-KNOWN_NO_RULE = {
-    "매출액또는손익구조30%(대규모법인은15%)이상변경",
-    "수시공시의무관련사항(공정공시)",
-    "타인에대한채무보증결정",
-    "타인에대한담보제공결정",
-    "금전대여결정",
-    "중대재해발생",
-    "생산중단",
-    "생산재개(자율공시)",
-    "파생상품거래손실발생",
-    "투자판단관련주요경영사항",
-}
+# Contract version 2 (D76) placed every name the fixtures held.
+KNOWN_NO_RULE: set[str] = set()
+
+
+def all_categories() -> set[str]:
+    contract = load_contract()
+    return {c["key"] for c in contract["categories"] + contract["notice_categories"]}
 
 
 def test_fixture_sizes() -> None:
@@ -97,7 +92,7 @@ def test_fixture_sizes() -> None:
 def test_every_dart_row_is_categorised_or_excluded_with_a_named_reason() -> None:
     contract = load_contract()
     reasons = set(contract["excluded_reasons"])
-    categories = {c["key"] for c in contract["categories"]}
+    categories = all_categories()
     for rcept_no, row in dart_rows().items():
         result = classify_dart_row(rcept_no)
         assert (result.category in categories) != (result.excluded_reason in reasons), row
@@ -109,7 +104,7 @@ def test_dart_no_rule_names_are_exactly_the_known_leftovers() -> None:
     for rcept_no, row in dart_rows().items():
         if classify_dart_row(rcept_no).excluded_reason == "no_rule":
             key = normalise_dart_name(row["report_nm"])[0]
-            if not key.startswith(tuple(KNOWN_NO_RULE)):
+            if not KNOWN_NO_RULE or not key.startswith(tuple(KNOWN_NO_RULE)):
                 unexpected.add(key)
     assert not unexpected
 
@@ -128,7 +123,7 @@ def test_dart_sample_has_no_needs_body_and_every_plain_earnings_body_is_present(
 
 def test_no_listed_name_is_ever_no_rule() -> None:
     dart = load_contract()["dart"]
-    listed = [p for e in dart["exclusions"] + dart["rules"] for p in e["prefixes"]]
+    listed = [p for e in dart["exclusions"] + dart["notices"] + dart["rules"] for p in e["prefixes"]]
     listed += dart["earnings"]["consolidated_prefixes"] + dart["earnings"]["plain_prefixes"]
     for rcept_no, row in dart_rows().items():
         key = normalise_dart_name(row["report_nm"])[0]
@@ -139,7 +134,7 @@ def test_no_listed_name_is_ever_no_rule() -> None:
 def test_every_sec_row_is_categorised_or_excluded_with_a_named_reason() -> None:
     contract = load_contract()
     reasons = set(contract["excluded_reasons"])
-    categories = {c["key"] for c in contract["categories"]}
+    categories = all_categories()
     for accession in sec_rows():
         result = classify_sec_row(accession)
         assert (result.category in categories) != (result.excluded_reason in reasons), accession
@@ -254,27 +249,56 @@ def test_sec_matched_rule_names_the_deciding_rule() -> None:
 # -- one test per exclusion reason -------------------------------------------------------------
 
 DART_EXCLUDED = {
-    "ir_event": "기업설명회(IR)개최(안내공시)",
     "ownership_report": "최대주주등소유주식변동신고서",
-    "rumor_response": "풍문또는보도에대한해명(미확정)",
+    "no_rule": "자산재평가실시결정",
+}
+
+# Notice categories (D76), each with a report name stored in the 2026-11 corpus.
+DART_NOTICES = {
+    "ir_event": "기업설명회(IR)개최(안내공시)",
     "market_action": "조회공시요구(풍문또는보도)",
-    "forward_looking": "장래사업ㆍ경영계획(공정공시)",
-    "shareholder_meeting": "정기주주총회결과",
+    "meeting_notice": "주주총회소집결의",
     "record_date": "현금ㆍ현물배당을위한주주명부폐쇄(기준일)결정",
     "audit_report": "감사보고서제출",
     "governance_report": "기업지배구조보고서공시",
     "sustainability_report": "지속가능경영보고서등관련사항(자율공시)",
     "compliance_program": "공정거래자율준수프로그램운영현황(안내공시)",
     "earnings_notice": "결산실적공시예고(안내공시)",
-    "value_up_plan": "기업가치제고계획(자율공시) (2025년 이행현황)",
-    "other_management": "기타경영사항(자율공시) (배당기준일 변경 안내)",
     "notice_only": "기타안내사항(안내공시)",
-    "no_rule": "중대재해발생",
+}
+
+# Report names stored in the 2026-11 corpus that D76 brings into scope, with their category.
+DART_NEW_EVENTS = {
+    "영업실적등에대한전망(공정공시)": "outlook",
+    "연결재무제표기준영업실적등에대한전망(공정공시)": "outlook",
+    "[기재정정]장래사업ㆍ경영계획(공정공시)": "outlook",
+    "[첨부추가]장래사업ㆍ경영계획(공정공시)": "outlook",
+    "풍문또는보도에대한해명(미확정)": "clarification",
+    "풍문또는보도에대한해명": "clarification",
+    "조회공시요구(풍문또는보도)에대한답변(미확정)": "clarification",
+    "기타경영사항(자율공시)": "management",
+    "기타경영사항(자율공시)              (ESG위원회 결과 보고)": "management",
+    "투자판단관련주요경영사항": "management",
+    "투자판단관련주요경영사항(항암신약후보물질Licensein계약체결)": "management",
+    "기업가치제고계획(자율공시)": "shareholder_value",
+    "기업가치제고계획(자율공시) (2025년 이행현황)": "shareholder_value",
+    "수시공시의무관련사항(공정공시)": "shareholder_value",
+    "매출액또는손익구조30%(대규모법인은15%)이상변경": "earnings",
+    "매출액또는손익구조30%(대규모법인은15%)이상변동": "earnings",
+    "중대재해발생": "operations",
+    "생산중단": "operations",
+    "[기재정정]생산중단": "operations",
+    "생산재개(자율공시)": "operations",
+    "금전대여결정": "lending",
+    "타인에대한채무보증결정": "lending",
+    "타인에대한담보제공결정": "lending",
+    "파생상품거래손실발생": "lending",
+    "정기주주총회결과": "meeting",
+    "임시주주총회결과": "meeting",
+    "[기재정정]정기주주총회결과": "meeting",
 }
 
 SEC_EXCLUDED = {
-    "shareholder_vote": ("5.07,9.01", None),
-    "bylaws_change": ("5.03,5.07,9.01", None),
     "exhibits_only": ("9.01", None),
     "listing_notice": ("3.01", None),
     "rights_modification": ("3.03", None),
@@ -288,6 +312,7 @@ SEC_EXCLUDED = {
 def test_dart_exclusion_reason(reason: str) -> None:
     result = classify_dart(DART_EXCLUDED[reason])
     assert (result.category, result.excluded_reason) == (None, reason)
+    assert result.kind is None
 
 
 def test_dart_exclusion_table_covers_every_exclusion_in_the_contract() -> None:
@@ -295,19 +320,58 @@ def test_dart_exclusion_table_covers_every_exclusion_in_the_contract() -> None:
     assert contract_reasons <= set(DART_EXCLUDED)
 
 
-def test_dart_other_exclusion_names_from_the_contract() -> None:
+@pytest.mark.parametrize("category", sorted(DART_NOTICES))
+def test_dart_notice_category(category: str) -> None:
+    result = classify_dart(DART_NOTICES[category])
+    assert (result.category, result.excluded_reason, result.kind) == (category, None, "notice")
+
+
+def test_dart_notice_table_covers_every_notice_category() -> None:
+    keys = {c["key"] for c in load_contract()["notice_categories"]}
+    assert set(DART_NOTICES) == keys
+    assert {e["category"] for e in load_contract()["dart"]["notices"]} == keys
+
+
+@pytest.mark.parametrize("name", sorted(DART_NEW_EVENTS))
+def test_dart_names_brought_into_scope(name: str) -> None:
+    result = classify_dart(name)
+    assert (result.category, result.excluded_reason) == (DART_NEW_EVENTS[name], None)
+    assert result.kind == "event"
+
+
+def test_every_new_event_category_has_a_real_name() -> None:
+    new = {"outlook", "shareholder_value", "meeting", "operations", "lending", "management"}
+    new.add("clarification")
+    assert new <= set(DART_NEW_EVENTS.values())
+    assert new <= {c["key"] for c in load_contract()["categories"]}
+
+
+def test_other_meeting_and_record_date_names_are_notices() -> None:
     for name in (
-        "주주총회소집결의",
-        "임시주주총회결과",
+        "[기재정정]주주총회소집결의",
         "주주총회집중일개최사유신고",
         "주주명부폐쇄기간또는기준일설정",
-        "조회공시요구(풍문또는보도)에대한답변(미확정)",
-        "연결재무제표기준영업실적등에대한전망(공정공시)",
-        "임원ㆍ주요주주특정증권등소유상황보고서",
-        "기업가치제고계획(자율공시)",
+        "기타경영사항(자율공시)              (배당기준일 변경 안내)",
+        "[기재정정]감사보고서제출",
     ):
-        assert classify_dart(name).category is None
-        assert classify_dart(name).excluded_reason != "no_rule", name
+        assert classify_dart(name).kind == "notice", name
+
+
+def test_ownership_reports_stay_out_of_the_list() -> None:
+    for name in (
+        "최대주주등소유주식변동신고서",
+        "임원ㆍ주요주주특정증권등소유상황보고서",
+        "주식등의대량보유상황보고서(일반)",
+    ):
+        result = classify_dart(name)
+        assert (result.category, result.excluded_reason) == (None, "ownership_report"), name
+
+
+def test_an_answer_to_an_inquiry_is_a_clarification_and_the_inquiry_a_notice() -> None:
+    answer = classify_dart("조회공시요구(풍문또는보도)에대한답변(미확정)")
+    inquiry = classify_dart("조회공시요구(풍문또는보도)")
+    assert (answer.category, answer.kind) == ("clarification", "event")
+    assert (inquiry.category, inquiry.kind) == ("market_action", "notice")
 
 
 @pytest.mark.parametrize("reason", sorted(SEC_EXCLUDED))
@@ -324,10 +388,17 @@ def test_sec_exclusion_table_covers_every_sec_exclusion_in_the_contract() -> Non
 
 
 def test_real_sec_rows_excluded_with_their_reason() -> None:
-    assert classify_sec_row("0001140361-26-006577").excluded_reason == "shareholder_vote"
-    assert classify_sec_row("0000104169-26-000111").excluded_reason == "bylaws_change"
     assert classify_sec_row("0000104169-26-000067").excluded_reason == "trading_plan"
     assert classify_sec_row("0001104659-26-041034").excluded_reason == "no_keyword_match"
+
+
+def test_real_sec_vote_and_bylaws_rows_are_in_scope() -> None:
+    vote = classify_sec_row("0001140361-26-006577")
+    assert (vote.category, vote.matched_rule, vote.kind) == ("meeting", "sec.item.5.07", "event")
+    bylaws = classify_sec_row("0000104169-26-000111")
+    assert bylaws.category in ("meeting", "management")
+    assert classify_sec("8-K", "5.03,9.01").category == "management"
+    assert classify_sec("8-K", "5.03,5.07,9.01").category == "meeting"
 
 
 def test_wmt_10b5_1_trading_plan_notices_stay_excluded() -> None:
@@ -361,7 +432,7 @@ def test_deal_keywords_are_narrow() -> None:
 
 
 def test_sec_exhibits_only_does_not_hide_a_more_specific_reason() -> None:
-    assert classify_sec("8-K", "5.07,9.01").excluded_reason == "shareholder_vote"
+    assert classify_sec("8-K", "9.01,3.03").excluded_reason == "rights_modification"
     assert classify_sec("8-K", "9.01,3.01").excluded_reason == "listing_notice"
 
 
@@ -385,6 +456,13 @@ def test_sec_priority_follows_contract_order() -> None:
         "deal",
         "leadership",
         "legal",
+        "outlook",
+        "shareholder_value",
+        "meeting",
+        "operations",
+        "lending",
+        "management",
+        "clarification",
     ]
     text = (
         "The Board declared a special dividend and approved a new share repurchase program "
@@ -394,6 +472,13 @@ def test_sec_priority_follows_contract_order() -> None:
     assert classify_sec("8-K", "8.01,5.02", ["cash dividend"]).category == "dividend"
     assert classify_sec("8-K", "1.01,5.02", None).category == "deal"
     assert classify_sec("8-K", "5.02,1.05", None).category == "leadership"
+    assert classify_sec("8-K", "5.07,5.02", None).category == "leadership"
+
+
+def test_a_notice_category_ranks_after_every_event_category() -> None:
+    last = max(c["priority"] for c in load_contract()["categories"])
+    for notice in load_contract()["notice_categories"]:
+        assert categories._priority(notice["key"]) > last
 
 
 def test_sec_delivery_report_is_not_earnings_but_a_release_with_revenue_is() -> None:
@@ -482,8 +567,10 @@ def test_subsidiary_marker_and_report_wrapper() -> None:
 
 
 def test_unmatched_subsidiary_filing_is_excluded_like_a_parent_one() -> None:
-    result = classify_dart("중대재해발생(종속회사의주요경영사항)")
+    result = classify_dart("자산재평가실시결정(종속회사의주요경영사항)")
     assert (result.category, result.excluded_reason, result.subsidiary) == (None, "no_rule", True)
+    matched = classify_dart("중대재해발생(종속회사의주요경영사항)")
+    assert (matched.category, matched.subsidiary) == ("operations", True)
 
 
 def test_unit_sales_and_earnings_keep_subsidiary_false_for_parent_names() -> None:
@@ -495,15 +582,22 @@ def test_unit_sales_and_earnings_keep_subsidiary_false_for_parent_names() -> Non
 
 def test_contract_categories() -> None:
     contract = load_contract()
-    assert contract["version"] == 1
+    assert contract["version"] == 2
     categories = contract["categories"]
     keys = [c["key"] for c in categories]
     priorities = [c["priority"] for c in categories]
-    assert len(set(keys)) == len(keys) == 8
+    assert len(set(keys)) == len(keys) == 15
     assert len(set(priorities)) == len(priorities)
     for c in categories:
         assert c["ko"].strip() and c["en"].strip()
         assert isinstance(c["priority"], int)
+    notices = contract["notice_categories"]
+    notice_keys = [c["key"] for c in notices]
+    assert len(set(notice_keys)) == len(notice_keys) == 10
+    assert all(c["ko"].strip() and c["en"].strip() for c in notices)
+    assert not set(keys) & set(notice_keys)
+    assert not (set(keys) | set(notice_keys)) & set(contract["excluded_reasons"])
+    assert {c["key"] for c in contract["non_event_categories"]}.isdisjoint(keys + notice_keys)
 
 
 def test_contract_rules_reference_known_categories_and_reasons() -> None:
@@ -511,12 +605,14 @@ def test_contract_rules_reference_known_categories_and_reasons() -> None:
     keys = {c["key"] for c in contract["categories"]}
     reasons = set(contract["excluded_reasons"])
     dart, sec = contract["dart"], contract["sec"]
-    ids = [r["id"] for r in dart["rules"] + dart["exclusions"]]
+    ids = [r["id"] for r in dart["rules"] + dart["exclusions"] + dart["notices"]]
     ids += [r["id"] for r in sec["keyword_rules"]] + [e["id"] for e in sec["items"].values()]
     ids += [dart["earnings"]["id"], sec["earnings_item"]["earnings_id"]]
     ids += [sec["earnings_item"]["unit_sales_id"]]
     assert len(set(ids)) == len(ids)
     assert {r["category"] for r in dart["rules"]} <= keys
+    notice_keys = {c["key"] for c in contract["notice_categories"]}
+    assert {r["category"] for r in dart["notices"]} <= notice_keys
     assert {r["category"] for r in sec["keyword_rules"]} <= keys
     assert {e["category"] for e in sec["items"].values()} <= keys
     assert {e["reason"] for e in dart["exclusions"]} <= reasons
@@ -527,10 +623,14 @@ def test_contract_rules_reference_known_categories_and_reasons() -> None:
 def test_contract_matching_data_is_well_formed() -> None:
     contract = load_contract()
     dart, sec = contract["dart"], contract["sec"]
-    prefixes = [p for r in dart["rules"] + dart["exclusions"] for p in r["prefixes"]]
-    prefixes += dart["earnings"]["consolidated_prefixes"] + dart["earnings"]["plain_prefixes"]
+    matched = [p for r in dart["rules"] + dart["exclusions"] + dart["notices"] for p in r["prefixes"]]
+    earnings = dart["earnings"]["consolidated_prefixes"] + dart["earnings"]["plain_prefixes"]
+    prefixes = matched + earnings
     assert all(p and not any(ch.isspace() for ch in p) for p in prefixes)
     assert len(set(prefixes)) == len(prefixes)
+    # The earnings block is applied after the longest match, so no prefix may overlap it.
+    for e in earnings:
+        assert not any(m.startswith(e) or e.startswith(m) for m in matched), e
     phrases = [p for r in sec["keyword_rules"] for p in r["phrases"]]
     phrases += sec["earnings_item"]["unit_sales_phrases"] + sec["earnings_item"]["results_phrases"]
     assert all(p == p.lower() and p.strip() == p for p in phrases)
@@ -545,6 +645,7 @@ SYNTHETIC_ONLY_SEC_RULES = {
     "sec.item.3.02": "3.02",
     "sec.item.1.05": "1.05",
     "sec.item.2.01": "2.01",
+    "sec.item.5.03": "5.03",  # the only 5.03 fixture also has 5.07, so meeting decides it
 }
 
 
@@ -554,7 +655,7 @@ def test_every_contract_rule_id_is_decided_by_a_fixture_or_listed_as_synthetic()
     used |= {classify_sec_row(a).matched_rule for a in sec_rows()}
     dart = contract["dart"]
     sec = contract["sec"]
-    dart_ids = {r["id"] for r in dart["rules"] + dart["exclusions"]}
+    dart_ids = {r["id"] for r in dart["rules"] + dart["exclusions"] + dart["notices"]}
     sec_ids = {r["id"] for r in sec["keyword_rules"] + sec["no_keyword_reasons"]}
     sec_ids |= {e["id"] for e in sec["items"].values()}
     sec_ids |= {sec["earnings_item"]["earnings_id"], sec["earnings_item"]["unit_sales_id"]}
@@ -573,6 +674,7 @@ def test_synthetic_item_rules(rule_id: str, item: str) -> None:
 
 def test_synthetic_item_categories() -> None:
     expected = {"1.02": "deal", "2.01": "deal", "3.02": "capital", "1.05": "legal"}
+    expected["5.03"] = "management"
     for item, category in expected.items():
         assert classify_sec("8-K", item).category == category
 
@@ -632,34 +734,39 @@ def test_primary_document_type_may_equal_the_form() -> None:
     assert classify_sec(" 8-K/A ", "5.02").is_correction is True
 
 
-def test_exclusion_longest_prefix_wins_whatever_the_list_order(
+def test_longest_prefix_wins_across_exclusions_notices_and_rules_whatever_the_order(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     cases = {
-        "조회공시요구(풍문또는보도)에대한답변(미확정)": "rumor_response",
+        "조회공시요구(풍문또는보도)에대한답변(미확정)": "clarification",
         "조회공시요구(풍문또는보도)": "market_action",
+        "기타경영사항(자율공시)(배당기준일변경안내)": "record_date",
+        "기타경영사항(자율공시)": "management",
     }
+    lists = ("exclusions", "notices", "rules")
     for seed in range(6):
         contract = copy.deepcopy(load_contract())
-        random.Random(seed).shuffle(contract["dart"]["exclusions"])
+        for name in lists:
+            random.Random(seed).shuffle(contract["dart"][name])
         monkeypatch.setattr(categories, "load_contract", lambda c=contract: c)
-        for name, reason in cases.items():
-            assert categories.classify_dart(name).excluded_reason == reason, seed
+        for name, category in cases.items():
+            assert categories.classify_dart(name).category == category, seed
     monkeypatch.undo()
     contract = copy.deepcopy(load_contract())
-    contract["dart"]["exclusions"].reverse()
+    for name in lists:
+        contract["dart"][name].reverse()
     monkeypatch.setattr(categories, "load_contract", lambda: contract)
-    for name, reason in cases.items():
-        assert categories.classify_dart(name).excluded_reason == reason
+    for name, category in cases.items():
+        assert categories.classify_dart(name).category == category
 
 
 def test_sec_exclusion_reason_does_not_depend_on_item_order() -> None:
-    first = classify_sec("8-K", "4.02,5.07")
-    second = classify_sec("8-K", "5.07,4.02")
+    first = classify_sec("8-K", "4.02,3.01")
+    second = classify_sec("8-K", "3.01,4.02")
     assert first.excluded_reason == second.excluded_reason == "no_rule"
     assert first.matched_rule == second.matched_rule
     order = load_contract()["sec"]["exclusion_order"]
-    for a, b in (("5.03", "5.07"), ("3.01", "5.03"), ("3.03", "3.01"), ("5.07", "9.01")):
+    for a, b in (("3.03", "3.01"), ("3.01", "9.01"), ("3.03", "9.01")):
         forward = classify_sec("8-K", f"{a},{b}")
         backward = classify_sec("8-K", f"{b},{a}")
         assert forward.excluded_reason == backward.excluded_reason

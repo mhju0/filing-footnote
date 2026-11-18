@@ -1,6 +1,6 @@
 {
-  "version": 1,
-  "description": "Filing Footnote event-filing categories. Each event filing gets exactly one category from this list by deterministic rules, or is excluded with a reason key. A filing that matches no rule is excluded and counted, never guessed. Superseded versions of corrected filings are dropped later in ingest, not here.",
+  "version": 2,
+  "description": "Filing Footnote event-filing categories. Each event filing gets exactly one category by deterministic rules, or is excluded with a reason key. A category is either an event category (listed, counted toward the per-company cap and summarised) or a notice category (shown only as a count with links, never summarised, no body needed). A filing that matches no rule is excluded and counted, never guessed. Superseded versions of corrected filings are dropped later in ingest, not here.",
   "categories": [
     {"key": "earnings", "ko": "실적", "en": "Earnings", "priority": 1},
     {"key": "unit_sales", "ko": "판매 대수", "en": "Unit sales", "priority": 2},
@@ -9,30 +9,46 @@
     {"key": "capital", "ko": "증자·사채", "en": "Capital", "priority": 5},
     {"key": "deal", "ko": "인수·계약", "en": "Deals and contracts", "priority": 6},
     {"key": "leadership", "ko": "경영진", "en": "Leadership", "priority": 7},
-    {"key": "legal", "ko": "소송", "en": "Legal", "priority": 8}
+    {"key": "legal", "ko": "소송", "en": "Legal", "priority": 8},
+    {
+      "key": "outlook",
+      "ko": "회사 전망",
+      "en": "Company outlook",
+      "priority": 9,
+      "note": "The company's own forecast or business plan. Always attributed to the company and labelled as its outlook; never used in a comparison."
+    },
+    {"key": "shareholder_value", "ko": "주주가치", "en": "Shareholder value", "priority": 10},
+    {"key": "meeting", "ko": "주주총회", "en": "Shareholder meeting", "priority": 11},
+    {"key": "operations", "ko": "생산·사고", "en": "Operations", "priority": 12},
+    {
+      "key": "lending",
+      "ko": "대여·보증",
+      "en": "Loans and guarantees",
+      "priority": 13,
+      "note": "Loans to others, guarantees, collateral provided for others, and derivative trading losses."
+    },
+    {"key": "management", "ko": "경영사항", "en": "Management matters", "priority": 14},
+    {"key": "clarification", "ko": "해명", "en": "Clarification", "priority": 15}
   ],
+  "notice_categories": [
+    {"key": "ir_event", "ko": "IR 행사", "en": "Investor event"},
+    {"key": "record_date", "ko": "기준일", "en": "Record date"},
+    {"key": "meeting_notice", "ko": "주주총회 소집", "en": "Meeting notice"},
+    {"key": "earnings_notice", "ko": "실적 발표 예고", "en": "Results date"},
+    {"key": "audit_report", "ko": "감사보고서", "en": "Audit report"},
+    {"key": "governance_report", "ko": "지배구조 보고서", "en": "Governance report"},
+    {"key": "sustainability_report", "ko": "지속가능경영 보고서", "en": "Sustainability report"},
+    {"key": "compliance_program", "ko": "공정거래 자율준수", "en": "Compliance program"},
+    {"key": "notice_only", "ko": "기타 안내", "en": "Other notice"},
+    {"key": "market_action", "ko": "거래소 조회", "en": "Exchange inquiry"}
+  ],
+  "notice_row": {"ko": "안내 공시", "en": "notices", "note": "One grouped row per company: the count of its notices in the window, each with its date, title, category and link. Notices are not counted toward the event cap and get no summary."},
   "non_event_categories": [
     {"key": "annual", "ko": "사업보고서", "en": "Annual report", "assigned_by_classifier": false, "note": "The bundle's category for an annual report (DART 사업보고서, SEC 10-K). The classifier never assigns it; the M8 export sets it."}
   ],
-  "priority_note": "When several rules of one SEC filing match, the category with the lowest priority number wins. A DART filing has one report name, so at most one rule applies.",
+  "priority_note": "When several rules of one SEC filing match, the category with the lowest priority number wins; an event category always beats a notice category. A DART filing has one report name, so at most one rule applies.",
   "excluded_reasons": {
-    "ir_event": "Investor-relations event notice",
-    "ownership_report": "Shareholding or ownership change report",
-    "rumor_response": "Answer to a rumor, press report or exchange inquiry",
-    "market_action": "Exchange-issued market measure or inquiry",
-    "forward_looking": "Forward-looking plan or forecast; the product states no predictions",
-    "shareholder_meeting": "Shareholder meeting notice or result",
-    "record_date": "Record date or register closure notice",
-    "audit_report": "Audit report submission",
-    "governance_report": "Corporate governance report",
-    "sustainability_report": "Sustainability report notice",
-    "compliance_program": "Fair-trade compliance program status",
-    "earnings_notice": "Notice that results will be published later",
-    "value_up_plan": "Corporate value-up plan",
-    "other_management": "Free-form other management matters",
-    "notice_only": "Other notice",
-    "shareholder_vote": "SEC Item 5.07 shareholder vote results",
-    "bylaws_change": "SEC Item 5.03 charter or bylaws amendment",
+    "ownership_report": "Shareholding or ownership change report; a later structured insider and ownership section covers it",
     "exhibits_only": "SEC Item 9.01 only: exhibits with no event item",
     "listing_notice": "SEC Item 3.01 listing standard notice",
     "rights_modification": "SEC Item 3.03 change in security holder rights",
@@ -52,39 +68,30 @@
     "correction_prefix_pattern": "^\\s*(?:\\[[^\\]]*\\]\\s*)+",
     "subsidiary_markers": ["(종속회사의주요경영사항)", "(자회사의주요경영사항)"],
     "report_wrapper": "주요사항보고서",
-    "match_note": "An entry matches when the normalised name starts with one of its prefixes. Exclusions are checked before rules. Within exclusions, and within rules, the longest matching prefix wins, whatever the list order.",
+    "match_note": "An entry matches when the normalised name starts with one of its prefixes. Exclusions, notices and rules are matched together and the longest matching prefix wins, whatever the list or the order inside it; the earnings block applies only when the winner is a rule or nothing matched. No earnings prefix overlaps another entry.",
     "exclusions": [
-      {"id": "dart.x.ir", "reason": "ir_event", "prefixes": ["기업설명회"]},
       {
         "id": "dart.x.ownership",
         "reason": "ownership_report",
         "prefixes": ["최대주주등소유주식변동신고서", "임원ㆍ주요주주특정증권등소유상황보고서", "주식등의대량보유상황보고서"]
-      },
-      {"id": "dart.x.rumor", "reason": "rumor_response", "prefixes": ["풍문또는보도에대한해명", "조회공시요구(풍문또는보도)에대한답변"]},
-      {"id": "dart.x.inquiry", "reason": "market_action", "prefixes": ["조회공시요구(풍문또는보도)"]},
+      }
+    ],
+    "notices": [
+      {"id": "dart.n.ir", "category": "ir_event", "prefixes": ["기업설명회"]},
+      {"id": "dart.n.inquiry", "category": "market_action", "prefixes": ["조회공시요구(풍문또는보도)"]},
+      {"id": "dart.n.meeting", "category": "meeting_notice", "prefixes": ["주주총회소집결의", "주주총회집중일"]},
       {
-        "id": "dart.x.forward",
-        "reason": "forward_looking",
-        "prefixes": ["장래사업ㆍ경영계획", "영업실적등에대한전망", "연결재무제표기준영업실적등에대한전망"]
+        "id": "dart.n.record_date",
+        "category": "record_date",
+        "prefixes": ["주주명부폐쇄", "현금ㆍ현물배당을위한주주명부폐쇄", "기타경영사항(자율공시)(배당기준일변경안내)"],
+        "note": "A 기타경영사항 filing whose title says it announces a dividend record-date change is a record-date notice."
       },
-      {
-        "id": "dart.x.meeting",
-        "reason": "shareholder_meeting",
-        "prefixes": ["주주총회소집결의", "정기주주총회결과", "임시주주총회결과", "주주총회집중일"]
-      },
-      {
-        "id": "dart.x.record_date",
-        "reason": "record_date",
-        "prefixes": ["주주명부폐쇄", "현금ㆍ현물배당을위한주주명부폐쇄"]
-      },
-      {"id": "dart.x.audit", "reason": "audit_report", "prefixes": ["감사보고서제출"]},
-      {"id": "dart.x.governance", "reason": "governance_report", "prefixes": ["기업지배구조보고서"]},
-      {"id": "dart.x.sustainability", "reason": "sustainability_report", "prefixes": ["지속가능경영보고서"]},
-      {"id": "dart.x.compliance", "reason": "compliance_program", "prefixes": ["공정거래자율준수프로그램"]},
-      {"id": "dart.x.earnings_notice", "reason": "earnings_notice", "prefixes": ["결산실적공시예고"]},
-      {"id": "dart.x.value_up", "reason": "value_up_plan", "prefixes": ["기업가치제고계획"]},
-      {"id": "dart.x.other_mgmt", "reason": "other_management", "prefixes": ["기타경영사항"]},
-      {"id": "dart.x.other_notice", "reason": "notice_only", "prefixes": ["기타안내사항"]}
+      {"id": "dart.n.audit", "category": "audit_report", "prefixes": ["감사보고서제출"]},
+      {"id": "dart.n.governance", "category": "governance_report", "prefixes": ["기업지배구조보고서"]},
+      {"id": "dart.n.sustainability", "category": "sustainability_report", "prefixes": ["지속가능경영보고서"]},
+      {"id": "dart.n.compliance", "category": "compliance_program", "prefixes": ["공정거래자율준수프로그램"]},
+      {"id": "dart.n.earnings_notice", "category": "earnings_notice", "prefixes": ["결산실적공시예고"]},
+      {"id": "dart.n.other_notice", "category": "notice_only", "prefixes": ["기타안내사항"]}
     ],
     "earnings": {
       "id": "dart.earnings",
@@ -152,7 +159,37 @@
         ]
       },
       {"id": "dart.leadership", "category": "leadership", "prefixes": ["대표이사(대표집행임원)변경"]},
-      {"id": "dart.legal", "category": "legal", "prefixes": ["소송등의제기ㆍ신청", "소송등의판결ㆍ결정"]}
+      {"id": "dart.legal", "category": "legal", "prefixes": ["소송등의제기ㆍ신청", "소송등의판결ㆍ결정"]},
+      {
+        "id": "dart.earnings.structure_change",
+        "category": "earnings",
+        "prefixes": ["매출액또는손익구조"],
+        "note": "매출액또는손익구조30%(대규모법인은15%)이상변경 states the year's revenue and profit against the prior year once they changed past the threshold, so it is a results filing. The prefix covers both 변경 and 변동 spellings."
+      },
+      {
+        "id": "dart.outlook",
+        "category": "outlook",
+        "prefixes": ["장래사업ㆍ경영계획", "영업실적등에대한전망", "연결재무제표기준영업실적등에대한전망"]
+      },
+      {
+        "id": "dart.shareholder_value",
+        "category": "shareholder_value",
+        "prefixes": ["기업가치제고계획", "수시공시의무관련사항"],
+        "note": "수시공시의무관련사항(공정공시) is a generic fair-disclosure name. Every one in the 2026-11 corpus that was read (Kia, LG Chem, NAVER, Samsung Electronics, SK hynix) announces a shareholder-return plan, so it sits here; revisit if one with another subject appears."
+      },
+      {"id": "dart.meeting", "category": "meeting", "prefixes": ["정기주주총회결과", "임시주주총회결과"]},
+      {"id": "dart.operations", "category": "operations", "prefixes": ["중대재해발생", "생산중단", "생산재개"]},
+      {
+        "id": "dart.lending",
+        "category": "lending",
+        "prefixes": ["금전대여결정", "타인에대한채무보증결정", "타인에대한담보제공결정", "파생상품거래손실발생"]
+      },
+      {"id": "dart.management", "category": "management", "prefixes": ["기타경영사항", "투자판단관련주요경영사항"]},
+      {
+        "id": "dart.clarification",
+        "category": "clarification",
+        "prefixes": ["풍문또는보도에대한해명", "조회공시요구(풍문또는보도)에대한답변"]
+      }
     ]
   },
   "sec": {
@@ -166,11 +203,11 @@
       "2.03": {"category": "capital", "id": "sec.item.2.03"},
       "3.02": {"category": "capital", "id": "sec.item.3.02"},
       "5.02": {"category": "leadership", "id": "sec.item.5.02"},
-      "1.05": {"category": "legal", "id": "sec.item.1.05"}
+      "1.05": {"category": "legal", "id": "sec.item.1.05"},
+      "5.07": {"category": "meeting", "id": "sec.item.5.07"},
+      "5.03": {"category": "management", "id": "sec.item.5.03"}
     },
     "item_exclusions": {
-      "5.07": "shareholder_vote",
-      "5.03": "bylaws_change",
       "9.01": "exhibits_only",
       "3.01": "listing_notice",
       "3.03": "rights_modification"
@@ -212,8 +249,6 @@
       "no_keyword_match",
       "rights_modification",
       "listing_notice",
-      "bylaws_change",
-      "shareholder_vote",
       "exhibits_only"
     ],
     "exclusion_order_note": "When a filing has several exclusion reasons and no category, the reported reason is the first one in this list, whatever the item order. An item with no rule is reported first so a gap is not hidden behind a routine notice; the exhibits-only reason is the least informative.",

@@ -177,7 +177,7 @@ def test_export_writes_section_four_file_and_report(data, tmp_path, capsys) -> N
     assert f"size_bytes={out.stat().st_size}" in printed
     assert report["build_meta"]["allow_unapproved"] == 1 and report["mode"] == "development"
     assert _rows(out, "SELECT schema_version, data_as_of, source_revision, allow_unapproved "
-                      "FROM build_meta") == [(1, "2026-11-17", "test", 1)]  # fmt: skip
+                      "FROM build_meta") == [(2, "2026-11-17", "test", 1)]  # fmt: skip
     for table, count in report["row_counts"].items():
         assert _rows(out, f"SELECT count(*) FROM {table}") == [(count,)]
     assert report["row_counts"]["figures"] == len(report["figure_checks"]) > 0
@@ -763,6 +763,10 @@ def test_an_orphan_correction_of_another_subsidiary_flag_does_not_hide_a_filing(
 
 
 UNRESOLVED = ["dart:20260108800001", "dart:20260407800002", "dart:20260707800004"]
+# Since D76: an outlook filing and two notices marked 정, whose corrections are stored
+# unchained (the outlook correction's body names no first filing date; notices are never
+# chained). Each correction is the version shown.
+UNRESOLVED_D76 = ["dart:20260212801353", "dart:20260213800423", "dart:20260629801143"]
 
 
 def test_a_filing_marked_jeong_without_a_resolvable_correction_is_hidden_as_unresolved(
@@ -772,8 +776,11 @@ def test_a_filing_marked_jeong_without_a_resolvable_correction_is_hidden_as_unre
     for as_of in (AS_OF, datetime.date(2026, 7, 10)):
         bundle = build_bundle(data, _options(as_of=as_of), PINNED_DIRS)
         ids = {row[0] for row in bundle.rows["filings"]}
-        assert not ids & set(UNRESOLVED)
-        assert bundle.report["superseded_unresolved"] == {"count": 3, "ids": UNRESOLVED}
+        assert not ids & set(UNRESOLVED + UNRESOLVED_D76)
+        assert not {row[0] for row in bundle.rows["notices"]} & set(UNRESOLVED_D76)
+        assert bundle.report["superseded_unresolved"] == {
+            "count": 6, "ids": sorted(UNRESOLVED + UNRESOLVED_D76),
+        }  # fmt: skip
         assert not set(UNRESOLVED) & set(bundle.report["superseded_filings"]["ids"])
     # Their DART-filed corrections are the one version shown.
     assert {"dart:20260129800008", "dart:20260430800097", "dart:20260730800103"} <= _filing_ids(
@@ -1182,3 +1189,23 @@ def test_release_export_refuses_prompt_version_none(data, tmp_path, capsys) -> N
     err = capsys.readouterr().err
     assert "release build refused: --prompt-version is 'none'" in err
     assert "lack approved summaries" not in err
+
+
+# D76: notices
+
+
+def test_the_seed_exports_its_notices_and_verify_checks_them(data, tmp_path) -> None:
+    out = tmp_path / "footnote.sqlite"
+    assert _export(data, out, "--allow-unapproved") == 0
+    notices = _rows(out, "SELECT id, category FROM notices ORDER BY id")
+    assert notices and {c for _, c in notices} >= {"ir_event", "meeting_notice"}
+    assert not {i for i, _ in notices} & {i for (i,) in _rows(out, "SELECT id FROM filings")}
+    assert check_bundle(out, release=False, pinned_dirs=PINNED_DIRS) == []
+
+    first = notices[0][0]
+    event = _rows(out, "SELECT id FROM filings WHERE kind = 'event' ORDER BY id")[0][0]
+    _rehash(out, f"UPDATE notices SET category = 'buyback' WHERE id = '{first}'",
+            f"UPDATE filings SET category = 'ir_event' WHERE id = '{event}'")  # fmt: skip
+    problems = check_bundle(out, release=False, pinned_dirs=PINNED_DIRS)
+    assert f"{first}: 'buyback' is not a notice category" in problems
+    assert f"{event}: notice category 'ir_event' as an event" in problems

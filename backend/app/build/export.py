@@ -19,9 +19,11 @@ line fails the neutrality guard, and when ``--prompt-version`` is ``none``.
 Summaries not yet approved are never written, because ``review_state`` must be ``approved``.
 
 Event filings: the version of each correction chain shown is the newest one filed on or
-before ``--as-of``; ingest's ``is_latest`` is not used. At most five events per company are
+before ``--as-of``; ingest's ``is_latest`` is not used. At most ten events per company are
 exported, the newest, and an event without a stored body text is left out
-(:func:`event_scope`). Annual filings follow :data:`app.build.model.ANNUAL_SCOPE`.
+(:func:`event_scope`). Notice filings (D76) go to the ``notices`` table: same window and
+correction rule, no body needed, no cap, never summarised. Annual filings follow
+:data:`app.build.model.ANNUAL_SCOPE`.
 
 Output depends only on the database contents and the arguments: ``--as-of`` replaces the
 clock, ``--source-revision`` (default ``git rev-parse HEAD``) names the pipeline, rows are
@@ -160,6 +162,8 @@ class _Build:
     filing_kinds: dict[str, str] = field(default_factory=dict)
     filing_company: dict[str, str] = field(default_factory=dict)
     events: dict[str, EventRow] = field(default_factory=dict)  # exported, by filing id
+    notices: dict[str, tuple] = field(default_factory=dict)  # notices rows, by filing id
+    notice_company: dict[str, str] = field(default_factory=dict)
     facts: list[tuple] = field(default_factory=list)
     figures: list[tuple] = field(default_factory=list)
     report: dict[str, Any] = field(default_factory=dict)
@@ -191,6 +195,7 @@ def build_bundle(data: BuildInput, options: BuildOptions, pinned_dirs: Sequence[
     rows = {
         "companies": company_rows,
         "filings": list(build.filings.values()),
+        "notices": list(build.notices.values()),
         "filing_summaries": summary_rows,
         "filing_facts": build.facts,
         "figures": build.figures,
@@ -342,7 +347,12 @@ def _shown_versions(events: list[EventRow], as_of: datetime.date) -> tuple[set[s
     return shown, unresolved
 
 
-EVENT_CAP = 5  # the latest events kept per company (D72)
+EVENT_CAP = 10  # the latest events kept per company (D72; ten since D76)
+
+
+def notice_categories() -> frozenset[str]:
+    """Category keys exported as notices, not as summarised events (D76)."""
+    return frozenset(c["key"] for c in load_categories_contract()["notice_categories"])
 
 
 @dataclass
@@ -351,6 +361,7 @@ class EventScope:
 
     exported: list[EventRow]  # in (regulator, filing_key) order
     window: tuple[datetime.date, datetime.date]
+    notices: list[EventRow] = field(default_factory=list)  # in (regulator, filing_key) order
     undated: list[str] = field(default_factory=list)
     outside_window: int = 0
     excluded: list[dict[str, str]] = field(default_factory=list)
@@ -361,17 +372,20 @@ class EventScope:
 
 
 def event_scope(data: BuildInput, as_of: datetime.date) -> EventScope:
-    """The one rule for which events a build exports and summarises (D72).
+    """The one rule for which events a build exports and summarises (D72, D76).
 
     Filed inside the 12-month window, not excluded, the shown version of its correction chain
     (:func:`_shown_versions`), with a stored body text (an event without one can never get a
     summary and does not count toward the cap), and at most :data:`EVENT_CAP` per company:
-    the newest by ``filed_on``, ties broken by ``filing_key`` descending.
+    the newest by ``filed_on``, ties broken by ``filing_key`` descending. A filing in a notice
+    category that passes the window and version rules goes to ``notices`` instead: it needs no
+    body, is never capped and never summarised.
     """
     start, end = window_bounds(as_of)
     scope = EventScope([], (start, end))
     events = sorted(data.events, key=lambda e: (e.regulator, e.filing_key))
     shown, unresolved = _shown_versions(events, as_of)
+    notices = notice_categories()
     per_company: dict[tuple[str, str], list[EventRow]] = defaultdict(list)
     for event in events:
         fid = _filing_id(event.regulator, event.filing_key)
@@ -389,6 +403,9 @@ def event_scope(data: BuildInput, as_of: datetime.date) -> EventScope:
             continue
         if event.filing_key not in shown:
             scope.superseded.append(fid)
+            continue
+        if event.category in notices:
+            scope.notices.append(event)
             continue
         if event_source_text(event) is None:
             scope.without_body.append(fid)
@@ -445,6 +462,19 @@ def _event_filings(build: _Build, companies: dict[tuple[str, str], CompanyRow]) 
         build.events[fid] = event
         _event_facts(build, fid, company_id, event, fact_errors, fact_checks)
 
+    for event in scope.notices:
+        fid = _filing_id(event.regulator, event.filing_key)
+        if (event.regulator, event.company_key) not in companies:
+            build.problems.append(f"{fid}: no company row for {event.company_key}")
+            continue
+        build.problems.extend(f"{fid}: {p}" for p in link_problems(event.url))
+        company_id = _company_id(event.regulator, event.company_key)
+        build.notices[fid] = (
+            fid, company_id, event.category, event.report_nm, event.filed_on.isoformat(),
+            event.url or "", int(event.is_correction),
+        )  # fmt: skip
+        build.notice_company[fid] = company_id
+
     by_reason = Counter(e["reason"] for e in scope.excluded)
     build.report["excluded_filings"] = {
         "count": len(scope.excluded),
@@ -472,6 +502,11 @@ def _event_filings(build: _Build, companies: dict[tuple[str, str], CompanyRow]) 
         "count": sum(len(ids) for ids in scope.capped.values()),
         "by_company": {cid: len(ids) for cid, ids in sorted(scope.capped.items())},
         "ids": sorted(i for ids in scope.capped.values() for i in ids),
+    }
+    build.report["notices"] = {
+        "count": len(build.notices),
+        "by_company": dict(sorted(Counter(build.notice_company.values()).items())),
+        "by_category": dict(sorted(Counter(row[2] for row in build.notices.values()).items())),
     }
     build.report["fact_errors"] = {"count": len(fact_errors), "facts": fact_errors}
     build.report["fact_checks"] = fact_checks
@@ -676,7 +711,7 @@ def _korean_names() -> dict[str, str]:
 
 
 def _companies(build: _Build, companies: dict[tuple[str, str], CompanyRow]) -> list[tuple]:
-    used = set(build.filing_company.values())
+    used = set(build.filing_company.values()) | set(build.notice_company.values())
     year_end: dict[str, str] = {}
     for figure in sorted(build.figures, key=lambda f: f[6]):
         year_end[figure[1]] = figure[6][5:]  # MM-DD of the latest period end

@@ -51,6 +51,7 @@ from app.build.model import (
 from app.clients.dart import DartApiError, DartClient
 from app.clients.dart_events import load_facts_contract, parse_structured_payload
 from app.clients.sec import SecApiError, parse_companyfacts_payload, parse_submissions_payload
+from app.filings.categories import load_contract as load_categories_contract
 from app.ingest.dart import _dart_financial_facts, period_descriptor
 from app.ingest.sec_events import sec_facts
 from app.llm.neutrality_guard import check_line, check_source_url, check_summary
@@ -418,6 +419,7 @@ def check_bundle(path: Path, *, release: bool, pinned_dirs: Sequence[Path]) -> l
                 problems.append(f"{table}.{column} is declared {declared}")
         companies = {row["id"]: row for row in _select(connection, "companies")}
         filings = {row["id"]: row for row in _select(connection, "filings")}
+        notices = _select(connection, "notices")
         figures = _select(connection, "figures")
         facts = _select(connection, "filing_facts")
         summaries = _select(connection, "filing_summaries")
@@ -430,6 +432,7 @@ def check_bundle(path: Path, *, release: bool, pinned_dirs: Sequence[Path]) -> l
         problems.append(f"prompt_version is {NO_PROMPT_VERSION!r}; a release refuses it")
     for filing in filings.values():
         problems.extend(f"{filing['id']}: {p}" for p in link_problems(filing["source_url"]))
+    problems += _notice_problems(notices, filings)
 
     pinned = PinnedResponses(pinned_dirs)
     problems += _figure_problems(pinned, figures, filings)
@@ -454,6 +457,26 @@ def check_bundle(path: Path, *, release: bool, pinned_dirs: Sequence[Path]) -> l
                        if (filing_id, lang, section) not in present]  # fmt: skip
             if missing:
                 problems.append(f"{filing_id}: no approved summary {', '.join(missing)}")
+    return problems
+
+
+def _notice_problems(
+    notices: list[dict[str, Any]], filings: dict[str, dict[str, Any]]
+) -> list[str]:
+    """Notices (D76) carry a notice category and a link, and are never also a filing row."""
+    contract = load_categories_contract()
+    notice_keys = {c["key"] for c in contract["notice_categories"]}
+    problems = []
+    for notice in notices:
+        nid = notice["id"]
+        if notice["category"] not in notice_keys:
+            problems.append(f"{nid}: {notice['category']!r} is not a notice category")
+        if nid in filings:
+            problems.append(f"{nid}: exported both as a filing and as a notice")
+        problems.extend(f"{nid}: {p}" for p in link_problems(notice["source_url"]))
+    for filing in filings.values():
+        if filing["kind"] == "event" and filing["category"] in notice_keys:
+            problems.append(f"{filing['id']}: notice category {filing['category']!r} as an event")
     return problems
 
 

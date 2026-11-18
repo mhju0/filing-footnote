@@ -13,7 +13,7 @@ import hashlib
 import json
 import sqlite3
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2  # 2: the notices table (D76)
 
 SCHEMA = """
 CREATE TABLE build_meta (
@@ -54,6 +54,19 @@ CREATE TABLE filings (
 ) STRICT;
 CREATE INDEX filings_company_date ON filings(company_id, filed_on DESC);
 CREATE INDEX filings_date ON filings(filed_on DESC);
+
+-- Notice filings (D76): shown as one grouped row per company, never summarised and never
+-- counted toward the event cap. Category keys are the contract's notice_categories.
+CREATE TABLE notices (
+  id            TEXT PRIMARY KEY,
+  company_id    TEXT NOT NULL REFERENCES companies(id),
+  category      TEXT NOT NULL,
+  title_original TEXT NOT NULL,
+  filed_on      TEXT NOT NULL,
+  source_url    TEXT NOT NULL,
+  is_corrected  INTEGER NOT NULL DEFAULT 0
+) STRICT;
+CREATE INDEX notices_company_date ON notices(company_id, filed_on DESC);
 
 CREATE TABLE filing_summaries (
   filing_id   TEXT NOT NULL REFERENCES filings(id),
@@ -131,7 +144,9 @@ _ALL_TABLES = _tables_from_schema(SCHEMA)
 TABLES = {name: spec for name, spec in _ALL_TABLES.items() if name != "build_meta"}
 
 # Tables in insert order, so every foreign key points at a row already written.
-INSERT_ORDER = ("companies", "filings", "filing_summaries", "filing_facts", "figures", "glossary")
+INSERT_ORDER = (
+    "companies", "filings", "notices", "filing_summaries", "filing_facts", "figures", "glossary",
+)  # fmt: skip
 
 BUILD_META_COLUMNS = _ALL_TABLES["build_meta"][0]
 

@@ -6,10 +6,12 @@ For one company and the last 12 months it
 
 1. lists the 주요사항보고 (B) and 거래소공시 (I) filings, every page;
 2. classifies each with ``classify_dart`` (fetching the body when the contract needs it) and
-   fetches the body of every in-scope filing too, keeping its plain text in ``body_text``,
-   cut at ``TEXT_STORE_LIMIT`` (the summaries step reads it);
-3. links each in-scope ``[기재정정]`` filing to its original and marks the newest version of a
-   chain as the one to show (older versions are kept);
+   fetches the body of every filing in an event category too, keeping its plain text in
+   ``body_text``, cut at ``TEXT_STORE_LIMIT`` (the summaries step reads it). Every run
+   classifies every listed filing again, so a filing a newer contract brings into scope gets
+   its body on the next run. Notices (D76) need no body;
+3. links each ``[기재정정]`` filing in an event category to its original and marks the newest
+   version of a chain as the one to show (older versions are kept);
 4. fetches the structured endpoints named in ``contracts/filing-facts.json`` and extracts facts;
 5. upserts ``event_filings`` and ``filing_facts`` in one transaction.
 
@@ -49,7 +51,12 @@ from app.clients.sec_8k import TEXT_STORE_LIMIT
 from app.config import get_settings
 from app.db.models import EventFiling, FilingFact
 from app.db.session import get_async_engine, get_async_session
-from app.filings.categories import Classification, classify_dart, normalise_dart_name
+from app.filings.categories import (
+    Classification,
+    classify_dart,
+    is_event_category,
+    normalise_dart_name,
+)
 from app.ingest.pinned import (
     SAVE_PINNED_HELP,
     PinnedStore,
@@ -86,7 +93,7 @@ class ChainInput:
     filed_at: datetime.date | None
     rm: str
     is_correction: bool
-    in_scope: bool  # has a category; excluded filings are not chained
+    in_scope: bool  # has an event category; excluded filings and notices are not chained
     target: CorrectionTarget | None = None
     target_error: str | None = None  # why the body could not be read
     subsidiary: bool = False  # a subsidiary's filing never chains to the parent's
@@ -289,7 +296,8 @@ class EventIngestSummary:
     corp_code: str
     window: tuple[datetime.date, datetime.date]
     listed: int = 0
-    by_category: Counter[str] = field(default_factory=Counter)
+    by_category: Counter[str] = field(default_factory=Counter)  # event categories
+    notices: Counter[str] = field(default_factory=Counter)  # notice categories
     excluded: Counter[str] = field(default_factory=Counter)
     linked: int = 0
     unlinked: int = 0
@@ -369,10 +377,10 @@ async def collect_dart_events(
                     )
         records.append(record)
 
-    # Every in-scope filing keeps its text for the summaries step; excluded ones need none.
-    # A failed read leaves body_text unset, so a stored text is kept.
+    # Every filing in an event category keeps its text for the summaries step; excluded ones
+    # and notices need none. A failed read leaves body_text unset, so a stored text is kept.
     for record in records:
-        if record.classification.category is None:
+        if not is_event_category(record.classification.category):
             continue
         body = await document(record.item.rcept_no)
         if isinstance(body, str):
@@ -387,7 +395,7 @@ async def collect_dart_events(
 
     entries: list[ChainInput] = []
     for record in records:
-        in_scope = record.classification.category is not None
+        in_scope = is_event_category(record.classification.category)
         target = None
         target_error = None
         if in_scope and record.classification.is_correction:
@@ -422,7 +430,7 @@ async def collect_dart_events(
         {
             endpoint
             for r in records
-            if r.classification.category is not None
+            if is_event_category(r.classification.category)
             and (endpoint := endpoint_for_report_key(r.base_key)) is not None
         }
     )
@@ -442,7 +450,7 @@ async def collect_dart_events(
         summary.problems.extend(result.errors)
         for record in records:
             if (
-                record.classification.category is not None
+                is_event_category(record.classification.category)
                 and endpoint_for_report_key(record.base_key) == endpoint
             ):
                 record.facts = []  # the call succeeded: what it did not return is not stored
@@ -458,8 +466,10 @@ async def collect_dart_events(
 
     for record in records:
         category = record.classification.category
-        if category is not None:
-            summary.by_category[category] += 1
+        if is_event_category(category):
+            summary.by_category[str(category)] += 1
+        elif category is not None:
+            summary.notices[category] += 1
         else:
             summary.excluded[str(record.classification.excluded_reason)] += 1
         link = record.chain.correction_link if record.chain else "none"
@@ -684,6 +694,7 @@ def format_summary(summary: EventIngestSummary) -> str:
         f"corp_code={summary.corp_code} window={summary.window[0]}..{summary.window[1]} "
         f"listed={summary.listed}",
         "in scope: " + _counts(summary.by_category),
+        "notices: " + _counts(summary.notices),
         "excluded: " + _counts(summary.excluded),
         f"corrections: linked={summary.linked} unlinked={summary.unlinked} "
         f"not_resolved_excluded={summary.not_resolved_excluded}",

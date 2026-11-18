@@ -849,3 +849,47 @@ The owner approved the mapping and the names (2026-11-18, owner: "1 yes").
 - `contracts/family-glossary.json` gains 아마존, 코스트코, 알파벳, 메타 and 월마트; the iOS
   Korean display names match. A test asserts every glossary company has a Hangul name.
 - Stored figures change only on re-ingest; the pinned files are untouched.
+
+## D76 · Official company filings: wider event scope, ten per company, a notices row · 2026-11-19 (`PROPOSED`)
+
+The owner wants as many official company filings about outlook and decisions as the app can
+show (2026-11-18/19, owner). Supersedes the cap of D72 (five); D72's other rules stand.
+Detail in [ADR 0007](adr/0007-notices-and-wider-event-scope.md).
+
+- `contracts/filing-categories.json` version 2. Seven new event categories, counted toward
+  the cap and summarised later: 회사 전망 / Company outlook (`outlook`: 장래사업ㆍ경영계획,
+  영업실적등에대한전망), 주주가치 / Shareholder value (`shareholder_value`: 기업가치제고계획,
+  수시공시의무관련사항), 주주총회 / Shareholder meeting (`meeting`: 정기·임시주주총회결과,
+  SEC Item 5.07), 생산·사고 / Operations (`operations`: 중대재해발생, 생산중단, 생산재개),
+  대여·보증 / Loans and guarantees (`lending`: 금전대여결정, 타인에대한채무보증결정,
+  타인에대한담보제공결정, 파생상품거래손실발생), 경영사항 / Management matters
+  (`management`: 기타경영사항, 투자판단관련주요경영사항, SEC Item 5.03), 해명 /
+  Clarification (`clarification`: 풍문또는보도에대한해명, 조회공시요구에대한답변).
+  매출액또는손익구조30%(대규모법인은15%)이상변경 joins `earnings`: it states the year's
+  revenue and profit against the prior year.
+- 수시공시의무관련사항(공정공시) is a generic name. The five read on DART (Kia, LG Chem,
+  NAVER, Samsung Electronics, SK hynix) all announce shareholder-return plans, so it is
+  `shareholder_value`. To confirm with the owner.
+- Company outlook is always attributed to the company and labelled as its outlook, and is
+  never used in a comparison.
+- Notices form a separate kind (`notice_categories`), not an exclusion: IR events, record
+  dates (including 기타경영사항 titled 배당기준일 변경 안내), shareholder-meeting notices,
+  results-date notices, audit, governance and sustainability report notices, the compliance
+  program, other notices and exchange inquiries. The bundle lists them in a new `notices`
+  table (schema version 2): id, company, category, title, date, link. The app shows them as
+  one grouped "안내 공시 N건 / N notices" row per company. They need no body, are never
+  summarised and never count toward the cap. They follow the same window and shown-version
+  rules as events; ingest does not chain them, so a notice marked 정 is hidden and its
+  correction shown.
+- The cap is ten events per company (`EVENT_CAP`), with D72's window, shown-version and
+  body rules unchanged.
+- Still out of the list: ownership reports (DART 소유상황·대량보유 reports) and SEC
+  Rule 10b5-1 trading plans, which a later structured insider and ownership section covers;
+  SEC exhibits-only, listing-standard (3.01) and rights-change (3.03) filings, 7.01/8.01
+  text with no keyword, and proxy statements (not listed at all).
+- Quarterly figures are a later structured section, not event summaries.
+- Rows stored as excluded before this change carry old reason keys until the next ingest,
+  which classifies every listed filing again and fetches the body of each one now in an
+  event category. An export over a database not yet re-ingested fails on the unknown reasons.
+- `PRODUCT.md` still says "up to five recent event filings"; the owner approves
+  product-truth edits, so it is not changed here.

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import copy
 import datetime
 import zipfile
 from decimal import Decimal
@@ -12,7 +13,7 @@ import pytest
 from app.clients import sec_8k
 from app.clients.dart import DartApiError
 from app.clients.dart_events import CorrectionTarget, read_event_document
-from app.filings.categories import classify_dart
+from app.filings.categories import classify_dart, is_event_category
 from app.ingest import events
 from app.ingest.events import (
     ChainInput,
@@ -287,28 +288,33 @@ def test_naver_corrected_rights_issue_chain_and_facts() -> None:
     facts = {f.key: f for f in newest.facts}
     assert facts["new_shares_common"].value_decimal == Decimal("6558435")
 
-    # 15 in-scope corrections have no saved body or name no original; the 8 excluded ones are
-    # counted apart so they do not inflate ``unlinked``.
-    assert (summary.linked, summary.unlinked, summary.not_resolved_excluded) == (1, 14, 8)
+    # 22 corrections in an event category have no saved body or name no original (D76 brought
+    # seven of them into scope: outlook, lending, management); the one notice correction is
+    # counted apart so it does not inflate ``unlinked``.
+    assert (summary.linked, summary.unlinked, summary.not_resolved_excluded) == (1, 21, 1)
     assert summary.ok, summary.problems
-    assert "not_resolved_excluded=8" in format_summary(summary)
+    assert "not_resolved_excluded=1" in format_summary(summary)
     assert ("structured", "piicDecsn.json") in client.calls
     assert not any(c[0] == "structured" and "tsstkAq" in c[1] for c in client.calls)
 
 
-def test_excluded_filings_are_kept_with_a_reason_and_counted() -> None:
-    client = FakeDartClient("035420", documents={"20261103000311": CORRECTION_BODY})
+@pytest.mark.parametrize("stock", ["035420", "000270"])
+def test_excluded_filings_are_kept_with_a_reason_and_counted(stock: str) -> None:
+    client = FakeDartClient(stock, documents={"20261103000311": CORRECTION_BODY})
     records, summary = collect(client)
     excluded = [r for r in records if r.classification.category is None]
-    assert excluded
+    notices = [r for r in records if r.classification.kind == "notice"]
+    assert notices
+    assert excluded or stock == "035420"  # NAVER's sample has no ownership report
     for record in excluded:
         assert record.classification.excluded_reason
     assert sum(summary.excluded.values()) == len(excluded)
-    assert sum(summary.by_category.values()) + len(excluded) == summary.listed
+    assert sum(summary.notices.values()) == len(notices)
+    assert sum(summary.by_category.values()) + len(notices) + len(excluded) == summary.listed
     # A body is fetched for every in-scope filing (its text is stored) and for names the
     # contract cannot decide without it (plain 영업(잠정)실적), never for another excluded one.
     fetched = {c[1] for c in client.calls if c[0] == "document"}
-    in_scope = {r.item.rcept_no for r in records if r.classification.category is not None}
+    in_scope = {r.item.rcept_no for r in records if is_event_category(r.classification.category)}
     needs_body = {
         r.item.rcept_no
         for r in records
@@ -461,8 +467,8 @@ def test_store_body_text_cuts_exactly_over_the_limit_and_says_so() -> None:
 def test_in_scope_filings_get_their_plain_text_and_excluded_ones_do_not() -> None:
     client = FakeDartClient("035420", documents={"20261103000311": CORRECTION_BODY})
     records, summary = collect(client)
-    in_scope = [r for r in records if r.classification.category is not None]
-    excluded = [r for r in records if r.classification.category is None]
+    in_scope = [r for r in records if is_event_category(r.classification.category)]
+    excluded = [r for r in records if not is_event_category(r.classification.category)]
     assert in_scope and excluded
 
     for record in in_scope:
@@ -479,6 +485,56 @@ def test_in_scope_filings_get_their_plain_text_and_excluded_ones_do_not() -> Non
         assert "body_text" not in record.to_row()  # a stored text is not overwritten
     assert summary.bodies_stored == len(in_scope)
     assert summary.bodies_truncated == 0
+
+
+def test_notices_get_no_body_no_chain_and_no_structured_call() -> None:
+    client = FakeDartClient("035420", documents={"20261103000311": CORRECTION_BODY})
+    records, summary = collect(client)
+    notices = [r for r in records if r.classification.kind == "notice"]
+    assert {r.classification.category for r in notices} >= {"ir_event", "meeting_notice"}
+    fetched = {c[1] for c in client.calls if c[0] == "document"}
+    for record in notices:
+        assert record.key not in fetched
+        assert record.body_text is None and "body_text" not in record.to_row()
+        assert record.chain.correction_link in ("none", "not_resolved_excluded")
+        assert not record.facts
+    assert sum(summary.notices.values()) == len(notices)
+    assert "notices: " in format_summary(summary) and "ir_event=" in format_summary(summary)
+
+
+def test_a_rerun_under_a_newer_contract_fetches_bodies_it_brought_into_scope(monkeypatch) -> None:
+    """A filing excluded under the old contract stored no body. Every run classifies again, so
+    the first run after D76 fetches and keeps the text of every filing it brought into scope."""
+    from app.filings import categories as categories_module
+
+    newly_in_scope = ("outlook", "clarification", "lending", "management", "shareholder_value")
+    current = categories_module.load_contract()
+    old = copy.deepcopy(current)
+    old["dart"]["rules"] = [r for r in old["dart"]["rules"] if r["category"] not in newly_in_scope]
+    old["dart"]["exclusions"].append(
+        {"id": "dart.x.old", "reason": "no_rule", "prefixes": [
+            p for r in current["dart"]["rules"] if r["category"] in newly_in_scope
+            for p in r["prefixes"]
+        ]}
+    )  # fmt: skip
+    monkeypatch.setattr(categories_module, "load_contract", lambda: old)
+    first_client = FakeDartClient("035420", documents={"20261103000311": CORRECTION_BODY})
+    first, _ = collect(first_client)
+    before = {r.key: r for r in first}
+    monkeypatch.undo()
+
+    second_client = FakeDartClient("035420", documents={"20261103000311": CORRECTION_BODY})
+    second, summary = collect(second_client)
+    brought = [r for r in second if r.classification.category in newly_in_scope]
+    assert {r.classification.category for r in brought} == set(newly_in_scope)
+    first_fetched = {c[1] for c in first_client.calls if c[0] == "document"}
+    second_fetched = {c[1] for c in second_client.calls if c[0] == "document"}
+    for record in brought:
+        assert before[record.key].classification.excluded_reason == "no_rule"
+        assert before[record.key].body_text is None and record.key not in first_fetched
+        assert record.key in second_fetched
+        assert record.body_text and record.to_row()["body_text"] == record.body_text
+    assert summary.ok, summary.problems
 
 
 def test_a_long_body_is_cut_at_the_limit_and_flagged(monkeypatch) -> None:
@@ -503,7 +559,7 @@ def test_the_summary_counts_every_document_request_once() -> None:
     records, summary = collect(client)
     requested = [c[1] for c in client.calls if c[0] == "document"]
     assert len(requested) == len(set(requested))  # never fetched twice
-    in_scope = {r.key for r in records if r.classification.category is not None}
+    in_scope = {r.key for r in records if is_event_category(r.classification.category)}
     needs_body = {
         r.key for r in records if classify_dart(r.item.report_nm).excluded_reason == "needs_body"
     }
@@ -538,5 +594,5 @@ def test_an_empty_extracted_body_leaves_the_text_unset_not_an_empty_string(tmp_p
     record = next(r for r in records if r.key == UNREAD)
     assert record.body_text is None and "body_text" not in record.to_row()
     assert summary.bodies_stored == len(
-        [r for r in records if r.classification.category is not None]
+        [r for r in records if is_event_category(r.classification.category)]
     ) - 1
