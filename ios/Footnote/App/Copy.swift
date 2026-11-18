@@ -118,6 +118,18 @@ enum Copy {
         return notes.isEmpty ? nil : notes.joined(separator: " ")
     }
 
+    /// The note under a periodic row whose change compares two fiscal years that end on
+    /// different days, as 52/53-week years do (D82). A year a week longer than the other is
+    /// the clearer fact, so that note replaces the one about the ends.
+    static func fiscalYearEndsNote(_ report: PeriodicReport, _ language: Language) -> String? {
+        guard let change = report.change else { return nil }
+        if change.periodLengthsDiffer {
+            return language("한 해가 다른 해보다 한 주 길어요.", "One of the years is a week longer.")
+        }
+        guard change.periodEndsDiffer else { return nil }
+        return language("회계연도 마감일이 며칠 달라요.", "The fiscal years end a few days apart.")
+    }
+
     /// What VoiceOver reads for the revenue line: the amount, then the change in words.
     static func revenueSpoken(_ report: PeriodicReport, currency: String, _ language: Language) -> String? {
         guard let revenue = report.revenue else { return nil }

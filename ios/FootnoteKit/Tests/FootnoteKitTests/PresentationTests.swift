@@ -105,6 +105,24 @@ struct CompanyPageTests {
         #expect(page.filings.allSatisfy { $0.filedOn >= start && $0.filedOn <= store.meta.dataAsOf })
     }
 
+    /// Apple's 52-week years end on September 28 and September 27: the change is worked out
+    /// and says the ends differ (D82). Samsung's calendar years carry no such flag.
+    @Test func fiscalWeekYearsGetAChangeWithAFlag() throws {
+        let store = try Support.editedFixture("""
+            INSERT INTO figures VALUES ('apple-revenue-2024', '\(BundleStoreTests.apple)',
+              'sec:0000320193-25-000079', 'revenue', 2024, '2023-10-01', '2024-09-28',
+              '391035000000', 'USD', 'USD', 'consolidated', 0,
+              'RevenueFromContractWithCustomerExcludingAssessedTax')
+            """)
+        let page = try #require(CompanyPage(store: store, companyID: BundleStoreTests.apple))
+        let change = try #require(page.periodicReports.first?.change)
+        #expect(change.periodEndsDiffer)
+        #expect(!change.periodLengthsDiffer)
+        #expect(DecimalText.twoPlaces(change.percentChange) == "6.43")
+        let samsung = try #require(CompanyPage(store: store, companyID: BundleStoreTests.samsung))
+        #expect(samsung.periodicReports.first?.change?.periodEndsDiffer == false)
+    }
+
     @Test(arguments: [
         ("2026-11-17", "2025-11-18"), ("2028-02-29", "2027-03-01"), ("2026-12-31", "2026-01-01"),
         ("2026-03-01", "2025-03-02"),

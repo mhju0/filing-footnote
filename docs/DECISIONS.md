@@ -1167,3 +1167,45 @@ not approved any wording.
   file; the release export is the gate.
 - Open: the owner reviews the wording (the pull request lists every entry) and approves
   entries by editing the `approved` flags.
+
+## D82 · Consecutive 52/53-week fiscal years compare year over year · 2026-11-19 (`ACCEPTED`)
+
+Decided by the lead under the owner's delegation. Reason: comparing consecutive 52/53-week
+fiscal years is how these companies and the SEC present their own year-over-year figures.
+
+Apple, NVIDIA and Costco end their fiscal year on a weekday near a date, so the end moves
+by a few days each year. The calculator refused every such pair as `period_end_mismatch`,
+and their periodic rows showed revenue with no change (the open item in D80).
+
+- `PRODUCT.md` lists "same company, metric, currency, basis and period end" for a
+  comparison. This decision reads "same period end" as the same fiscal-year end: a
+  52/53-week year that ends a few days from the prior end's anniversary ends the same
+  fiscal year. That reading is listed for the owner's final check.
+- Two ends are the same day when their month-days match or both are the last day of
+  February. Those pairs keep the earlier rules, and `period_ends_differ` is false.
+- Other ends compare when, in this order: both periods run 357 to 371 days, counting both
+  end days; the periods do not overlap; the later end is within seven days of an
+  anniversary of the earlier end (February 29 read as February 28); that anniversary is
+  the first one (otherwise `non_consecutive_years`); the ends are 357 to 371 days apart;
+  and the current period starts the day after the prior one ends (a gap is
+  `non_consecutive_years`). An anniversary past the year 9999 is not tested, so such a
+  pair refuses instead of failing. Anything else refuses as `period_end_mismatch`.
+- The drift accepted in practice is up to seven days before the anniversary and up to six
+  days after it (five when a February 29 falls in between), because the ends are at most
+  371 days apart. Only the prior period can be as short as 357 days, since the current
+  period's length equals the step between the ends.
+- The pinned SEC company facts fit these ranges without change. Apple, NVIDIA and Costco
+  annual revenue periods run 364 or 371 days, with ends 364 or 371 days apart and at most
+  six days from the anniversary. Walmart and Microsoft run 365 or 366 days on fixed
+  month-days.
+- The year-over-year result carries `period_ends_differ` (Swift `periodEndsDiffer`) and
+  `period_lengths_differ` (`periodLengthsDiffer`). The second is true when the two
+  lengths differ by seven days or more, as a 53-week year against a 52-week year does.
+  The app's periodic row shows one note line: "한 해가 다른 해보다 한 주 길어요." / "One
+  of the years is a week longer." when the lengths differ, and otherwise "회계연도
+  마감일이 며칠 달라요." / "The fiscal years end a few days apart." when the ends differ.
+- The rules for currency, basis, metric and unit are unchanged, and so are the
+  cross-company rules. Cross-company growth runs each company's year-over-year check, so
+  a 52/53-week company now gets a growth rate there too. That result has
+  `same_period_end` and the caveat but no per-company flags.
+- Rules: `docs/comparison-rules.md`; cases: `contracts/comparison-cases.json`.

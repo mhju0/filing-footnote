@@ -39,12 +39,42 @@ periods is allowed. The current period must start after the prior period ends: t
 two-year periods a year apart share a year, so neither is a baseline for the other
 (`overlapping_periods`).
 
-Two year-ends fail the month-day check and are refused in v1:
+Two ends count as the same day when they share a month and day, or when both are the
+last day of February (February 29 in a leap year against February 28 in the next).
 
-- A fiscal year that ends on a different date each year (a 52/53-week year).
-- A year that ends on the last day of February: February 29 in a leap year against
-  February 28 in the next year is refused as `period_end_mismatch`, even though both
-  are the last day of the month.
+When the ends are not the same day, the two periods still compare as consecutive fiscal
+years (D82). The checks run in this order, counting both end days of each period:
+
+1. Each period runs 357 to 371 days, which covers a 52-week year (364), a 53-week year
+   (371) and a calendar year (365 or 366). Otherwise `period_end_mismatch`.
+2. The current period starts after the prior period ends. Otherwise
+   `overlapping_periods`.
+3. The later end falls within seven days of an anniversary of the earlier end: the same
+   month-day one or more whole years later, February 29 read as February 28. This also
+   covers ends that move across the new year. When no anniversary is that close, or the
+   only one to test is past the year 9999, the result is `period_end_mismatch`.
+4. That anniversary is the first one. When it is the second or a later one, a year is
+   missing (`missing_period`, `non_consecutive_years`).
+5. The later end is 357 to 371 days after the earlier one. Otherwise
+   `period_end_mismatch`.
+6. The current period starts the day after the prior period ends. A gap between them is
+   `missing_period`, `non_consecutive_years`.
+
+Steps 3 and 5 together set the drift that is accepted in practice. The later end may be
+up to seven days before the anniversary. It may be up to six days after it, or five days
+when a February 29 falls between the earlier end and its anniversary, because the ends
+are at most 371 days apart. Step 6 makes the current period as long as the step between
+the ends, so the current period runs at least 358 days. Only the prior period can run
+357 days.
+
+The result says what differs, so the UI can name it:
+
+- `period_ends_differ` is true on this path and false when the ends are the same day.
+- `period_lengths_differ` is true when the two periods' lengths differ by seven days or
+  more, as a 53-week year against a 52-week year does. It is computed on both paths.
+
+This covers 52/53-week years (Apple, NVIDIA, Costco). A half year against a full year,
+or ends more than a week from the anniversary, are still refused.
 
 ### Operating margin (`operating_margin`)
 
@@ -175,7 +205,10 @@ swapping any two such checks fails at least one case.
    - Year over year: fewer than two figures (`missing_period`), more than two
      (`ambiguous_request`), then metric, company, basis, currency, unit, period-end
      month-day, period-start month-day, same period (`ambiguous_request`), overlapping
-     periods, period length, consecutive years, and last the baseline.
+     periods, period length, consecutive years, and last the baseline. When the
+     ends are not the same day, the six fiscal-year steps above replace everything from
+     the period-start month-day check to the consecutive-year check, and the baseline
+     follows them.
    - Operating margin: a figure for another metric, two figures for one metric
      (`ambiguous_request`), a missing figure (`missing_period`), then company, basis,
      currency, unit, period end, period start, and last the baseline.
