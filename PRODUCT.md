@@ -45,7 +45,8 @@ guessing. It explains; it does not advise or trade.
 
 ## Capabilities and Constraints
 
-- 18 companies (Korean and US), 23 filings, latest annual results. Metrics: revenue,
+- 18 companies (Korean and US): each company's latest annual report and up to five recent
+  event filings, with two years per figure (2026-11-18, owner; D72). Metrics: revenue,
   operating income, net income, net income attributable to owners, EPS, diluted EPS, and
   derived operating margin.
 - Core flow: pick a company → read how it did in one sentence → tap a figure for its
