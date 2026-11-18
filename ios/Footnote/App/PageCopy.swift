@@ -675,7 +675,7 @@ enum PageCopy {
     }
 
     /// Board 10's action for each reason, board 8's rows for another measure.
-    /// After a base of zero or below, the years themselves are what is left to see.
+    /// Draft for a base of zero or below: the years themselves are what is left to see.
     static func actionLabel(_ action: RefusalAction, reason: RefusalReason, detail: RefusalDetail? = nil,
                             metric: ReportedMetric?, _ language: Language) -> String {
         switch action {
