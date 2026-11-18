@@ -19,8 +19,28 @@ replaces the Ledger system inherited from Filing Digest. Older files under
 | Line | `#E6E9EE` | Separators |
 
 Measured contrast: white on Pine 7.01, Ink on Saffron 6.89, white on Ink 14.92,
-Pine on Tint 6.04. Dark appearance values are chosen and measured before the
-first UI milestone ships.
+Pine on Tint 6.04.
+
+Dark appearance (2026-11-19):
+
+| Token | Light | Dark |
+|---|---|---|
+| Pine | `#10645B` | `#5CC2B2` (text on Pine is Background) |
+| Saffron | `#E9A23B` | `#E9A23B` (text on it stays Ink) |
+| Ink (text) | `#152A31` | `#E9EEF0` |
+| Tint | `#E7F0EE` | `#173A35` |
+| Background | `#F5F6F8` | `#0E1315` |
+| Surface (grouped rows) | `#FFFFFF` | `#192024` |
+| Muted | `#5B6475` | `#9BA5B3` |
+| Line | `#E6E9EE` | `#2A3237` |
+
+Measured dark contrast: text on Background 15.99, on Surface 14.10; Muted on Background
+7.51, on Surface 6.62; Pine on Background 8.74, on Surface 7.71, on Tint 5.80; Background
+on Pine 8.74; Ink on Saffron 6.89. Every pair meets WCAG AA for body text.
+
+App icon: the bracketed F mark (`logos/`) in white on Pine, full bleed, no gradient.
+Platforms: iPhone tab bar; iPad and Mac sidebar, content and detail columns
+([ADR 0008](../adr/0008-native-multiplatform-app.md)).
 
 ## Rules
 
