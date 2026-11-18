@@ -8,8 +8,13 @@
 
 /* Begin PBXBuildFile section */
 		05B0C535A82EA0204E4A4EDC /* Rows.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8575F228C62CB53EBF709A57 /* Rows.swift */; };
+		191A795BC15B7D76E265A5F1 /* PageCopy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 84343AEAD0439FED7C7C326D /* PageCopy.swift */; };
+		249E9F02C56CAD3F001CD198 /* AnnualReportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EB3E62CC85B78BC602E97B3 /* AnnualReportView.swift */; };
+		2777DF098107C8D417AD6E8C /* FilingPageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9945C6216AEFA396D190DF4C /* FilingPageView.swift */; };
 		38E071F6C439E5A6631C71EF /* CompanyPageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1451043C5F97E78360D49B1A /* CompanyPageView.swift */; };
+		4C548BDC3D7CECFF30C6C5E4 /* PageParts.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF2549958E4E5B5E376705BC /* PageParts.swift */; };
 		560DD57B7A30749322B92205 /* OriginalLinks.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5763354F725A9825C8F45BA /* OriginalLinks.swift */; };
+		5962467C92C8AB4DEFA7BE43 /* FilingPagesUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A25183A23F01D3B2D30CA923 /* FilingPagesUITests.swift */; };
 		65603A66B51C890443BF4D11 /* FootnoteTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CEB9F0F6A890E7BA9ADA8CB /* FootnoteTests.swift */; };
 		7043A98ED52874F41EE22664 /* Copy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49ED7013F79313CBCC67F084 /* Copy.swift */; };
 		781D6855D576B83F9B7FDDB6 /* NewsAndGlossary.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C57CE2A69841013D54DA95C /* NewsAndGlossary.swift */; };
@@ -24,11 +29,18 @@
 		D084464B24495E5CC5F57423 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FD17E58353EA488866917BB /* RootView.swift */; };
 		DDA675971087F266809D199A /* FactLabels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17DABD04C86B387AB9155CAA /* FactLabels.swift */; };
 		E4FDB3841AF5B3BFA18CA247 /* footnote.sqlite in Resources */ = {isa = PBXBuildFile; fileRef = D0E3DC947AE76FA1DBF99AFA /* footnote.sqlite */; };
-		F40E85FCAA71B7C1ED0BD355 /* FilingDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6AFE5BC27B355E36B6905461 /* FilingDetailView.swift */; };
+		F3C16DAFFB27788E9901ABC8 /* footnote.sqlite in Resources */ = {isa = PBXBuildFile; fileRef = D0E3DC947AE76FA1DBF99AFA /* footnote.sqlite */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
 		1B9362A29A7FADA8685D7C21 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A2579260045569C0A9B2DA24 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 90DD80BB07D8CE762826605A;
+			remoteInfo = Footnote;
+		};
+		D1507CE9A6DC6F657E0DEA4C /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = A2579260045569C0A9B2DA24 /* Project object */;
 			proxyType = 1;
@@ -42,22 +54,27 @@
 		0B925AA3157EEF14E56E6451 /* KeepAll.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeepAll.swift; sourceTree = "<group>"; };
 		0CEB9F0F6A890E7BA9ADA8CB /* FootnoteTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FootnoteTests.swift; sourceTree = "<group>"; };
 		0DD3DC3BFB1504B093423E4F /* FootnoteTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = FootnoteTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		0EB3E62CC85B78BC602E97B3 /* AnnualReportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnnualReportView.swift; sourceTree = "<group>"; };
 		1451043C5F97E78360D49B1A /* CompanyPageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompanyPageView.swift; sourceTree = "<group>"; };
 		17DABD04C86B387AB9155CAA /* FactLabels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FactLabels.swift; sourceTree = "<group>"; };
 		27D5005BC7B8E88740C8D624 /* FootnoteKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = FootnoteKit; path = FootnoteKit; sourceTree = SOURCE_ROOT; };
+		45B421E0C7AD2383ECA0DA26 /* FootnoteUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = FootnoteUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		49ED7013F79313CBCC67F084 /* Copy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Copy.swift; sourceTree = "<group>"; };
 		4B556BB1B771BF080EF4BA9A /* FootnoteApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FootnoteApp.swift; sourceTree = "<group>"; };
-		6AFE5BC27B355E36B6905461 /* FilingDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilingDetailView.swift; sourceTree = "<group>"; };
 		7C57CE2A69841013D54DA95C /* NewsAndGlossary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewsAndGlossary.swift; sourceTree = "<group>"; };
 		7FD17E58353EA488866917BB /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		83D0E13ABF3BD2C1B509E51D /* CompaniesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompaniesView.swift; sourceTree = "<group>"; };
+		84343AEAD0439FED7C7C326D /* PageCopy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageCopy.swift; sourceTree = "<group>"; };
 		8575F228C62CB53EBF709A57 /* Rows.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Rows.swift; sourceTree = "<group>"; };
+		9945C6216AEFA396D190DF4C /* FilingPageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilingPageView.swift; sourceTree = "<group>"; };
+		A25183A23F01D3B2D30CA923 /* FilingPagesUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilingPagesUITests.swift; sourceTree = "<group>"; };
 		A3A9AF1B5B791CDDF55DC3F9 /* LaunchRoute.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchRoute.swift; sourceTree = "<group>"; };
 		A5158F1E7A83D45A03BF2540 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		D0E3DC947AE76FA1DBF99AFA /* footnote.sqlite */ = {isa = PBXFileReference; lastKnownFileType = file; path = footnote.sqlite; sourceTree = "<group>"; };
 		DC289A12582A8B34DF6AD1CD /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		F5763354F725A9825C8F45BA /* OriginalLinks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OriginalLinks.swift; sourceTree = "<group>"; };
 		FE38B31209FBFAD5D8F880A1 /* filing-facts.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; name = "filing-facts.json"; path = "../contracts/filing-facts.json"; sourceTree = "<group>"; };
+		FF2549958E4E5B5E376705BC /* PageParts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageParts.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -77,6 +94,7 @@
 			children = (
 				0B925AA3157EEF14E56E6451 /* KeepAll.swift */,
 				F5763354F725A9825C8F45BA /* OriginalLinks.swift */,
+				FF2549958E4E5B5E376705BC /* PageParts.swift */,
 				8575F228C62CB53EBF709A57 /* Rows.swift */,
 				DC289A12582A8B34DF6AD1CD /* Theme.swift */,
 			);
@@ -112,6 +130,7 @@
 			children = (
 				0935B3701FCD891C689475F4 /* Footnote.app */,
 				0DD3DC3BFB1504B093423E4F /* FootnoteTests.xctest */,
+				45B421E0C7AD2383ECA0DA26 /* FootnoteUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -134,6 +153,7 @@
 				6FBD892E9D199F54CF5E7516 /* Footnote */,
 				84EB635B5C3524867494DEAD /* FootnoteKit */,
 				990F4E0BD20FE68F9E4C9316 /* FootnoteTests */,
+				D45A6600692D8956518E5EC5 /* FootnoteUITests */,
 				3F506E4B2E76495E49888867 /* Packages */,
 				63EA327D71412513E913F14F /* Products */,
 			);
@@ -166,9 +186,10 @@
 		A17F2AFEEEA92AB82E1E0BFD /* Screens */ = {
 			isa = PBXGroup;
 			children = (
+				0EB3E62CC85B78BC602E97B3 /* AnnualReportView.swift */,
 				83D0E13ABF3BD2C1B509E51D /* CompaniesView.swift */,
 				1451043C5F97E78360D49B1A /* CompanyPageView.swift */,
-				6AFE5BC27B355E36B6905461 /* FilingDetailView.swift */,
+				9945C6216AEFA396D190DF4C /* FilingPageView.swift */,
 				7C57CE2A69841013D54DA95C /* NewsAndGlossary.swift */,
 			);
 			path = Screens;
@@ -182,6 +203,14 @@
 			path = FootnoteKitTests;
 			sourceTree = "<group>";
 		};
+		D45A6600692D8956518E5EC5 /* FootnoteUITests */ = {
+			isa = PBXGroup;
+			children = (
+				A25183A23F01D3B2D30CA923 /* FilingPagesUITests.swift */,
+			);
+			path = FootnoteUITests;
+			sourceTree = "<group>";
+		};
 		FC5E2FB9B288632A9A250237 /* App */ = {
 			isa = PBXGroup;
 			children = (
@@ -189,6 +218,7 @@
 				17DABD04C86B387AB9155CAA /* FactLabels.swift */,
 				4B556BB1B771BF080EF4BA9A /* FootnoteApp.swift */,
 				A3A9AF1B5B791CDDF55DC3F9 /* LaunchRoute.swift */,
+				84343AEAD0439FED7C7C326D /* PageCopy.swift */,
 				7FD17E58353EA488866917BB /* RootView.swift */,
 			);
 			path = App;
@@ -205,6 +235,25 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		692882A2B3E8382634045991 /* FootnoteUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 758A246BAECEA2D833C97C0E /* Build configuration list for PBXNativeTarget "FootnoteUITests" */;
+			buildPhases = (
+				7C61F101E99091DBDE0059C7 /* Sources */,
+				D1870C66C0D1BF329109DA9C /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				42F3EC7AF0D2843CF28E38B5 /* PBXTargetDependency */,
+			);
+			name = FootnoteUITests;
+			packageProductDependencies = (
+			);
+			productName = FootnoteUITests;
+			productReference = 45B421E0C7AD2383ECA0DA26 /* FootnoteUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 		90DD80BB07D8CE762826605A /* Footnote */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 546968A754B818C0A9CCEC4B /* Build configuration list for PBXNativeTarget "Footnote" */;
@@ -254,6 +303,9 @@
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
+					692882A2B3E8382634045991 = {
+						TestTargetID = 90DD80BB07D8CE762826605A;
+					};
 				};
 			};
 			buildConfigurationList = C9E18983E62A5E1B6A94D9DC /* Build configuration list for PBXProject "Footnote" */;
@@ -275,6 +327,7 @@
 			targets = (
 				90DD80BB07D8CE762826605A /* Footnote */,
 				A0BAD32C6E89CEE9AA69294F /* FootnoteTests */,
+				692882A2B3E8382634045991 /* FootnoteUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -285,6 +338,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				E4FDB3841AF5B3BFA18CA247 /* footnote.sqlite in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D1870C66C0D1BF329109DA9C /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F3C16DAFFB27788E9901ABC8 /* footnote.sqlite in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -330,20 +391,31 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		7C61F101E99091DBDE0059C7 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5962467C92C8AB4DEFA7BE43 /* FilingPagesUITests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		EFE00E2EDD694C691933E56B /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				249E9F02C56CAD3F001CD198 /* AnnualReportView.swift in Sources */,
 				7F5D19558056B19C0D92F257 /* CompaniesView.swift in Sources */,
 				38E071F6C439E5A6631C71EF /* CompanyPageView.swift in Sources */,
 				7043A98ED52874F41EE22664 /* Copy.swift in Sources */,
 				DDA675971087F266809D199A /* FactLabels.swift in Sources */,
-				F40E85FCAA71B7C1ED0BD355 /* FilingDetailView.swift in Sources */,
+				2777DF098107C8D417AD6E8C /* FilingPageView.swift in Sources */,
 				7AED2A94CD63157964A8A416 /* FootnoteApp.swift in Sources */,
 				B814FA6CDF2D69882E5FFA79 /* KeepAll.swift in Sources */,
 				7A2EBE33CBD6625CCD57D766 /* LaunchRoute.swift in Sources */,
 				781D6855D576B83F9B7FDDB6 /* NewsAndGlossary.swift in Sources */,
 				560DD57B7A30749322B92205 /* OriginalLinks.swift in Sources */,
+				191A795BC15B7D76E265A5F1 /* PageCopy.swift in Sources */,
+				4C548BDC3D7CECFF30C6C5E4 /* PageParts.swift in Sources */,
 				D084464B24495E5CC5F57423 /* RootView.swift in Sources */,
 				05B0C535A82EA0204E4A4EDC /* Rows.swift in Sources */,
 				845DF390B5E0D3CFD0789B56 /* Theme.swift in Sources */,
@@ -353,6 +425,11 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		42F3EC7AF0D2843CF28E38B5 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 90DD80BB07D8CE762826605A /* Footnote */;
+			targetProxy = D1507CE9A6DC6F657E0DEA4C /* PBXContainerItemProxy */;
+		};
 		E9E165ECEF435AC73B006717 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 90DD80BB07D8CE762826605A /* Footnote */;
@@ -380,6 +457,27 @@
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Footnote.app/Footnote";
 				"TEST_HOST[sdk=macosx*]" = "$(BUILT_PRODUCTS_DIR)/Footnote.app/Contents/MacOS/Footnote";
+			};
+			name = Release;
+		};
+		6D9C5013F3F037A7B8FA3EED /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.filingfootnote.footnote.uitests;
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = Footnote;
 			};
 			name = Release;
 		};
@@ -602,6 +700,27 @@
 			};
 			name = Debug;
 		};
+		DB74B901EBC177BDCFB38FCC /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.filingfootnote.footnote.uitests;
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = Footnote;
+			};
+			name = Debug;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -619,6 +738,15 @@
 			buildConfigurations = (
 				BD96B5CE01E143FCE1B9518B /* Debug */,
 				B803FB35679D456DA578D009 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		758A246BAECEA2D833C97C0E /* Build configuration list for PBXNativeTarget "FootnoteUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				DB74B901EBC177BDCFB38FCC /* Debug */,
+				6D9C5013F3F037A7B8FA3EED /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;

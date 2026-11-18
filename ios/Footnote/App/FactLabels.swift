@@ -45,7 +45,11 @@ struct FactLabels: Sendable {
     var isEmpty: Bool { labels.isEmpty }
 
     func label(_ fact: FilingFact, _ language: Language) -> String? {
-        labels[fact.origin].map { language == .ko ? $0.ko : $0.en }
+        label(origin: fact.origin, language)
+    }
+
+    func label(origin: String, _ language: Language) -> String? {
+        labels[origin].map { language == .ko ? $0.ko : $0.en }
     }
 
     private struct Contract: Decodable {

@@ -6,6 +6,9 @@ import SwiftUI
 enum Route: Hashable {
     case company(String)
     case filing(String)
+    /// A company id, a reported metric (`revenue`) and the fiscal year of the report it was
+    /// opened from: the figure screen.
+    case figure(String, String, Int)
 }
 
 extension EnvironmentValues {

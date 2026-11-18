@@ -1,5 +1,5 @@
 import FootnoteKit
-import Foundation
+import SwiftUI
 
 /// Debug builds only: opens a screen at launch from `-FootnoteOpen <kind>=<id>`, so the
 /// screenshot script (`ios/scripts/screenshots.sh`) can capture each screen without UI
@@ -71,5 +71,40 @@ struct LaunchRoute: Sendable {
 
     func opensNotices(_ company: Company) -> Bool {
         kind == .notices && id == company.id
+    }
+
+    /// Debug builds only: `-FootnoteScroll top|center|bottom` opens a filing or annual page
+    /// scrolled to its numbers (`center`) or its end (`bottom`), so the screenshot script can
+    /// capture a page longer than the screen.
+    static let scrollTarget: (id: String, anchor: UnitPoint)? = {
+        #if DEBUG
+        let arguments = ProcessInfo.processInfo.arguments
+        guard let index = arguments.firstIndex(of: "-FootnoteScroll"), index + 1 < arguments.count
+        else { return nil }
+        return switch arguments[index + 1] {
+        case "center": (PageScroll.numbers, .top)
+        case "bottom": (PageScroll.end, .bottom)
+        default: nil
+        }
+        #else
+        return nil
+        #endif
+    }()
+}
+
+/// Row ids a page marks for `LaunchRoute.scrollTarget`.
+enum PageScroll {
+    static let numbers = "page-numbers"
+    static let end = "page-end"
+}
+
+extension View {
+    /// Scrolls a page's list to the launch scroll target once it appears (debug builds).
+    func launchScroll(_ proxy: ScrollViewProxy) -> some View {
+        task {
+            guard let target = LaunchRoute.scrollTarget else { return }
+            try? await Task.sleep(for: .milliseconds(600))
+            proxy.scrollTo(target.id, anchor: target.anchor)
+        }
     }
 }

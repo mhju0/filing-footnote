@@ -50,12 +50,16 @@ public enum Formatting {
         (Decimal(string: "1000000000000")!, "trillion"),
     ]
 
-    private static func englishAmount(_ magnitude: Decimal, currency: String) -> String {
-        let symbol = switch currency {
+    static func currencySymbol(_ currency: String) -> String {
+        switch currency {
         case "KRW": "₩"
         case "USD": "$"
         default: "\(currency) "
         }
+    }
+
+    private static func englishAmount(_ magnitude: Decimal, currency: String) -> String {
+        let symbol = currencySymbol(currency)
         // The unit is the largest one not above the unrounded value; it moves up only when
         // rounding reaches a thousand of it (999,995,000,000 -> 1.00 trillion).
         guard var index = englishScales.lastIndex(where: { magnitude >= $0.0 }) else {
@@ -71,7 +75,7 @@ public enum Formatting {
 
     /// The exact value with digit grouping. A whole amount stays whole (`4,950`); one with a
     /// fraction shows at least two fraction digits (`7.50`) and is never rounded.
-    private static func exact(_ magnitude: Decimal) -> String {
+    static func exact(_ magnitude: Decimal) -> String {
         var text = DecimalText.canonical(magnitude)
         if let point = text.firstIndex(of: ".") {
             let digits = text.distance(from: point, to: text.endIndex) - 1

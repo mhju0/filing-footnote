@@ -57,9 +57,28 @@ struct RouteDestination: View {
                 CompanyPageView(store: store, page: page)
             }
         case .filing(let id):
-            if let filing = store.filing(id: id) {
-                FilingDetailView(store: store, labels: labels, filing: filing)
+            FilingDestination(store: store, labels: labels, filingID: id)
+        case .figure(let companyID, let metric, let fiscalYear):
+            if let metric = ReportedMetric(rawValue: metric),
+               let history = FigureHistory(store: store, companyID: companyID, metric: metric)
+            {
+                FigureView(store: store, history: history, fiscalYear: fiscalYear)
             }
+        }
+    }
+}
+
+/// A filing's page: the annual report at a glance, or an event filing's page.
+struct FilingDestination: View {
+    let store: BundleStore
+    let labels: FactLabels
+    let filingID: String
+
+    var body: some View {
+        if let annual = AnnualPage(store: store, filingID: filingID) {
+            AnnualReportView(page: annual)
+        } else if let page = FilingPage(store: store, filingID: filingID) {
+            FilingPageView(page: page, labels: labels)
         }
     }
 }
@@ -130,17 +149,23 @@ struct SplitShell: View {
         } content: {
             content
                 .environment(\.filingSelection, $filingID)
-                #if os(macOS)
+                // Wide enough for a company's large title on iPad ("Samsung Electronics").
                 .navigationSplitViewColumnWidth(min: 360, ideal: 420)
-                #endif
         } detail: {
             NavigationStack {
-                if let filingID, let filing = store.filing(id: filingID) {
-                    FilingDetailView(store: store, labels: labels, filing: filing)
-                } else {
-                    noFiling
+                Group {
+                    if let filingID, store.filing(id: filingID) != nil {
+                        FilingDestination(store: store, labels: labels, filingID: filingID)
+                            .id(filingID)
+                    } else {
+                        noFiling
+                    }
+                }
+                .navigationDestination(for: Route.self) {
+                    RouteDestination(store: store, labels: labels, route: $0)
                 }
             }
+            .id(filingID)
             .environment(\.showsLanguageButton, false)
         }
         .onChange(of: sidebar) { filingID = nil }

@@ -108,6 +108,23 @@ targets:
         GENERATE_INFOPLIST_FILE: YES
         # A Mac app keeps its executable under Contents/MacOS.
         "TEST_HOST[sdk=macosx*]": $(BUILT_PRODUCTS_DIR)/Footnote.app/Contents/MacOS/Footnote
+  # iOS only, in its own scheme so the Footnote scheme still tests on the Mac. It opens the
+  # FootnoteKit fixture through the debug `-FootnoteBundle` launch argument.
+  FootnoteUITests:
+    type: bundle.ui-testing
+    platform: auto
+    supportedDestinations: [iOS]
+    sources:
+      - path: FootnoteUITests
+      - path: FootnoteKit/Tests/FootnoteKitTests/Fixtures/footnote.sqlite
+        buildPhase: resources
+    dependencies:
+      - target: Footnote
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.filingfootnote.footnote.uitests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: Footnote
 schemes:
   Footnote:
     build:
@@ -122,3 +139,12 @@ schemes:
       config: Debug
     archive:
       config: Release
+  FootnoteUITests:
+    build:
+      targets:
+        Footnote: all
+        FootnoteUITests: [test]
+    test:
+      targets:
+        - FootnoteUITests
+      gatherCoverageData: false
