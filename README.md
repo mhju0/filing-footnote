@@ -8,6 +8,8 @@ Footnote는 한국과 미국의 잘 알려진 기업 18곳이 공식 제출한 �
 
 Filing Footnote v0.1 is in development. Nothing is released.
 
+**Status:** v0.5.2 is still the version number in the backend package and the app, carried over from the last release of the predecessor code; it changes with the v0.1 release.
+
 - The app, the data pipeline and the release gates are built and tested.
 - Summaries are awaiting owner approval. The summary build stages them; none is approved yet, and only approved summaries can ship. Until then every filing page shows its figures and a "summary in review" note, as in the screenshots below.
 - The glossary wording is drafted and awaiting the same approval.

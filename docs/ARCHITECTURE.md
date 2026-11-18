@@ -39,7 +39,9 @@ staged.jsonl ── owner: app.build.approve ──► approved.jsonl
 
 Still in the tree from Filing Digest and not used by the app: the FastAPI service
 (`api/`, `answers/`, `digests/`, `search/`, `evidence/`) and the embedding index. Annual
-ingest still runs the inherited embedding step.
+ingest still runs the inherited embedding step. The backend package and the app still carry
+version 0.5.2; the v0.5.2 portfolio architecture of Filing Digest is kept in
+[history/filing-digest-architecture.md](history/filing-digest-architecture.md).
 
 ## The bundle contract
 
