@@ -4,9 +4,15 @@ import SwiftUI
 /// Debug builds only: opens a screen at launch from `-FootnoteOpen <kind>=<id>`, so the
 /// screenshot script (`ios/scripts/screenshots.sh`) can capture each screen without UI
 /// scripting. Kinds: `company`, `notices` (company id), `filing` (filing id), `news`,
-/// `glossary`. Release builds ignore the argument.
+/// `glossary`; `figure`, `picker` (the figure with the company picker open), `yearcompare`
+/// and `yearcalc` take `<company id>|<metric>|<fiscal year>`; `compare` and `companycalc`
+/// take `<company id>|<peer id>|<metric>|<measure or none>|<fiscal year>`. Release builds
+/// ignore the argument.
 struct LaunchRoute: Sendable {
-    enum Kind: String, Sendable { case company, notices, filing, news, glossary }
+    enum Kind: String, Sendable {
+        case company, notices, filing, news, glossary
+        case figure, picker, yearcompare, yearcalc, compare, companycalc
+    }
 
     let kind: Kind
     let id: String?
@@ -39,7 +45,67 @@ struct LaunchRoute: Sendable {
             return pieces.count == 2 ? (pieces[0], pieces[1]) : (nil, id)
         case .company, .notices: return (id, nil)
         case .news, .glossary: return (nil, nil)
+        case .figure, .picker, .yearcompare, .yearcalc, .compare, .companycalc:
+            return (id.split(separator: "|").first.map(String.init), nil)
         }
+    }
+
+    private var pieces: [String] {
+        (id ?? "").split(separator: "|", omittingEmptySubsequences: false).map(String.init)
+    }
+
+    /// The figure screen's company, metric and year, for the figure and compare kinds.
+    private var figureKey: (company: String, metric: String, year: Int)? {
+        switch kind {
+        case .figure, .picker, .yearcompare, .yearcalc:
+            guard pieces.count == 3, let year = Int(pieces[2]) else { return nil }
+            return (pieces[0], pieces[1], year)
+        case .compare, .companycalc:
+            guard pieces.count == 5, let year = Int(pieces[4]) else { return nil }
+            return (pieces[0], pieces[2], year)
+        default:
+            return nil
+        }
+    }
+
+    private var compareRoute: CompanyCompareRoute? {
+        guard kind == .compare || kind == .companycalc, pieces.count == 5, let year = Int(pieces[4]) else { return nil }
+        return CompanyCompareRoute(
+            companyID: pieces[0], peerID: pieces[1], metric: pieces[2],
+            measure: pieces[3] == "none" ? nil : pieces[3], fiscalYear: year)
+    }
+
+    /// The screens over the company page: the figure (when the metric has one), then the
+    /// compare screen and its calculation.
+    var detailPath: [Route] {
+        guard let key = figureKey else { return [] }
+        var path: [Route] = []
+        if ReportedMetric(rawValue: key.metric) != nil {
+            path.append(.figure(key.company, key.metric, key.year))
+        }
+        switch kind {
+        case .yearcompare:
+            path.append(.yearCompare(key.company, key.metric, key.year))
+        case .yearcalc:
+            path += [.yearCompare(key.company, key.metric, key.year), .yearCalculation(key.company, key.metric, key.year)]
+        case .compare:
+            if let route = compareRoute { path.append(.companyCompare(route)) }
+        case .companycalc:
+            if let route = compareRoute { path += [.companyCompare(route), .companyCalculation(route)] }
+        default:
+            break
+        }
+        return path
+    }
+
+    /// The annual filing the figure comes from, shown under the figure in the split view.
+    func figureFilingID(_ store: BundleStore) -> String? {
+        guard let key = figureKey else { return nil }
+        return store.figures.first { $0.companyID == key.company && $0.fiscalYear == key.year }?.filingID
+    }
+
+    func opensPicker(_ companyID: String) -> Bool {
+        kind == .picker && figureKey?.company == companyID
     }
 
     var tab: PhoneTabs.TabID {
@@ -54,7 +120,7 @@ struct LaunchRoute: Sendable {
         var path: [Route] = []
         if let company = parts.company { path.append(.company(company)) }
         if let filing = parts.filing, kind == .filing { path.append(.filing(filing)) }
-        return path
+        return path + detailPath
     }
 
     var newsPath: [Route] { [] }

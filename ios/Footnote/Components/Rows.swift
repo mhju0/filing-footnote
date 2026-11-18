@@ -9,6 +9,34 @@ enum Route: Hashable {
     /// A company id, a reported metric (`revenue`) and the fiscal year of the report it was
     /// opened from: the figure screen.
     case figure(String, String, Int)
+    /// The same company, metric and year: compare with last year (board 6) and its
+    /// calculation (board 6b).
+    case yearCompare(String, String, Int)
+    case yearCalculation(String, String, Int)
+    /// A company, the company picked, the metric, the measure (`growth_rate`; nil when none
+    /// was chosen) and the year: compare with another company (board 7).
+    case companyCompare(CompanyCompareRoute)
+    case companyCalculation(CompanyCompareRoute)
+    case glossary
+}
+
+struct CompanyCompareRoute: Hashable {
+    let companyID: String
+    let peerID: String
+    let metric: String?
+    let measure: String?
+    let fiscalYear: Int
+}
+
+/// Pushes a route on the stack the view is in; the picker sheet uses it after it closes.
+struct NavigateAction {
+    let push: @MainActor (Route) -> Void
+
+    @MainActor func callAsFunction(_ route: Route) { push(route) }
+}
+
+extension EnvironmentValues {
+    @Entry var navigate = NavigateAction { _ in }
 }
 
 extension EnvironmentValues {
