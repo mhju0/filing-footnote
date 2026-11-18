@@ -63,7 +63,8 @@ async def _chunks(connection: AsyncConnection) -> tuple[dict[object, str], dict[
     chunks: dict[object, list[ChunkRow]] = defaultdict(list)
     result = await connection.execute(
         text(
-            "SELECT filing_id, chunk_index, content, meta->>'section_title' AS section_title"
+            "SELECT filing_id, chunk_index, content, meta->>'section_title' AS section_title,"
+            " meta->>'part_title' AS part_title"
             " FROM filing_chunks ORDER BY filing_id, chunk_index"
         )
     )
@@ -71,7 +72,9 @@ async def _chunks(connection: AsyncConnection) -> tuple[dict[object, str], dict[
         digest = digests[row.filing_id]
         digest.update(row.content.encode("utf-8"))
         digest.update(b"\n")
-        chunks[row.filing_id].append(ChunkRow(row.chunk_index, row.section_title, row.content))
+        chunks[row.filing_id].append(
+            ChunkRow(row.chunk_index, row.section_title, row.content, row.part_title)
+        )
     hashes = {filing_id: digest.hexdigest() for filing_id, digest in digests.items()}
     return hashes, {filing_id: tuple(found) for filing_id, found in chunks.items()}
 

@@ -18,7 +18,7 @@ Core project rules honoured here:
 Chunk -> Normalized Filing mapping (the regulatory adapter owns this next step):
     FilingChunk.content     <- Chunk.content
     FilingChunk.chunk_index <- Chunk.chunk_index
-    FilingChunk.location    <- {section_title, section_order, part_index}
+    FilingChunk.location    <- {section_title, section_order, part_index, part_title}
 
 The Corporate Filing identity owns regulator-specific filing identifiers; the
 Filing Chunk carries only its within-filing location.
@@ -62,6 +62,7 @@ class Chunk:
     section_title: str | None
     section_order: int  # source ProseSection.order
     part_index: int  # 0-based slice number *within* this section
+    part_title: str | None = None  # source ProseSection.part_title
 
 
 def _force_split_paragraph(paragraph: str) -> list[str]:
@@ -175,6 +176,7 @@ def chunk_document(sections: list[ProseSection]) -> list[Chunk]:
                     section_title=section.section_title,
                     section_order=section.order,
                     part_index=part_index,
+                    part_title=section.part_title,
                 )
             )
 

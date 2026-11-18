@@ -172,6 +172,11 @@ def _chunk_rows(filing: NormalizedFiling, filing_id: uuid.UUID) -> list[dict]:
                 "section_title": chunk.location.section_title,
                 "section_order": chunk.location.section_order,
                 "part_index": chunk.location.part_index,
+                **(
+                    {"part_title": chunk.location.part_title}
+                    if chunk.location.part_title is not None
+                    else {}
+                ),
             },
         }
         for chunk in filing.filing_chunks
@@ -184,6 +189,7 @@ def _chunk_location(metadata: Mapping[str, object] | None) -> FilingChunkLocatio
         section_title=stored.get("section_title"),
         section_order=stored.get("section_order"),
         part_index=stored.get("part_index"),
+        part_title=stored.get("part_title"),
     )
 
 

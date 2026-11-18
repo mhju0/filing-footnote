@@ -518,8 +518,16 @@ OLD_LAYOUT = [
     ChunkRow(7, "2. 개요", "경영 개요"),
     ChunkRow(8, "V. 회계감사인의 감사의견 등", "감사"),
 ]
-# A part with no text of its own: ingest stores no chunk for it, only its children.
-NEW_LAYOUT = [c for c in OLD_LAYOUT if c.chunk_index not in (1, 5)]
+# A part with no text of its own: ingest stores no chunk for it, only its children, and each
+# chunk records its part in part_title.
+_PART_OF = {0: "I. 회사의 개요", 2: "II. 사업의 내용", 3: "II. 사업의 내용",
+            4: "III. 재무에 관한 사항", 6: "IV. 이사의 경영진단 및 분석의견",
+            7: "IV. 이사의 경영진단 및 분석의견", 8: "V. 회계감사인의 감사의견 등"}  # fmt: skip
+NEW_LAYOUT = [
+    dataclasses.replace(c, part_title=_PART_OF[c.chunk_index])
+    for c in OLD_LAYOUT
+    if c.chunk_index not in (1, 5)
+]
 
 
 def test_dart_changes_and_business_follow_the_part_in_the_old_layout() -> None:
@@ -529,12 +537,10 @@ def test_dart_changes_and_business_follow_the_part_in_the_old_layout() -> None:
     assert [c.chunk_index for c in business] == [1, 2, 3]
 
 
-@pytest.mark.xfail(strict=True, reason="chunks carry no parent title; needs an ingest change")
 def test_dart_changes_follow_the_part_when_the_part_has_no_chunk() -> None:
     assert [c.chunk_index for c in section_chunks("DART", "changes", NEW_LAYOUT)] == [6, 7]
 
 
-@pytest.mark.xfail(strict=True, reason="chunks carry no parent title; needs an ingest change")
 def test_dart_business_follows_the_part_when_the_part_has_no_chunk() -> None:
     assert [c.chunk_index for c in section_chunks("DART", "business", NEW_LAYOUT)] == [2, 3]
 

@@ -555,6 +555,7 @@ class ProseSection:
     section_title: str | None
     content: str
     order: int
+    part_title: str | None = None  # title of the enclosing top-level section (its own if top)
 
 
 @dataclass(frozen=True)
@@ -761,6 +762,7 @@ def extract_dsd_prose(text: str) -> list[ProseSection]:
     # &/< in prose (docs §4). Both are pure string ops -- no XXE surface.
     root = _defused_fromstring(_repair_dsd_markup(_strip_xml_declaration(text)))
 
+    parents = {child: parent for parent in root.iter() for child in parent}
     sections: list[ProseSection] = []
     tables_skipped = 0
     for el in root.iter():
@@ -770,8 +772,20 @@ def extract_dsd_prose(text: str) -> list[ProseSection]:
         tables_skipped += dropped
         if title is None and not content:
             continue  # empty section -> nothing to embed
+        top = el
+        while (parent := parents.get(top)) is not None:
+            if _is_section_tag(parent.tag):
+                top = parent
+            else:
+                break
+        part_title = title if top is el else _collect_section_prose(top)[0]
         sections.append(
-            ProseSection(section_title=title, content=content, order=len(sections))
+            ProseSection(
+                section_title=title,
+                content=content,
+                order=len(sections),
+                part_title=part_title,
+            )
         )
 
     logger.info(

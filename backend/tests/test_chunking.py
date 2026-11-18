@@ -152,6 +152,13 @@ def test_chunk_document_indices_are_contiguous_and_anchored() -> None:
         assert len(c.content) <= MAX_CHARS
 
 
+def test_chunk_document_carries_part_title() -> None:
+    section = ProseSection(
+        section_title="2. 개요", content="본문", order=0, part_title="IV. 경영진단"
+    )
+    assert [c.part_title for c in chunk_document([section])] == ["IV. 경영진단"]
+
+
 def test_chunk_document_part_index_restarts_per_section() -> None:
     # Section 0 splits into several parts; section 1 is a single chunk. part_index
     # must restart at 0 for section 1 even though chunk_index keeps climbing.
