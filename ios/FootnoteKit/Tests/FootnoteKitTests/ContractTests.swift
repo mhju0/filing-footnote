@@ -53,21 +53,41 @@ struct ContractTests {
         }
     }
 
-    /// Figures stay `Decimal` from the bundle to the screen: no source file names a binary
-    /// floating-point type or reads one from SQLite.
+    /// Figures stay `Decimal` from the bundle to the screen: no source file under `Sources/`
+    /// names a binary floating-point type, reads one from SQLite, or builds a `Decimal` from a
+    /// floating-point literal.
     @Test func sourcesUseNoBinaryFloatingPoint() throws {
-        let files = try FileManager.default
-            .contentsOfDirectory(at: Support.packageSources, includingPropertiesForKeys: nil)
-            .filter { $0.pathExtension == "swift" }
-        #expect(files.count >= 6)
-        let banned = try Regex(
-            #"\b(Double|Float|Float16|Float32|Float64|Float80|CGFloat|TimeInterval)\b|column_double|doubleValue|floatValue"#)
+        let files = Self.swiftFiles(under: Support.packageSources.deletingLastPathComponent())
+        #expect(files.count >= 7)
+        let banned = try Self.floatPattern()
         for file in files {
             let text = try String(contentsOf: file, encoding: .utf8)
             for (number, line) in text.split(separator: "\n", omittingEmptySubsequences: false)
                 .enumerated() where line.contains(banned) {
-                Issue.record("\(file.lastPathComponent):\(number + 1): \(line)")
+                Issue.record("\(file.path):\(number + 1): \(line)")
             }
         }
+    }
+
+    @Test(arguments: ["let x: Double = 1", "let y = Decimal(0.5)", "let z: Decimal = 1.25",
+                      "Decimal(floatLiteral: 1)", "sqlite3_column_double(s, 0)"])
+    func floatBanCatches(_ line: String) throws {
+        let banned = try Self.floatPattern()
+        #expect(line.contains(banned))
+    }
+
+    /// Floating-point types, SQLite's double reader, and a `Decimal` built from a literal
+    /// such as `Decimal(0.5)` or `: Decimal = 1.25`.
+    static func floatPattern() throws -> Regex<AnyRegexOutput> {
+        try Regex(
+            #"\b(Double|Float|Float16|Float32|Float64|Float80|CGFloat|TimeInterval)\b"#
+                + #"|column_double|doubleValue|floatValue|floatLiteral"#
+                + #"|Decimal\(\s*-?[0-9]+\.[0-9]|Decimal\s*=\s*-?[0-9]+\.[0-9]"#)
+    }
+
+    /// Every `.swift` file under `root`, subfolders included.
+    static func swiftFiles(under root: URL) -> [URL] {
+        let enumerator = FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil)
+        return (enumerator?.allObjects as? [URL] ?? []).filter { $0.pathExtension == "swift" }
     }
 }

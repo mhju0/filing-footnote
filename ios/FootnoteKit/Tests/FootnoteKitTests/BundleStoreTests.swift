@@ -115,6 +115,27 @@ struct BundleStoreTests {
         #expect(store.figureYears(forCompany: Self.apple, metric: .revenue) == [2025])
     }
 
+    @Test func figuresByBasis() {
+        let consolidated = store.figures(forCompany: Self.samsung, metric: .revenue, basis: "consolidated")
+        #expect(consolidated.map(\.fiscalYear) == [2025, 2024])
+        #expect(store.figures(forCompany: Self.samsung, metric: .revenue, basis: "separate").isEmpty)
+    }
+
+    @Test func requireReleaseRefusesADevelopmentBundle() throws {
+        #expect(throws: BundleError.developmentBundle) { try store.requireRelease() }
+        let url = try Self.editedCopy("UPDATE build_meta SET allow_unapproved = 0")
+        let release = try BundleStore(contentsOf: url)
+        #expect(throws: Never.self) { try release.requireRelease() }
+    }
+
+    @Test func rejectsAFigurePeriodThatStartsAfterItEnds() throws {
+        let url = try Self.editedCopy(
+            "UPDATE figures SET period_start = '2026-01-01' WHERE metric = 'eps' AND company_id = '\(Self.apple)'")
+        #expect(throws: BundleError.invalidValue(table: "figures", column: "period_start", value: "2026-01-01")) {
+            try BundleStore(contentsOf: url)
+        }
+    }
+
     @Test func figuresFeedTheCalculator() throws {
         let revenue = store.figures(forCompany: Self.samsung, metric: .revenue).map(\.fact)
         guard case .result(let change) = Calculator.yearOverYear(metric: "revenue", facts: revenue)

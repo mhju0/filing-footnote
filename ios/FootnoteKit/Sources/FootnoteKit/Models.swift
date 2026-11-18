@@ -115,9 +115,10 @@ public struct Figure: Sendable, Hashable, Identifiable {
     public let isRestated: Bool
     public let regulatorTag: String
 
-    /// The figure as the calculator takes it.
+    /// The figure as the calculator takes it. `BundleStore` refuses a figure whose period
+    /// starts after it ends, and its values are canonical decimals, so this cannot fail.
     public var fact: Fact {
-        Fact(companyID: companyID, metric: metric.rawValue, value: value, unit: unit,
+        try! Fact(companyID: companyID, metric: metric.rawValue, value: value, unit: unit,
              currency: currency, basis: basis, periodStart: periodStart, periodEnd: periodEnd,
              isRestated: isRestated)
     }

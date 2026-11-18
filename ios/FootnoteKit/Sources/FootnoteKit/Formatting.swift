@@ -12,9 +12,10 @@ public enum Formatting {
     /// A money amount for a figure card.
     ///
     /// Korean: rounded half-up to 억 and written in 조 and 억 (`45조 1,102억원`,
-    /// `4,161억 달러`). English: two decimals in trillions, billions or millions
-    /// (`₩45.11 trillion`, `$3.86 billion`). Amounts below 1억 (Korean) or one million
-    /// (English) are written exactly with digit grouping (`4,950원`, `$7.46`).
+    /// `4,162억 달러`). English: two decimals in trillions, billions or millions
+    /// (`₩45.11 trillion`, `$3.86 billion`), in the largest unit not above the value. Amounts
+    /// below 1억 (Korean) or one million (English) are written exactly with digit grouping
+    /// (`4,950원`, `$7.50`).
     public static func amount(_ value: Decimal, currency: String, language: Language) -> String {
         let sign = value < 0 ? minus : ""
         let magnitude = value < 0 ? -value : value
@@ -42,10 +43,11 @@ public enum Formatting {
         return parts.joined(separator: " ") + suffix
     }
 
+    /// Ascending, so a larger unit follows the one it replaces.
     private static let englishScales: [(Decimal, String)] = [
-        (Decimal(string: "1000000000000")!, "trillion"),
-        (Decimal(1_000_000_000), "billion"),
         (Decimal(1_000_000), "million"),
+        (Decimal(1_000_000_000), "billion"),
+        (Decimal(string: "1000000000000")!, "trillion"),
     ]
 
     private static func englishAmount(_ magnitude: Decimal, currency: String) -> String {
@@ -54,16 +56,28 @@ public enum Formatting {
         case "USD": "$"
         default: "\(currency) "
         }
-        for (divisor, word) in englishScales {
-            let scaled = DecimalText.roundHalfUp(magnitude / divisor, scale: 2)
-            if scaled >= 1 { return "\(symbol)\(groupedNumber(DecimalText.twoPlaces(scaled))) \(word)" }
+        // The unit is the largest one not above the unrounded value; it moves up only when
+        // rounding reaches a thousand of it (999,995,000,000 -> 1.00 trillion).
+        guard var index = englishScales.lastIndex(where: { magnitude >= $0.0 }) else {
+            return symbol + exact(magnitude)
         }
-        return symbol + exact(magnitude)
+        var scaled = DecimalText.roundHalfUp(magnitude / englishScales[index].0, scale: 2)
+        if scaled >= 1000 && index + 1 < englishScales.count {
+            index += 1
+            scaled = DecimalText.roundHalfUp(magnitude / englishScales[index].0, scale: 2)
+        }
+        return "\(symbol)\(groupedNumber(DecimalText.twoPlaces(scaled))) \(englishScales[index].1)"
     }
 
-    /// The exact value with digit grouping and no trailing fractional zeros.
+    /// The exact value with digit grouping. A whole amount stays whole (`4,950`); one with a
+    /// fraction shows at least two fraction digits (`7.50`) and is never rounded.
     private static func exact(_ magnitude: Decimal) -> String {
-        groupedNumber(DecimalText.canonical(magnitude))
+        var text = DecimalText.canonical(magnitude)
+        if let point = text.firstIndex(of: ".") {
+            let digits = text.distance(from: point, to: text.endIndex) - 1
+            if digits < 2 { text += String(repeating: "0", count: 2 - digits) }
+        }
+        return groupedNumber(text)
     }
 
     // MARK: - Percentages

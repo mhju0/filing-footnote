@@ -10,6 +10,8 @@ public enum BundleError: Error, Equatable, Sendable {
     /// A stored value that breaks the bundle contract, such as an unknown category or a
     /// decimal that is not canonical.
     case invalidValue(table: String, column: String, value: String)
+    /// A development bundle (`build_meta.allow_unapproved = 1`) where a release one is required.
+    case developmentBundle
 }
 
 /// Every row of a bundled `footnote.sqlite`, read once into value types.
@@ -136,10 +138,14 @@ public struct BundleStore: Sendable {
                 + "value, unit, currency, basis, is_restated, regulator_tag FROM figures "
                 + "ORDER BY company_id, metric, period_end DESC, id"
         ) { row throws(BundleError) in
-            Figure(
+            let start = try row.date(5), end = try row.date(6)
+            guard start <= end else {
+                throw .invalidValue(table: "figures", column: "period_start", value: start.iso)
+            }
+            return Figure(
                 id: try row.text(0), companyID: try row.text(1), filingID: try row.text(2),
                 metric: try row.choice(3), fiscalYear: try row.int(4),
-                periodStart: try row.date(5), periodEnd: try row.date(6),
+                periodStart: start, periodEnd: end,
                 value: try row.decimal(7), unit: try row.text(8), currency: try row.optionalText(9),
                 basis: try row.text(10), isRestated: try row.bool(11),
                 regulatorTag: try row.text(12))
@@ -152,6 +158,12 @@ public struct BundleStore: Sendable {
                 termKey: try row.text(0), language: try row.choice(1), term: try row.text(2),
                 plain: try row.text(3), formal: try row.optionalText(4))
         }
+    }
+
+    /// Throws for a development bundle, which may hold summaries the owner has not approved.
+    /// A release build of the app calls this after opening its bundle.
+    public func requireRelease() throws(BundleError) {
+        if meta.allowUnapproved { throw .developmentBundle }
     }
 
     // MARK: - Queries the screens use
@@ -217,6 +229,13 @@ public struct BundleStore: Sendable {
     /// Every stored year of one metric, newest `period_end` first.
     public func figures(forCompany companyID: String, metric: ReportedMetric) -> [Figure] {
         figures.filter { $0.companyID == companyID && $0.metric == metric }
+    }
+
+    /// Every stored year of one metric on one basis (for example `consolidated`), newest first.
+    public func figures(
+        forCompany companyID: String, metric: ReportedMetric, basis: String
+    ) -> [Figure] {
+        figures(forCompany: companyID, metric: metric).filter { $0.basis == basis }
     }
 
     /// The fiscal years `figures(forCompany:metric:)` covers, newest first.

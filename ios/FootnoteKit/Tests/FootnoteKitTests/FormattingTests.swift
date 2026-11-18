@@ -22,6 +22,10 @@ struct FormattingTests {
         ("416161000000", "USD", "4,162억 달러"),
         ("133050000000", "USD", "1,331억 달러"),
         ("7.46", "USD", "7.46 달러"),
+        ("7.5", "USD", "7.50 달러"),
+        ("0.125", "USD", "0.125 달러"),
+        ("995000000000", "KRW", "9,950억원"),
+        ("99999999", "KRW", "99,999,999원"),
     ])
     func koreanAmounts(_ value: String, _ currency: String, _ expected: String) {
         #expect(Self.amount(value, currency, .ko) == expected)
@@ -37,11 +41,36 @@ struct FormattingTests {
         ("-3860000000", "USD", "−$3.86 billion"),
         ("12500000", "USD", "$12.50 million"),
         ("7.46", "USD", "$7.46"),
+        ("7.5", "USD", "$7.50"),
+        ("0.125", "USD", "$0.125"),
         ("4950", "KRW", "₩4,950"),
         ("0", "USD", "$0"),
     ])
     func englishAmounts(_ value: String, _ currency: String, _ expected: String) {
         #expect(Self.amount(value, currency, .en) == expected)
+    }
+
+    /// The unit is the largest one not above the unrounded value; it moves up only when
+    /// rounding reaches a thousand of that unit.
+    @Test(arguments: ["KRW", "USD"])
+    func englishUnitBoundaries(_ currency: String) {
+        let symbol = currency == "KRW" ? "₩" : "$"
+        let cases = [
+            ("995000000000", "995.00 billion"),
+            ("999994000000", "999.99 billion"),
+            ("999995000000", "1.00 trillion"),
+            ("1000000000000", "1.00 trillion"),
+            ("995000000", "995.00 million"),
+            ("999995000", "1.00 billion"),
+            ("995000", "995,000"),
+            ("994999", "994,999"),
+            ("999999.5", "999,999.50"),
+            ("1000000", "1.00 million"),
+        ]
+        for (value, expected) in cases {
+            #expect(Self.amount(value, currency, .en) == symbol + expected, "\(value)")
+        }
+        #expect(Self.amount("-995000000000", currency, .en) == "−\(symbol)995.00 billion")
     }
 
     @Test(arguments: [

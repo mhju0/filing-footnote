@@ -8,8 +8,10 @@ from __future__ import annotations
 
 import sqlite3
 
+import pytest
+
 from app.build.bundle import SCHEMA, SCHEMA_VERSION, TABLES, content_sha256
-from tests.footnotekit_fixture import FIXTURE, write_fixture
+from tests.footnotekit_fixture import FIXTURE, REPO, write_fixture
 
 
 def _schema(connection: sqlite3.Connection) -> list[tuple]:
@@ -49,6 +51,23 @@ def test_committed_fixture_has_rows_in_every_table() -> None:
         for table in [*TABLES, "build_meta"]:
             count = connection.execute(f"SELECT count(*) FROM {table}").fetchone()[0]
             assert count > 0, table
+
+
+PACKAGE_CONTRACTS = FIXTURE.parents[1] / "Contracts"
+COPIED_CONTRACTS = ("comparison-cases.json", "financial-vocabulary.json", "filing-categories.json")
+
+
+@pytest.mark.parametrize("name", COPIED_CONTRACTS)
+def test_package_contract_copy_matches_contracts(name: str) -> None:
+    """The Swift tests read copies; fix drift with ios/FootnoteKit/scripts/sync-contracts.sh."""
+    original = (REPO / "contracts" / name).read_bytes()
+    assert (PACKAGE_CONTRACTS / name).read_bytes() == original, name
+
+
+def test_package_copies_exactly_the_listed_contracts() -> None:
+    assert sorted(p.name for p in PACKAGE_CONTRACTS.iterdir()) == sorted(COPIED_CONTRACTS)
+    script = (REPO / "ios" / "FootnoteKit" / "scripts" / "sync-contracts.sh").read_text()
+    assert all(name in script for name in COPIED_CONTRACTS)
 
 
 def test_generator_writes_the_same_schema(tmp_path) -> None:

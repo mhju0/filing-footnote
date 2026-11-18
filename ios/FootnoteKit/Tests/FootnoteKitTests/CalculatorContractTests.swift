@@ -80,7 +80,7 @@ struct CalculatorContractTests {
 
     static func fact(_ raw: JSONValue) -> Fact {
         guard case .bool(let restated) = raw["is_restated"]! else { fatalError("is_restated") }
-        return Fact(
+        return try! Fact(
             companyID: raw["company_id"]!.string!, metric: raw["metric"]!.string!,
             value: Support.decimal(raw["value"]!.string!), unit: raw["unit"]!.string!,
             currency: raw["currency"]!.string, basis: raw["basis"]!.string!,
@@ -147,6 +147,26 @@ struct CalculatorContractTests {
 
 @Suite("Calculator details")
 struct CalculatorTests {
+    @Test func factRefusesAPeriodThatStartsAfterItEnds() {
+        #expect(throws: FactError.periodStartAfterEnd(
+            start: Support.date("2025-01-02"), end: Support.date("2025-01-01"))) {
+            try Fact(companyID: "c", metric: "revenue", value: Support.decimal("1"), unit: "KRW",
+                     currency: "KRW", basis: "consolidated", periodStart: Support.date("2025-01-02"),
+                     periodEnd: Support.date("2025-01-01"))
+        }
+        #expect(throws: FactError.nonFiniteValue) {
+            try Fact(companyID: "c", metric: "revenue", value: Decimal.nan, unit: "KRW",
+                     currency: "KRW", basis: "consolidated", periodStart: Support.date("2025-01-01"),
+                     periodEnd: Support.date("2025-12-31"))
+        }
+        // A one-day period is allowed.
+        #expect(throws: Never.self) {
+            try Fact(companyID: "c", metric: "revenue", value: Support.decimal("1"), unit: "KRW",
+                     currency: "KRW", basis: "consolidated", periodStart: Support.date("2025-01-01"),
+                     periodEnd: Support.date("2025-01-01"))
+        }
+    }
+
     @Test func tinyNegativeChangeIsZeroNotMinusZero() throws {
         let percent = try #require(Calculator.percentage(Support.decimal("-1"), of: Support.decimal("1000000")))
         #expect(DecimalText.twoPlaces(percent) == "0.00")

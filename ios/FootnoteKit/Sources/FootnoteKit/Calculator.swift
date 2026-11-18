@@ -43,6 +43,11 @@ public enum CrossCompanyMeasure: String, CaseIterable, Sendable, Hashable {
     case absoluteAmount = "absolute_amount"
 }
 
+public enum FactError: Error, Equatable, Sendable {
+    case nonFiniteValue
+    case periodStartAfterEnd(start: CivilDate, end: CivilDate)
+}
+
 /// One reported figure as the calculator needs it.
 public struct Fact: Sendable, Hashable {
     public let companyID: String
@@ -58,7 +63,9 @@ public struct Fact: Sendable, Hashable {
     public init(
         companyID: String, metric: String, value: Decimal, unit: String, currency: String?,
         basis: String, periodStart: CivilDate, periodEnd: CivilDate, isRestated: Bool = false
-    ) {
+    ) throws(FactError) {
+        if value.isNaN { throw .nonFiniteValue }
+        if periodStart > periodEnd { throw .periodStartAfterEnd(start: periodStart, end: periodEnd) }
         self.companyID = companyID
         self.metric = metric
         self.value = value

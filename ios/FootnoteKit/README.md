@@ -6,7 +6,8 @@ third-party dependencies and no UI.
 - `BundleStore` opens the bundled `footnote.sqlite` read-only with the system SQLite, refuses a
   `schema_version` other than the one in `backend/app/build/bundle.py`, and reads every table
   into `Sendable` values. Figures and decimal facts are `Decimal`, parsed from canonical
-  strings.
+  strings. A release build of the app calls `requireRelease()`, which throws for a
+  development bundle (`allow_unapproved = 1`).
 - `Calculator` is the port of `backend/app/compare/calculator.py`: year over year, derived
   operating margin and cross-company rates, with the six refusal reasons.
 - `Formatting` gives the display strings: amounts in 조 and 억 or in trillions and billions,
