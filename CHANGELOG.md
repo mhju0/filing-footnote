@@ -5,16 +5,45 @@
 Filing Footnote merges Filing Digest and Filing Agent into one offline app.
 Nothing in this section has shipped yet.
 
+In progress on 2026-11-19: summaries and glossary wording await owner approval,
+the release bundle is not built and the walkthrough is not recorded.
+
 **Changed**
 - README, AGENTS.md and DESIGN.md describe Filing Footnote. The Ledger visual
   system is replaced by the Pine, Saffron and Ink palette.
 - The macOS iOS job in CI runs only on manual dispatch.
+- README, `docs/ARCHITECTURE.md` and `docs/DEVELOPMENT.md` rewritten for
+  Footnote; the Filing Digest versions moved to `docs/history/`.
+- Summaries run on Groq's free tier instead of Gemini (D68), with a source
+  text cap for DART (D69).
+- SEC `NetIncomeLoss` is stored as net income attributable to owners, as on
+  DART (D75).
+- The Filing Digest app, its Pages site and its tests are removed (D77, D80).
 
 **Added**
-- `scripts/check.sh`, one command that runs lint and the offline tests and ends
-  with `GATE: PASS` or `GATE: FAIL`.
-- Proposed ADRs 0004 to 0006 on event filings, neutrality guards and the
-  bundled SQLite file with exact decimals.
+- `scripts/check.sh`, one command that runs lint, the offline tests, the
+  FootnoteKit tests, the Xcode project check and the no-currency-conversion
+  check, and ends with `GATE: PASS` or `GATE: FAIL`.
+- ADRs 0004 to 0008: event filings, neutrality guards, the bundled SQLite file
+  with exact decimals, notices and the wider event scope, and the native
+  multiplatform app.
+- Event-filing ingest for DART and SEC with fixed categories, correction
+  chains (D65), notices and up to ten events per company (D76).
+- The bundle export, pinned-response verification and release gates (D66,
+  `docs/build-bundle.md`).
+- Build-time summaries with the neutrality guard (D67 to D71) and template
+  summaries for DART table filings (D78).
+- The owner's review page and approval command (`backend/app/build/review.py`,
+  `backend/app/build/approve.py`); the export reads only approved rows (D72).
+- Two fiscal years per figure with restatement checks (D79) and year-over-year
+  comparison of consecutive 52/53-week fiscal years (D82).
+- The glossary contract, with every entry awaiting approval (D81).
+- FootnoteKit: the read-only bundle reader, the `Decimal` comparison calculator
+  that passes the shared contract cases, and the screen models.
+- The Footnote app for iPhone, iPad and Mac: companies, company page, filing
+  and annual pages, figure, compare with last year or another company,
+  refusals, news feed and glossary (D80, D83 to D86).
+- `docs/CASE_STUDY.md`.
 
 Entries below this line are Filing Digest history.
 

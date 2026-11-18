@@ -1,35 +1,51 @@
 # Filing Footnote
 
-In progress: plain, neutral summaries of what Korean (DART) and US (SEC) companies officially filed, with the original filing one tap away.
+Footnote is an app for iPhone, iPad and Mac that explains what 18 well-known Korean and US companies officially filed: their latest annual report and up to ten recent event filings each, such as results, dividends, buybacks and company outlooks. Each filing gets a short, neutral summary attributed to the company, the figures it states, and a link to the original on DART or SEC. Figures are exact decimals taken from the regulator's structured data, comparisons show their calculation, and the app says plainly when a comparison would mislead. It runs offline from a bundled, read-only data file and gives no advice.
 
-한국(DART)과 미국(SEC) 기업이 공식 제출한 사업보고서와 이벤트 공시를 중립적인 말로 요약해 주는 앱을 만들고 있습니다.
+Footnote는 한국과 미국의 잘 알려진 기업 18곳이 공식 제출한 공시를 쉬운 말로 풀어 주는 iPhone, iPad, Mac 앱입니다. 기업마다 최신 사업보고서와 최근 이벤트 공시(실적, 배당, 자사주, 회사 전망 등)를 최대 열 건까지 보여 줍니다. 공시마다 회사의 말로 표시한 중립적인 짧은 요약, 공시에 적힌 숫자, DART 또는 SEC 원문 링크가 붙습니다. 숫자는 규제 기관의 정형 데이터에서 가져온 정확한 소수이고, 비교에는 계산 과정이 함께 나오며, 오해를 줄 수 있는 비교는 하지 않는다고 분명히 알려 줍니다. 앱에 들어 있는 읽기 전용 데이터 파일로 오프라인에서 동작하고, 투자 조언은 하지 않습니다.
 
-Filing Footnote continues Filing Digest and Filing Agent, two earlier projects by the same owner, and merges them into one offline app for iPhone, iPad and Mac.
+## Status
 
-## What it is · 소개
+Filing Footnote v0.1 is in development. Nothing is released. The backend package and the app still carry the predecessor's version, written here as **Status:** v0.5.2 because `backend/tests/test_release_version.py` checks for that text; it changes with the v0.1 release.
 
-Planned: the app will summarise annual reports and event filings (buybacks, dividends, earnings releases, executive changes) in neutral words. Every figure will be an exact decimal taken from structured filing data, and every statement will be attributed to the company that made it. The owner's principle is to never exaggerate: no hype, no judgement words, no predictions, no advice.
+- Built: ingest, the bundle export and its release gates, and the app. They are checked by the backend offline tests and the FootnoteKit tests, which `scripts/check.sh` runs, and by the app and UI tests, which `xcodebuild` runs.
+- Decisions D81 and D83 to D86 (glossary export, filing and annual pages, comparison screens and their review fixes, news feed and glossary screens) are still PROPOSED in [docs/DECISIONS.md](docs/DECISIONS.md).
+- Summaries are awaiting owner approval. The summary build stages them; none is approved yet, and only approved summaries can ship. Until then every filing page shows its figures and a "summary in review" note, as in the screenshots below.
+- The glossary wording is drafted and awaiting the same approval.
+- The release data bundle is not built yet. A release build refuses a development bundle, so it waits for the approvals.
+- The walkthrough video is not recorded yet.
 
-계획: 앱은 사업보고서와 이벤트 공시(자사주, 배당, 실적 발표, 임원 변동 등)를 중립적인 말로 요약할 예정입니다. 모든 숫자는 공시의 정형 데이터에서 가져온 정확한 소수로 보여 주고, 모든 서술은 해당 회사의 말로 표시합니다. 과장하지 않는다는 원칙에 따라 홍보성 표현, 평가 표현, 예측, 투자 조언을 쓰지 않습니다.
+## Screenshots
 
-The finished app will run from a bundled read-only SQLite file built on the owner's Mac. A small read-only API will serve the same file. Running it will cost nothing.
+Taken on the iPhone and iPad simulators from a development bundle (real filings, summaries not yet approved).
 
-## Status · 현재 상태
-
-**Status:** v0.5.2 code base inherited from Filing Digest, being replaced piece by piece. Filing Footnote v0.1 is in development; nothing is released and no site is published.
-
-| Area | Today | Planned for v0.1 |
+| Company page | Filing page | Compare two companies |
 |---|---|---|
-| Backend | Filing Digest's FastAPI and PostgreSQL service, annual filings only | Event-filing pipeline; read-only API over the SQLite file |
-| Data file | None | Bundled SQLite file with exact decimals |
-| App | Filing Digest's iPhone app (SwiftUI) | One SwiftUI app for iPhone, iPad and Mac |
-| Checks | `scripts/check.sh` runs lint and offline backend tests | Contract tests for the SQLite file and the text guards |
+| ![Hyundai Motor's company page in Korean: the 2025 annual report with revenue and its change, then recent filings grouped by month](docs/screenshots/footnote/company-hyundai-ko-light.png) | ![Hyundai Motor's preliminary results filing in Korean: revenue, operating income and net income with the same quarter a year earlier](docs/screenshots/footnote/filing-results-hyundai-ko-light.png) | ![Samsung Electronics and Apple revenue growth side by side in English, dark appearance, each with its fiscal year, year-end and accounting standard](docs/screenshots/footnote/compare-samsung-apple-growth-en-dark.png) |
 
-The code in this repository is mostly still Filing Digest's backend and iPhone app. Event-filing ingest and the bundle build (`backend/app/build/`) exist and are being tested; the finished SQLite file and the multiplatform app are not built. [PRODUCT.md](PRODUCT.md) describes the intended product; [docs/adr/](docs/adr/) holds the architecture decisions.
+| Refused comparison | iPad split view |
+|---|---|
+| ![The app in Korean refusing to compare amounts in won and dollars and saying what it can compare instead](docs/screenshots/footnote/refusal-currency-ko-light.png) | ![iPad split view with Hyundai Motor's filings on the left and the results filing on the right](docs/screenshots/footnote/ipad-split-filing-ko-light.png) |
+
+More in [docs/screenshots/footnote/](docs/screenshots/footnote/).
+
+## How the data is made
+
+Everything below runs on the owner's Mac before a build. The app itself makes no network call to show a filing; only "open the original" needs one.
+
+1. Ingest from DART and SEC. `python -m app.ingest` fetches each company's annual reports, financial statements and twelve months of event filings into a local PostgreSQL build database. Each filing gets one category from a fixed list by deterministic rules ([ADR 0004](docs/adr/0004-event-filings-in-scope.md), [ADR 0007](docs/adr/0007-notices-and-wider-event-scope.md)).
+2. Pin the source files. With `--save-pinned`, ingest saves the regulator's raw responses. The export later re-reads every figure and fact from these files with the same parser and fails on any difference.
+3. Guards. Generated text may contain no digits, because figures are shown from structured data; no hype or judgement words, predictions or advice; and every statement is attributed to the company ([ADR 0005](docs/adr/0005-neutrality-guards.md), word lists in [contracts/neutrality-lexicon.json](contracts/neutrality-lexicon.json)). Figures are `Decimal` end to end and stored as canonical decimal strings ([ADR 0006](docs/adr/0006-bundled-sqlite-with-exact-decimals.md)).
+4. Summaries on Groq's free tier. `python -m app.build.summaries generate` writes Korean and English lines with Groq's `qwen/qwen3.8-27b` and runs the guard on them. A failing summary is retried once, then withheld. DART filings that are plain tables (preliminary results, unit sales, dividends, outlooks) get fixed template lines instead of a model call.
+5. Owner approval. `python -m app.build.review` writes a proofreading page, and `python -m app.build.approve` moves the summaries the owner approves into `backend/data/summaries/approved.jsonl`. Agents and the model reviewer never approve.
+6. The `footnote.sqlite` bundle. `python -m app.build.export` (or `make data`) writes the read-only SQLite file and a build report. A release export refuses unapproved summaries or glossary entries, stale approvals and any figure that does not match its pinned source. `python -m app.build.verify --release` re-checks a finished file on its own.
+7. The SwiftUI app. One app target for iPhone, iPad and native Mac reads the bundle through the FootnoteKit package, offline and read-only ([ADR 0008](docs/adr/0008-native-multiplatform-app.md)).
+
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) has the modules and the bundle contract; [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) has the commands.
 
 ## Run the checks
 
-Requires Python 3.11.
+Requires Python 3.11. On macOS it also needs Xcode for `swift test`; on other systems the FootnoteKit tests are skipped. XcodeGen 2.46.0 is optional; without it the project check is skipped.
 
 ```bash
 python3.11 -m venv .venv
@@ -37,19 +53,48 @@ python3.11 -m venv .venv
 scripts/check.sh
 ```
 
-The last line is `GATE: PASS` or `GATE: FAIL`. The checks run offline: no database, no API keys, and the embedding model is not loaded. The PostgreSQL suite (`make test-db`) is separate and needs a local PostgreSQL with pgvector.
+The last line must be `GATE: PASS`. `scripts/check.sh` runs Ruff, the offline backend tests, the FootnoteKit tests (`swift test`), a check that `ios/Footnote.xcodeproj` matches `ios/project.yml`, and a check that no app code converts currencies. It needs no database, no API keys and no network; the embedding model is never loaded.
+
+## Run the app and its tests
+
+The Xcode project is generated from `ios/project.yml` with XcodeGen 2.46.0 and committed, so a fresh checkout opens in Xcode as is. After editing `ios/project.yml`:
+
+```bash
+brew install xcodegen   # check.sh expects version 2.46.0
+xcodegen generate --spec ios/project.yml
+```
+
+Unit tests, on an iOS simulator or on the Mac:
+
+```bash
+xcodebuild test -project ios/Footnote.xcodeproj -scheme Footnote \
+  -destination 'platform=iOS Simulator,id=<UDID>' CODE_SIGNING_ALLOWED=NO
+xcodebuild test -project ios/Footnote.xcodeproj -scheme Footnote \
+  -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO
+```
+
+UI tests (iOS only):
+
+```bash
+xcodebuild test -project ios/Footnote.xcodeproj -scheme FootnoteUITests \
+  -destination 'platform=iOS Simulator,id=<UDID>' CODE_SIGNING_ALLOWED=NO
+```
+
+Without a data bundle at `ios/Footnote/Resources/footnote.sqlite` (git-ignored), a debug build uses the small FootnoteKit test fixture, so the app runs from a clean checkout. A release build needs a release bundle.
 
 ## Documentation
 
 | Document | Contents |
 |---|---|
-| [PRODUCT.md](PRODUCT.md) | What the product is, who it is for, and its commitments |
-| [DESIGN.md](docs/design/DESIGN.md) | Visual system and screens |
-| [docs/adr/](docs/adr/) | Architecture decisions |
-| [DECISIONS.md](docs/DECISIONS.md) | Decision ledger; entries before D59 describe Filing Digest |
-| [CONTEXT.md](CONTEXT.md) | Domain glossary |
+| [PRODUCT.md](PRODUCT.md) | What the product is, who it is for, and its rules |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Modules, data flow, bundle contract, release gates |
+| [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) | Setup, data build, tests |
+| [docs/CASE_STUDY.md](docs/CASE_STUDY.md) | Problem, constraints, decisions and what went wrong |
+| [docs/design/DESIGN.md](docs/design/DESIGN.md) | Visual system and screens |
+| [docs/DECISIONS.md](docs/DECISIONS.md) and [docs/adr/](docs/adr/) | Decision ledger and architecture decisions |
+| [CHANGELOG.md](CHANGELOG.md) | Changes |
 
-Other files under `docs/` describe Filing Digest v0.5.2 and are kept as history.
+History: Footnote grew out of two earlier projects by the same owner, Filing Digest and Filing Agent; DECISIONS.md entries before D59, ADRs 0001 to 0003 and [docs/history/](docs/history/) describe Filing Digest.
 
 ## License
 
