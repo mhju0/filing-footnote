@@ -645,6 +645,53 @@ def test_a_prior_year_figure_without_its_own_years_report_is_unchecked(data) -> 
     assert len([p for p in raised.value.problems if "restatement_unchecked" in p]) == 7
 
 
+def _sdi_shape(data: BuildInput, tmp_path: Path, label: str, value: str):
+    """Samsung SDI's shape on the seed: the FY2024 report has no diluted EPS row and one
+    basic EPS row labelled ``label``; the FY2025 report states a FY2024 diluted EPS of 2131."""
+    no_diluted = dataclasses.replace(data, financials=tuple(
+        f for f in data.financials
+        if not (f.filing_key == SAMSUNG_PRIOR and f.metric == "eps_diluted")))  # fmt: skip
+    pinned = _dart_pinned(tmp_path, 2024, SAMSUNG_PRIOR,
+                          [("ifrs-full_BasicEarningsLossPerShare", value, "", label)])  # fmt: skip
+    return build_bundle(no_diluted, _options(), (pinned, *PINNED_DIRS))
+
+
+@pytest.mark.parametrize("value, restated", [("2131", 0), ("2100", 1)])
+def test_a_combined_basic_and_diluted_line_checks_the_diluted_comparative(
+    data, tmp_path, value, restated
+) -> None:
+    bundle = _sdi_shape(data, tmp_path, "보통주 기본및희석주당이익", value)
+    diluted = [r for r in bundle.rows["figures"] if r[3] == "eps_diluted" and r[4] == 2024]
+    # Checked against the combined line; no figure is made from it.
+    assert [(r[2], r[7], r[11]) for r in diluted] == [(f"dart:{SAMSUNG_2025}", "2131", restated)]
+    assert bundle.report["restatement_unchecked"]["count"] == 0
+    [check] = bundle.report["combined_eps_checks"]["figures"]
+    assert check["original"] == {
+        "filing_id": f"dart:{SAMSUNG_PRIOR}", "value": value,
+        "regulator_tag": "ifrs-full_BasicEarningsLossPerShare",
+        "pinned": "dart/fnlttSinglAcntAll/00126380_2024_11011_CFS.json",
+        "combined_basic_and_diluted": True}  # fmt: skip
+    assert bundle.report["restated_figures"]["count"] == restated
+
+
+def test_a_plain_basic_eps_line_does_not_check_the_diluted_comparative(data, tmp_path) -> None:
+    bundle = _sdi_shape(data, tmp_path, "보통주 기본주당이익", "2131")
+    assert bundle.report["combined_eps_checks"]["count"] == 0
+    [unchecked] = bundle.report["restatement_unchecked"]["figures"]
+    assert unchecked["id"] == "dart:00126380|eps_diluted|2024-12-31|consolidated"
+
+
+@pytest.mark.parametrize("label, combined", [
+    ("기본및희석주당이익", True), ("기본및희석주당순이익", True), ("기본 및 희석 주당이익", True),
+    ("보통주 기본및희석주당이익", True), ("보통주기본 및 희석주당순이익", True),
+    ("기본주당이익", False), ("보통주 기본주당손익", False), ("희석주당이익", False),
+    ("우선주 기본및희석주당이익", False), ("계속영업기본및희석주당이익", False),
+    ("기본및희석주당이익(손실)", False),
+])  # fmt: skip
+def test_combined_eps_label_is_an_exact_match(label, combined) -> None:
+    assert verify.is_combined_eps_label(label) is combined
+
+
 def test_a_year_with_a_restated_figure_drops_figures_only_its_original_report_states(
     data, tmp_path
 ) -> None:
@@ -737,16 +784,17 @@ def _pinned_args(*dirs: Path) -> list[str]:
 
 
 def _dart_pinned(directory: Path, year: int, rcept_no: str,
-                 rows: list[tuple[str, str, str]]) -> Path:  # fmt: skip
-    """A synthetic fnlttSinglAcntAll response: (account_id, thstrm_amount, frmtrm_amount)."""
+                 rows: list[tuple[str, ...]]) -> Path:  # fmt: skip
+    """A synthetic fnlttSinglAcntAll response: (account_id, thstrm_amount, frmtrm_amount),
+    optionally with the row's account_nm last."""
     path = directory / "dart" / "fnlttSinglAcntAll" / f"00126380_{year}_11011_CFS.json"
     path.parent.mkdir(parents=True, exist_ok=True)
     items = [
         {"rcept_no": rcept_no, "reprt_code": "11011", "bsns_year": str(year),
-         "corp_code": "00126380", "sj_div": "IS", "sj_nm": "손익계산서", "account_id": account,
-         "account_nm": "영업수익", "thstrm_amount": this, "frmtrm_amount": prior,
-         "ord": str(order), "currency": "KRW"}
-        for order, (account, this, prior) in enumerate(rows, start=1)
+         "corp_code": "00126380", "sj_div": "IS", "sj_nm": "손익계산서", "account_id": row[0],
+         "account_nm": row[3] if len(row) > 3 else "영업수익", "thstrm_amount": row[1],
+         "frmtrm_amount": row[2], "ord": str(order), "currency": "KRW"}
+        for order, row in enumerate(rows, start=1)
     ]  # fmt: skip
     path.write_text(json.dumps({"status": "000", "message": "정상", "list": items}),
                     encoding="utf-8")  # fmt: skip

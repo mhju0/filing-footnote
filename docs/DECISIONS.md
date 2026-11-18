@@ -1057,6 +1057,14 @@ companies and one for the nine SEC companies, and four DART companies had no net
   as `tag_changed`, and the figure is exported with `is_restated` 0.
 - A prior-year figure whose own year has no annual report stating it is
   `restatement_unchecked` in the build report, and a release build fails on it.
+- Decided by the lead under the owner's delegation (2026-11-19): a DART report with no
+  diluted EPS row whose basic EPS row is labelled as basic and diluted states its diluted
+  EPS by that line, because the filing itself says the value is both. The label must be
+  기본및희석주당이익 or 기본및희석주당순이익 exactly once whitespace is removed, optionally
+  after the common-share qualifier 보통주 (Samsung SDI's FY2024 report labels the row
+  보통주 기본및희석주당이익); a plain 기본주당이익 row does not count. The value is read from
+  the pinned response and used only to check the later diluted comparative
+  (`combined_eps_checks` in the build report); no diluted figure is exported from it.
 - One basis per company and fiscal year: when a year has a restated figure, that year's
   figures that only the earlier report states are `mixed_basis` in the build report and
   are not exported.
@@ -1077,10 +1085,10 @@ Development export on 2026-11-19 after the re-ingest: `figures=193`; all eightee
 companies have two fiscal years; `restated_figures` counts four (LG Chem and Samsung
 Biologics, revenue and operating income for 2024); `tag_changed` none. `mixed_basis`
 leaves out three FY2024 figures stated only by the earlier report: LG Chem diluted EPS,
-Samsung Biologics EPS and diluted EPS. `restatement_unchecked` names one: Samsung SDI's
-FY2024 diluted EPS, which its FY2024 report states only as one combined basic and diluted
-EPS under the basic tag. A release build fails on it until it is decided. `figure_gaps`
-names fifteen:
+Samsung Biologics EPS and diluted EPS. `restatement_unchecked` names none: Samsung SDI's
+FY2024 diluted EPS is checked against the combined line of its FY2024 report (the same
+value, so not restated; `combined_eps_checks` counts one). A release-mode export fails
+only on the missing summary approvals. `figure_gaps` names fifteen:
 
 - DART, not stated: diluted EPS for Kia and LG Electronics (both years) and LG Chem (2025);
   EPS and diluted EPS for Samsung Biologics in 2025, which reports only continuing and

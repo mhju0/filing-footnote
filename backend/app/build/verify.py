@@ -131,6 +131,19 @@ class FigureCheck:
     pinned: str  # path relative to its pinned directory
 
 
+_COMBINED_EPS_LABELS = frozenset({"기본및희석주당이익", "기본및희석주당순이익"})
+_COMMON_SHARE_QUALIFIER = "보통주"
+
+
+def is_combined_eps_label(account_nm: str) -> bool:
+    """Whether a DART EPS row's label says it is both basic and diluted EPS (D79): one of
+    the combined labels exactly once whitespace is removed, optionally after the
+    common-share qualifier 보통주."""
+    label = re.sub(r"\s+", "", account_nm or "")
+    label = label.removeprefix(_COMMON_SHARE_QUALIFIER)
+    return label in _COMBINED_EPS_LABELS
+
+
 @dataclass(frozen=True)
 class FigureRef:
     """One figure as both the export and a finished bundle hold it."""
@@ -213,6 +226,36 @@ class PinnedResponses:
             and (not comparative or i.frmtrm_amount is not None)
         )
         return FigureCheck(tag, relative)
+
+    def dart_combined_diluted_eps(
+        self, *, corp_code: str, rcept_no: str, bsns_year: int
+    ) -> tuple[Decimal, FigureCheck] | None:
+        """The report's own-year diluted EPS when it states none on its own but labels its
+        basic EPS row as basic and diluted (D79), else ``None``. Only for checking a later
+        comparative; no figure is exported from it."""
+        relative = (
+            f"dart/fnlttSinglAcntAll/{corp_code}_{bsns_year}_"
+            f"{DART_ANNUAL_REPORT_CODE}_{DART_CONSOLIDATED}.json"
+        )
+        try:
+            items = DartClient._parse_financials_payload(self.load(relative))
+        except DartApiError as exc:
+            raise VerifyError(f"{relative}: {exc}") from exc
+        others = sorted({i.rcept_no for i in items if i.rcept_no != rcept_no})
+        if others:
+            raise VerifyError(f"{relative}: rows belong to {others}, not {rcept_no}")
+        if any(i.metric == "eps_diluted" and i.thstrm_amount is not None for i in items):
+            return None
+        combined = [
+            i
+            for i in items
+            if i.metric == "eps" and i.thstrm_amount is not None
+            and is_combined_eps_label(i.account_nm)
+        ]  # fmt: skip
+        values = {Decimal(i.thstrm_amount) for i in combined}
+        if len(values) != 1:
+            return None
+        return values.pop(), FigureCheck(combined[0].account_id, relative)
 
     def sec_annual(
         self,

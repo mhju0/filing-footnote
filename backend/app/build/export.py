@@ -732,6 +732,32 @@ def _check_candidate(build: _Build, candidate: _Candidate):
     )
 
 
+def _combined_eps_original(build: _Build, chosen: _Candidate) -> dict[str, Any] | None:
+    """For a DART diluted EPS comparative: the value the year's own report states as one
+    basic-and-diluted EPS line, read from its pinned response (D79). It is used only to
+    check the comparative; no figure is exported from it."""
+    if chosen.row.regulator != "DART":
+        return None
+    own = [
+        (fid, annual)
+        for fid, annual in sorted(build.annual.items())
+        if annual.company_id == chosen.company_id and annual.year == chosen.row.fiscal_year
+    ]
+    if not own:
+        return None
+    fid, annual = own[0]
+    found = build.pinned.dart_combined_diluted_eps(
+        corp_code=annual.filing.company_key, rcept_no=annual.filing.filing_key,
+        bsns_year=annual.year,
+    )  # fmt: skip
+    if found is None:
+        return None
+    value, check = found
+    return {"filing_id": fid, "value": canonical_decimal(value),
+            "regulator_tag": check.regulator_tag, "pinned": check.pinned,
+            "combined_basic_and_diluted": True}  # fmt: skip
+
+
 def _report_list(entries: list[dict[str, Any]]) -> dict[str, Any]:
     return {"count": len(entries), "figures": entries}
 
@@ -748,6 +774,7 @@ def _figures(build: _Build) -> None:
     restated: list[dict[str, Any]] = []
     tag_changed: list[dict[str, Any]] = []
     unchecked: list[dict[str, Any]] = []
+    combined_checks: list[dict[str, Any]] = []
     kept: list[tuple[str, _Candidate, Any, bool]] = []
     for (company_id, metric, period_end), chosen, originals, own_report in _figure_choices(build):
         figure_id = f"{company_id}|{metric}|{period_end}|{BASIS}"
@@ -767,12 +794,26 @@ def _figures(build: _Build) -> None:
                 {"filing_id": c.filing_id, "value": canonical_decimal(c.row.value),
                  "regulator_tag": oc.regulator_tag, "pinned": oc.pinned}  # fmt: skip
             )
+        lookup_problem = None
+        if not own_report and metric == ReportedMetric.eps_diluted.value:
+            try:
+                combined = _combined_eps_original(build, chosen)
+            except VerifyError as exc:
+                # Without a readable response the figure stays unchecked, with the reason.
+                combined, lookup_problem = None, str(exc)
+            if combined is not None:
+                own_report = True
+                combined_checks.append({**entry, "original": combined})
+                if combined["value"] != value:
+                    same_tag.append(combined)
         if same_tag:
             restated.append({**entry, "originals": same_tag})
         if other_tag:
             tag_changed.append({**entry, "originals": other_tag})
         if not own_report:
-            unchecked.append({**entry, "fiscal_year": chosen.row.fiscal_year})
+            unchecked.append({**entry, "fiscal_year": chosen.row.fiscal_year,
+                              **({"combined_eps_lookup": lookup_problem}
+                                 if lookup_problem else {})})  # fmt: skip
             if not build.options.allow_unapproved:
                 build.problems.append(
                     f"{figure_id}: release build refused: no annual report for its own year "
@@ -816,6 +857,7 @@ def _figures(build: _Build) -> None:
     build.report["restated_figures"] = _report_list(restated)
     build.report["tag_changed"] = _report_list(tag_changed)
     build.report["restatement_unchecked"] = _report_list(unchecked)
+    build.report["combined_eps_checks"] = _report_list(combined_checks)
     build.report["mixed_basis"] = _report_list(mixed)
     build.report["figure_gaps"] = _figure_gaps(build, excluded)
 
