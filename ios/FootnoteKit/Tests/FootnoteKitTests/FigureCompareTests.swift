@@ -240,6 +240,74 @@ struct CompanyCompareTests {
     }
 }
 
+@Suite("Compare review fixes")
+struct CompareReviewTests {
+    @Test func yearEndMonthIsValidatedNotDefaulted() throws {
+        let store = try BundleStore(contentsOf: Support.fixtureURL)
+        #expect(store.company(id: apple)?.fiscalYearEndMonth == 9)
+        for bad in ["13-01", "00-31", "12", "ab-cd", "12-32", "1-31", ""] {
+            let edited = try Support.editedFixture(
+                "UPDATE companies SET fiscal_year_end = '\(bad)' WHERE id = '\(apple)'")
+            #expect(edited.company(id: apple)?.fiscalYearEndMonth == nil, "\(bad)")
+            let compare = try #require(CompanyComparePage(
+                store: edited, companyID: samsung, peerID: apple, metric: "revenue",
+                measure: "operating_margin", fiscalYear: 2025))
+            #expect(compare.caveat.yearEndMonths == [12, nil])
+            #expect(!compare.caveat.yearEndsKnown && !compare.caveat.yearEndsDiffer)
+        }
+    }
+
+    /// The peer's newest year must have both margin inputs: a lone newer revenue is skipped.
+    @Test func marginYearHasBothInputs() throws {
+        let store = try Support.editedFixture("""
+            INSERT INTO figures SELECT id || '-next', company_id, filing_id, metric, fiscal_year + 1,
+              date(period_start, '+1 year'), date(period_end, '+1 year'), value, unit, currency, basis,
+              is_restated, regulator_tag
+            FROM figures WHERE company_id = '\(apple)' AND metric = 'revenue';
+            """)
+        let compare = try #require(CompanyComparePage(
+            store: store, companyID: samsung, peerID: apple, metric: "revenue",
+            measure: "operating_margin", fiscalYear: 2025))
+        #expect(compare.inputs[1].fiscalYear == 2025)
+        guard case .result = compare.outcome else {
+            Issue.record("refused: \(compare.outcome)")
+            return
+        }
+    }
+
+    @Test func periodsThatAreNotTheSame() throws {
+        let store = try BundleStore(contentsOf: Support.fixtureURL)
+        // FY2025 for both, but December and September year-ends: three months apart.
+        let margin = try #require(CompanyComparePage(
+            store: store, companyID: samsung, peerID: apple, metric: "revenue",
+            measure: "operating_margin", fiscalYear: 2025))
+        #expect(margin.caveat.fiscalYears == [2025, 2025])
+        #expect(margin.caveat.periodsDiffer)
+        // Labels that differ: Samsung's FY2024 against Apple's FY2025.
+        let labels = try #require(CompanyComparePage(
+            store: store, companyID: samsung, peerID: apple, metric: "revenue",
+            measure: "operating_margin", fiscalYear: 2024))
+        #expect(labels.caveat.fiscalYears == [2024, 2025])
+        #expect(labels.caveat.periodsDiffer)
+        // The same company's year ends on the same day.
+        let same = try #require(CompanyComparePage(
+            store: store, companyID: samsung, peerID: samsung, metric: "revenue",
+            measure: "operating_margin", fiscalYear: 2025))
+        #expect(!same.caveat.periodsDiffer)
+    }
+
+    /// The refusal names the company whose figures fail, not always the one opened from.
+    @Test func culpritIsThePeer() throws {
+        let store = try Support.editedFixture("UPDATE figures SET basis = 'separate' WHERE company_id = '\(apple)'")
+        for measure in ["operating_margin", "absolute_amount"] {
+            let compare = try #require(CompanyComparePage(
+                store: store, companyID: samsung, peerID: apple, metric: "revenue", measure: measure, fiscalYear: 2025))
+            #expect(compare.outcome == .refusal(Refusal(.unsupportedBasis, .unsupportedBasis)))
+            #expect(compare.explanation?.culpritID == apple, "\(measure)")
+        }
+    }
+}
+
 /// Amounts are never converted between currencies (PRODUCT.md, comparison-rules.md).
 @Suite("No currency conversion")
 struct NoCurrencyConversionTests {
@@ -285,7 +353,7 @@ struct NoCurrencyConversionTests {
     /// `scripts/check.sh`.
     @Test func noSourceConvertsACurrency() throws {
         let roots = [Support.packageSources, Support.repositoryRoot.appendingPathComponent("ios/Footnote")]
-        let pattern = try Regex(#"(?i)(exchange_?rate|fx_?rate|conversion_?rate|convert(ed)?_?(currency|amount)|currency_?conver)"#)
+        let pattern = try Regex(#"(?i)(exchange_?rate|fx_?rate|conversion_?rate|convert(ed)?_?(currency|amount)|currency_?conver|usd_?(to|per)_?krw|krw_?(to|per)_?usd|\bfx\b)"#)
         var offenders: [String] = []
         for root in roots {
             let files = FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil)?

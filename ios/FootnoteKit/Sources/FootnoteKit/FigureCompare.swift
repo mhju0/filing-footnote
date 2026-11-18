@@ -20,8 +20,15 @@ public enum AccountingStandard: String, Sendable, Hashable {
 extension Company {
     public var accountingStandard: AccountingStandard { regulator == .dart ? .kIFRS : .usGAAP }
 
-    /// The month of `fiscal_year_end` (`09-26` -> 9).
-    public var fiscalYearEndMonth: Int { Int(fiscalYearEnd.prefix(2)) ?? 12 }
+    /// The month of `fiscal_year_end` (`09-26` -> 9). Nil unless the value is `MM-DD` with a
+    /// month of one to twelve and a day of one to thirty-one, so bad data names no month.
+    public var fiscalYearEndMonth: Int? {
+        let parts = fiscalYearEnd.split(separator: "-", omittingEmptySubsequences: false)
+        guard parts.count == 2, parts.allSatisfy({ $0.count == 2 }),
+              let month = Int(parts[0]), let day = Int(parts[1]),
+              (1...12).contains(month), (1...31).contains(day) else { return nil }
+        return month
+    }
 }
 
 // MARK: - Figure selection
@@ -153,8 +160,9 @@ public struct YearComparePage: Sendable {
             : nil
         let baseline = refusal.detail == .nonpositiveBaseline ? prior : nil
         return RefusalExplanation(
-            refusal: refusal, context: .lastYear, companies: [company], metric: reportedMetric,
-            missing: missing, baseline: baseline, actions: RefusalAction.forLastYear(refusal, company: company))
+            refusal: refusal, context: .lastYear, companies: [company], culpritID: company.id,
+            metric: reportedMetric, missing: missing, baseline: baseline,
+            actions: RefusalAction.forLastYear(refusal, company: company))
     }
 }
 
@@ -221,7 +229,7 @@ public struct CompanyComparePage: Sendable {
             CompanyInputs(store: store, company: company, metric: metric, measure: chosen, fiscalYear: fiscalYear),
             CompanyInputs(store: store, company: peer, metric: metric, measure: chosen, fiscalYear: nil),
         ]
-        caveat = CrossCompanyCaveat(companies: companies)
+        caveat = CrossCompanyCaveat(companies: companies, inputs: inputs)
         let calculatorMetric = chosen == .operatingMargin ? DerivedMetric.operatingMargin.rawValue : metric
         var outcome = Calculator.crossCompany(
             metric: calculatorMetric, measure: measure, facts: inputs.flatMap { $0.figures.map(\.fact) })
@@ -287,15 +295,19 @@ public struct CompanyComparePage: Sendable {
         guard case .refusal(let refusal) = outcome else { return nil }
         let chosen = chosenMeasure
         // The company whose own figures fail, for the reason sentence and the actions.
+        // An amount request is refused before any company's own check runs, so a basis
+        // refusal there falls back to the company whose figures are not on a supported basis.
         let culprit = inputs.first { $0.refusal(metric: metric, measure: chosen) == refusal }
+            ?? (refusal.reason == .unsupportedBasis
+                ? inputs.first { $0.figures.contains { !Calculator.supportedBases.contains($0.basis) } } : nil)
         var missing: MissingYear?
         if refusal.reason == .missingPeriod, let input = culprit ?? inputs.first(where: \.figures.isEmpty) {
             missing = input.missingYear(metric: reportedMetric, measure: chosen)
         }
         let baseline = refusal.detail == .nonpositiveBaseline ? culprit?.figures.first : nil
         return RefusalExplanation(
-            refusal: refusal, context: .company(chosen), companies: companies, metric: reportedMetric,
-            missing: missing, baseline: baseline,
+            refusal: refusal, context: .company(chosen), companies: companies,
+            culpritID: culprit?.company.id, metric: reportedMetric, missing: missing, baseline: baseline,
             actions: RefusalAction.forCompany(
                 refusal, measure: chosen, metric: reportedMetric, culprit: culprit?.company ?? companies[0],
                 base: companies[0]))
@@ -326,7 +338,11 @@ public struct CompanyInputs: Sendable, Hashable {
         let reported = metric.flatMap(ReportedMetric.init(rawValue:))
         let needed: [ReportedMetric] = measure == .operatingMargin
             ? [.revenue, .operatingIncome] : reported.map { [$0] } ?? []
-        let candidates = Set(onBasis.filter { needed.contains($0.metric) }.map(\.fiscalYear))
+        // The years that have every metric the measure needs: for the margin, revenue and
+        // operating income of the same year.
+        let candidates = needed
+            .map { metric in Set(onBasis.filter { $0.metric == metric }.map(\.fiscalYear)) }
+            .reduce(nil) { (common: Set<Int>?, years: Set<Int>) in common?.intersection(years) ?? years } ?? []
         let year = fiscalYear ?? candidates.max()
         self.fiscalYear = year
         guard let year, let measure, !needed.isEmpty else {
@@ -408,16 +424,36 @@ public enum CompanyCalculation: Sendable, Hashable {
 /// What the cross-company caveat names (PRODUCT.md: K-IFRS vs US GAAP and year-ends). It is
 /// always shown, also when both match.
 public struct CrossCompanyCaveat: Sendable, Hashable {
+    public let companies: [Company]
     public let standards: [AccountingStandard]
-    public let yearEndMonths: [Int]
+    /// Nil for a company whose `fiscal_year_end` is not a valid `MM-DD`.
+    public let yearEndMonths: [Int?]
+    /// The fiscal year each company's rate is for, and the day that year ends.
+    public let fiscalYears: [Int?]
+    public let periodEnds: [CivilDate?]
 
-    init(companies: [Company]) {
+    init(companies: [Company], inputs: [CompanyInputs]) {
+        self.companies = companies
         standards = companies.map(\.accountingStandard)
         yearEndMonths = companies.map(\.fiscalYearEndMonth)
+        fiscalYears = inputs.map(\.fiscalYear)
+        periodEnds = inputs.map { $0.figures.last?.periodEnd }
     }
 
     public var standardsDiffer: Bool { Set(standards).count > 1 }
-    public var yearEndsDiffer: Bool { Set(yearEndMonths).count > 1 }
+    /// Every company's year-end month is known; otherwise the caveat leaves year-ends out.
+    public var yearEndsKnown: Bool { !yearEndMonths.contains(nil) }
+    public var yearEndsDiffer: Bool { yearEndsKnown && Set(yearEndMonths).count > 1 }
+
+    /// The two years compared are not the same period: their labels differ, or they end
+    /// more than a month apart.
+    public var periodsDiffer: Bool {
+        let years = fiscalYears.compactMap { $0 }
+        if years.count == fiscalYears.count, Set(years).count > 1 { return true }
+        let ends = periodEnds.compactMap { $0 }
+        guard ends.count == 2, ends.count == periodEnds.count else { return false }
+        return abs(ends[0].days(to: ends[1])) > 31
+    }
 }
 
 // MARK: - Refusals (boards 8, 10)
@@ -441,6 +477,8 @@ public struct RefusalExplanation: Sendable, Hashable {
     public let refusal: Refusal
     public let context: Context
     public let companies: [Company]
+    /// The company whose own figures caused the refusal, when one did.
+    public let culpritID: String?
     public let metric: ReportedMetric?
     public let missing: MissingYear?
     /// The zero or negative baseline of a `nonpositive_baseline` refusal.

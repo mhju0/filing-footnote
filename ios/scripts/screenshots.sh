@@ -44,6 +44,7 @@ samsung_annual="dart:20260310002820"
 lgchem_annual="dart:20260313001195"
 apple_annual="sec:0000320193-26-000026"
 costco="sec:0000909832"
+hynix="dart:00164779"
 
 separate_dir="$(mktemp -d)"
 trap 'rm -rf "$separate_dir"' EXIT
@@ -111,6 +112,7 @@ shots=(
   "refusal-out-of-scope-ko-light;compare=$samsung|$apple|operating_margin|growth_rate|2025;ko;light;large;top"
   "refusal-basis-ko-light;yearcompare=$samsung|revenue|2025;ko;light;large;top;separate"
   "refusal-missing-period-ko-light;compare=$samsung|$costco|net_income|growth_rate|2025;ko;light;large;top"
+  "refusal-amounts-krw-ko-light;compare=$samsung|$hynix|revenue|absolute_amount|2025;ko;light;large;top"
   "refusal-currency-ko-light;compare=$samsung|$apple|revenue|absolute_amount|2025;ko;light;large;top"
   "refusal-baseline-ko-light;yearcompare=$lgchem|eps|2025;ko;light;large;top"
   "refusal-currency-en-dark;compare=$samsung|$apple|revenue|absolute_amount|2025;en;dark;large;top"

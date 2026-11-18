@@ -74,12 +74,25 @@ fi
 
 # Companies are compared by growth rates and margins only; the app never converts one
 # currency into another (D84). Fail when app code names an exchange rate or a conversion.
+# The pattern matches the one in FootnoteKit's FigureCompareTests. grep exits 1 when nothing
+# matches; a match (0) or a grep error (2) fails the step. macOS grep exits 1 for a missing
+# folder, so the folders are checked first.
 no_currency_conversion() {
-  if grep -rnEi 'exchange_?rate|fx_?rate|conversion_?rate|convert(ed)?_?(currency|amount)|currency_?conver' \
-    --include='*.swift' ios/Footnote ios/FootnoteKit/Sources; then
-    echo "app code names a currency conversion" >&2
-    return 1
-  fi
+  for dir in ios/Footnote ios/FootnoteKit/Sources; do
+    if [ ! -d "$dir" ]; then
+      echo "the currency conversion grep has no $dir to search" >&2
+      return 1
+    fi
+  done
+  status=0
+  grep -rnEi 'exchange_?rate|fx_?rate|conversion_?rate|convert(ed)?_?(currency|amount)|currency_?conver|usd_?(to|per)_?krw|krw_?(to|per)_?usd|\bfx\b' \
+    --include='*.swift' ios/Footnote ios/FootnoteKit/Sources || status=$?
+  case "$status" in
+    1) return 0 ;;
+    0) echo "app code names a currency conversion" >&2 ;;
+    *) echo "the currency conversion grep failed (exit $status)" >&2 ;;
+  esac
+  return 1
 }
 run "no currency conversion in the app" no_currency_conversion
 # Contract tests are added here.

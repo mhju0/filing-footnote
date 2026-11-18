@@ -47,7 +47,11 @@ struct PeerPicker: View {
         .accessibilityIdentifier("peer-picker")
     }
 
-    private func differs(_ peer: Company) -> Bool { peer.fiscalYearEndMonth != company.fiscalYearEndMonth }
+    /// Both year-end months are known and differ; an unknown month is not shown.
+    private func differs(_ peer: Company) -> Bool {
+        guard let theirs = peer.fiscalYearEndMonth, let ours = company.fiscalYearEndMonth else { return false }
+        return theirs != ours
+    }
 
     private func row(_ peer: Company) -> some View {
         Button { pick(peer) } label: {
@@ -57,8 +61,8 @@ struct PeerPicker: View {
                     .foregroundStyle(Theme.ink)
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                if differs(peer) {
-                    Text(words: PageCopy.yearEnds(peer.fiscalYearEndMonth, language))
+                if differs(peer), let month = peer.fiscalYearEndMonth {
+                    Text(words: PageCopy.yearEnds(month, language))
                         .font(.footnote)
                         .foregroundStyle(Theme.muted)
                         .fixedSize()
@@ -291,7 +295,7 @@ struct RefusalSections: View {
                         .font(.title3)
                         .foregroundStyle(Theme.muted)
                         .accessibilityHidden(true)
-                    Text(words: PageCopy.refusal(explanation.refusal, language))
+                    Text(words: PageCopy.refusalTitle(explanation, language))
                         .font(.title3.bold())
                         .foregroundStyle(Theme.ink)
                         .fixedSize(horizontal: false, vertical: true)
@@ -306,7 +310,7 @@ struct RefusalSections: View {
                         .foregroundStyle(Theme.muted)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                Text(words: PageCopy.refusalCode(explanation.refusal.reason, language))
+                Text(words: PageCopy.refusalCode(explanation.refusal, language))
                     .font(.footnote)
                     .foregroundStyle(Theme.muted)
                     .fixedSize(horizontal: false, vertical: true)

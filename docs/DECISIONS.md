@@ -1306,3 +1306,35 @@ SwiftUI views only lay them out.
   basis; the other refusals use real data (LG Chem's negative FY2024 EPS, Costco's single
   year of net income, Samsung and Apple amounts).
 - Open, owner review: the drafted copy the pull request lists.
+
+## D85 · Comparison review fixes: amounts, culprits, periods and year-ends · 2026-11-19 (`PROPOSED`)
+
+Follows D84 after the PR #34 review.
+
+- An amount request between two companies that report in the same currency
+  (`absolute_amount_across_companies`) has its own title (board 8's "금액은 비교하지
+  않아요" / "Amounts are not compared"), body and reason line. It no longer borrows
+  `incompatible_comparison`'s period, basis and unit text.
+- `RefusalExplanation` carries `culpritID`: the company whose own figures caused the
+  refusal. The basis and conditions sentences name it, not the company the screen was
+  opened from. For an amount request, which the calculator refuses before any company's
+  own check runs, a basis refusal falls back to the company with a figure off a supported
+  basis.
+- A zero or negative revenue in the operating-margin compare has a margin title, not the
+  growth rate's.
+- The margin picks the peer's newest year that has both revenue and operating income.
+- The caveat leads with a sentence saying the two years are not the same period when
+  their fiscal-year labels differ or their period ends are more than thirty-one days
+  apart. That is a month, which leaves out 52/53-week drift of a few days.
+- `fiscalYearEndMonth` is nil unless `fiscal_year_end` is a valid `MM-DD`. An unknown
+  month leaves the year-end part out of the caveat, the rate line and the picker. Bad data
+  no longer turns into December.
+- The two-year check reads "이어지는 두 해" / "Consecutive years" when the two lengths
+  differ. The English rounding line follows board 6b: "rounded to two decimals".
+- `scripts/check.sh` and the FootnoteKit test share one no-conversion pattern, which now
+  also catches `usd_to_krw`-style names and a bare `fx`. The step fails on a match, on a
+  grep error (exit 2) and on a missing source folder.
+- Known limit, not changed: the figure screen picks its basis per metric, while the
+  company compare picks it across all of a company's figures. The two can differ for a
+  company with mixed bases.
+- Open, owner review: the new drafted copy the pull request lists.

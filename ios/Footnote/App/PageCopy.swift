@@ -337,11 +337,10 @@ enum PageCopy {
     static func difference(_ language: Language) -> String { language("차이", "Difference") }
     static func checks(_ language: Language) -> String { language("확인한 조건", "Checks passed") }
 
-    /// `단위: 원 · 소수 셋째 자리에서 반올림` (board 6b). The English names the half-up
-    /// rule (comparison-rules.md, Rounding).
+    /// `단위: 원 · 소수 셋째 자리에서 반올림` / `Unit: KRW · rounded to two decimals` (board 6b).
     static func unitAndRounding(_ unit: String, _ language: Language) -> String {
         language("단위: \(unitName(unit, language))" + Copy.dot + "소수 셋째 자리에서 반올림",
-                 "Unit: \(unitName(unit, language))" + Copy.dot + "rounded half up to two decimals")
+                 "Unit: \(unitName(unit, language))" + Copy.dot + "rounded to two decimals")
     }
 
     static func unitName(_ unit: String, _ language: Language) -> String {
@@ -365,8 +364,11 @@ enum PageCopy {
         return language("두 숫자 모두 \(title)에서 가져왔어요.", "Both figures come from the \(title.lowercasedFirst).")
     }
 
+    /// Draft for two years of different lengths (a 52- and a 53-week year): `이어지는 두 해`.
     static func checkLabel(_ check: CalculationCheck, _ language: Language) -> String {
         switch check {
+        case .consecutiveYears(let prior, let current) where !sameLength(prior, current):
+            language("이어지는 두 해", "Consecutive years")
         case .sameCompany: language("같은 회사", "Same company")
         case .sameMetric: language("같은 지표", "Same metric")
         case .sameCurrency: language("같은 통화", "Same currency")
@@ -392,6 +394,11 @@ enum PageCopy {
         case .consecutiveYears(let prior, let current): periodLengths(prior, current, language)
         case .positiveBaseline(let figure): exact(figure, language)
         }
+    }
+
+    /// Two years of three hundred sixty-five or sixty-six days count as the same length.
+    static func sameLength(_ prior: Int, _ current: Int) -> Bool {
+        prior == current || ((365...366).contains(prior) && (365...366).contains(current))
     }
 
     /// `12개월씩` / `12 months each`; `52주, 53주` / `52 and 53 weeks` for 52/53-week years.
@@ -490,8 +497,9 @@ enum PageCopy {
     static func ratePeriod(_ company: Company, fiscalYear: Int?, basis: String?, _ language: Language) -> String {
         var parts: [String] = []
         if let fiscalYear { parts.append(Self.fiscalYear(fiscalYear, language)) }
-        let month = company.fiscalYearEndMonth
-        parts.append(language("\(month)월 결산", "year ends \(shortMonths[month - 1])"))
+        if let month = company.fiscalYearEndMonth {
+            parts.append(language("\(month)월 결산", "year ends \(shortMonths[month - 1])"))
+        }
         let consolidated = basis == "consolidated" || basis == "consolidated_entity_total"
         parts.append(company.accountingStandard.label + (consolidated ? language(" 연결", " consolidated") : ""))
         return parts.joined(separator: Copy.dot)
@@ -513,13 +521,47 @@ enum PageCopy {
     }
 
     /// The caveat under every cross-company result. Board 7 approved the wording for two
-    /// standards and two year-ends; the other three cases are drafts.
+    /// standards and two year-ends; the other cases are drafts, and so is the sentence on
+    /// two years that are not the same period, which comes first. An unknown year-end month
+    /// leaves year-ends out.
     static func caveat(_ caveat: CrossCompanyCaveat, _ language: Language) -> String {
+        let periods = caveat.periodsDiffer ? periodsSentence(caveat, language).map { $0 + " " } ?? "" : ""
+        // A no-break space keeps 두 회사 (the two companies) on one line.
+        return (periods + standardsAndYearEnds(caveat, language)).replacingOccurrences(of: "두 회사", with: "두\u{00A0}회사")
+    }
+
+    /// Draft: `삼성전자의 2025 회계연도와 애플의 2026 회계연도는 같은 기간이 아니에요.`, or
+    /// `두 회사의 2025 회계연도는 같은 기간이 아니에요.` when the labels match.
+    static func periodsSentence(_ caveat: CrossCompanyCaveat, _ language: Language) -> String? {
+        let years = caveat.fiscalYears.compactMap { $0 }
+        guard years.count == 2, caveat.companies.count == 2 else { return nil }
+        // A no-break space keeps each year with its label: `2026 회계연도`.
+        func fiscalYear(_ year: Int, _ language: Language) -> String {
+            Self.fiscalYear(year, language).replacingOccurrences(of: " ", with: "\u{00A0}")
+        }
+        if years[0] == years[1] {
+            return language("두 회사의 \(fiscalYear(years[0], .ko))는 같은 기간이 아니에요.",
+                            "The two companies’ \(fiscalYear(years[0], .en)) years cover different periods.")
+        }
+        let (a, b) = (caveat.companies[0], caveat.companies[1])
+        return language(
+            "\(Titles.name(of: a, language: .ko))의 \(fiscalYear(years[0], .ko))와 \(Titles.name(of: b, language: .ko))의 \(fiscalYear(years[1], .ko))는 같은 기간이 아니에요.",
+            "\(possessive(Titles.name(of: a, language: .en))) \(fiscalYear(years[0], .en)) and \(possessive(Titles.name(of: b, language: .en))) \(fiscalYear(years[1], .en)) are not the same period.")
+    }
+
+    private static func standardsAndYearEnds(_ caveat: CrossCompanyCaveat, _ language: Language) -> String {
         let standards = caveat.standards.map(\.label).joined(separator: ", ")
-        let monthsKo = caveat.yearEndMonths.map { "\($0)월" }.joined(separator: ", ")
-        let monthsEn = caveat.yearEndMonths.map { longMonths[$0 - 1] }.joined(separator: ", ")
+        let months = caveat.yearEndMonths.compactMap { $0 }
+        // A no-break space keeps the two months inside one line: `(12월,\u{00A0}9월)`.
+        let monthsKo = months.map { "\($0)월" }.joined(separator: ",\u{00A0}")
+        let monthsEn = months.map { longMonths[$0 - 1] }.joined(separator: ",\u{00A0}")
         let sameName = language("같은 이름의 숫자라도 계산 범위가 조금 다를 수 있어요.",
                                 "Figures with the same name can cover slightly different items.")
+        if !caveat.yearEndsKnown && !caveat.standardsDiffer {
+            let standard = caveat.standards.first?.label ?? ""
+            return language("두 회사 모두 \(standard)로 보고해요. 그래도 \(sameName)",
+                            "Both companies report under \(standard). Even so, \(sameName.lowercasedFirst)")
+        }
         switch (caveat.standardsDiffer, caveat.yearEndsDiffer) {
         case (true, true):
             return language("두 회사는 회계 기준(\(standards))과 결산월(\(monthsKo))이 달라요. ",
@@ -534,7 +576,7 @@ enum PageCopy {
                 + sameName
         case (false, false):
             let standard = caveat.standards.first?.label ?? ""
-            let month = caveat.yearEndMonths.first ?? 12
+            let month = months.first ?? 12
             return language("두 회사 모두 \(standard)로 보고하고 \(month)월에 결산해요. 그래도 \(sameName)",
                             "Both companies report under \(standard) with a \(longMonths[month - 1]) year-end. Even so, \(sameName.lowercasedFirst)")
         }
@@ -542,9 +584,24 @@ enum PageCopy {
 
     // MARK: - Refusal screen (boards 8, 9, 10)
 
-    /// The approved title for a refusal (board 10); a base of zero or below uses board 9's line.
+    /// The title on the refusal screen. An operating margin whose revenue is zero or below
+    /// gets its own line (Draft), not the growth rate's.
+    static func refusalTitle(_ explanation: RefusalExplanation, _ language: Language) -> String {
+        if explanation.refusal.detail == .nonpositiveBaseline,
+           case .company(.operatingMargin?) = explanation.context {
+            return language("그 해 매출이 0 이하라 영업이익률을 계산하지 않아요",
+                            "Revenue was zero or below that year, so there is no operating margin")
+        }
+        return refusal(explanation.refusal, language)
+    }
+
+    /// The approved title for a refusal (board 10); a base of zero or below uses board 9's
+    /// line and an amount request between two companies board 8's.
     static func refusal(_ refusal: Refusal, _ language: Language) -> String {
         if refusal.detail == .nonpositiveBaseline { return baseNotPositive(language) }
+        if refusal.detail == .absoluteAmountAcrossCompanies {
+            return language("금액은 비교하지 않아요", "Amounts are not compared")
+        }
         return switch refusal.reason {
         case .ambiguousRequest: language("무엇을 비교할지 골라 주세요", "Choose what to compare")
         case .unsupportedBasis: language("이 기준의 숫자는 비교하지 않아요", "This basis is not compared")
@@ -557,8 +614,13 @@ enum PageCopy {
     }
 
     /// Board 10's body for each reason; nil under board 9's zero-or-below title, which says it.
+    /// Draft for an amount request between two companies: rates are compared, amounts are not.
     static func refusalBody(_ refusal: Refusal, _ language: Language) -> String? {
         if refusal.detail == .nonpositiveBaseline { return nil }
+        if refusal.detail == .absoluteAmountAcrossCompanies {
+            return language("회사끼리는 금액 대신 증가율과 영업이익률 같은 비율을 비교해요.",
+                            "Companies are compared by rates, such as growth and operating margin, instead of amounts.")
+        }
         return switch refusal.reason {
         case .ambiguousRequest:
             language("비교할 숫자와 방식을 하나씩 정하면 계산해 드려요.",
@@ -583,8 +645,11 @@ enum PageCopy {
     }
 
     /// Draft except the currency line (board 8): the short reason under the explanation.
-    static func refusalCode(_ reason: RefusalReason, _ language: Language) -> String {
-        let text = switch reason {
+    static func refusalCode(_ refusal: Refusal, _ language: Language) -> String {
+        if refusal.detail == .absoluteAmountAcrossCompanies {
+            return language("사유: ", "Reason: ") + language("금액은 비교 대상이 아니에요", "amounts not compared")
+        }
+        let text = switch refusal.reason {
         case .ambiguousRequest: language("비교할 것이 정해지지 않았어요", "nothing chosen to compare")
         case .unsupportedBasis: language("연결 기준이 아니에요", "not consolidated")
         case .metricOutOfScope: language("다루지 않는 지표예요", "figure not covered")
@@ -599,6 +664,8 @@ enum PageCopy {
     static func refusalReason(_ explanation: RefusalExplanation, _ language: Language) -> String {
         let names = explanation.companies.map { Titles.name(of: $0, language: language) }
         let first = explanation.companies.first
+        // The company whose figures caused the refusal, else the one the screen opened from.
+        let culprit = explanation.companies.first { $0.id == explanation.culpritID } ?? first
         let metric = explanation.metric?.name(language)
         let refusal = explanation.refusal
         switch refusal.reason {
@@ -609,7 +676,7 @@ enum PageCopy {
             }
             return language("어떤 숫자를 비교할지 정해지지\u{00A0}않았어요.", "No figure was chosen.")
         case .unsupportedBasis:
-            let name = first.map { Titles.name(of: $0, language: language) } ?? ""
+            let name = culprit.map { Titles.name(of: $0, language: language) } ?? ""
             let what = metric ?? language("숫자", "figures")
             return language("\(name)의 \(what) 숫자는 연결 기준이 아니에요.",
                             "\(possessive(name)) \(what.lowercasedFirst) figures are not on a consolidated basis.")
@@ -648,10 +715,10 @@ enum PageCopy {
                     "\(possessive(name)) \(baseline.metric.name(.en).lowercasedFirst) for \(fiscalYear(baseline.fiscalYear, .en)) was \(value).")
             }
             if refusal.detail == .absoluteAmountAcrossCompanies, names.count == 2 {
-                return language("\(Korean.and(names[0]))\(names[1])의 금액은 나란히 놓지 않아요.",
+                return language("\(Korean.and(names[0]))\(names[1])의 금액은 나란히 놓지\u{00A0}않아요.",
                                 "Amounts of \(names[0]) and \(names[1]) are not set side by side.")
             }
-            let name = first.map { Titles.name(of: $0, language: language) } ?? ""
+            let name = culprit.map { Titles.name(of: $0, language: language) } ?? ""
             let what = metric ?? language("숫자", "figures")
             return language("\(name)의 \(what) 두 해 숫자에서 조건 하나가 맞지 않아요.",
                             "One condition differs between the two years of \(possessive(name)) \(what.lowercasedFirst).")
