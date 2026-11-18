@@ -24,7 +24,13 @@ enum Library: Sendable {
     /// release builds refuse one, so a build with unapproved summaries cannot ship by accident.
     static func loadBundled() -> Library {
         #if DEBUG
-        let requireRelease = ProcessInfo.processInfo.arguments.contains("-FootnoteRequireRelease")
+        let arguments = ProcessInfo.processInfo.arguments
+        let requireRelease = arguments.contains("-FootnoteRequireRelease")
+        // UI tests open the FootnoteKit fixture: `-FootnoteBundle <absolute path>`.
+        if let index = arguments.firstIndex(of: "-FootnoteBundle"), index + 1 < arguments.count {
+            return load(url: URL(fileURLWithPath: arguments[index + 1]), labels: FactLabels.bundled,
+                        requireRelease: requireRelease)
+        }
         #else
         let requireRelease = true
         #endif

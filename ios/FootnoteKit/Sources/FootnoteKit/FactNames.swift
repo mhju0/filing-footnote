@@ -32,6 +32,8 @@ public enum FactNames {
         ("opendart:tsstkAqDecsn.aqpln_stk_estk", Name("취득 주식 수 (기타주)", "Shares to buy, other classes")),
         ("opendart:tsstkAqDecsn.aqpln_prc_ostk", Name("취득 금액 (보통주)", "Amount, common")),
         ("opendart:tsstkAqDecsn.aqpln_prc_estk", Name("취득 금액 (기타주)", "Amount, other classes")),
+        ("opendart:tsstkAqDecsn.aq_wtn_div_ostk_rt",
+         Name("취득 전 자기주식 비율 (보통주)", "Treasury shares before the purchase, common")),
         ("opendart:tsstkAqDecsn.aqexpd_bgd",
          Name("취득 예정일", "Purchase date", period: ("취득 기간", "Purchase period"))),
         ("opendart:tsstkAqDecsn.aq_dd", Name("이사회 결정일", "Board decision")),
@@ -76,4 +78,27 @@ public enum FactNames {
         uniqueKeysWithValues: ordered.enumerated().map { ($1.origin, $0) })
 
     public static func name(origin: String) -> Name? { byOrigin[origin] }
+}
+
+extension ReportedMetric {
+    /// The row name on the annual page and the figure screen (board 15 names the first four).
+    public func name(_ language: Language) -> String {
+        let (ko, en): (String, String) = switch self {
+        case .revenue: ("매출", "Revenue")
+        case .operatingIncome: ("영업이익", "Operating income")
+        case .netIncome: ("순이익", "Net income")
+        case .netIncomeAttributable: ("지배주주 순이익", "Net income, owners")
+        case .eps: ("주당순이익", "Earnings per share")
+        case .epsDiluted: ("희석 주당순이익", "Diluted earnings per share")
+        }
+        return language == .ko ? ko : en
+    }
+}
+
+extension DerivedMetric {
+    public func name(_ language: Language) -> String {
+        switch self {
+        case .operatingMargin: language == .ko ? "영업이익률" : "Operating margin"
+        }
+    }
 }

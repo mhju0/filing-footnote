@@ -1167,3 +1167,43 @@ not approved any wording.
   file; the release export is the gate.
 - Open: the owner reviews the wording (the pull request lists every entry) and approves
   entries by editing the `approved` flags.
+
+## D83 · Filing page and annual page in FootnoteKit models · 2026-11-19 (`PROPOSED`)
+
+Roadmap I7. The filing page (board 12A) and the annual report at a glance (board 4) are
+built from two FootnoteKit models, `FilingPage` and `AnnualPage`, so `swift test` covers
+what each page shows; the SwiftUI views only lay them out.
+
+- Numbers come from `filing_facts` in their stated unit. `StatedUnit` maps the unit
+  column (`백만원`, `억원`, `대`, `shares`, `%`, currency codes) to a scale, and Korean
+  amounts are written in full 조, 억 and 만 groups with nothing rounded
+  (`Formatting.exactAmount`). English keeps the two-place style of the approved boards.
+- A results, change or unit-sales table becomes a compared block: each figure with the
+  base figure the filing itself states beside it (the same period a year earlier, or the
+  previous fiscal year). The rate comes from `Calculator.percentage` and shows as sign
+  plus word; a base of zero or below shows board 9's line. The filing's previous-quarter
+  column is never shown (DESIGN.md: no quarter-on-quarter change).
+- An outlook table becomes an outlook block, never compared with anything. A corrected
+  outlook item shows the value before the correction, matched from the filing's own
+  correction table by label and new value; no gap is computed.
+- Other facts are label and value rows. Plain names live in `FactNames` (keyed by
+  origin); a number or date with no plain name is still shown, named from
+  `contracts/filing-facts.json`. A start and end date pair is one row. Free text is left
+  out unless named (the SEC item list). The page shows six numbers at most, across blocks.
+- The annual page shows every reported metric for the report's fiscal year and the year
+  before on one basis (consolidated when present), with `Calculator.yearOverYear` and
+  `Calculator.operatingMargin`; a refusal shows board 10's approved title. Restated
+  figures carry the tag and the approved note. Each metric row opens a minimal figure
+  screen (`Route.figure`): meaning from the glossary, every year, and the calculation.
+  I8 replaces it.
+- Clarification status is read from the DART report name (`(미확정)`), because the
+  bundle holds no clarification facts.
+- Debug builds only: `-FootnoteBundle <path>` opens another bundle (the UI tests open the
+  FootnoteKit fixture) and `-FootnoteScroll center|bottom` scrolls a page for the
+  screenshot script. The UI tests run in their own iOS-only scheme, `FootnoteUITests`.
+- Open, needs data the bundle lacks: the original of a corrected filing (DESIGN.md "Other
+  versions"), up to two related filings, a clarification's quoted report, answer, re-filing
+  date and earlier answers, an outlook's prior-year target and result, and whether a
+  sentence came from a template or the model (the "how written" note is generic until
+  then).
+- Open, owner review: the drafted copy the pull request lists.

@@ -115,19 +115,94 @@ struct CopyTests {
             for string in strings { #expect(!string.contains("\u{2014}"), "\(string)") }
         }
     }
+
+    /// The page copy has no em dash either, and every refusal has a title.
+    @Test func pageCopyHasNoEmDash() {
+        for language in Language.allCases {
+            var strings = [
+                PageCopy.inReviewBody(language), PageCopy.corrected(language), PageCopy.outlookBanner(language),
+                PageCopy.outlookWithoutFigures(language), PageCopy.howWritten(language),
+                PageCopy.restatedNote(language), PageCopy.baseNotPositive(language), PageCopy.noFigure(language),
+                PageCopy.growthFormula(language), PageCopy.marginFormula(language),
+            ]
+            for reason in RefusalReason.allCases {
+                for detail in [RefusalDetail.periodEndMismatch, .nonpositiveBaseline] {
+                    let refusal = Refusal(reason, detail)
+                    strings.append(PageCopy.refusal(refusal, language))
+                    if let body = PageCopy.refusalBody(refusal, language) { strings.append(body) }
+                }
+            }
+            for string in strings {
+                #expect(!string.isEmpty)
+                #expect(!string.contains("\u{2014}"), "\(string)")
+            }
+        }
+    }
+
+    @Test func refusalCopy() {
+        #expect(PageCopy.refusal(Refusal(.incompatibleComparison, .periodEndMismatch), .ko) == "두 숫자의 조건이 달라요")
+        #expect(PageCopy.refusal(Refusal(.incompatibleComparison, .nonpositiveBaseline), .en)
+            == "Last year was zero or below, so there is no growth rate")
+        #expect(PageCopy.refusalBody(Refusal(.incompatibleComparison, .nonpositiveBaseline), .en) == nil)
+    }
 }
 
 @Suite("Filing page")
 struct FilingPageTests {
-    /// A disposal planned for one day is one row; a purchase over a range keeps both dates.
-    @Test func singleDayPeriodsFold() throws {
-        let store = try BundleStore(contentsOf: fixtureURL)
-        let disposal = FilingDetailView.foldSingleDays(store.facts(forFiling: "dart:20261029000539"))
-        #expect(!disposal.contains { $0.fact.key == "dispose_period_end" })
-        #expect(disposal.first { $0.fact.key == "dispose_period_start" }?.singleDay == true)
-        let purchase = FilingDetailView.foldSingleDays(store.facts(forFiling: "dart:20260821000616"))
-        #expect(purchase.contains { $0.fact.key == "acquire_period_end" })
-        #expect(purchase.first { $0.fact.key == "acquire_period_start" }?.singleDay == false)
+    /// A copy of the fixture after one SQL edit (the fixture's summaries are test data).
+    static func edited(_ sql: String) throws -> URL {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("edited-\(UUID().uuidString).sqlite")
+        try FileManager.default.copyItem(at: fixtureURL, to: url)
+        var db: OpaquePointer?
+        #expect(sqlite3_open(url.path, &db) == SQLITE_OK)
+        defer { sqlite3_close(db) }
+        let result = sqlite3_exec(db, sql, nil, nil, nil)
+        #expect(result == SQLITE_OK, "\(String(cString: sqlite3_errmsg(db)))")
+        return url
+    }
+
+    /// Roadmap I7: in a release-flag build, every sentence a page renders is an approved
+    /// row, and a bundle holding any other review state does not open at all.
+    @Test func releaseBuildRendersApprovedSummariesOnly() throws {
+        let release = try Self.edited("UPDATE build_meta SET allow_unapproved = 0;")
+        guard case .ready(let store, _) = Library.load(url: release, labels: .bundled, requireRelease: true) else {
+            Issue.record("a release bundle did not open")
+            return
+        }
+        var rendered = 0
+        for filing in store.filings {
+            for language in Language.allCases {
+                let lines: [String]
+                if let annual = AnnualPage(store: store, filingID: filing.id) {
+                    lines = ([.oneLine] + AnnualPage.sections).flatMap { annual.lines($0, language) }
+                } else {
+                    lines = FilingPage(store: store, filingID: filing.id)?.summaryLines(language) ?? []
+                }
+                let approved = store.summaries
+                    .filter { $0.filingID == filing.id && $0.language == language }
+                    .flatMap(\.lines)
+                for line in lines { #expect(approved.contains(line)) }
+                rendered += lines.count
+            }
+        }
+        #expect(rendered > 0)
+
+        let staged = try Self.edited("""
+            UPDATE build_meta SET allow_unapproved = 0;
+            PRAGMA ignore_check_constraints = ON;
+            INSERT INTO filing_summaries VALUES
+              ('dart:20261029000539', 'ko', 'summary', 'unreviewed line', NULL, NULL, 'staged', 'x');
+            """)
+        guard case .failed(let error) = Library.load(url: staged, labels: .bundled, requireRelease: true) else {
+            Issue.record("a bundle with a staged summary opened")
+            return
+        }
+        #expect(error == .invalidValue(table: "filing_summaries", column: "review_state", value: "staged"))
+    }
+
+    /// A number the plain names do not cover is named from the fact contract.
+    @Test func contractNamesUnnamedFacts() {
+        #expect(FactLabels.bundled.label(origin: "opendart:tsstkAqDecsn.aq_wtn_div_ostk_rt", .ko) != nil)
     }
 
     /// A restated prior-year revenue gets a note naming the year and this report.

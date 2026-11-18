@@ -375,37 +375,49 @@ public struct FactRowValue: Sendable, Hashable {
         case text(String)
     }
 
-    public let name: RowName
+    /// The plain name from `FactNames`; nil for a number or date it does not name, which
+    /// the app then names from the fact contract.
+    public let name: RowName?
     public let value: Value
-    /// The fact's origin, for VoiceOver and tests.
+    /// The fact's origin: the key into the fact contract, and for tests.
     public let origin: String
 
-    /// Facts with a plain name, in `FactNames` order. A `_start` date with its `_end` is
-    /// one row: a single day when both match, a period otherwise.
+    /// Table prefixes whose facts the comparison and outlook blocks show.
+    static let blockPrefixes = ["dartdoc:results.", "dartdoc:change.", "dartdoc:units.", "dartdoc:outlook."]
+
+    /// The facts the blocks do not show, named ones first in `FactNames` order, then any
+    /// other number or date in filing order. Free text appears only when `FactNames` names
+    /// it (the SEC item list); purposes and methods belong to the sentences. A start date
+    /// with its end is one row: a single day when both match, a period otherwise.
     static func rows(_ facts: [FilingFact]) -> [FactRowValue] {
         let byOrigin = Dictionary(facts.map { ($0.origin, $0) }, uniquingKeysWith: { first, _ in first })
+        let ends = Set(facts.compactMap { endOrigin(for: $0.origin) })
         var rows: [(rank: Int, row: FactRowValue)] = []
         for fact in facts {
-            guard let name = FactNames.name(origin: fact.origin), let rank = FactNames.rank[fact.origin]
-            else { continue }
+            guard !ends.contains(fact.origin), !blockPrefixes.contains(where: fact.origin.hasPrefix) else { continue }
+            let name = FactNames.name(origin: fact.origin)
+            if name == nil, fact.value.kind == .text { continue }
+            let rank = FactNames.rank[fact.origin] ?? FactNames.ordered.count + fact.position
             let value: Value
             switch fact.value {
             case .amount(let amount), .shares(let amount), .ratio(let amount):
                 value = .stated(amount, unit: fact.unit)
             case .text(let text):
-                value = .text(text)
+                // SEC lists item numbers with bare commas: `2.02,9.01`.
+                value = .text(fact.origin == "sec:submissions.items"
+                    ? text.split(separator: ",").joined(separator: ", ") : text)
             case .date(let start):
                 if let endOrigin = endOrigin(for: fact.origin),
                    case .date(let end)? = byOrigin[endOrigin]?.value, end != start
                 {
-                    rows.append((rank, FactRowValue(
-                        name: RowName(name.periodKo ?? name.ko, name.periodEn ?? name.en),
-                        value: .dateRange(start, end), origin: fact.origin)))
+                    let period = name.map { RowName($0.periodKo ?? $0.ko, $0.periodEn ?? $0.en) }
+                    rows.append((rank, FactRowValue(name: period, value: .dateRange(start, end), origin: fact.origin)))
                     continue
                 }
                 value = .date(start)
             }
-            rows.append((rank, FactRowValue(name: RowName(name.ko, name.en), value: value, origin: fact.origin)))
+            rows.append((rank, FactRowValue(
+                name: name.map { RowName($0.ko, $0.en) }, value: value, origin: fact.origin)))
         }
         return rows.sorted { $0.rank < $1.rank }.map(\.row)
     }

@@ -121,3 +121,30 @@ public struct AnnualMarginRow: Sendable, Hashable {
     public let current: Comparison<OperatingMargin>?
     public let prior: Comparison<OperatingMargin>?
 }
+
+/// Every year of one metric for one company, on one basis, newest first (DESIGN.md, Figure:
+/// earlier years as a list, then the calculation).
+public struct FigureHistory: Sendable {
+    public let company: Company
+    public let metric: ReportedMetric
+    public let basis: String?
+    public let years: [Figure]
+
+    public init?(store: BundleStore, companyID: String, metric: ReportedMetric) {
+        guard let company = store.company(id: companyID) else { return nil }
+        let figures = store.figures.filter {
+            $0.companyID == companyID && $0.metric == metric && Calculator.supportedBases.contains($0.basis)
+        }
+        let basis = figures.contains { $0.basis == "consolidated" } ? "consolidated" : figures.first?.basis
+        self.company = company
+        self.metric = metric
+        self.basis = basis
+        years = figures.filter { $0.basis == basis }.sorted { $0.fiscalYear > $1.fiscalYear }
+    }
+
+    /// The newest year against the one before, when both are in the bundle.
+    public var latestChange: Comparison<YearOverYear>? {
+        guard years.count >= 2, years[0].fiscalYear == years[1].fiscalYear + 1 else { return nil }
+        return Calculator.yearOverYear(metric: metric.rawValue, facts: [years[1].fact, years[0].fact])
+    }
+}

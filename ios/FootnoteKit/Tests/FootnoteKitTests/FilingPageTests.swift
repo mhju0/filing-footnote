@@ -69,8 +69,8 @@ struct FilingPageTests {
             Issue.record("no rows")
             return
         }
-        #expect(rows.map(\.name.ko) == ["처분 주식 수", "주당 가격", "처분 금액", "처분 예정일", "이사회 결정일"])
-        #expect(rows.map(\.name.en) == ["Shares", "Price per share", "Amount", "Disposal date", "Board decision"])
+        #expect(rows.map(\.name?.ko) == ["처분 주식 수", "주당 가격", "처분 금액", "처분 예정일", "이사회 결정일"])
+        #expect(rows.map(\.name?.en) == ["Shares", "Price per share", "Amount", "Disposal date", "Board decision"])
         #expect(rows[3].value == .date(Support.date("2026-10-30")))
         // Free text (the stated purpose) is not a number row.
         #expect(!rows.contains { $0.origin.hasSuffix("dp_pp") })
@@ -83,7 +83,7 @@ struct FilingPageTests {
             Issue.record("no rows")
             return
         }
-        let period = try #require(rows.first { $0.name.ko == "취득 기간" })
+        let period = try #require(rows.first { $0.name?.ko == "취득 기간" })
         #expect(period.value == .dateRange(Support.date("2026-08-24"), Support.date("2026-11-21")))
         #expect(!rows.contains { $0.origin.hasSuffix("aqexpd_edd") })
     }
@@ -105,7 +105,7 @@ struct FilingPageTests {
             Issue.record("no rows")
             return
         }
-        #expect(rows.last?.name.ko == "지급 예정일")
+        #expect(rows.last?.name?.ko == "지급 예정일")
     }
 
     @Test func correctedOutlookKeepsTheValueBeforeTheCorrection() throws {
@@ -194,7 +194,7 @@ struct FilingPageTests {
             Issue.record("no rows")
             return
         }
-        #expect(rows.map(\.value) == [.text("2.02,9.01"), .date(Support.date("2026-11-02"))])
+        #expect(rows.map(\.value) == [.text("2.02, 9.01"), .date(Support.date("2026-11-02"))])
         #expect(page.source.regulator == .sec)
         #expect(page.source.receiptNumber == "0000320193-26-000024")
         #expect(page.source.form == "8-K")
@@ -224,7 +224,9 @@ struct FilingPageTests {
         #expect(throws: (any Error).self) { try Support.editedFixture(staged) }
     }
 
-    @Test func everyNonTextFactInTheFixtureIsShown() throws {
+    /// Every number and date of an event filing is on its page, up to the six-number cap:
+    /// in a block, folded into a period, or as a row named from `FactNames` or the contract.
+    @Test func everyNumberAndDateInTheFixtureIsShown() throws {
         let store = try BundleStore(contentsOf: Support.fixtureURL)
         for filing in store.filings where filing.kind == .event {
             let facts = store.facts(forFiling: filing.id).filter { $0.value.kind != .text }
@@ -232,14 +234,37 @@ struct FilingPageTests {
             let shown = page.blocks.reduce(into: Set<String>()) { origins, block in
                 if case .rows(let rows) = block { origins.formUnion(rows.map(\.origin)) }
             }
-            let unnamed = facts.filter {
-                FactNames.name(origin: $0.origin) == nil && !$0.origin.hasSuffix("_edd")
-                    && !$0.origin.hasPrefix("dartdoc:")
-            }
-            #expect(unnamed.filter { !$0.origin.hasSuffix("aq_wtn_div_ostk_rt") }.isEmpty,
-                    "\(filing.id): \(unnamed.map(\.origin))")
-            #expect(shown.count <= FilingPage.maxNumbers)
+            let folded = Set(facts.compactMap { FactRowValue.endOrigin(for: $0.origin) })
+            let missing = facts.filter { !shown.contains($0.origin) && !folded.contains($0.origin) }
+            #expect(missing.isEmpty || page.numberCount == FilingPage.maxNumbers,
+                    "\(filing.id): \(missing.map(\.origin))")
+            #expect(page.numberCount <= FilingPage.maxNumbers)
         }
+    }
+
+    @Test func purchaseRowsIncludeTheHoldingRatio() throws {
+        let store = try BundleStore(contentsOf: Support.fixtureURL)
+        let page = try #require(FilingPage(store: store, filingID: Self.purchase))
+        guard case .rows(let rows) = try #require(page.blocks.first) else {
+            Issue.record("no rows")
+            return
+        }
+        #expect(rows.map(\.name?.ko) == [
+            "취득 주식 수 (보통주)", "취득 금액 (보통주)", "취득 전 자기주식 비율 (보통주)", "취득 기간", "이사회 결정일",
+        ])
+    }
+
+    /// A number `FactNames` does not name still shows; the app names it from the contract.
+    @Test func anUnnamedNumberStillShows() throws {
+        let sql = "UPDATE filing_facts SET origin = 'opendart:tsstkDpDecsn.new_field' "
+            + "WHERE filing_id = '\(Self.disposal)' AND position = 1;"
+        let page = try #require(FilingPage(store: try Support.editedFixture(sql), filingID: Self.disposal))
+        guard case .rows(let rows) = try #require(page.blocks.first) else {
+            Issue.record("no rows")
+            return
+        }
+        #expect(rows.last?.origin == "opendart:tsstkDpDecsn.new_field")
+        #expect(rows.last?.name == nil)
     }
 }
 
@@ -370,5 +395,22 @@ struct FilingFormattingTests {
         #expect(Formatting.period(apple.0, apple.1, language: .en) == "Sep 28, 2025–Sep 26, 2026")
         let split = (Support.date("2025-10-01"), Support.date("2026-09-30"))
         #expect(Formatting.period(split.0, split.1, language: .ko) == "2025년 10월–2026년 9월")
+    }
+}
+
+@Suite("Figure history")
+struct FigureHistoryTests {
+    @Test func newestFirstWithTheLatestChange() throws {
+        let store = try BundleStore(contentsOf: Support.fixtureURL)
+        let history = try #require(FigureHistory(store: store, companyID: "dart:00126380", metric: .revenue))
+        #expect(history.years.map(\.fiscalYear) == [2025, 2024])
+        guard case .result(let change)? = history.latestChange else {
+            Issue.record("no change")
+            return
+        }
+        #expect(change.percentChange == Support.decimal("16.20"))
+        let apple = try #require(FigureHistory(store: store, companyID: "sec:0000320193", metric: .revenue))
+        #expect(apple.years.count == 1)
+        #expect(apple.latestChange == nil)
     }
 }
