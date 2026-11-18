@@ -204,11 +204,12 @@ enum PageCopy {
         language("\(year) 회계연도", "FY\(year)")
     }
 
-    /// The approved restated note (board 19, G1): beside a 정정됨 / Restated tag.
+    /// The approved restated note (board 19, G1): beside a 정정됨 / Restated tag. A no-break
+    /// space keeps the last word from wrapping alone.
     static func restatedNote(_ language: Language) -> String {
         language(
-            "회사가 나중에 고쳐 다시 낸 숫자예요. 처음 공시한 숫자와 달라요.",
-            "The company later corrected this figure. It differs from the first filing.")
+            "회사가 나중에 고쳐 다시 낸 숫자예요. 처음 공시한 숫자와\u{00A0}달라요.",
+            "The company later corrected this figure. It differs from the first\u{00A0}filing.")
     }
 
     static func restatedTag(_ language: Language) -> String { language("정정됨", "Restated") }
@@ -566,8 +567,9 @@ enum PageCopy {
             language("연결 기준 숫자만 비교해요. 별도 기준은 포함하는 회사의 범위가 달라요.",
                      "Only consolidated figures are compared. Separate figures cover a different set of companies.")
         case .metricOutOfScope:
-            language("매출, 영업이익, 순이익, 지배주주 순이익, EPS, 희석 EPS, 영업이익률을 다뤄요.",
-                     "The app covers revenue, operating income, net income, net income attributable to owners, EPS, diluted EPS and operating margin.")
+            // No-break spaces keep each two-word name on one line.
+            language("매출, 영업이익, 순이익, 지배주주\u{00A0}순이익, EPS, 희석\u{00A0}EPS, 영업이익률을 다뤄요.",
+                     "The app covers revenue, operating income, net income, net income attributable to owners, EPS, diluted\u{00A0}EPS and operating margin.")
         case .missingPeriod:
             language("공시에서 그 해의 숫자를 찾지 못했어요. 이어지는 두 해가 있어야 비교해요.",
                      "The filings do not include that year. A comparison needs two consecutive years.")
@@ -602,10 +604,10 @@ enum PageCopy {
         switch refusal.reason {
         case .ambiguousRequest:
             if case .company = explanation.context, names.count == 2 {
-                return language("\(Korean.and(names[0]))\(names[1])의 무엇을 비교할지 정해지지 않았어요.",
+                return language("\(Korean.and(names[0]))\(names[1])의 무엇을 비교할지 정해지지\u{00A0}않았어요.",
                                 "No way to compare \(names[0]) and \(names[1]) was chosen.")
             }
-            return language("어떤 숫자를 비교할지 정해지지 않았어요.", "No figure was chosen.")
+            return language("어떤 숫자를 비교할지 정해지지\u{00A0}않았어요.", "No figure was chosen.")
         case .unsupportedBasis:
             let name = first.map { Titles.name(of: $0, language: language) } ?? ""
             let what = metric ?? language("숫자", "figures")
@@ -673,11 +675,14 @@ enum PageCopy {
     }
 
     /// Board 10's action for each reason, board 8's rows for another measure.
-    static func actionLabel(_ action: RefusalAction, reason: RefusalReason, metric: ReportedMetric?,
-                            _ language: Language) -> String {
+    /// After a base of zero or below, the years themselves are what is left to see.
+    static func actionLabel(_ action: RefusalAction, reason: RefusalReason, detail: RefusalDetail? = nil,
+                            metric: ReportedMetric?, _ language: Language) -> String {
         switch action {
         case .chooseFigure: return language("지표 고르기", "Choose a figure")
         case .coveredFigures: return language("다루는 지표 보기", "See covered figures")
+        case .showYears where detail == .nonpositiveBaseline:
+            return language("연도별 숫자 보기", "See the figures by year")
         case .showYears:
             return switch reason {
             case .unsupportedBasis: language("연결 기준으로 보기", "View consolidated figures")
@@ -695,10 +700,10 @@ enum PageCopy {
 
 /// Korean particles that follow the last syllable of a name.
 enum Korean {
-    /// True when the word, read aloud, ends in a final consonant (받침): a Hangul syllable by
-    /// its own spelling, a digit or Latin letter by how Korean reads it (`3` 삼, `L` 엘,
-    /// `SDI` 에스디아이). A word read as a whole, such as `NAVER` (네이버), ends in a vowel
-    /// as most English words in R do. Nil for anything else.
+    /// True when the word, read aloud, ends in a final consonant (받침). A Hangul syllable
+    /// goes by its spelling and a digit by its reading (`3` 삼, `2` 이). A Latin letter
+    /// counts as a consonant ending only for L, M and N (엘, 엠, 엔): `SDI` reads 에스디아이,
+    /// and a final R is read as in `NAVER` (네이버). Nil for anything else.
     static func hasFinalConsonant(_ word: String) -> Bool? {
         guard let last = word.uppercased().unicodeScalars.last else { return nil }
         if (0xAC00...0xD7A3).contains(last.value) { return (last.value - 0xAC00) % 28 != 0 }

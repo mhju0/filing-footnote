@@ -7,6 +7,8 @@
 #   ios/scripts/screenshots.sh <simulator-udid> <path/to/Footnote.app> <output-dir> [name-filter]
 #
 # With a name filter (a substring such as `annual-`), only matching shots are taken.
+# Shots marked `separate` open a copy of the app's bundle in which Samsung's figures are
+# on the separate basis, to show the unsupported-basis refusal.
 #
 # Build the app first, for example:
 #   xcodebuild build -project ios/Footnote.xcodeproj -scheme Footnote \
@@ -41,9 +43,18 @@ corrected="dart:20261105000355"
 samsung_annual="dart:20260310002820"
 lgchem_annual="dart:20260313001195"
 apple_annual="sec:0000320193-26-000026"
+costco="sec:0000909832"
+
+separate_dir="$(mktemp -d)"
+trap 'rm -rf "$separate_dir"' EXIT
+separate="$separate_dir/footnote.sqlite"
+cp "$app/footnote.sqlite" "$separate"
+sqlite3 "$separate" "UPDATE figures SET basis = 'separate' WHERE company_id = '$samsung'"
 
 # name ; route ; language ; appearance ; content size ; scroll (top, center or bottom; filing
-# and annual pages only). A filing route is <company id>|<filing id>.
+# and annual pages, and bottom on figure, calculation and compare pages) ; bundle (`separate`, or
+# empty for the app's own). A filing route is <company id>|<filing id>; figure and compare
+# routes are described in LaunchRoute.swift.
 shots=(
   "companies-ko-light;-;ko;light;large;top"
   "companies-en-dark;-;en;dark;large;top"
@@ -78,16 +89,45 @@ shots=(
   "annual-samsung-ko-ax;filing=$samsung|$samsung_annual;ko;light;accessibility-extra-large;center"
   "annual-lgchem-ko-light;filing=$lgchem|$lgchem_annual;ko;light;large;center"
   "annual-apple-en-light;filing=$apple|$apple_annual;en;light;large;center"
+  "figure-samsung-revenue-ko-light;figure=$samsung|revenue|2025;ko;light;large;top"
+  "figure-samsung-revenue-en-dark;figure=$samsung|revenue|2025;en;dark;large;top"
+  "figure-samsung-revenue-ko-ax;figure=$samsung|revenue|2025;ko;light;accessibility-extra-large;top"
+  "figure-lgchem-revenue-ko-light;figure=$lgchem|revenue|2025;ko;light;large;top"
+  "figure-lgchem-revenue-ko-light-bottom;figure=$lgchem|revenue|2025;ko;light;large;bottom"
+  "figure-apple-revenue-en-light;figure=$apple|revenue|2026;en;light;large;top"
+  "yearcompare-samsung-revenue-ko-light;yearcompare=$samsung|revenue|2025;ko;light;large;top"
+  "calc-samsung-revenue-ko-light;yearcalc=$samsung|revenue|2025;ko;light;large;top"
+  "calc-samsung-revenue-ko-light-bottom;yearcalc=$samsung|revenue|2025;ko;light;large;bottom"
+  "calc-samsung-revenue-en-dark;yearcalc=$samsung|revenue|2025;en;dark;large;top"
+  "picker-samsung-ko-light;picker=$samsung|revenue|2025;ko;light;large;top"
+  "picker-samsung-en-dark;picker=$samsung|revenue|2025;en;dark;large;top"
+  "compare-samsung-apple-growth-ko-light;compare=$samsung|$apple|revenue|growth_rate|2025;ko;light;large;top"
+  "compare-samsung-apple-growth-ko-light-bottom;compare=$samsung|$apple|revenue|growth_rate|2025;ko;light;large;bottom"
+  "compare-samsung-apple-growth-en-dark;compare=$samsung|$apple|revenue|growth_rate|2025;en;dark;large;top"
+  "compare-samsung-apple-growth-en-dark-bottom;compare=$samsung|$apple|revenue|growth_rate|2025;en;dark;large;bottom"
+  "compare-samsung-apple-margin-ko-light;compare=$samsung|$apple|revenue|operating_margin|2025;ko;light;large;top"
+  "companycalc-samsung-apple-growth-ko-light;companycalc=$samsung|$apple|revenue|growth_rate|2025;ko;light;large;top"
+  "refusal-ambiguous-ko-light;compare=$samsung|$apple|revenue|none|2025;ko;light;large;top"
+  "refusal-out-of-scope-ko-light;compare=$samsung|$apple|operating_margin|growth_rate|2025;ko;light;large;top"
+  "refusal-basis-ko-light;yearcompare=$samsung|revenue|2025;ko;light;large;top;separate"
+  "refusal-missing-period-ko-light;compare=$samsung|$costco|net_income|growth_rate|2025;ko;light;large;top"
+  "refusal-currency-ko-light;compare=$samsung|$apple|revenue|absolute_amount|2025;ko;light;large;top"
+  "refusal-baseline-ko-light;yearcompare=$lgchem|eps|2025;ko;light;large;top"
+  "refusal-currency-en-dark;compare=$samsung|$apple|revenue|absolute_amount|2025;en;dark;large;top"
+  "refusal-missing-period-en-light;compare=$samsung|$costco|net_income|growth_rate|2025;en;light;large;top"
+  "refusal-currency-ko-ax;compare=$samsung|$apple|revenue|absolute_amount|2025;ko;light;accessibility-extra-large;top"
 )
 
 for shot in "${shots[@]}"; do
-  IFS=';' read -r name route language appearance size scroll <<<"$shot"
+  IFS=';' read -r name route language appearance size scroll bundle <<<"$shot"
   if [ -n "$filter" ] && [[ "$name" != *"$filter"* ]]; then continue; fi
   xcrun simctl ui "$udid" appearance "$appearance"
   xcrun simctl ui "$udid" content_size "$size"
+  sleep 1 # let the appearance and text size settle before the launch
   xcrun simctl terminate "$udid" "$bundle_id" 2>/dev/null || true
   args=(-language "$language" -FootnoteScroll "$scroll")
   if [ "$route" != "-" ]; then args+=(-FootnoteOpen "$route"); fi
+  if [ "${bundle:-}" = "separate" ]; then args+=(-FootnoteBundle "$separate"); fi
   xcrun simctl launch "$udid" "$bundle_id" "${args[@]}" >/dev/null
   sleep 6
   xcrun simctl io "$udid" screenshot --type=png "$out/$name.png" >/dev/null 2>&1

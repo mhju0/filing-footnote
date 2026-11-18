@@ -102,15 +102,19 @@ struct CompanyCompareView: View {
             store: store, companyID: route.companyID, peerID: route.peerID, metric: route.metric,
             measure: requested, fiscalYear: route.fiscalYear)
         {
-            List {
-                ScreenHeader(context: PageCopy.companiesContext(page.companies, language),
-                             title: PageCopy.compareCompany(language))
-                measurePicker
-                if case .result(let result) = page.outcome {
-                    rates(page, result)
-                } else if let explanation = page.explanation {
-                    RefusalSections(explanation: explanation) { perform($0, page) }
+            ScrollViewReader { proxy in
+                List {
+                    ScreenHeader(context: PageCopy.companiesContext(page.companies, language),
+                                 title: PageCopy.compareCompany(language))
+                    measurePicker
+                    if case .result(let result) = page.outcome {
+                        rates(page, result)
+                    } else if let explanation = page.explanation {
+                        RefusalSections(explanation: explanation) { perform($0, page) }
+                    }
+                    PageEndMarker()
                 }
+                .launchScroll(proxy)
             }
             .groupedScreen()
             .screenTitle(PageCopy.compareCompany(language))
@@ -316,7 +320,8 @@ struct RefusalSections: View {
         Section {
             ForEach(Array(explanation.actions.enumerated()), id: \.offset) { index, action in
                 LinkRow(title: PageCopy.actionLabel(
-                    action, reason: explanation.refusal.reason, metric: explanation.metric, language)) {
+                    action, reason: explanation.refusal.reason, detail: explanation.refusal.detail,
+                    metric: explanation.metric, language)) {
                     perform(action)
                 }
                 .accessibilityIdentifier("instead-\(index)")

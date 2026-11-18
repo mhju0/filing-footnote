@@ -70,7 +70,9 @@ struct CompareCopyTests {
                     PageCopy.refusalCode(explanation.refusal.reason, language),
                 ]
                 strings += explanation.actions.map {
-                    PageCopy.actionLabel($0, reason: explanation.refusal.reason, metric: explanation.metric, language)
+                    PageCopy.actionLabel(
+                        $0, reason: explanation.refusal.reason, detail: explanation.refusal.detail,
+                        metric: explanation.metric, language)
                 }
                 if let body = PageCopy.refusalBody(explanation.refusal, language) { strings.append(body) }
                 for string in strings {
@@ -93,8 +95,12 @@ struct CompareCopyTests {
         let baseline = try #require(all.first { $0.refusal.detail == .nonpositiveBaseline })
         #expect(PageCopy.refusalReason(baseline, .ko) == "삼성전자의 2024 회계연도 주당순이익은 \u{2212}2,131원이에요.")
         #expect(PageCopy.refusalBody(baseline.refusal, .ko) == nil)
+        #expect(baseline.actions.map {
+            PageCopy.actionLabel($0, reason: baseline.refusal.reason, detail: baseline.refusal.detail,
+                                 metric: baseline.metric, .ko)
+        } == ["연도별 숫자 보기"])
         let ambiguous = try #require(all.first { $0.refusal.detail == .measureNotSpecified })
-        #expect(PageCopy.refusalReason(ambiguous, .ko) == "삼성전자와 애플의 무엇을 비교할지 정해지지 않았어요.")
+        #expect(PageCopy.refusalReason(ambiguous, .ko) == "삼성전자와 애플의 무엇을 비교할지 정해지지\u{00A0}않았어요.")
     }
 
     @Test func koreanParticlesFollowTheSpokenEnd() {

@@ -18,13 +18,17 @@ struct FigureView: View {
     }
 
     var body: some View {
-        List {
-            header
-            if let entry = page.meaning(language) {
-                meaning(entry)
+        ScrollViewReader { proxy in
+            List {
+                header
+                if let entry = page.meaning(language) {
+                    meaning(entry)
+                }
+                years
+                actions
+                PageEndMarker()
             }
-            years
-            actions
+            .launchScroll(proxy)
         }
         .groupedScreen()
         .screenTitle(page.metric.name(language))
@@ -296,6 +300,16 @@ struct CalculationView: View {
     var difference: Decimal?
 
     var body: some View {
+        ScrollViewReader { proxy in
+            list.launchScroll(proxy)
+        }
+        .groupedScreen()
+        .screenTitle(PageCopy.calculation(language))
+        .languageToolbar()
+        .accessibilityIdentifier("calculation-page")
+    }
+
+    private var list: some View {
         List {
             ScreenHeader(context: context, title: PageCopy.calculation(language))
             ForEach(Array(calculations.enumerated()), id: \.offset) { _, calculation in
@@ -312,11 +326,8 @@ struct CalculationView: View {
                         spoken: PageCopy.rateDifferenceSpoken(difference, language))
                 }
             }
+            PageEndMarker()
         }
-        .groupedScreen()
-        .screenTitle(PageCopy.calculation(language))
-        .languageToolbar()
-        .accessibilityIdentifier("calculation-page")
     }
 
     /// `|−14.33 − 15.67| = 30.00%p`.
@@ -636,5 +647,20 @@ extension View {
         #else
         self.navigationTitle(title)
         #endif
+    }
+}
+
+/// An invisible last row of a list, for `-FootnoteScroll bottom` (debug screenshots).
+struct PageEndMarker: View {
+    var body: some View {
+        Section {
+            Color.clear
+                .frame(height: 1)
+                .listRowBackground(Color.clear)
+                .listRowInsets(EdgeInsets())
+                .listRowSeparator(.hidden)
+                .accessibilityHidden(true)
+                .id(PageScroll.end)
+        }
     }
 }
