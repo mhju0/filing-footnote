@@ -17,7 +17,12 @@
     "AAPL": ["애플", "Apple"],
     "MSFT": ["마이크로소프트", "Microsoft"],
     "NVDA": ["엔비디아", "NVIDIA"],
-    "TSLA": ["테슬라", "Tesla"]
+    "TSLA": ["테슬라", "Tesla"],
+    "AMZN": ["아마존", "Amazon"],
+    "COST": ["코스트코", "Costco"],
+    "GOOGL": ["알파벳", "Alphabet"],
+    "META": ["메타", "Meta"],
+    "WMT": ["월마트", "Walmart"]
   },
   "ledger_years": {
     "005930": ["2022", "2023"],

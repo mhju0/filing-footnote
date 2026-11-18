@@ -236,9 +236,46 @@ def _by_metric(items: list[SecFinancialItem]) -> dict[str, list[SecFinancialItem
 def test_parse_companyfacts_maps_five_metrics_annual_only() -> None:
     items = parse_companyfacts_payload(_COMPANYFACTS_PAYLOAD)
     metrics = {it.metric for it in items}
-    assert metrics == {"revenue", "operating_income", "net_income", "eps", "eps_diluted"}
+    assert metrics == {
+        "revenue",
+        "operating_income",
+        "net_income_attributable",
+        "eps",
+        "eps_diluted",
+    }
     # The Q4 10-Q Revenues row must be excluded by the annual-only filter.
     assert all(it.form == "10-K" for it in items)
+
+
+def _profit_loss_payload(*, with_profit_loss: bool) -> dict:
+    def entry(val: int) -> dict:
+        return {
+            "end": "2024-12-31",
+            "start": "2024-01-01",
+            "val": val,
+            "accn": "0000000000-25-000001",
+            "fy": 2024,
+            "fp": "FY",
+            "form": "10-K",
+            "filed": "2025-02-01",
+        }
+
+    us_gaap: dict = {"NetIncomeLoss": {"units": {"USD": [entry(90)]}}}
+    if with_profit_loss:
+        us_gaap["ProfitLoss"] = {"units": {"USD": [entry(100)]}}
+    return {"facts": {"us-gaap": us_gaap}}
+
+
+def test_net_income_loss_is_the_parent_figure_and_profit_loss_is_the_total() -> None:
+    both = _by_metric(parse_companyfacts_payload(_profit_loss_payload(with_profit_loss=True)))
+    assert [(i.tag, i.value) for i in both["net_income_attributable"]] == [("NetIncomeLoss", 90)]
+    assert [(i.tag, i.value) for i in both["net_income"]] == [("ProfitLoss", 100)]
+
+
+def test_no_net_income_without_profit_loss() -> None:
+    only = _by_metric(parse_companyfacts_payload(_profit_loss_payload(with_profit_loss=False)))
+    assert "net_income" not in only
+    assert [i.tag for i in only["net_income_attributable"]] == ["NetIncomeLoss"]
 
 
 def test_parse_companyfacts_revenue_drops_comparative_year_keeps_latest_period() -> None:
