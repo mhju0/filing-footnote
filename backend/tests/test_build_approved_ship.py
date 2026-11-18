@@ -4,12 +4,13 @@ from __future__ import annotations
 
 import dataclasses
 import json
+import sqlite3
 from pathlib import Path
 
 import pytest
 
 from app.build import export, source, summaries, verify
-from app.build.model import PROMPT_VERSION, BuildInput
+from app.build.model import EVENT_PROMPT_VERSION, PROMPT_VERSION, BuildInput
 from app.build.summaries import select_targets
 from tests.build_seed import AS_OF, PINNED_DIRS
 from tests.test_build_summaries import MODEL, _approve, _sourced
@@ -41,6 +42,33 @@ def _run(data: BuildInput, path: Path, out: Path, *extra: str) -> int:
 def test_the_exporters_default_prompt_version_is_the_summary_builds() -> None:
     assert export.DEFAULT_PROMPT_VERSION == PROMPT_VERSION == summaries.PROMPT_VERSION
     assert PROMPT_VERSION != "none"
+    assert export.DEFAULT_EVENT_PROMPT_VERSION == EVENT_PROMPT_VERSION
+    assert EVENT_PROMPT_VERSION == summaries.EVENT_PROMPT_VERSION != "none"
+
+
+def test_an_event_prompt_version_change_keeps_the_annual_summaries(tmp_path) -> None:
+    # D78: the event prompt is versioned apart, so only event summaries go stale.
+    data = _sourced()
+    path = tmp_path / "approved.jsonl"
+    bare = _write_approved(path, data)
+    out = tmp_path / "footnote.sqlite"
+    assert _run(bare, path, out, "--allow-unapproved", "--event-prompt-version", "other") == 0
+    report = json.loads((tmp_path / "footnote.report.json").read_text(encoding="utf-8"))
+    stale = report["summaries"]["stale_approved_rows_skipped"]
+    assert {item.split("/")[-1] for item in stale} == {"summary"}
+    # The annual reports' approved sections still match and ship.
+    with sqlite3.connect(out) as db:
+        shipped = {row[0] for row in db.execute("SELECT section FROM filing_summaries")}
+    assert {"one_line", "business"} <= shipped
+
+
+def test_a_release_refuses_event_prompt_version_none(tmp_path, capsys) -> None:
+    data = _sourced()
+    path = tmp_path / "approved.jsonl"
+    bare = _write_approved(path, data)
+    assert _run(bare, path, tmp_path / "f.sqlite", "--release", "--event-prompt-version",
+                "none") == 1  # fmt: skip
+    assert "release build refused: --event-prompt-version is 'none'" in capsys.readouterr().err
 
 
 def test_a_missing_approved_file_means_no_approved_summaries(tmp_path) -> None:

@@ -61,6 +61,7 @@ from app.build.bundle import (
 )
 from app.build.model import (
     DECIMAL_VALUE_KINDS,
+    EVENT_PROMPT_VERSION,
     FACT_VALUE_KINDS,
     LANGS,
     PROMPT_VERSION,
@@ -80,6 +81,7 @@ from app.build.model import (
     required_summaries,
     summary_input_sha256,
 )
+from app.build.templates import event_summary_key
 from app.build.verify import (
     BASIS,
     DEFAULT_PINNED_DIR,
@@ -112,6 +114,7 @@ CURRENCY = {"DART": "KRW", "SEC": "USD"}
 REGULATOR_ORDER = {"DART": 0, "SEC": 1}
 DEFAULT_LLM_MODEL = "qwen/qwen3.8-27b"  # D68
 DEFAULT_PROMPT_VERSION = PROMPT_VERSION
+DEFAULT_EVENT_PROMPT_VERSION = EVENT_PROMPT_VERSION
 
 _ANNUAL_PERIOD_RE = re.compile(r"([0-9]{4})-annual")
 _REPORTED_METRICS = frozenset(m.value for m in ReportedMetric)
@@ -124,6 +127,8 @@ class BuildOptions:
     allow_unapproved: bool = False
     llm_model: str = DEFAULT_LLM_MODEL
     prompt_version: str = DEFAULT_PROMPT_VERSION
+    # Keys event summaries; prompt_version keys annual ones (D78).
+    event_prompt_version: str = DEFAULT_EVENT_PROMPT_VERSION
 
 
 @dataclass
@@ -189,6 +194,10 @@ def build_bundle(data: BuildInput, options: BuildOptions, pinned_dirs: Sequence[
     summary_rows = _summaries(build, company_rows)
     if not options.allow_unapproved and options.prompt_version == NO_PROMPT_VERSION:
         build.problems.append(f"release build refused: --prompt-version is {NO_PROMPT_VERSION!r}")
+    if not options.allow_unapproved and options.event_prompt_version == NO_PROMPT_VERSION:
+        build.problems.append(
+            f"release build refused: --event-prompt-version is {NO_PROMPT_VERSION!r}"
+        )
     if build.problems:
         raise BuildError(build.problems)
 
@@ -516,14 +525,19 @@ def _event_filings(build: _Build, companies: dict[tuple[str, str], CompanyRow]) 
 def _facts_index() -> dict[tuple[str, str, str], tuple[str, int]]:
     """(regulator, fact key, source field) -> (origin, order in the contract).
 
-    A DART origin is ``opendart:<endpoint>.<field>``; a SEC origin is the contract's
-    ``sec:submissions.<field>`` as it stands.
+    A DART origin is ``opendart:<endpoint>.<field>``, or ``dartdoc:<table>.<key>`` for a fact
+    read from a filing's table; a SEC origin is the contract's ``sec:submissions.<field>`` as
+    it stands.
     """
     contract = load_facts_contract()
     index = {}
     for spec in contract["endpoints"]:
         for order, item in enumerate(spec["fields"]):
             origin = f"opendart:{spec['endpoint']}.{item['source_field']}"
+            index[("DART", item["key"], item["source_field"])] = (origin, order)
+    for spec in contract["documents"]:
+        for order, item in enumerate(spec["fields"]):
+            origin = f"dartdoc:{spec['table']}.{item['key']}"
             index[("DART", item["key"], item["source_field"])] = (origin, order)
     for order, item in enumerate(contract["sec"]["fields"]):
         index[("SEC", item["key"], item["source_field"])] = (item["source_field"], order)
@@ -741,11 +755,14 @@ def _companies(build: _Build, companies: dict[tuple[str, str], CompanyRow]) -> l
 
 def current_input_sha256(build: _Build, filing_id: str, section: str) -> str | None:
     """The key a summary of this filing and section has now (the summary build's cache key,
-    :func:`app.build.model.summary_input_sha256`), or None when there is no source text."""
+    :func:`app.build.model.summary_input_sha256`, or the template's for a templated event,
+    :func:`app.build.templates.event_summary_key`), or None when there is no source text."""
     if build.filing_kinds[filing_id] == "event":
-        source = event_source_text(build.events[filing_id])
-    else:
-        source = annual_source_text(build.annual[filing_id].filing, section)
+        event = build.events[filing_id]
+        return event_summary_key(event, event_source_text(event), build.options.llm_model,
+                                 build.options.event_prompt_version,
+                                 load_lexicon().version)  # fmt: skip
+    source = annual_source_text(build.annual[filing_id].filing, section)
     if source is None:
         return None
     return summary_input_sha256(source, build.options.llm_model, section,
@@ -958,7 +975,12 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--prompt-version",
         default=DEFAULT_PROMPT_VERSION,
-        help=f"a release refuses {NO_PROMPT_VERSION!r}",
+        help=f"the annual summaries' prompt version; a release refuses {NO_PROMPT_VERSION!r}",
+    )
+    parser.add_argument(
+        "--event-prompt-version",
+        default=DEFAULT_EVENT_PROMPT_VERSION,
+        help=f"the event summaries' prompt version; a release refuses {NO_PROMPT_VERSION!r}",
     )
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument(
@@ -996,6 +1018,7 @@ def run(
             allow_unapproved=args.allow_unapproved,
             llm_model=args.llm_model,
             prompt_version=args.prompt_version,
+            event_prompt_version=args.event_prompt_version,
         )
         bundle = build_bundle(load(args), options, args.pinned or [DEFAULT_PINNED_DIR])
         report = write_bundle(bundle, args.out, report_path)

@@ -33,9 +33,11 @@ from app.build.model import (
     event_source_text,
     latest_annual_ids,
     require_canonical,
+    section_prompt_version,
     summary_input_sha256,
 )
 from app.build.source import event_rows
+from app.build.templates import event_template, template_input_sha256
 from app.build.verify import PinnedResponses, VerifyError, check_bundle, link_problems
 from app.filings.categories import load_contract as load_categories_contract
 from app.llm.neutrality_guard import load_lexicon
@@ -119,13 +121,18 @@ def _key(data: BuildInput, fid: str, section: str, prompt_version: str) -> str:
     """The current key, from the shared functions the summary build uses."""
     events = {_event_id(e): e for e in data.events}
     if fid in events:
+        template = event_template(events[fid])
+        if template is not None:  # a templated event's key is the template's (D78)
+            return template_input_sha256(template, load_lexicon().version)
         source = event_source_text(events[fid])
     else:
         annual = next(f for f in data.annual_filings
                       if f"{f.regulator.lower()}:{f.filing_key}" == fid)  # fmt: skip
         source = annual_source_text(annual, section)
     assert source is not None
-    return summary_input_sha256(source, export.DEFAULT_LLM_MODEL, section, prompt_version,
+    # ``prompt_version`` keys annual sections; events keep the exporter's default event version.
+    version = section_prompt_version(section, prompt_version, export.DEFAULT_EVENT_PROMPT_VERSION)
+    return summary_input_sha256(source, export.DEFAULT_LLM_MODEL, section, version,
                                 load_lexicon().version)  # fmt: skip
 
 
