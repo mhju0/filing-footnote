@@ -190,6 +190,7 @@ def scenario_client() -> FakeSecClient:
     docs = {
         (AMENDMENT, "ef20081427_8ka.htm"): HTML.format("Amendment to the leadership report.").encode(),
         (BROKEN, "aapl-20260730.htm"): HTML.format("Results.").encode(),
+        (VOTE, "ef20060722_8k.htm"): HTML.format("Submission of matters to a vote.").encode(),
     }
     return FakeSecClient(
         accessions={EARNINGS, LEADERSHIP, AMENDMENT, VOTE, BROKEN},
@@ -200,6 +201,7 @@ def scenario_client() -> FakeSecClient:
                 ("slides.pdf", "EX-99.2"),
             ],
             AMENDMENT: [("ef20081427_8ka.htm", "8-K/A")],
+            VOTE: [("ef20060722_8k.htm", "8-K")],
             BROKEN: [("aapl-20260730.htm", "8-K"), ("ex991.htm", "EX-99.1")],
         },
         documents=docs,
@@ -241,17 +243,17 @@ def test_collect_classifies_links_and_reports_over_the_saved_fixtures() -> None:
     assert amendment.chain.original_rcept_no == original.key
     assert amendment.chain.is_latest and not original.chain.is_latest
 
+    # Item 5.07 vote results are a shareholder-meeting event since D76, so their text is read
+    # and kept like any other event's.
     vote = records[f"sec:{VOTE}"]
-    assert vote.classification.category is None
-    assert vote.classification.excluded_reason == "shareholder_vote"
-    assert {f.key for f in vote.facts or []} == {"items", "report_date"}  # excluded ones too
-    assert vote.body_text is None
-    # An excluded filing is not fetched at all.
-    assert not any(VOTE in call for call in client.calls)
+    assert (vote.classification.category, vote.classification.kind) == ("meeting", "event")
+    assert {f.key for f in vote.facts or []} == {"items", "report_date"}
+    assert vote.body_text is not None and "vote" in vote.body_text
 
     assert summary.skipped_exhibits == [f"{EARNINGS} EX-99.2 slides.pdf"]
-    assert summary.by_category == {"earnings": 1, "leadership": 2}
-    assert summary.excluded == {"shareholder_vote": 1, "needs_body": 1}
+    assert summary.by_category == {"earnings": 1, "leadership": 2, "meeting": 1}
+    assert summary.excluded == {"needs_body": 1}
+    assert summary.notices == {}
     assert (summary.linked, summary.unlinked) == (1, 0)
     assert summary.truncated == 0
     # The failed exhibit is the one problem, and its line names the accession (item 6).

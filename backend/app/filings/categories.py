@@ -1,8 +1,10 @@
 """Deterministic category for one event filing, from ``contracts/filing-categories.json``.
 
 Pure functions, no network. A filing gets exactly one category, or is excluded with a reason
-key. Nothing is guessed: when the decision needs the filing text and none is given, the
-result is excluded as ``needs_body``.
+key. A category is an event category (summarised, counted toward the per-company cap) or a
+notice category (listed as a count with links only; see :func:`category_kind`). Nothing is
+guessed: when the decision needs the filing text and none is given, the result is excluded as
+``needs_body``.
 """
 
 from __future__ import annotations
@@ -37,16 +39,41 @@ class Classification:
         if (self.category is None) == (self.excluded_reason is None):
             raise ValueError("exactly one of category and excluded_reason must be set")
 
+    @property
+    def kind(self) -> str | None:
+        """``event``, ``notice``, or ``None`` for an excluded filing."""
+        return None if self.category is None else category_kind(self.category)
+
 
 @lru_cache(maxsize=1)
 def load_contract() -> dict[str, Any]:
     return json.loads(CONTRACT_PATH.read_text(encoding="utf-8"))
 
 
+def category_kind(category: str) -> str:
+    """``event`` for a summarised category, ``notice`` for a notice-only one."""
+    contract = load_contract()
+    if category in {c["key"] for c in contract["categories"]}:
+        return "event"
+    if category in {c["key"] for c in contract["notice_categories"]}:
+        return "notice"
+    raise KeyError(category)
+
+
+def is_event_category(category: str | None) -> bool:
+    """True for a category that is summarised and needs the filing's body."""
+    return category is not None and category_kind(category) == "event"
+
+
 def _priority(category: str) -> int:
-    for entry in load_contract()["categories"]:
+    """Event categories by their priority; any notice category ranks after every event one."""
+    contract = load_contract()
+    for entry in contract["categories"]:
         if entry["key"] == category:
             return int(entry["priority"])
+    for entry in contract["notice_categories"]:
+        if entry["key"] == category:
+            return len(contract["categories"]) + 1
     raise KeyError(category)
 
 
@@ -137,9 +164,11 @@ def classify_dart(report_nm: str, body_text: str | None = None) -> Classificatio
     key, subsidiary, is_correction = normalise_dart_name(report_nm)
     flags = {"subsidiary": subsidiary, "is_correction": is_correction}
 
-    excluded = _longest_match(dart["exclusions"], key)
-    if excluded is not None:
-        return _miss(excluded["reason"], excluded["id"], **flags)
+    best = _longest_match(dart["exclusions"] + dart["notices"] + dart["rules"], key)
+    if best is not None and "reason" in best:
+        return _miss(best["reason"], best["id"], **flags)
+    if best is not None and best in dart["notices"]:
+        return _hit(best["category"], best["id"], **flags)
 
     earnings = dart["earnings"]
     if key.startswith(tuple(earnings["consolidated_prefixes"])):
@@ -156,9 +185,8 @@ def classify_dart(report_nm: str, body_text: str | None = None) -> Classificatio
             return _hit("earnings", f"{earnings['id']}.period", basis="separate", **flags)
         return _miss("no_rule", f"{earnings['id']}.period_other", **flags)
 
-    rule = _longest_match(dart["rules"], key)
-    if rule is not None:
-        return _hit(rule["category"], rule["id"], **flags)
+    if best is not None:
+        return _hit(best["category"], best["id"], **flags)
     return _miss("no_rule", "dart.no_rule", **flags)
 
 

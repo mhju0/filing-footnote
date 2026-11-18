@@ -113,11 +113,16 @@ def test_ingest_stores_every_filing_chain_and_exact_facts() -> None:
                     "WHERE excluded_reason IS NOT NULL GROUP BY 1",
                 )
             )
-            assert stored == dict(summary.excluded) and stored
-            in_scope = (
-                await _rows(engine, "SELECT count(*) FROM event_filings WHERE category IS NOT NULL")
-            )[0][0]
-            assert in_scope == sum(summary.by_category.values())
+            assert stored == dict(summary.excluded)
+            by_category = dict(
+                await _rows(
+                    engine,
+                    "SELECT category, count(*) FROM event_filings "
+                    "WHERE category IS NOT NULL GROUP BY 1",
+                )
+            )
+            assert by_category == dict(summary.by_category) | dict(summary.notices)
+            assert summary.notices and not set(summary.notices) & set(summary.by_category)
 
             chain = {
                 r[0]: r[1:]
@@ -468,9 +473,10 @@ def test_sec_cli_stores_filings_with_a_failed_exhibit_and_an_amendment(monkeypat
         "leadership", None, True, "linked", f"sec:{LEADERSHIP}", True, False
     )
     assert by(AMENDMENT)[12:14] == ("8-K/A", datetime.date(2026, 4, 20))
-    assert by(VOTE)[2:4] == (None, "shareholder_vote")  # stored with its reason
+    assert by(VOTE)[2:4] == ("meeting", None)  # Item 5.07 is a meeting event (D76)
     assert by(BROKEN)[9] and "EX-99.1 ex991.htm" in by(BROKEN)[9][0]  # error kept on the row
-    assert bodies[f"sec:{VOTE}"] is None and bodies[f"sec:{AMENDMENT}"].startswith("[8-K/A]")
+    assert bodies[f"sec:{VOTE}"].startswith("[8-K]")
+    assert bodies[f"sec:{AMENDMENT}"].startswith("[8-K/A]")
 
     # Facts: items and event date for every listed filing (excluded and degraded ones too, so a
     # later 8-K/A can find its original); never a number.
@@ -795,10 +801,14 @@ def _text_body(tmp_path, text: str):
     return path
 
 
-_BODIES = (
-    "SELECT rcept_no, body_text, body_truncated, category IS NOT NULL FROM event_filings "
-    "ORDER BY rcept_no"
-)
+_BODIES = "SELECT rcept_no, body_text, body_truncated, category FROM event_filings ORDER BY rcept_no"
+
+
+async def _body_rows(engine) -> dict[str, tuple]:
+    """rcept_no -> (rcept_no, body_text, body_truncated, has an event category)."""
+    from app.filings.categories import is_event_category
+
+    return {r[0]: (*r[:3], is_event_category(r[3])) for r in await _rows(engine, _BODIES)}
 
 
 def test_dart_body_text_is_stored_for_in_scope_rows_only_and_a_failed_refetch_keeps_it(
@@ -813,10 +823,10 @@ def test_dart_body_text_is_stored_for_in_scope_rows_only_and_a_failed_refetch_ke
                 documents={"20261103000311": BODY, _UNREAD: _text_body(tmp_path, "원문 하나")},
             )
             await run_dart_events(first, "035420", factory, today=TODAY)
-            rows = {r[0]: r for r in await _rows(engine, _BODIES)}
+            rows = await _body_rows(engine)
             in_scope = [r for r in rows.values() if r[3]]
             assert in_scope and all(r[1] for r in in_scope)  # every in-scope row has text
-            assert all(r[1] is None for r in rows.values() if not r[3])  # excluded rows: none
+            assert all(r[1] is None for r in rows.values() if not r[3])  # excluded, notices
             assert rows[_UNREAD][1] == "원문 하나" and rows[_UNREAD][2] is False
             assert len(rows["20261103000311"][1]) > 1000
 
@@ -829,7 +839,7 @@ def test_dart_body_text_is_stored_for_in_scope_rows_only_and_a_failed_refetch_ke
             second = await run_dart_events(down, "035420", factory, today=TODAY)
             assert not second.ok
             assert any(p.startswith(f"document {_UNREAD}") for p in second.problems)
-            kept = {r[0]: r for r in await _rows(engine, _BODIES)}
+            kept = await _body_rows(engine)
             assert kept[_UNREAD][1] == "원문 하나"  # not NULL, not the placeholder
             assert {k: v[1:3] for k, v in kept.items() if k != _UNREAD} == {
                 k: v[1:3] for k, v in rows.items() if k != _UNREAD
@@ -841,8 +851,51 @@ def test_dart_body_text_is_stored_for_in_scope_rows_only_and_a_failed_refetch_ke
                 documents={"20261103000311": BODY, _UNREAD: _text_body(tmp_path, "원문 둘")},
             )
             await run_dart_events(third, "035420", factory, today=TODAY)
-            latest = {r[0]: r for r in await _rows(engine, _BODIES)}
+            latest = await _body_rows(engine)
             assert latest[_UNREAD][1] == "원문 둘"
+
+    run(scenario())
+
+
+def test_a_rerun_under_a_newer_contract_stores_bodies_for_rows_it_brought_into_scope(
+    monkeypatch,
+) -> None:
+    """Rows stored as excluded (body NULL) by the old contract get their category and text on
+    the first run under the new one; notices keep no text."""
+    import copy
+
+    from app.filings import categories
+
+    current = categories.load_contract()
+    moved = ("outlook", "clarification", "lending", "management", "shareholder_value")
+    old = copy.deepcopy(current)
+    old["dart"]["rules"] = [r for r in old["dart"]["rules"] if r["category"] not in moved]
+    old["dart"]["exclusions"].append(
+        {"id": "dart.x.old", "reason": "no_rule", "prefixes": [
+            p for r in current["dart"]["rules"] if r["category"] in moved for p in r["prefixes"]
+        ]}
+    )  # fmt: skip
+    probe = (
+        "SELECT rcept_no, category, excluded_reason, body_text IS NOT NULL FROM event_filings "
+        "ORDER BY rcept_no"
+    )
+
+    async def scenario():
+        async with _database() as (factory, engine):
+            monkeypatch.setattr(categories, "load_contract", lambda: old)
+            await run_dart_events(_fake(), "035420", factory, today=TODAY)
+            before = {r[0]: r for r in await _rows(engine, probe)}
+            monkeypatch.undo()
+            summary = await run_dart_events(_fake(), "035420", factory, today=TODAY)
+            assert summary.ok, summary.problems
+            after = {r[0]: r for r in await _rows(engine, probe)}
+            brought = [k for k, r in after.items() if r[1] in moved]
+            assert {after[k][1] for k in brought} == set(moved)
+            for key in brought:
+                assert before[key][1:] == (None, "no_rule", False)
+                assert after[key][2:] == (None, True)
+            notices = [r for r in after.values() if r[1] and not categories.is_event_category(r[1])]
+            assert notices and all(r[3] is False for r in notices)
 
     run(scenario())
 
@@ -859,7 +912,7 @@ def test_a_new_row_whose_first_fetch_fails_is_stored_without_text_beside_rows_wi
             )
             summary = await run_dart_events(down, "035420", factory, today=TODAY)
             assert not summary.ok
-            rows = {r[0]: r for r in await _rows(engine, _BODIES)}
+            rows = await _body_rows(engine)
             assert rows[_UNREAD][1] is None
             assert rows["20261103000311"][1]  # same statement set, other rows keep their text
 

@@ -6,10 +6,12 @@ For one company and the last 12 months it
 
 1. lists the 8-K and 8-K/A filings from the submissions API;
 2. classifies each with ``classify_sec``, reading the primary document and EX-99.* exhibits
-   only for the filings the contract needs text for (items 2.02, 7.01, 8.01) and for in-scope
-   filings (their text is kept for summaries, cut at ``TEXT_STORE_LIMIT``);
-3. links each in-scope 8-K/A to its original and marks the newest version of a chain as the one
-   to show (older versions are kept);
+   only for the filings the contract needs text for (items 2.02, 7.01, 8.01) and for filings
+   in an event category (their text is kept for summaries, cut at ``TEXT_STORE_LIMIT``).
+   Every run classifies every listed filing again, so a filing a newer contract brings into
+   scope gets its text on the next run; a notice category needs none;
+3. links each 8-K/A in an event category to its original and marks the newest version of a
+   chain as the one to show (older versions are kept);
 4. writes item numbers and the event date as facts (D64: nothing is read from the text);
 5. upserts ``event_filings`` and ``filing_facts`` through ``persist_events``.
 
@@ -36,7 +38,7 @@ from app.clients.sec_8k import TEXT_STORE_LIMIT, read_8k, store_text
 from app.config import get_settings
 from app.db.models import EventFiling, FilingFact
 from app.db.session import get_async_engine, get_async_session
-from app.filings.categories import Classification, classify_sec
+from app.filings.categories import Classification, classify_sec, is_event_category
 from app.ingest.events import (
     ChainResult,
     EventIngestSummary,
@@ -310,7 +312,9 @@ async def collect_sec_events(
     for filing in filings:
         classification = classify_sec(filing.form, filing.items)
         record = SecEventRecord(filing, cik, ticker, company, classification)
-        if classification.excluded_reason == "needs_body" or classification.category:
+        if classification.excluded_reason == "needs_body" or is_event_category(
+            classification.category
+        ):
             documents = await read_8k(client, cik, filing)
             summary.documents_read += len(documents.texts)
             summary.skipped_exhibits.extend(
@@ -341,7 +345,7 @@ async def collect_sec_events(
             report_date=r.filing.report_date,
             items=item_set(r.filing.items),
             is_correction=r.classification.is_correction,
-            in_scope=r.classification.category is not None,
+            in_scope=is_event_category(r.classification.category),
         )
         for r in records
     ]
@@ -355,8 +359,10 @@ async def collect_sec_events(
         record.facts = sec_facts(record.filing)
 
         category = record.classification.category
-        if category is not None:
-            summary.by_category[category] += 1
+        if is_event_category(category):
+            summary.by_category[str(category)] += 1
+        elif category is not None:
+            summary.notices[category] += 1
         else:
             summary.excluded[str(record.classification.excluded_reason)] += 1
         link = record.chain.correction_link
@@ -416,7 +422,7 @@ async def load_stored_originals(
             report_date=by_filing.get(f.id, {}).get(date_key),
             items=item_set(by_filing.get(f.id, {}).get(items_key) or ""),
             is_correction=False,
-            in_scope=f.category is not None,
+            in_scope=is_event_category(f.category),
         )
         for f in filings
     ]
