@@ -1412,7 +1412,7 @@ def test_every_schema_column_is_in_the_fingerprint(data, tmp_path) -> None:
     for table, row in lines:
         assert set(row) == fingerprinted[table], table
         seen[table] = set(row)
-    assert set(seen) == set(fingerprinted) - {"glossary"}
+    assert set(seen) == set(fingerprinted)
 
 
 # item 13: a release refuses prompt version none

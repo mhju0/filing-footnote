@@ -1,0 +1,604 @@
+{
+  "about": "Glossary for the Footnote app: a plain word first, the formal term beside it. Keys are term_key values in the bundle's glossary table. Every entry has approved=false until the owner approves its wording; the exporter ships only approved entries and a release build refuses while any entry is unapproved. Wording follows the neutrality lexicon and contains no digits. Test: backend/tests/test_glossary_contract.py.",
+  "version": 1,
+  "entries": {
+    "metric_revenue": {
+      "approved": false,
+      "ko": {
+        "term": "매출액",
+        "plain": "회사가 상품이나 서비스를 팔아서 번 돈이에요.",
+        "formal": "수익(매출액)"
+      },
+      "en": {
+        "term": "Revenue",
+        "plain": "The money a company took in from selling its products or services.",
+        "formal": "Revenue, as the income statement reports it"
+      }
+    },
+    "metric_operating_income": {
+      "approved": false,
+      "ko": {
+        "term": "영업이익",
+        "plain": "매출에서 사업을 꾸리는 데 쓴 비용을 뺀 이익이에요.",
+        "formal": null
+      },
+      "en": {
+        "term": "Operating income",
+        "plain": "The profit left after the costs of running the business are taken out of revenue.",
+        "formal": null
+      }
+    },
+    "metric_net_income": {
+      "approved": false,
+      "ko": {
+        "term": "당기순이익",
+        "plain": "수입과 비용, 세금까지 모두 반영한 그 기간의 최종 이익이에요.",
+        "formal": null
+      },
+      "en": {
+        "term": "Net income",
+        "plain": "The profit for the period after all income, costs and taxes.",
+        "formal": null
+      }
+    },
+    "metric_net_income_attributable": {
+      "approved": false,
+      "ko": {
+        "term": "지배기업 소유주 순이익",
+        "plain": "순이익 가운데 모회사 주주의 몫이에요.",
+        "formal": "지배기업 소유주지분 순이익"
+      },
+      "en": {
+        "term": "Net income (attributable)",
+        "plain": "The part of net income that belongs to the parent company's shareholders.",
+        "formal": "Net income attributable to owners of the parent"
+      }
+    },
+    "metric_eps": {
+      "approved": false,
+      "ko": {
+        "term": "주당순이익(EPS)",
+        "plain": "순이익을 주식 수로 나눈 값이에요.",
+        "formal": null
+      },
+      "en": {
+        "term": "EPS",
+        "plain": "Net income divided by the number of shares.",
+        "formal": "Earnings per share"
+      }
+    },
+    "metric_eps_diluted": {
+      "approved": false,
+      "ko": {
+        "term": "희석주당순이익",
+        "plain": "주식으로 바뀔 수 있는 증권까지 모두 주식이 됐다고 보고 계산한 주당순이익이에요.",
+        "formal": null
+      },
+      "en": {
+        "term": "Diluted EPS",
+        "plain": "Earnings per share, counting securities that can turn into shares as if they already had been.",
+        "formal": "Diluted earnings per share"
+      }
+    },
+    "metric_operating_margin": {
+      "approved": false,
+      "ko": {
+        "term": "영업이익률",
+        "plain": "매출 가운데 영업이익이 차지하는 비율이에요. 앱이 두 숫자로 계산해요.",
+        "formal": null
+      },
+      "en": {
+        "term": "Operating margin",
+        "plain": "The share of revenue that is operating income. The app works it out from two figures.",
+        "formal": null
+      }
+    },
+    "basis_consolidated": {
+      "approved": false,
+      "ko": {
+        "term": "연결 기준",
+        "plain": "모회사와 자회사를 하나의 회사처럼 합쳐서 낸 숫자예요.",
+        "formal": "연결재무제표 기준"
+      },
+      "en": {
+        "term": "Consolidated",
+        "plain": "Figures that add up the parent company and its subsidiaries as one.",
+        "formal": "Consolidated financial statements"
+      }
+    },
+    "basis_separate": {
+      "approved": false,
+      "ko": {
+        "term": "별도 기준",
+        "plain": "모회사 하나만 따로 떼어서 낸 숫자예요.",
+        "formal": "별도재무제표 기준"
+      },
+      "en": {
+        "term": "Separate",
+        "plain": "Figures for the parent company alone, without its subsidiaries.",
+        "formal": "Separate financial statements"
+      }
+    },
+    "restated": {
+      "approved": false,
+      "ko": {
+        "term": "정정됨",
+        "plain": "회사가 먼저 낸 숫자를 나중 보고서에서 고쳐서 다시 냈다는 표시예요.",
+        "formal": null
+      },
+      "en": {
+        "term": "Restated",
+        "plain": "A mark showing the company changed a figure it reported earlier, in a later report.",
+        "formal": null
+      }
+    },
+    "k_ifrs": {
+      "approved": false,
+      "ko": {
+        "term": "K-IFRS",
+        "plain": "한국 기업이 재무제표를 쓸 때 따르는 국제회계기준이에요.",
+        "formal": "한국채택국제회계기준"
+      },
+      "en": {
+        "term": "K-IFRS",
+        "plain": "The international accounting standards Korean companies follow in their financial statements.",
+        "formal": "Korean-adopted International Financial Reporting Standards"
+      }
+    },
+    "us_gaap": {
+      "approved": false,
+      "ko": {
+        "term": "미국 회계기준(US GAAP)",
+        "plain": "미국 기업이 재무제표를 쓸 때 따르는 회계기준이에요.",
+        "formal": "미국 일반회계기준"
+      },
+      "en": {
+        "term": "US GAAP",
+        "plain": "The accounting rules US companies follow in their financial statements.",
+        "formal": "Generally Accepted Accounting Principles"
+      }
+    },
+    "fiscal_year_end": {
+      "approved": false,
+      "ko": {
+        "term": "결산일",
+        "plain": "회사가 한 해의 장부를 마무리하는 날이에요. 회사마다 달라요.",
+        "formal": null
+      },
+      "en": {
+        "term": "Fiscal year-end",
+        "plain": "The day a company closes its books for the year. It differs from company to company.",
+        "formal": null
+      }
+    },
+    "category_annual": {
+      "approved": false,
+      "ko": {
+        "term": "사업보고서",
+        "plain": "회사가 한 해 동안의 사업과 재무 상태를 정리해서 내는 보고서예요. 미국 기업은 같은 역할의 연차보고서를 내요.",
+        "formal": null
+      },
+      "en": {
+        "term": "Annual report",
+        "plain": "The yearly report in which a company sets out its business and finances. US companies file a similar yearly report with the SEC.",
+        "formal": null
+      }
+    },
+    "category_earnings": {
+      "approved": false,
+      "ko": {
+        "term": "실적",
+        "plain": "회사가 한 기간의 매출과 이익을 알리는 공시예요.",
+        "formal": null
+      },
+      "en": {
+        "term": "Earnings",
+        "plain": "A filing in which the company reports its revenue and profit for a period.",
+        "formal": null
+      }
+    },
+    "category_unit_sales": {
+      "approved": false,
+      "ko": {
+        "term": "판매 대수",
+        "plain": "회사가 정해진 기간에 판매한 수량을 알리는 공시예요.",
+        "formal": null
+      },
+      "en": {
+        "term": "Unit sales",
+        "plain": "A filing in which the company reports how many units it sold in a period.",
+        "formal": null
+      }
+    },
+    "category_buyback": {
+      "approved": false,
+      "ko": {
+        "term": "자사주",
+        "plain": "회사가 자기 주식을 사거나 팔거나 없애기로 한 결정을 알리는 공시예요.",
+        "formal": null
+      },
+      "en": {
+        "term": "Buyback",
+        "plain": "A filing about the company's decision to buy, sell or cancel its own shares.",
+        "formal": null
+      }
+    },
+    "category_dividend": {
+      "approved": false,
+      "ko": {
+        "term": "배당",
+        "plain": "회사가 이익의 일부를 주주에게 나눠 주기로 한 결정을 알리는 공시예요.",
+        "formal": null
+      },
+      "en": {
+        "term": "Dividend",
+        "plain": "A filing about the company's decision to pay part of its profit to shareholders.",
+        "formal": null
+      }
+    },
+    "category_capital": {
+      "approved": false,
+      "ko": {
+        "term": "증자·사채",
+        "plain": "회사가 새 주식이나 사채를 내서 돈을 마련하거나 주식을 줄이기로 한 결정을 알리는 공시예요.",
+        "formal": null
+      },
+      "en": {
+        "term": "Capital",
+        "plain": "A filing about the company raising money by issuing new shares or bonds, or reducing its shares.",
+        "formal": null
+      }
+    },
+    "category_deal": {
+      "approved": false,
+      "ko": {
+        "term": "인수·계약",
+        "plain": "회사가 다른 회사나 자산을 사거나 중요한 계약을 맺었다는 공시예요.",
+        "formal": null
+      },
+      "en": {
+        "term": "Deals and contracts",
+        "plain": "A filing about the company buying another company or assets, or signing a significant contract.",
+        "formal": null
+      }
+    },
+    "category_leadership": {
+      "approved": false,
+      "ko": {
+        "term": "경영진",
+        "plain": "대표이사 같은 경영진이 바뀌었다는 공시예요.",
+        "formal": null
+      },
+      "en": {
+        "term": "Leadership",
+        "plain": "A filing about a change among the company's top managers, such as its chief executive.",
+        "formal": null
+      }
+    },
+    "category_legal": {
+      "approved": false,
+      "ko": {
+        "term": "소송",
+        "plain": "회사가 소송을 냈거나 소송을 당했다는 공시예요.",
+        "formal": null
+      },
+      "en": {
+        "term": "Legal",
+        "plain": "A filing about a lawsuit the company has started or faces.",
+        "formal": null
+      }
+    },
+    "category_outlook": {
+      "approved": false,
+      "ko": {
+        "term": "회사 전망",
+        "plain": "회사가 스스로 밝힌 계획이나 예상을 담은 공시예요. 앱은 항상 회사의 전망이라고 표시하고, 이 내용으로 비교하지 않아요.",
+        "formal": null
+      },
+      "en": {
+        "term": "Company outlook",
+        "plain": "A filing with the company's own stated plan. The app always labels it as the company's outlook and never uses it in a comparison.",
+        "formal": null
+      }
+    },
+    "category_shareholder_value": {
+      "approved": false,
+      "ko": {
+        "term": "주주가치",
+        "plain": "회사가 주주 몫과 관련해 밝힌 방침을 알리는 공시예요.",
+        "formal": null
+      },
+      "en": {
+        "term": "Shareholder value",
+        "plain": "A filing in which the company states its policy on what shareholders receive.",
+        "formal": null
+      }
+    },
+    "category_meeting": {
+      "approved": false,
+      "ko": {
+        "term": "주주총회",
+        "plain": "주주가 모여 회사의 중요한 일을 결정하는 자리의 결과를 알리는 공시예요.",
+        "formal": null
+      },
+      "en": {
+        "term": "Shareholder meeting",
+        "plain": "A filing about the result of a meeting where shareholders decide important company matters.",
+        "formal": null
+      }
+    },
+    "category_operations": {
+      "approved": false,
+      "ko": {
+        "term": "생산·사고",
+        "plain": "회사의 생산 상황이나 사고를 알리는 공시예요.",
+        "formal": null
+      },
+      "en": {
+        "term": "Operations",
+        "plain": "A filing about the company's production or an accident.",
+        "formal": null
+      }
+    },
+    "category_lending": {
+      "approved": false,
+      "ko": {
+        "term": "대여·보증",
+        "plain": "회사가 다른 곳에 돈을 빌려주거나 보증을 서 주었다는 공시예요. 파생상품 거래 손실도 여기에 들어가요.",
+        "formal": null
+      },
+      "en": {
+        "term": "Loans and guarantees",
+        "plain": "A filing about the company lending money or giving a guarantee for others. Losses on derivative trading are listed here too.",
+        "formal": null
+      }
+    },
+    "category_management": {
+      "approved": false,
+      "ko": {
+        "term": "경영사항",
+        "plain": "회사가 경영에 관한 중요한 결정을 알리는 공시예요.",
+        "formal": null
+      },
+      "en": {
+        "term": "Management matters",
+        "plain": "A filing in which the company reports an important management decision.",
+        "formal": null
+      }
+    },
+    "category_clarification": {
+      "approved": false,
+      "ko": {
+        "term": "해명",
+        "plain": "언론 보도나 소문에 대해 회사가 답한 공시예요.",
+        "formal": null
+      },
+      "en": {
+        "term": "Clarification",
+        "plain": "A filing in which the company answers a press report or a rumor.",
+        "formal": null
+      }
+    },
+    "notices": {
+      "approved": false,
+      "ko": {
+        "term": "안내 공시",
+        "plain": "요약 없이 날짜와 제목, 링크만 보여 주는 공시를 회사별로 묶어 부르는 말이에요.",
+        "formal": null
+      },
+      "en": {
+        "term": "Notices",
+        "plain": "The name for a company's filings that the app lists with a date, title and link but no summary.",
+        "formal": null
+      }
+    },
+    "category_ir_event": {
+      "approved": false,
+      "ko": {
+        "term": "IR 행사",
+        "plain": "회사가 투자자에게 사업을 설명하는 행사를 알리는 안내예요.",
+        "formal": null
+      },
+      "en": {
+        "term": "Investor event",
+        "plain": "A notice of an event where the company presents its business to investors.",
+        "formal": null
+      }
+    },
+    "category_record_date": {
+      "approved": false,
+      "ko": {
+        "term": "기준일",
+        "plain": "배당 등을 받을 주주를 정하는 날을 알리는 안내예요.",
+        "formal": null
+      },
+      "en": {
+        "term": "Record date",
+        "plain": "A notice of the day that decides which shareholders receive a dividend or similar right.",
+        "formal": null
+      }
+    },
+    "category_meeting_notice": {
+      "approved": false,
+      "ko": {
+        "term": "주주총회 소집",
+        "plain": "주주총회가 열린다는 사실과 안건을 알리는 안내예요.",
+        "formal": null
+      },
+      "en": {
+        "term": "Meeting notice",
+        "plain": "A notice that a shareholder meeting will be held, with its agenda.",
+        "formal": null
+      }
+    },
+    "category_earnings_notice": {
+      "approved": false,
+      "ko": {
+        "term": "실적 발표 예고",
+        "plain": "회사가 실적을 발표할 날을 미리 알리는 안내예요.",
+        "formal": null
+      },
+      "en": {
+        "term": "Results date",
+        "plain": "A notice of the day the company will publish its results.",
+        "formal": null
+      }
+    },
+    "category_audit_report": {
+      "approved": false,
+      "ko": {
+        "term": "감사보고서",
+        "plain": "외부 회계법인이 회사의 재무제표를 검토하고 쓴 보고서가 제출되었다는 안내예요.",
+        "formal": null
+      },
+      "en": {
+        "term": "Audit report",
+        "plain": "A notice that an outside auditor's report on the company's financial statements was filed.",
+        "formal": null
+      }
+    },
+    "category_governance_report": {
+      "approved": false,
+      "ko": {
+        "term": "지배구조 보고서",
+        "plain": "회사가 이사회 등 의사결정 구조를 설명한 보고서를 냈다는 안내예요.",
+        "formal": null
+      },
+      "en": {
+        "term": "Governance report",
+        "plain": "A notice that the company filed a report describing how it is governed, such as its board.",
+        "formal": null
+      }
+    },
+    "category_sustainability_report": {
+      "approved": false,
+      "ko": {
+        "term": "지속가능경영 보고서",
+        "plain": "환경과 사회 분야에서 회사가 한 활동을 담은 보고서를 냈다는 안내예요.",
+        "formal": null
+      },
+      "en": {
+        "term": "Sustainability report",
+        "plain": "A notice that the company filed a report on its environmental and social activities.",
+        "formal": null
+      }
+    },
+    "category_compliance_program": {
+      "approved": false,
+      "ko": {
+        "term": "공정거래 자율준수",
+        "plain": "회사가 공정거래 관련 법규를 지키려고 운영하는 내부 제도에 관한 안내예요.",
+        "formal": null
+      },
+      "en": {
+        "term": "Compliance program",
+        "plain": "A notice about the company's internal program for following fair trade rules.",
+        "formal": null
+      }
+    },
+    "category_notice_only": {
+      "approved": false,
+      "ko": {
+        "term": "기타 안내",
+        "plain": "다른 분류에 들지 않는 일반 안내예요.",
+        "formal": null
+      },
+      "en": {
+        "term": "Other notice",
+        "plain": "A general notice that fits none of the other categories.",
+        "formal": null
+      }
+    },
+    "category_market_action": {
+      "approved": false,
+      "ko": {
+        "term": "거래소 조회",
+        "plain": "거래소가 회사에 보도나 소문이 사실인지 물었다는 안내예요.",
+        "formal": null
+      },
+      "en": {
+        "term": "Exchange inquiry",
+        "plain": "A notice that the exchange asked the company whether a report or rumor is true.",
+        "formal": null
+      }
+    },
+    "refusal_ambiguous_request": {
+      "approved": false,
+      "ko": {
+        "term": "질문이 분명하지 않아요",
+        "plain": "비교할 회사나 항목, 기간이 정해지지 않아서 답하지 않았어요.",
+        "formal": null
+      },
+      "en": {
+        "term": "Request is unclear",
+        "plain": "The company, item or period to compare was not specified, so the app did not answer.",
+        "formal": null
+      }
+    },
+    "refusal_unsupported_basis": {
+      "approved": false,
+      "ko": {
+        "term": "지원하지 않는 기준",
+        "plain": "앱이 비교하지 않는 회계 기준이어서 답하지 않았어요.",
+        "formal": null
+      },
+      "en": {
+        "term": "Basis not supported",
+        "plain": "The app does not compare figures on this accounting basis, so it did not answer.",
+        "formal": null
+      }
+    },
+    "refusal_metric_out_of_scope": {
+      "approved": false,
+      "ko": {
+        "term": "다루지 않는 항목",
+        "plain": "앱이 다루는 항목이 아니어서 답하지 않았어요.",
+        "formal": null
+      },
+      "en": {
+        "term": "Item not covered",
+        "plain": "The app does not cover this item, so it did not answer.",
+        "formal": null
+      }
+    },
+    "refusal_missing_period": {
+      "approved": false,
+      "ko": {
+        "term": "빠진 기간",
+        "plain": "요청한 기간의 숫자를 공시에서 찾지 못했어요.",
+        "formal": null
+      },
+      "en": {
+        "term": "Period missing",
+        "plain": "The filings do not give a figure for the period asked about.",
+        "formal": null
+      }
+    },
+    "refusal_incompatible_currency": {
+      "approved": false,
+      "ko": {
+        "term": "통화가 달라요",
+        "plain": "통화가 서로 달라서 숫자를 바로 비교하지 않아요.",
+        "formal": null
+      },
+      "en": {
+        "term": "Currencies differ",
+        "plain": "The figures are in different currencies, so the app does not compare them directly.",
+        "formal": null
+      }
+    },
+    "refusal_incompatible_comparison": {
+      "approved": false,
+      "ko": {
+        "term": "비교할 수 없어요",
+        "plain": "두 숫자의 기준이나 종류가 달라서 비교하지 않아요.",
+        "formal": null
+      },
+      "en": {
+        "term": "Not comparable",
+        "plain": "The two figures differ in basis or kind, so the app does not compare them.",
+        "formal": null
+      }
+    }
+  }
+}
