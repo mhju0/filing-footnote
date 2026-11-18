@@ -16,46 +16,50 @@ struct NewsView: View {
     }
 
     var body: some View {
-        SelectionList(selection: selection) {
-            Text(words: Copy.dataDate(store.meta.dataAsOf, language))
-                .font(.subheadline)
-                .foregroundStyle(Theme.muted)
-                .listRowBackground(Color.clear)
-                .listRowInsets(EdgeInsets(top: 0, leading: 4, bottom: 0, trailing: 4))
-            if feed.isEmpty {
-                Section {
-                    Text(words: Copy.endNote(listed: 0, capped: false, language))
-                        .font(.body)
-                        .foregroundStyle(Theme.muted)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .frame(minHeight: Theme.minTarget, alignment: .leading)
-                        .listRowBackground(Theme.surface)
-                        .accessibilityIdentifier("news-empty")
-                }
-            }
-            ForEach(feed.days) { day in
-                Section {
-                    ForEach(day.filings) { filing in
-                        FilingRowLink(filingID: filing.id) {
-                            FilingRow(
-                                filing: filing, dataAsOf: feed.dataAsOf,
-                                companyName: store.company(id: filing.companyID)
-                                    .map { Titles.name(of: $0, language: language) },
-                                showsDate: false)
-                        }
+        ScrollViewReader { proxy in
+            SelectionList(selection: selection) {
+                Text(words: Copy.dataDate(store.meta.dataAsOf, language))
+                    .font(.subheadline)
+                    .foregroundStyle(Theme.muted)
+                    .listRowBackground(Color.clear)
+                    .listRowInsets(EdgeInsets(top: 0, leading: 4, bottom: 0, trailing: 4))
+                if feed.isEmpty {
+                    Section {
+                        Text(words: Copy.endNote(listed: 0, capped: false, language))
+                            .font(.body)
+                            .foregroundStyle(Theme.muted)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .frame(minHeight: Theme.minTarget, alignment: .leading)
+                            .listRowBackground(Theme.surface)
+                            .accessibilityIdentifier("news-empty")
                     }
-                } header: {
-                    Text(words: dayTitle(day.date))
-                        .accessibilityAddTraits(.isHeader)
+                }
+                ForEach(feed.days) { day in
+                    Section {
+                        ForEach(day.filings) { filing in
+                            FilingRowLink(filingID: filing.id) {
+                                FilingRow(
+                                    filing: filing, dataAsOf: feed.dataAsOf,
+                                    companyName: store.company(id: filing.companyID)
+                                        .map { Titles.name(of: $0, language: language) },
+                                    showsDate: false)
+                            }
+                            .id(filing.id)
+                        }
+                    } header: {
+                        Text(words: dayTitle(day.date))
+                            .accessibilityAddTraits(.isHeader)
+                    }
+                }
+                if !feed.isEmpty {
+                    Section {
+                    } footer: {
+                        SectionNote(text: Copy.newsEndNote(
+                            listed: feed.filings.count, capped: feed.isCapped, language))
+                    }
                 }
             }
-            if !feed.isEmpty {
-                Section {
-                } footer: {
-                    SectionNote(text: Copy.newsEndNote(
-                        listed: feed.filings.count, capped: feed.isCapped, language))
-                }
-            }
+            .task { await scrollToSelection(selection?.wrappedValue, proxy) }
         }
         .groupedScreen()
         .navigationTitle(language("소식", "News"))
@@ -90,6 +94,7 @@ struct GlossaryView: View {
                         SelectableRow(value: entry.termKey, selection: selection, route: .glossary(entry.termKey)) {
                             GlossaryTermRow(entry: entry)
                         }
+                        .id(entry.termKey)
                         .accessibilityIdentifier("glossary-\(entry.termKey)")
                     } else {
                         GlossaryEntryRow(entry: entry, isFocused: entry.termKey == focus)
@@ -104,12 +109,22 @@ struct GlossaryView: View {
                 try? await Task.sleep(for: .milliseconds(300))
                 proxy.scrollTo(focus, anchor: .top)
             }
+            // The split view can open with a term already chosen (a launch route); bring it
+            // into view once. Later choices are rows the reader can already see.
+            .task { if focus == nil { await scrollToSelection(selection?.wrappedValue, proxy) } }
         }
         .groupedScreen()
         .navigationTitle(language("용어", "Glossary"))
         .languageToolbar()
         .accessibilityIdentifier("glossary-page")
     }
+}
+
+/// Scrolls a list to the row chosen before it appeared, after it has laid out.
+@MainActor private func scrollToSelection(_ id: String?, _ proxy: ScrollViewProxy) async {
+    guard let id else { return }
+    try? await Task.sleep(for: .milliseconds(300))
+    proxy.scrollTo(id, anchor: .center)
 }
 
 /// One entry in full: the plain word, what it means, then the formal term.

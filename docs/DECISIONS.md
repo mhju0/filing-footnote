@@ -1338,3 +1338,49 @@ Follows D84 after the PR #34 review.
   company compare picks it across all of a company's figures. The two can differ for a
   company with mixed bases.
 - Open, owner review: the new drafted copy the pull request lists.
+
+## D86 · News feed, glossary links and the iPad and Mac glossary columns · 2026-11-19 (`PROPOSED`)
+
+Roadmap I10. Decided by the lead under the owner's delegation; the drafted copy is for the
+owner's final check.
+
+- 소식 / News is a FootnoteKit model, `NewsFeed`, built from each company's `CompanyPage`.
+  A filing shows in the feed only when its company page lists it (the 12-month window and
+  the ten-per-company cap), and 새 공시 uses the same `Freshness` rule: the data date and the
+  six days before it (the owner's rule). The feed shows the thirty newest of those filings,
+  grouped by the day they were filed, because DESIGN.md asks each screen to show less and
+  the full set is about one hundred and eighty rows. A row is the company page's row (tag,
+  title, no preview line) with the company's name in place of the date the day heading
+  gives. A note under the feed says how many it shows; an empty feed shows board 19's "no
+  filings in the last 12 months" line.
+- There is no loading state: the app opens its bundled file before the first screen
+  (DESIGN.md, board 19). The empty states are the feed above and, for the glossary, the
+  existing rule that the tab, the sidebar row and every glossary link are hidden while the
+  bundle has no rows in the language (R-24).
+- 용어 / Glossary lists the bundle's rows in dictionary order of the term the reader sees
+  (Korean or English collation): the plain word, the meaning, then the formal term. DESIGN.md
+  calls for neither search nor sections there, so there are none, and so no ⌘F.
+- Links: the figure screen's "용어 풀이 더 보기" and a new link at the end of each filing and
+  annual page open the glossary scrolled to the matching entry (`metric_<key>`,
+  `category_<key>`), with that row in Tint, the selected-row colour. Board 20 lists
+  "Glossary for a tagged term" one tap from a filing page; the link sits after the original
+  so the approved order (sentences, numbers, original) is unchanged.
+- iPad and Mac: the glossary gets the split view's two columns, terms in the content column
+  and the chosen term in the detail column. A new sidebar item clears the filing or term
+  and anything pushed over it; a new filing or term clears what was pushed over the old one.
+- A news or glossary list that opens with a row already chosen (a launch route) scrolls
+  that row into view once; later choices are rows the reader can already see, so the list
+  does not move.
+- Mac keyboard: the company page, news and glossary lists are selection lists, so the arrow
+  keys move the selection and the detail column follows; Return or a double click selects
+  the focused row. The sidebar was already a selection list. iPhone and iPad rows stay
+  buttons.
+- `Copy.dot` is now a no-break space, the middle dot, then an ordinary space, so the dot
+  stays with the word before it and never starts a line. The only break is after the dot.
+  A no-break space on both sides was not chosen: it would join both neighbours into one
+  unbreakable run, which at accessibility sizes forces a break inside a word. Display titles
+  with a detail (`… 공시 · 2025년 재공시`) use the same separator.
+- Not changed: glossary wording (every entry is still `approved: false`) and the release
+  gate that refuses a development bundle.
+- Open, owner review: the drafted copy the pull request lists, and the thirty-filing size of
+  the feed.
