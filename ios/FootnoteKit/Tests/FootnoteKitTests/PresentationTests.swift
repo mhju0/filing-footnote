@@ -117,6 +117,7 @@ struct CompanyPageTests {
         let page = try #require(CompanyPage(store: store, companyID: BundleStoreTests.apple))
         let change = try #require(page.periodicReports.first?.change)
         #expect(change.periodEndsDiffer)
+        #expect(!change.periodLengthsDiffer)
         #expect(DecimalText.twoPlaces(change.percentChange) == "6.43")
         let samsung = try #require(CompanyPage(store: store, companyID: BundleStoreTests.samsung))
         #expect(samsung.periodicReports.first?.change?.periodEndsDiffer == false)

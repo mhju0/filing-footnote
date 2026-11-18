@@ -113,6 +113,8 @@ public struct YearOverYear: Sendable, Hashable {
     /// True when the two periods end on different month-days: consecutive 52/53-week
     /// fiscal years.
     public let periodEndsDiffer: Bool
+    /// True when the two lengths differ by a week or more: a 53-week year against a 52-week one.
+    public let periodLengthsDiffer: Bool
 }
 
 public struct OperatingMargin: Sendable, Hashable {
@@ -161,6 +163,8 @@ public enum Calculator {
     static let fiscalYearDays = 357...371
     /// How far a 52/53-week year end may drift from the prior end's anniversary.
     static let maxYearEndDriftDays = 7
+    /// Two periods whose lengths differ by this much: one of them has an extra week.
+    static let weekDays = 7
 
     private static let reported = Set(ReportedMetric.allCases.map(\.rawValue))
     private static let margin: Set<String> = [DerivedMetric.operatingMargin.rawValue]
@@ -297,14 +301,9 @@ public enum Calculator {
         if prior.unit != current.unit { throw Refusal(.incompatibleComparison, .unitMismatch) }
 
         func monthDay(_ date: CivilDate) -> [Int] { [date.month, date.day] }
-        let endsDiffer = monthDay(prior.periodEnd) != monthDay(current.periodEnd)
+        let endsDiffer = !sameEndDay(prior.periodEnd, current.periodEnd)
         if endsDiffer {
-            if !consecutiveFiscalYears(prior, current) {
-                throw Refusal(.incompatibleComparison, .periodEndMismatch)
-            }
-            if current.periodStart <= prior.periodEnd {
-                throw Refusal(.incompatibleComparison, .overlappingPeriods)
-            }
+            try checkFiscalYears(prior, current)
         } else {
             if monthDay(prior.periodStart) != monthDay(current.periodStart) {
                 throw Refusal(.incompatibleComparison, .periodLengthMismatch)
@@ -330,22 +329,65 @@ public enum Calculator {
             priorPeriodStart: prior.periodStart, priorPeriodEnd: prior.periodEnd,
             currentPeriodStart: current.periodStart, currentPeriodEnd: current.periodEnd,
             priorIsRestated: prior.isRestated, currentIsRestated: current.isRestated,
-            periodEndsDiffer: endsDiffer)
+            periodEndsDiffer: endsDiffer,
+            periodLengthsDiffer: abs(days(prior) - days(current)) >= weekDays)
     }
 
-    /// Whether two periods whose ends differ in month-day are consecutive full fiscal years,
+    /// The period's length, counting both end days.
+    private static func days(_ fact: Fact) -> Int { fact.periodStart.days(to: fact.periodEnd) + 1 }
+
+    private static func isLastOfFebruary(_ date: CivilDate) -> Bool {
+        date.month == 2 && date.day == CivilDate.daysIn(month: 2, year: date.year)
+    }
+
+    /// Same month-day, or both the last day of February.
+    private static func sameEndDay(_ a: CivilDate, _ b: CivilDate) -> Bool {
+        (a.month, a.day) == (b.month, b.day) || (isLastOfFebruary(a) && isLastOfFebruary(b))
+    }
+
+    /// The same month-day `years` later (February 29 becomes February 28); nil past the last
+    /// representable year.
+    private static func anniversary(_ date: CivilDate, years: Int) -> CivilDate? {
+        let year = date.year + years
+        if date.month == 2 && date.day == 29 {
+            return CivilDate(year: year, month: 2, day: CivilDate.daysIn(month: 2, year: year))
+        }
+        return CivilDate(year: year, month: date.month, day: date.day)
+    }
+
+    /// The whole number of years, at least one, whose anniversary of the prior end lies within
+    /// a week of the current end; nil when there is none.
+    private static func yearsBetweenEnds(_ prior: Fact, _ current: Fact) -> Int? {
+        let base = current.periodEnd.year - prior.periodEnd.year
+        for years in [base - 1, base, base + 1] where years >= 1 {
+            if let date = anniversary(prior.periodEnd, years: years),
+               abs(date.days(to: current.periodEnd)) <= maxYearEndDriftDays {
+                return years
+            }
+        }
+        return nil
+    }
+
+    /// Periods whose ends differ in month-day compare only as consecutive full fiscal years,
     /// as 52/53-week years are (docs/DECISIONS.md D82).
-    private static func consecutiveFiscalYears(_ prior: Fact, _ current: Fact) -> Bool {
-        func days(_ fact: Fact) -> Int { fact.periodStart.days(to: fact.periodEnd) + 1 }
-        // The same month-day a year later; February 29 becomes February 28.
-        let end = prior.periodEnd
-        let anniversary = CivilDate(year: end.year + 1, month: end.month, day: end.day)
-            ?? CivilDate(year: end.year + 1, month: 2, day: 28)!
-        let drift = anniversary.days(to: current.periodEnd)
-        return fiscalYearDays.contains(days(prior))
-            && fiscalYearDays.contains(days(current))
-            && fiscalYearDays.contains(prior.periodEnd.days(to: current.periodEnd))
-            && abs(drift) <= maxYearEndDriftDays
+    private static func checkFiscalYears(_ prior: Fact, _ current: Fact) throws(Refusal) {
+        if !fiscalYearDays.contains(days(prior)) || !fiscalYearDays.contains(days(current)) {
+            throw Refusal(.incompatibleComparison, .periodEndMismatch)
+        }
+        if current.periodStart <= prior.periodEnd {
+            throw Refusal(.incompatibleComparison, .overlappingPeriods)
+        }
+        guard let years = yearsBetweenEnds(prior, current) else {
+            throw Refusal(.incompatibleComparison, .periodEndMismatch)
+        }
+        if years > 1 { throw Refusal(.missingPeriod, .nonConsecutiveYears) }
+        if !fiscalYearDays.contains(prior.periodEnd.days(to: current.periodEnd)) {
+            throw Refusal(.incompatibleComparison, .periodEndMismatch)
+        }
+        // The current year starts the day after the prior one ends: no days between.
+        if prior.periodEnd.days(to: current.periodStart) > 1 {
+            throw Refusal(.missingPeriod, .nonConsecutiveYears)
+        }
     }
 
     private static func operatingMargin(_ facts: [Fact]) throws(Refusal) -> OperatingMargin {

@@ -123,7 +123,8 @@
           "current_period_end": "2023-12-31",
           "prior_is_restated": false,
           "current_is_restated": false,
-          "period_ends_differ": false
+          "period_ends_differ": false,
+          "period_lengths_differ": false
         }
       }
     },
@@ -174,7 +175,8 @@
           "current_period_end": "2023-12-31",
           "prior_is_restated": false,
           "current_is_restated": false,
-          "period_ends_differ": false
+          "period_ends_differ": false,
+          "period_lengths_differ": false
         }
       }
     },
@@ -225,7 +227,8 @@
           "current_period_end": "2023-12-31",
           "prior_is_restated": false,
           "current_is_restated": false,
-          "period_ends_differ": false
+          "period_ends_differ": false,
+          "period_lengths_differ": false
         }
       }
     },
@@ -276,7 +279,8 @@
           "current_period_end": "2024-06-30",
           "prior_is_restated": false,
           "current_is_restated": false,
-          "period_ends_differ": false
+          "period_ends_differ": false,
+          "period_lengths_differ": false
         }
       }
     },
@@ -327,7 +331,8 @@
           "current_period_end": "2024-06-30",
           "prior_is_restated": false,
           "current_is_restated": false,
-          "period_ends_differ": false
+          "period_ends_differ": false,
+          "period_lengths_differ": false
         }
       }
     },
@@ -378,7 +383,8 @@
           "current_period_end": "2023-12-31",
           "prior_is_restated": false,
           "current_is_restated": false,
-          "period_ends_differ": false
+          "period_ends_differ": false,
+          "period_lengths_differ": false
         }
       }
     },
@@ -429,7 +435,8 @@
           "current_period_end": "2024-12-31",
           "prior_is_restated": false,
           "current_is_restated": false,
-          "period_ends_differ": false
+          "period_ends_differ": false,
+          "period_lengths_differ": false
         }
       }
     },
@@ -480,7 +487,8 @@
           "current_period_end": "2024-12-31",
           "prior_is_restated": false,
           "current_is_restated": false,
-          "period_ends_differ": false
+          "period_ends_differ": false,
+          "period_lengths_differ": false
         }
       }
     },
@@ -531,7 +539,8 @@
           "current_period_end": "2024-12-31",
           "prior_is_restated": false,
           "current_is_restated": false,
-          "period_ends_differ": false
+          "period_ends_differ": false,
+          "period_lengths_differ": false
         }
       }
     },
@@ -582,7 +591,8 @@
           "current_period_end": "2024-12-31",
           "prior_is_restated": false,
           "current_is_restated": false,
-          "period_ends_differ": false
+          "period_ends_differ": false,
+          "period_lengths_differ": false
         }
       }
     },
@@ -633,7 +643,8 @@
           "current_period_end": "2025-03-31",
           "prior_is_restated": false,
           "current_is_restated": false,
-          "period_ends_differ": false
+          "period_ends_differ": false,
+          "period_lengths_differ": false
         }
       }
     },
@@ -684,7 +695,8 @@
           "current_period_end": "2024-12-31",
           "prior_is_restated": false,
           "current_is_restated": false,
-          "period_ends_differ": false
+          "period_ends_differ": false,
+          "period_lengths_differ": false
         }
       }
     },
@@ -735,7 +747,8 @@
           "current_period_end": "2024-12-31",
           "prior_is_restated": false,
           "current_is_restated": false,
-          "period_ends_differ": false
+          "period_ends_differ": false,
+          "period_lengths_differ": false
         }
       }
     },
@@ -786,7 +799,8 @@
           "current_period_end": "2024-12-31",
           "prior_is_restated": false,
           "current_is_restated": false,
-          "period_ends_differ": false
+          "period_ends_differ": false,
+          "period_lengths_differ": false
         }
       }
     },
@@ -837,7 +851,8 @@
           "current_period_end": "2024-12-31",
           "prior_is_restated": false,
           "current_is_restated": false,
-          "period_ends_differ": false
+          "period_ends_differ": false,
+          "period_lengths_differ": false
         }
       }
     },
@@ -888,7 +903,8 @@
           "current_period_end": "2024-12-31",
           "prior_is_restated": false,
           "current_is_restated": false,
-          "period_ends_differ": false
+          "period_ends_differ": false,
+          "period_lengths_differ": false
         }
       }
     },
@@ -939,7 +955,8 @@
           "current_period_end": "2024-12-31",
           "prior_is_restated": false,
           "current_is_restated": false,
-          "period_ends_differ": false
+          "period_ends_differ": false,
+          "period_lengths_differ": false
         }
       }
     },
@@ -990,7 +1007,8 @@
           "current_period_end": "2024-12-31",
           "prior_is_restated": false,
           "current_is_restated": false,
-          "period_ends_differ": false
+          "period_ends_differ": false,
+          "period_lengths_differ": false
         }
       }
     },
@@ -1041,7 +1059,8 @@
           "current_period_end": "2024-12-31",
           "prior_is_restated": false,
           "current_is_restated": false,
-          "period_ends_differ": false
+          "period_ends_differ": false,
+          "period_lengths_differ": false
         }
       }
     },
@@ -1092,7 +1111,8 @@
           "current_period_end": "2024-12-31",
           "prior_is_restated": false,
           "current_is_restated": false,
-          "period_ends_differ": false
+          "period_ends_differ": false,
+          "period_lengths_differ": false
         }
       }
     },
@@ -1782,7 +1802,8 @@
           "current_period_end": "2024-12-31",
           "prior_is_restated": true,
           "current_is_restated": false,
-          "period_ends_differ": false
+          "period_ends_differ": false,
+          "period_lengths_differ": false
         }
       }
     },
@@ -1833,7 +1854,8 @@
           "current_period_end": "2024-12-31",
           "prior_is_restated": false,
           "current_is_restated": true,
-          "period_ends_differ": false
+          "period_ends_differ": false,
+          "period_lengths_differ": false
         }
       }
     },
@@ -3167,7 +3189,7 @@
     },
     {
       "id": "period-february-leap-year-end",
-      "description": "A year ending on February 29 against one ending on February 28: two full years whose ends are a day apart in month-day, so they compare and carry period_ends_differ (D82).",
+      "description": "A year ending on February 29 against one ending on February 28: both end on the last day of February, so the ends count as equal and no flag is set (D82).",
       "input": {
         "kind": "yoy",
         "metric": "revenue",
@@ -3212,7 +3234,8 @@
           "current_period_end": "2025-02-28",
           "prior_is_restated": false,
           "current_is_restated": false,
-          "period_ends_differ": true
+          "period_ends_differ": false,
+          "period_lengths_differ": false
         }
       }
     },
@@ -3263,13 +3286,14 @@
           "current_period_end": "2025-09-27",
           "prior_is_restated": false,
           "current_is_restated": false,
-          "period_ends_differ": true
+          "period_ends_differ": true,
+          "period_lengths_differ": false
         }
       }
     },
     {
       "id": "yoy-fiscal-weeks-53-week-year",
-      "description": "A 53-week year (371 days) after a 52-week year: the end moves six days later in month-day and still compares, with the flag.",
+      "description": "A 53-week year (371 days) after a 52-week year (364): the end moves six days later in month-day; both flags are set.",
       "input": {
         "kind": "yoy",
         "metric": "revenue",
@@ -3314,7 +3338,8 @@
           "current_period_end": "2023-09-30",
           "prior_is_restated": false,
           "current_is_restated": false,
-          "period_ends_differ": true
+          "period_ends_differ": true,
+          "period_lengths_differ": true
         }
       }
     },
@@ -3365,7 +3390,8 @@
           "current_period_end": "2025-01-01",
           "prior_is_restated": false,
           "current_is_restated": false,
-          "period_ends_differ": true
+          "period_ends_differ": true,
+          "period_lengths_differ": false
         }
       }
     },
@@ -3416,8 +3442,201 @@
           "current_period_end": "2025-12-31",
           "prior_is_restated": false,
           "current_is_restated": false,
-          "period_ends_differ": false
+          "period_ends_differ": false,
+          "period_lengths_differ": false
         }
+      }
+    },
+    {
+      "id": "yoy-fiscal-weeks-shortest-year",
+      "description": "A 357-day prior year, the shortest accepted, against a 364-day year: the lengths differ by exactly a week, so both flags are set.",
+      "input": {
+        "kind": "yoy",
+        "metric": "revenue",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "100",
+            "unit": "USD",
+            "currency": "USD",
+            "basis": "consolidated",
+            "period_start": "2023-10-08",
+            "period_end": "2024-09-28",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "110",
+            "unit": "USD",
+            "currency": "USD",
+            "basis": "consolidated",
+            "period_start": "2024-09-29",
+            "period_end": "2025-09-27",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "result": {
+          "company_id": "synthetic:a",
+          "metric": "revenue",
+          "prior_value": "100",
+          "current_value": "110",
+          "delta": "10",
+          "percent_change": "10.00",
+          "currency": "USD",
+          "unit": "USD",
+          "prior_period_start": "2023-10-08",
+          "prior_period_end": "2024-09-28",
+          "current_period_start": "2024-09-29",
+          "current_period_end": "2025-09-27",
+          "prior_is_restated": false,
+          "current_is_restated": false,
+          "period_ends_differ": true,
+          "period_lengths_differ": true
+        }
+      }
+    },
+    {
+      "id": "yoy-fiscal-weeks-drift-seven-days-early",
+      "description": "The later end falls exactly seven days before the anniversary, the earliest accepted; the lengths differ by six days, so only the ends flag is set.",
+      "input": {
+        "kind": "yoy",
+        "metric": "revenue",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "100",
+            "unit": "USD",
+            "currency": "USD",
+            "basis": "consolidated",
+            "period_start": "2023-10-01",
+            "period_end": "2024-09-28",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "110",
+            "unit": "USD",
+            "currency": "USD",
+            "basis": "consolidated",
+            "period_start": "2024-09-29",
+            "period_end": "2025-09-21",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "result": {
+          "company_id": "synthetic:a",
+          "metric": "revenue",
+          "prior_value": "100",
+          "current_value": "110",
+          "delta": "10",
+          "percent_change": "10.00",
+          "currency": "USD",
+          "unit": "USD",
+          "prior_period_start": "2023-10-01",
+          "prior_period_end": "2024-09-28",
+          "current_period_start": "2024-09-29",
+          "current_period_end": "2025-09-21",
+          "prior_is_restated": false,
+          "current_is_restated": false,
+          "period_ends_differ": true,
+          "period_lengths_differ": false
+        }
+      }
+    },
+    {
+      "id": "yoy-fiscal-weeks-year-9999",
+      "description": "Years ending in 9998 and 9999, the last representable year: the one-year anniversary is in range, so they compare.",
+      "input": {
+        "kind": "yoy",
+        "metric": "revenue",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "100",
+            "unit": "USD",
+            "currency": "USD",
+            "basis": "consolidated",
+            "period_start": "9997-12-31",
+            "period_end": "9998-12-29",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "110",
+            "unit": "USD",
+            "currency": "USD",
+            "basis": "consolidated",
+            "period_start": "9998-12-30",
+            "period_end": "9999-12-28",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "result": {
+          "company_id": "synthetic:a",
+          "metric": "revenue",
+          "prior_value": "100",
+          "current_value": "110",
+          "delta": "10",
+          "percent_change": "10.00",
+          "currency": "USD",
+          "unit": "USD",
+          "prior_period_start": "9997-12-31",
+          "prior_period_end": "9998-12-29",
+          "current_period_start": "9998-12-30",
+          "current_period_end": "9999-12-28",
+          "prior_is_restated": false,
+          "current_is_restated": false,
+          "period_ends_differ": true,
+          "period_lengths_differ": false
+        }
+      }
+    },
+    {
+      "id": "fiscal-weeks-anniversary-past-9999",
+      "description": "Ends on 9999-01-01 and 9999-12-31: the only anniversary to test is in the year 10000, which cannot be represented, so it refuses.",
+      "input": {
+        "kind": "yoy",
+        "metric": "revenue",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "100",
+            "unit": "USD",
+            "currency": "USD",
+            "basis": "consolidated",
+            "period_start": "9998-01-03",
+            "period_end": "9999-01-01",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "110",
+            "unit": "USD",
+            "currency": "USD",
+            "basis": "consolidated",
+            "period_start": "9999-01-02",
+            "period_end": "9999-12-31",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "incompatible_comparison",
+        "detail": "period_end_mismatch"
       }
     },
     {
@@ -3493,6 +3712,78 @@
       }
     },
     {
+      "id": "fiscal-weeks-end-gap-limit",
+      "description": "Two 364-day years whose ends are 372 days apart, seven days past the anniversary: lengths and drift pass, and the end-gap limit decides before the gap between the periods is checked.",
+      "input": {
+        "kind": "yoy",
+        "metric": "revenue",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "100",
+            "unit": "USD",
+            "currency": "USD",
+            "basis": "consolidated",
+            "period_start": "2023-10-01",
+            "period_end": "2024-09-28",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "110",
+            "unit": "USD",
+            "currency": "USD",
+            "basis": "consolidated",
+            "period_start": "2024-10-07",
+            "period_end": "2025-10-05",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "incompatible_comparison",
+        "detail": "period_end_mismatch"
+      }
+    },
+    {
+      "id": "fiscal-weeks-two-week-gap",
+      "description": "A 357-day year that starts fifteen days after the prior year ends: two weeks are missing between the periods, so it refuses.",
+      "input": {
+        "kind": "yoy",
+        "metric": "revenue",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "100",
+            "unit": "USD",
+            "currency": "USD",
+            "basis": "consolidated",
+            "period_start": "2023-10-01",
+            "period_end": "2024-09-28",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "110",
+            "unit": "USD",
+            "currency": "USD",
+            "basis": "consolidated",
+            "period_start": "2024-10-13",
+            "period_end": "2025-10-04",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "missing_period",
+        "detail": "non_consecutive_years"
+      }
+    },
+    {
       "id": "fiscal-weeks-half-year-against-full-year",
       "description": "A half year against a full fiscal year whose end differs by a day: the half year is not a full fiscal year, so it refuses.",
       "input": {
@@ -3530,7 +3821,7 @@
     },
     {
       "id": "fiscal-weeks-two-years-apart",
-      "description": "Two 52-week years with a year between them: the ends are two years apart, so it refuses as a period-end mismatch.",
+      "description": "Two 52/53-week years with a year between them: the later end is near the second anniversary, so a year is missing.",
       "input": {
         "kind": "yoy",
         "metric": "revenue",
@@ -3560,8 +3851,8 @@
         ]
       },
       "expected": {
-        "refusal": "incompatible_comparison",
-        "detail": "period_end_mismatch"
+        "refusal": "missing_period",
+        "detail": "non_consecutive_years"
       }
     },
     {
@@ -3598,6 +3889,114 @@
       "expected": {
         "refusal": "incompatible_comparison",
         "detail": "overlapping_periods"
+      }
+    },
+    {
+      "id": "order-fiscal-length-before-overlap",
+      "description": "A half year that overlaps a full year with a different end: the length decides.",
+      "input": {
+        "kind": "yoy",
+        "metric": "revenue",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "100",
+            "unit": "USD",
+            "currency": "USD",
+            "basis": "consolidated",
+            "period_start": "2023-10-01",
+            "period_end": "2024-09-28",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "60",
+            "unit": "USD",
+            "currency": "USD",
+            "basis": "consolidated",
+            "period_start": "2024-06-01",
+            "period_end": "2024-11-30",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "incompatible_comparison",
+        "detail": "period_end_mismatch"
+      }
+    },
+    {
+      "id": "order-fiscal-overlap-before-anniversary",
+      "description": "A full year that overlaps the prior one and ends far from its anniversary: the overlap decides.",
+      "input": {
+        "kind": "yoy",
+        "metric": "revenue",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "100",
+            "unit": "USD",
+            "currency": "USD",
+            "basis": "consolidated",
+            "period_start": "2023-10-01",
+            "period_end": "2024-09-28",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "110",
+            "unit": "USD",
+            "currency": "USD",
+            "basis": "consolidated",
+            "period_start": "2024-03-01",
+            "period_end": "2025-02-28",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "incompatible_comparison",
+        "detail": "overlapping_periods"
+      }
+    },
+    {
+      "id": "order-fiscal-gap-before-baseline",
+      "description": "Two weeks missing between the periods and a zero baseline: the gap decides.",
+      "input": {
+        "kind": "yoy",
+        "metric": "revenue",
+        "facts": [
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "0",
+            "unit": "USD",
+            "currency": "USD",
+            "basis": "consolidated",
+            "period_start": "2023-10-01",
+            "period_end": "2024-09-28",
+            "is_restated": false
+          },
+          {
+            "company_id": "synthetic:a",
+            "metric": "revenue",
+            "value": "110",
+            "unit": "USD",
+            "currency": "USD",
+            "basis": "consolidated",
+            "period_start": "2024-10-13",
+            "period_end": "2025-10-04",
+            "is_restated": false
+          }
+        ]
+      },
+      "expected": {
+        "refusal": "missing_period",
+        "detail": "non_consecutive_years"
       }
     },
     {

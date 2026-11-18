@@ -120,6 +120,16 @@ struct CopyTests {
         #expect(Copy.fiscalYearEndsNote(apple, .en) == "The fiscal years end a few days apart.")
         let samsung = try #require(CompanyPage(store: store, companyID: "dart:00126380")?.periodicReports.first)
         #expect(Copy.fiscalYearEndsNote(samsung, .ko) == nil)
+
+        // A 53-week prior year (2023-09-24 to 2024-09-28) against a 52-week year.
+        #expect(sqlite3_open(url.path, &db) == SQLITE_OK)
+        #expect(sqlite3_exec(db, "UPDATE figures SET period_start = '2023-09-24' WHERE id = 'apple-revenue-2024'",
+                             nil, nil, nil) == SQLITE_OK)
+        sqlite3_close(db)
+        let longer = try #require(CompanyPage(store: try BundleStore(contentsOf: url), companyID: "sec:0000320193")?
+            .periodicReports.first)
+        #expect(Copy.fiscalYearEndsNote(longer, .ko) == "한 해가 다른 해보다 한 주 길어요.")
+        #expect(Copy.fiscalYearEndsNote(longer, .en) == "One of the years is a week longer.")
     }
 
     /// No em dash in any copy (antislop R-02).

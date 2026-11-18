@@ -4,6 +4,7 @@ The rules live in ``docs/comparison-rules.md`` and the shared cases in
 ``contracts/comparison-cases.json``; the Swift calculator must pass the same cases.
 """
 
+import calendar
 import datetime
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -31,6 +32,8 @@ _MAX_CROSS_COMPANY_LENGTH_DIFFERENCE_DAYS = 7
 _FISCAL_YEAR_DAYS = range(357, 372)
 # How far a 52/53-week year end may drift from the prior end's anniversary.
 _MAX_YEAR_END_DRIFT_DAYS = 7
+# Two periods whose lengths differ by this much: one of them has an extra week.
+_WEEK_DAYS = 7
 
 
 class RefusalReason(StrEnum):
@@ -120,6 +123,9 @@ class YearOverYear:
     # True when the two periods end on different month-days: consecutive
     # 52/53-week fiscal years.
     period_ends_differ: bool
+    # True when the two lengths differ by a week or more: a 53-week year
+    # against a 52-week one.
+    period_lengths_differ: bool
 
 
 @dataclass(frozen=True)
@@ -198,28 +204,79 @@ def _check_bases(facts: Sequence[Fact]) -> Refusal | None:
     return None
 
 
-def _anniversary(date: datetime.date) -> datetime.date:
-    """The same month-day a year later; February 29 becomes February 28."""
-    try:
-        return date.replace(year=date.year + 1)
-    except ValueError:
-        return datetime.date(date.year + 1, 2, 28)
+def _days(fact: Fact) -> int:
+    """The period's length, counting both end days."""
+    return (fact.period_end - fact.period_start).days + 1
 
 
-def _consecutive_fiscal_years(prior: Fact, current: Fact) -> bool:
-    """Whether two periods whose ends differ in month-day are consecutive full
-    fiscal years, as 52/53-week years are (docs/DECISIONS.md D82)."""
+def _is_last_of_february(date: datetime.date) -> bool:
+    return date.month == 2 and date.day == (29 if calendar.isleap(date.year) else 28)
 
-    def days(fact: Fact) -> int:
-        return (fact.period_end - fact.period_start).days + 1
 
-    drift = (current.period_end - _anniversary(prior.period_end)).days
-    return (
-        days(prior) in _FISCAL_YEAR_DAYS
-        and days(current) in _FISCAL_YEAR_DAYS
-        and (current.period_end - prior.period_end).days in _FISCAL_YEAR_DAYS
-        and abs(drift) <= _MAX_YEAR_END_DRIFT_DAYS
+def _same_end_day(a: datetime.date, b: datetime.date) -> bool:
+    """Same month-day, or both the last day of February."""
+    return (a.month, a.day) == (b.month, b.day) or (
+        _is_last_of_february(a) and _is_last_of_february(b)
     )
+
+
+def _anniversary(date: datetime.date, years: int) -> datetime.date | None:
+    """The same month-day ``years`` later (February 29 becomes February 28);
+    ``None`` past the last representable year."""
+    year = date.year + years
+    if year > datetime.MAXYEAR:
+        return None
+    if (date.month, date.day) == (2, 29) and not calendar.isleap(year):
+        return datetime.date(year, 2, 28)
+    return date.replace(year=year)
+
+
+def _years_between_ends(prior: Fact, current: Fact) -> int | None:
+    """The whole number of years, at least one, whose anniversary of the prior
+    end lies within a week of the current end; ``None`` when there is none."""
+    base = current.period_end.year - prior.period_end.year
+    for years in (base - 1, base, base + 1):
+        if years < 1:
+            continue
+        anniversary = _anniversary(prior.period_end, years)
+        if (
+            anniversary is not None
+            and abs((current.period_end - anniversary).days) <= _MAX_YEAR_END_DRIFT_DAYS
+        ):
+            return years
+    return None
+
+
+def _check_fiscal_years(prior: Fact, current: Fact) -> Refusal | None:
+    """Periods whose ends differ in month-day compare only as consecutive full
+    fiscal years, as 52/53-week years are (docs/DECISIONS.md D82)."""
+    if _days(prior) not in _FISCAL_YEAR_DAYS or _days(current) not in _FISCAL_YEAR_DAYS:
+        return _refuse(
+            RefusalReason.incompatible_comparison, RefusalDetail.period_end_mismatch
+        )
+    if current.period_start <= prior.period_end:
+        return _refuse(
+            RefusalReason.incompatible_comparison, RefusalDetail.overlapping_periods
+        )
+    years = _years_between_ends(prior, current)
+    if years is None:
+        return _refuse(
+            RefusalReason.incompatible_comparison, RefusalDetail.period_end_mismatch
+        )
+    if years > 1:
+        return _refuse(
+            RefusalReason.missing_period, RefusalDetail.non_consecutive_years
+        )
+    if (current.period_end - prior.period_end).days not in _FISCAL_YEAR_DAYS:
+        return _refuse(
+            RefusalReason.incompatible_comparison, RefusalDetail.period_end_mismatch
+        )
+    # The current year starts the day after the prior one ends: no days between.
+    if (current.period_start - prior.period_end).days > 1:
+        return _refuse(
+            RefusalReason.missing_period, RefusalDetail.non_consecutive_years
+        )
+    return None
 
 
 _REPORTED = frozenset(m.value for m in ReportedMetric)
@@ -256,18 +313,11 @@ def _year_over_year(metric: str, facts: Sequence[Fact]) -> YearOverYear | Refusa
     def month_day(date: datetime.date) -> tuple[int, int]:
         return date.month, date.day
 
-    ends_differ = month_day(prior.period_end) != month_day(current.period_end)
+    ends_differ = not _same_end_day(prior.period_end, current.period_end)
     if ends_differ:
-        if not _consecutive_fiscal_years(prior, current):
-            return _refuse(
-                RefusalReason.incompatible_comparison,
-                RefusalDetail.period_end_mismatch,
-            )
-        if current.period_start <= prior.period_end:
-            return _refuse(
-                RefusalReason.incompatible_comparison,
-                RefusalDetail.overlapping_periods,
-            )
+        refusal = _check_fiscal_years(prior, current)
+        if refusal is not None:
+            return refusal
     else:
         if month_day(prior.period_start) != month_day(current.period_start):
             return _refuse(
@@ -318,6 +368,7 @@ def _year_over_year(metric: str, facts: Sequence[Fact]) -> YearOverYear | Refusa
         prior_is_restated=prior.is_restated,
         current_is_restated=current.is_restated,
         period_ends_differ=ends_differ,
+        period_lengths_differ=abs(_days(prior) - _days(current)) >= _WEEK_DAYS,
     )
 
 

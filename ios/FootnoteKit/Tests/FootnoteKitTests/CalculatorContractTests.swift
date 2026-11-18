@@ -26,7 +26,7 @@ struct CalculatorContractTests {
 
     @Test func everyCaseIsLoaded() {
         #expect(ComparisonCase.all.count == ComparisonCase.contract["cases"]!.array.count)
-        #expect(ComparisonCase.all.count >= 103)
+        #expect(ComparisonCase.all.count >= 112)
         #expect(Set(ComparisonCase.all.map(\.id)).count == ComparisonCase.all.count)
     }
 
@@ -118,6 +118,7 @@ struct CalculatorContractTests {
             "prior_is_restated": .bool(r.priorIsRestated),
             "current_is_restated": .bool(r.currentIsRestated),
             "period_ends_differ": .bool(r.periodEndsDiffer),
+            "period_lengths_differ": .bool(r.periodLengthsDiffer),
         ]
     }
 
