@@ -22,11 +22,18 @@ annual report the exporter takes as the latest figure source
 what is required: a report with no risk heading (DART) or no Item 1A (SEC) has no ``risks``.
 
 Cache: ``input_sha256`` (:func:`app.build.model.summary_input_sha256`) covers the source text,
-:data:`PROMPT_VERSION`, the model, the section and the neutrality lexicon version. A key
+the prompt version (:data:`PROMPT_VERSION` for an annual section, :data:`EVENT_PROMPT_VERSION`
+for an event summary), the model, the section and the neutrality lexicon version. A key
 already in the staged or approved file makes no call. A cached staged summary is re-checked by
 the guard and becomes ``withheld`` when it now fails. Every call, and every cache hit, is
 appended to ``data/summaries/calls.jsonl`` with the model, token counts, estimated cost,
 purpose and cache result; prompts, headers and keys are never logged.
+
+Templates (D78): an event whose table facts parsed (:mod:`app.build.templates`) gets fixed
+Korean and English lines and no model or reviewer call. Its row is staged with model
+``template`` and the template version as ``prompt_version`` when the guard passes, withheld
+when it does not, and is logged to ``calls.jsonl`` with cache ``template``. A template counts
+against neither ``--limit`` nor ``--max-calls``. Only the owner approves it, as any row.
 
 Calls are made one at a time. ``--max-calls`` caps them; a summary is started only when the
 calls it may need (generate, retry, review) fit under the cap, in a dry run too.
@@ -65,6 +72,7 @@ from app.build.export import (
     event_scope,
 )
 from app.build.model import (
+    EVENT_PROMPT_VERSION,
     LANGS,
     PROMPT_VERSION,
     THREE_LINE_SECTIONS,
@@ -74,7 +82,15 @@ from app.build.model import (
     annual_sections,
     annual_source_text,
     event_source_text,
+    section_prompt_version,
     summary_input_sha256,
+)
+from app.build.templates import (
+    TEMPLATE_MODEL,
+    TEMPLATE_VERSION,
+    TemplateSummary,
+    event_template,
+    template_input_sha256,
 )
 from app.llm.base import ChatMessage, LLMClient, LLMResult
 from app.llm.chat_completions import LLMApiError
@@ -94,8 +110,9 @@ APPROVED_PATH = SUMMARIES_DIR / "approved.jsonl"
 CALLS_PATH = SUMMARIES_DIR / "calls.jsonl"
 FIXTURES_DIR = BACKEND_DIR / "tests" / "fixtures" / "neutrality"
 
-# PROMPT_VERSION lives in app.build.model (D72); bump it there on any change to a prompt, the
-# schema or the source-text layout: it is part of the cache key.
+# PROMPT_VERSION and EVENT_PROMPT_VERSION live in app.build.model (D72, D78); bump the one whose
+# prompt changes, or both on a change to the schema or the source-text layout. Each is part of
+# the cache key.
 
 DEFAULT_MAX_CALLS = 10
 # Worst case per summary: the first call, one retry, one reviewer call.
@@ -223,7 +240,55 @@ def _common_rules() -> str:
     )
 
 
-def event_system_prompt() -> str:
+# Per-category guidance for the event categories D76 added (and outlook filings no template
+# covers, such as 장래사업ㆍ경영계획). Appended after the general instructions.
+CATEGORY_GUIDANCE: dict[str, str] = {
+    "outlook": (
+        "This filing states the company's own outlook, targets or business plan. Attribute "
+        "every outlook, target and plan to the company in every line: in Korean 회사는 ... "
+        "목표를 밝혔어요 or 회사는 ... 전망을 공시했어요, in English The company stated its "
+        "target for ... or The company disclosed its outlook for .... Never state what will "
+        "happen in your own voice. In English write outlook, target or plan; never forecast, "
+        "expect or anticipate. Do not compare the outlook with results."
+    ),
+    "clarification": (
+        "This filing answers a press report, a rumour or the exchange's request about one. "
+        "Line one says what the report or rumour said, as the company describes it. Line two "
+        "gives the company's answer: whether it confirmed, denied or has not decided the "
+        "matter. Line three says whether the company said it will file again on the matter, "
+        "without the date. Do not judge the report or the answer."
+    ),
+    "management": (
+        "This filing reports a management matter. Line one says what the matter is, as the "
+        "filing names it. Lines two and three give the decision, the parties and the "
+        "conditions the filing states."
+    ),
+    "shareholder_value": (
+        "This filing states a plan for shareholder returns or corporate value. Write each "
+        "measure the plan states in the plan forms, and attribute every target to the "
+        "company: in Korean 회사는 ... 목표를 밝혔어요, in English The company stated a target "
+        "of .... Never state what will happen in your own voice."
+    ),
+    "meeting": (
+        "This filing reports the result of a shareholders' meeting. Say which agenda items "
+        "were approved, rejected or amended as the filing lists them, and name the directors "
+        "or auditors appointed as the filing does. Leave out vote counts and shares."
+    ),
+    "operations": (
+        "This filing reports a serious accident or a stop or restart of production. Say what "
+        "happened and where, as the filing states it. Give a cause, an effect or a measure "
+        "only when the filing states it, attributed to the company."
+    ),
+    "lending": (
+        "This filing reports a loan, a guarantee, collateral or a derivatives loss. Name the "
+        "counterparty and its relation to the company as the filing gives them, and the "
+        "purpose or kind of transaction the filing states."
+    ),
+}
+
+
+def event_system_prompt(category: str | None = None) -> str:
+    guidance = CATEGORY_GUIDANCE.get(category or "")
     return (
         "You summarise one event filing a company made to its regulator, for a reader who "
         "does not read filings. Write exactly three lines in Korean and the same three lines "
@@ -235,6 +300,7 @@ def event_system_prompt() -> str:
         "When the filing names the people a decision concerns, such as the directors before "
         "and after a change, name them as the filing does. In English, write a name as the "
         "filing gives it in English; otherwise romanise the Korean name, family name first.\n\n"
+        + (f"{guidance}\n\n" if guidance else "")
         + _common_rules()
         + "\nRespond with JSON matching the required schema: "
         + ", ".join(_schema_keys("summary")) + "."
@@ -373,6 +439,9 @@ class Target:
     company_names: tuple[str, ...]
     source_text: str | None
     skip_reason: str | None = None
+    category: str | None = None  # an event's category, for its prompt guidance
+    # The fixed wording of an event whose table facts parsed (D78); no model call is made.
+    template: TemplateSummary | None = None
 
 
 def company_names(companies: Iterable[CompanyRow]) -> dict[str, tuple[str, ...]]:
@@ -404,10 +473,11 @@ def select_targets(data: BuildInput, as_of: datetime.date) -> list[Target]:
     for event in event_scope(data, as_of).exported:
         fid = _filing_id(event.regulator, event.filing_key)
         source = event_source_text(event)
+        template = event_template(event)
         targets.append(
             Target(fid, "event", "summary",
                    names.get(_company_id(event.regulator, event.company_key), ()), source,
-                   None if source else "no_source_text")
+                   None if source or template else "no_source_text", event.category, template)
         )  # fmt: skip
 
     wanted = annual_summary_filings(data, as_of)
@@ -438,8 +508,13 @@ def pick_filings(targets: Sequence[Target], filing_ids: Sequence[str]) -> list[T
 # -- cache key and staged file -------------------------------------------------------------------
 
 
+def prompt_version(section: str) -> str:
+    """The prompt version of ``section``: EVENT_PROMPT_VERSION for an event, else PROMPT_VERSION."""
+    return section_prompt_version(section, PROMPT_VERSION, EVENT_PROMPT_VERSION)
+
+
 def input_sha256(source_text: str, model: str, section: str) -> str:
-    return summary_input_sha256(source_text, model, section, PROMPT_VERSION,
+    return summary_input_sha256(source_text, model, section, prompt_version(section),
                                 load_lexicon().version)  # fmt: skip
 
 
@@ -607,10 +682,11 @@ class CallStats:
         section: str | None,
         result: LLMResult | None = None,
         error: str | None = None,
+        model: str | None = None,
     ) -> None:
         entry: dict[str, Any] = {
             "at": datetime.datetime.now(datetime.UTC).isoformat(timespec="seconds"),
-            "model": self.model,
+            "model": model or self.model,
             "purpose": purpose,
             "cache": cache,
             "filing_id": filing_id,
@@ -753,7 +829,7 @@ async def review(
 
 
 def system_prompt(target: Target) -> str:
-    return event_system_prompt() if target.kind == "event" else annual_system_prompt(
+    return event_system_prompt(target.category) if target.kind == "event" else annual_system_prompt(
         target.section
     )
 
@@ -766,7 +842,10 @@ def _rows(
     lines: dict[str, list[str]],
     violations: dict[str, list[dict[str, Any]]],
     flags: list[dict[str, Any]] | None,
+    version: str | None = None,
 ) -> list[dict[str, Any]]:
+    """One row per language; ``version`` is the prompt version, the section's by default."""
+    version = version or prompt_version(target.section)
     rows = []
     for lang in LANGS:
         padded = lines[lang] + [None] * (3 - len(lines[lang]))
@@ -788,7 +867,7 @@ def _rows(
                 "reviewer_flags": None if flags is None else [f for f in flags
                                                               if f["lang"] == lang],
                 "model": model,
-                "prompt_version": PROMPT_VERSION,
+                "prompt_version": version,
                 "lexicon_version": load_lexicon().version,
             }
         )  # fmt: skip
@@ -826,6 +905,16 @@ async def generate_one(
     return _rows(target, key, stats.model, state, attempt.lines, attempt.violations, flags)
 
 
+def template_rows(target: Target, key: str) -> list[dict[str, Any]]:
+    """Stage a template summary (D78): the guard decides staged or withheld; there is no model
+    or reviewer call, so ``reviewer_flags`` is None and only the owner approves it."""
+    assert target.template is not None
+    lines = target.template.lines
+    violations = check_lines(lines, target.section, target.company_names)
+    state = "withheld" if any(violations.values()) else "staged"
+    return _rows(target, key, TEMPLATE_MODEL, state, lines, violations, None, TEMPLATE_VERSION)
+
+
 def recheck_staged(target: Target, rows: Sequence[dict[str, Any]]) -> bool:
     """Re-run the guard on a cached staged summary; on a failure mark both rows withheld with
     the new violations. Returns True when it changed the rows."""
@@ -855,6 +944,8 @@ class GenerateResult:
     invalid_output: list[str] = field(default_factory=list)  # no valid JSON within the cap
     not_attempted: int = 0
     planned: list[tuple[Target, str]] = field(default_factory=list)
+    # Template summaries staged (or, in a dry run, that would be) with no model call.
+    templated: list[tuple[Target, str]] = field(default_factory=list)
 
 
 def _cached_keys(
@@ -898,10 +989,13 @@ async def generate(
     rows = {_row_key(row): row for row in staged}
     result = GenerateResult()
     for target in targets:
-        if target.source_text is None:
+        if target.template is not None:
+            key = template_input_sha256(target.template, load_lexicon().version)
+        elif target.source_text is None:
             result.no_source_text.append(f"{target.filing_id} {target.section}")
             continue
-        key = input_sha256(target.source_text, model, target.section)
+        else:
+            key = input_sha256(target.source_text, model, target.section)
         if (target.filing_id, target.section, key) in cached:
             result.cached += 1
             hit = [rows.get((target.filing_id, lang, target.section)) for lang in LANGS]
@@ -910,7 +1004,19 @@ async def generate(
                     result.rechecked_withheld += 1
                     write_staged(staged_path, rows.values())
             if not dry_run:
-                stats.record("generate", "hit", target.filing_id, target.section)
+                stats.record("generate", "hit", target.filing_id, target.section,
+                             model=TEMPLATE_MODEL if target.template else None)  # fmt: skip
+            continue
+        if target.template is not None:
+            # No call: neither --limit nor --max-calls applies.
+            result.templated.append((target, key))
+            if dry_run:
+                continue
+            for row in template_rows(target, key):
+                rows[_row_key(row)] = row
+            stats.record("generate", "template", target.filing_id, target.section,
+                         model=TEMPLATE_MODEL)  # fmt: skip
+            write_staged(staged_path, rows.values())
             continue
         if limit is not None and result.generated + result.withheld + len(result.planned) >= limit:
             continue
@@ -1065,6 +1171,7 @@ async def _run_generate(args: argparse.Namespace, settings: Any) -> None:
         if client is not None:
             await client.aclose()
     print(f"model: {model}  prompt_version: {PROMPT_VERSION}  "
+          f"event_prompt_version: {EVENT_PROMPT_VERSION}  "
           f"lexicon_version: {load_lexicon().version}  as_of: {args.as_of}")  # fmt: skip
     for item in result.no_source_text:
         print(f"no_source_text {item}")
@@ -1075,7 +1182,11 @@ async def _run_generate(args: argparse.Namespace, settings: Any) -> None:
     counts = (f"cached {result.cached}, no_source_text {len(result.no_source_text)}, "
               f"too large {len(result.too_large)}, invalid output {len(result.invalid_output)}, "
               f"not attempted (max calls) {result.not_attempted}")  # fmt: skip
+    counts += f", template {len(result.templated)}"
     if args.dry_run:
+        for target, key in result.templated:
+            print(f"would template {target.filing_id} {target.section} "
+                  f"table={target.template.table} input_sha256={key}")  # type: ignore[union-attr]  # fmt: skip
         for target, key in result.planned:
             print(f"would generate {target.filing_id} {target.section} "
                   f"chars={len(target.source_text or '')} input_sha256={key}")  # fmt: skip

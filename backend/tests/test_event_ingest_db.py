@@ -33,6 +33,8 @@ pytestmark = pytest.mark.skipif(not TEST_DATABASE_URL, reason="TEST_DATABASE_URL
 
 BODY = DART / "correction" / "20261103000311.xml"
 TODAY = datetime.date(2026, 11, 17)
+# Facts read from the tables of NAVER's four saved 영업(잠정)실적 bodies (D78), 24 each.
+TABLE_FACTS = 96
 
 
 @asynccontextmanager
@@ -161,7 +163,20 @@ def test_ingest_stores_every_filing_chain_and_exact_facts() -> None:
             assert all(v[-1] is None for v in facts.values())
             assert "use_facilities" not in facts  # "-" in the source
             n_facts = (await _rows(engine, "SELECT count(*) FROM filing_facts"))[0][0]
-            assert n_facts == summary.facts_written == len(facts)
+            # The other facts are read from NAVER's four 영업(잠정)실적 tables (D78).
+            assert n_facts == summary.facts_written == len(facts) + TABLE_FACTS
+            table = {
+                r[0]: r[1:]
+                for r in await _rows(
+                    engine,
+                    "SELECT f.key, f.kind, f.unit, f.value_decimal, f.source_field "
+                    "FROM filing_facts f JOIN event_filings e ON e.id = f.event_filing_id "
+                    "WHERE e.rcept_no = '20260807800028'",
+                )
+            }
+            revenue = table["results_revenue_current"]
+            assert revenue[:2] == ("amount", "억원") and isinstance(revenue[2], Decimal)
+            assert revenue[3] == "매출액 당해실적 당기실적"
 
     run(scenario())
 
@@ -238,7 +253,8 @@ def test_cli_entry_runs_against_the_fake_client_and_test_database(monkeypatch, c
         for row in json.loads((DART / "list" / f"035420_{kind}.json").read_text())["list"]
     }
     assert count == len(listed) > 50
-    assert facts == 5  # the newest 유상증자결정 has five non-"-" fields in the contract
+    # The newest 유상증자결정 has five non-"-" fields in the contract; the rest are table facts.
+    assert facts == 5 + TABLE_FACTS
 
 
 @pytest.mark.parametrize(
@@ -288,7 +304,8 @@ def test_deleting_a_filing_deletes_its_facts() -> None:
                 await connection.execute(
                     text("DELETE FROM event_filings WHERE rcept_no = '20261103000311'")
                 )
-            assert (await _rows(engine, "SELECT count(*) FROM filing_facts"))[0][0] == 0
+            # Only the other filings' table facts are left.
+            assert (await _rows(engine, "SELECT count(*) FROM filing_facts"))[0][0] == TABLE_FACTS
 
     run(scenario())
 

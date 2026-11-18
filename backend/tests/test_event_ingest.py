@@ -13,6 +13,7 @@ import pytest
 from app.clients import sec_8k
 from app.clients.dart import DartApiError
 from app.clients.dart_events import CorrectionTarget, read_event_document
+from app.clients.dart_tables import table_for
 from app.filings.categories import classify_dart, is_event_category
 from app.ingest import events
 from app.ingest.events import (
@@ -23,7 +24,7 @@ from app.ingest.events import (
     store_body_text,
     window_bounds,
 )
-from tests.event_fakes import DART, FakeDartClient
+from tests.event_fakes import DART, NAVER_RESULTS, FakeDartClient
 
 D = datetime.date
 
@@ -283,8 +284,11 @@ def test_naver_corrected_rights_issue_chain_and_facts() -> None:
         False, False, True,
     )
 
-    # The structured endpoint returns the newest version only; the facts attach to it.
-    assert [r.item.rcept_no for r in records if r.facts] == ["20261103000311"]
+    # The structured endpoint returns the newest version only; the facts attach to it. The
+    # preliminary results get their facts from their own tables (D78).
+    assert [r.item.rcept_no for r in records if r.facts and r.base_key == "유상증자결정"] == [
+        "20261103000311"
+    ]
     facts = {f.key: f for f in newest.facts}
     assert facts["new_shares_common"].value_decimal == Decimal("6558435")
 
@@ -328,10 +332,51 @@ def test_excluded_filings_are_kept_with_a_reason_and_counted(stock: str) -> None
     assert summary.ok, summary.problems
 
 
-def test_in_scope_filings_without_a_structured_endpoint_get_no_facts() -> None:
+
+
+def test_in_scope_filings_without_a_structured_endpoint_or_table_get_no_facts() -> None:
     client = FakeDartClient("035420", documents={"20261103000311": CORRECTION_BODY})
     records, _ = collect(client)
-    assert all(not r.facts for r in records if r.base_key != "유상증자결정")
+    # NAVER's four saved 영업(잠정)실적 bodies are results tables (D78); its other results
+    # filings have no saved body here (a blank one), so no table and no facts.
+    assert {r.item.rcept_no for r in records if r.facts and r.base_key != "유상증자결정"} == set(
+        NAVER_RESULTS
+    )
+    for record in records:
+        if record.item.rcept_no in NAVER_RESULTS:
+            assert table_for(record.classification.category, record.base_key) == "results"
+            assert all(f.key.startswith("results_") for f in record.facts or [])
+    naver = next(r for r in records if r.item.rcept_no == "20260807800028")
+    facts = {f.key: f for f in naver.facts or []}
+    assert facts["results_revenue_current"].unit == "억원"
+    assert all(isinstance(f.value_decimal, Decimal) for f in naver.facts or []
+               if f.kind == "amount")  # fmt: skip
+
+
+# NAVER's consolidated results, classified by its name; its body is not saved in the fixtures.
+NAVER_CONSOLIDATED = "20260807800026"
+HYUNDAI_RESULTS = DART / "document" / "20261029800228.xml"
+
+
+def test_a_table_filing_whose_body_cannot_be_read_keeps_its_stored_facts() -> None:
+    client = FakeDartClient("035420", documents={"20261103000311": CORRECTION_BODY},
+                            broken={NAVER_CONSOLIDATED: DartApiError("status 014")})  # fmt: skip
+    records, _ = collect(client)
+    naver = next(r for r in records if r.item.rcept_no == NAVER_CONSOLIDATED)
+    assert naver.classification.category == "earnings"
+    assert naver.facts is None  # None: the stored facts are left alone
+
+
+def test_a_table_that_does_not_parse_stores_no_facts(tmp_path) -> None:
+    broken = tmp_path / "results.xml"
+    raw = HYUNDAI_RESULTS.read_bytes()
+    assert raw.count(b"45,110,247") == 1
+    broken.write_bytes(raw.replace(b"45,110,247", b"45,11O,247"))  # a letter O in a number
+    client = FakeDartClient("035420", documents={"20261103000311": CORRECTION_BODY,
+                                                 NAVER_CONSOLIDATED: broken})  # fmt: skip
+    records, _ = collect(client)
+    naver = next(r for r in records if r.item.rcept_no == NAVER_CONSOLIDATED)
+    assert naver.facts == []  # read and replaced with nothing: the model summarises it
 
 
 def test_partial_listing_is_a_problem_not_a_silent_drop() -> None:

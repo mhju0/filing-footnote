@@ -13,6 +13,8 @@ For one company and the last 12 months it
 3. links each ``[기재정정]`` filing in an event category to its original and marks the newest
    version of a chain as the one to show (older versions are kept);
 4. fetches the structured endpoints named in ``contracts/filing-facts.json`` and extracts facts;
+   a filing whose body is one of the contract's document tables (results, unit sales, cash
+   dividend, outlook) gets its facts from that table instead (``app.clients.dart_tables``);
 5. upserts ``event_filings`` and ``filing_facts`` in one transaction.
 
 Excluded filings are stored with their ``excluded_reason``; none is dropped. Linking and chain
@@ -47,6 +49,7 @@ from app.clients.dart_events import (
     parse_correction_target,
     read_event_document,
 )
+from app.clients.dart_tables import parse_table_facts, table_for
 from app.clients.sec_8k import TEXT_STORE_LIMIT
 from app.config import get_settings
 from app.db.models import EventFiling, FilingFact
@@ -60,6 +63,7 @@ from app.filings.categories import (
 from app.ingest.pinned import (
     SAVE_PINNED_HELP,
     PinnedStore,
+    dart_document_path,
     dart_structured_path,
     format_pinned,
     open_pinned_store,
@@ -344,6 +348,7 @@ async def collect_dart_events(
     summary.listed = len(items)
 
     documents: dict[str, EventDocument | str] = {}
+    raw_documents: dict[str, bytes] = {}  # the body bytes, for a pinned document table
 
     async def document(rcept_no: str) -> EventDocument | str:
         """The parsed body, or an error string. Fetched at most once per filing."""
@@ -353,6 +358,7 @@ async def collect_dart_events(
             try:
                 payload = await client.fetch_document(rcept_no)
                 documents[rcept_no] = read_event_document(payload.content)
+                raw_documents[rcept_no] = payload.content
             except _DOCUMENT_ERRORS as exc:
                 message = f"document fetch failed: {exc}"
                 documents[rcept_no] = message
@@ -392,6 +398,18 @@ async def collect_dart_events(
         record.body_text, record.body_truncated = store_body_text(body.text, TEXT_STORE_LIMIT)
         summary.bodies_stored += 1
         summary.bodies_truncated += record.body_truncated
+
+    # A filing whose body is a contract document table gets its facts from that table. The body
+    # was read, so facts are replaced: an unparseable table stores none (the model summarises).
+    for record in records:
+        rcept_no = record.item.rcept_no
+        table = table_for(record.classification.category, record.base_key)
+        body = documents.get(rcept_no)
+        if table is None or not isinstance(body, EventDocument) or body.format != "xforms":
+            continue
+        record.facts = parse_table_facts(table, body.rows)
+        if record.facts and pinned is not None:
+            pinned.sink(dart_document_path(rcept_no), summary.problems)(raw_documents[rcept_no])
 
     entries: list[ChainInput] = []
     for record in records:
