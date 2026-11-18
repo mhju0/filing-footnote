@@ -666,6 +666,37 @@ def test_dart_business_follows_the_part_when_the_part_has_no_chunk() -> None:
     assert [c.chunk_index for c in section_chunks("DART", "business", NEW_LAYOUT)] == [2, 3]
 
 
+# Hyundai Motor's 2025 report (20260318001394): child sections sit beside their part in the
+# XML, so they are their own part, and III, IV and V have no chunk of their own.
+HYUNDAI_LAYOUT = [
+    ChunkRow(0, "1. 회사의 개요", "개요", "I. 회사의 개요"),
+    ChunkRow(1, "II. 사업의 내용", "사업 머리말", "II. 사업의 내용"),
+    ChunkRow(2, "1. (제조서비스업)사업의 개요", "제조", "1. (제조서비스업)사업의 개요"),
+    ChunkRow(3, "1. 요약재무정보", "요약", "III. 재무에 관한 사항"),
+    ChunkRow(4, "4. 재무제표", "재무제표", "4. 재무제표"),
+    ChunkRow(5, "2. 개요", "경영 개요", "IV. 이사의 경영진단 및 분석의견"),
+    ChunkRow(6, "3. 재무상태 및 영업실적", "실적", "IV. 이사의 경영진단 및 분석의견"),
+    ChunkRow(7, "1. 외부감사에 관한 사항", "감사", "V. 회계감사인의 감사의견 등"),
+]
+
+
+def test_dart_business_stops_at_the_next_part_when_that_part_has_no_chunk() -> None:
+    assert [c.chunk_index for c in section_chunks("DART", "business", HYUNDAI_LAYOUT)] == [1, 2]
+
+
+def test_dart_changes_stop_at_the_next_part_when_that_part_has_no_chunk() -> None:
+    assert [c.chunk_index for c in section_chunks("DART", "changes", HYUNDAI_LAYOUT)] == [5, 6]
+
+
+def test_dart_changes_stop_when_the_part_after_a_titled_part_has_no_chunk() -> None:
+    layout = [
+        ChunkRow(0, "IV. 이사의 경영진단 및 분석의견", "머리말", "IV. 이사의 경영진단 및 분석의견"),
+        ChunkRow(1, "2. 개요", "경영 개요", "IV. 이사의 경영진단 및 분석의견"),
+        ChunkRow(2, "1. 외부감사에 관한 사항", "감사", "V. 회계감사인의 감사의견 등"),
+    ]
+    assert [c.chunk_index for c in section_chunks("DART", "changes", layout)] == [0, 1]
+
+
 # -- target selection ----------------------------------------------------------------------------
 
 SAMSUNG = CompanyRow("DART", "00126380", "삼성전자", "SAMSUNG ELECTRONICS CO,.LTD", "005930", "Y")

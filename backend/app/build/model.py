@@ -186,17 +186,21 @@ def section_chunks(regulator: str, section: str, chunks: Sequence[ChunkRow]) -> 
     A chunk belongs when its own heading matches, or when it follows a matching top-level
     heading before the next top-level heading. A chunk also belongs when its stored
     ``part_title`` matches, which finds the children of a top-level part with no text of its
-    own (ingest stores no chunk for that heading). Chunks stored without ``part_title`` rely
-    on the chunk-order rule alone.
+    own (ingest stores no chunk for that heading). A top-level ``part_title`` also ends the
+    previous part, so a section stops at the next part even when that part has no chunk of
+    its own. Chunks stored without ``part_title`` rely on the chunk-order rule alone.
     """
     rule = SECTION_HEADINGS[regulator][SECTION_SOURCE[section]]
     top = TOP_LEVEL_HEADING[regulator]
     picked, inside = [], False
     for chunk in sorted(chunks, key=lambda c: c.chunk_index):
         title = chunk.section_title
+        part = chunk.part_title
+        if top is not None and part and top.search(part):
+            inside = rule.matches(part)
         if top is not None and title and top.search(title):
             inside = rule.matches(title)
-        if inside or rule.matches(title) or rule.matches(chunk.part_title):
+        if inside or rule.matches(title) or rule.matches(part):
             picked.append(chunk)
     return picked
 
