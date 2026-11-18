@@ -96,7 +96,7 @@ FIXTURES_DIR = BACKEND_DIR / "tests" / "fixtures" / "neutrality"
 
 # Bump on any change to a prompt, the schema or the source-text layout: it is part of the
 # cache key, and a release build refuses the exporter's placeholder "none".
-PROMPT_VERSION = "m6-2026-11-18-a"
+PROMPT_VERSION = "m6-2026-11-18-b"
 
 DEFAULT_MAX_CALLS = 10
 # Worst case per summary: the first call, one retry, one reviewer call.
@@ -191,13 +191,19 @@ def _common_rules() -> str:
         "- Write no digits and no numbers spelled as words: no amounts, share counts, "
         "percentages, ratios, dates, years, periods or item numbers. The app shows the "
         "figures from the filing separately, so leave every figure out and describe the "
-        "decision or fact without it.\n"
+        "decision or fact without it. Do not say which quarter, half or year: write 분기 "
+        "실적 and quarterly results.\n"
+        "- Keep the names of places, regions, segments and products as the filing gives "
+        "them, translated word for word and never swapped for another: Greater China is "
+        "중화권, not 대만 or 중국.\n"
         "- Do not write the company's name, because some names contain digits. Write 회사는 "
         "in Korean and The company in English.\n"
         + lexicon_rules_text()
         + "- A plan the filing states may be written only in these forms: in Korean ~할 "
         "예정이라고 밝혔어요 or ~할 계획이라고 밝혔어요, in English The company said it plans "
-        "to ... or The company said it intends to ....\n"
+        "to ... or The company said it intends to .... Anything else the filing says will "
+        "happen uses the same forms: in Korean ~할 예정이라고 밝혔어요, never ~할 "
+        "것이라고.\n"
         "- No markdown, emoji, exclamation marks or line breaks.\n"
         "\n"
         "Korean lines:\n"
@@ -239,7 +245,8 @@ def event_system_prompt() -> str:
 _ANNUAL_TASKS = {
     "one_line": (
         "Write one line in Korean and the same line in English that says what the company "
-        "does, in plain words: its main businesses and what it sells."
+        "does, in plain words: its main businesses and what it sells. Name at most three "
+        "products or businesses, so the line stays within the length limit."
     ),
     "business": (
         "Write three lines in Korean and the same three lines in English about the company's "

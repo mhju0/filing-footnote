@@ -559,6 +559,15 @@ def test_the_event_prompt_names_people_and_forbids_repeating_a_fact() -> None:
         assert "name them as the filing does" not in summaries.annual_system_prompt(section)
 
 
+def test_prompts_cover_the_second_pilot_mistakes() -> None:
+    for prompt in (summaries.event_system_prompt(), summaries.annual_system_prompt("changes")):
+        assert "Do not say which quarter, half or year" in prompt  # Apple 8-K wrote 4분기
+        assert "Greater China is 중화권" in prompt  # Apple 10-K wrote 대만
+        assert "never ~할 것이라고" in prompt  # Microsoft 8-K tripped N3
+    assert "at most three" in summaries.annual_system_prompt("one_line")  # Apple one_line ran long
+    assert summaries.PROMPT_VERSION == "m6-2026-11-18-b"
+
+
 def test_prompt_word_lists_come_from_the_lexicon() -> None:
     rules = {r["id"]: r for r in json.loads(summaries.LEXICON_PATH.read_text())["rules"]}
     listed = summaries.lexicon_rules_text()

@@ -749,3 +749,17 @@ tokens; a retry adds about 500.
   command line lists it as `too_large`. Sending it again cannot succeed.
 - The shorter DART text changes the cache key of every DART summary. None was approved.
 - Groq's paid Dev Tier would raise the limit; that is the owner's call.
+
+## D70 · Prompt version m6-2026-11-18-b · 2026-11-18 (`ACCEPTED`)
+
+The second pilot (13 summaries) showed four prompt gaps. The owner agreed to fix them
+before the full run, because a later prompt change would re-run every summary.
+
+- Apple's earnings 8-K wrote 4분기 (N1). A line no longer says which quarter, half or year.
+  Writing the number out in words would also fail N1.
+- Apple's 10-K wrote 대만 for Greater China, and neither the guard nor the reviewer caught
+  it. Names of places, regions, segments and products are kept as the filing gives them.
+- Microsoft's director 8-K wrote ~할 것이라고 (N3). Anything the filing says will happen
+  uses the plan forms.
+- Apple's one-line summary ran past the length limit in both languages (N6). It now names
+  at most three products or businesses.
