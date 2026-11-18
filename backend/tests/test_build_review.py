@@ -97,6 +97,22 @@ def test_filing_info_comes_from_the_build_input() -> None:
     assert all(isinstance(value, str) for _, value in got.facts)
 
 
+def test_the_source_text_is_shown_escaped_under_each_summary() -> None:
+    sources = {(FID, "summary"): "취득예정주식 3,000,000주 <b>원문</b>"}
+    page = review.render(_rows(), INFO, AS_OF, sources)
+    assert "Source text the summary was written from" in page
+    assert "취득예정주식 3,000,000주 &lt;b&gt;원문&lt;/b&gt;" in page
+    assert page.count("Source text the summary was written from") == 1
+
+
+def test_sources_come_from_the_summary_targets() -> None:
+    data = fixture_build_input()
+    sources = review.build_sources(data, AS_OF)
+    assert sources and all(text for text in sources.values())
+    assert all(section in ("summary", "one_line", "business", "changes", "risks")
+               for _, section in sources)  # fmt: skip
+
+
 def test_korean_is_shown_before_english() -> None:
     page = review.render(_rows(), INFO, AS_OF)
     card = page[page.index(f'id="{FID}-summary"') :]

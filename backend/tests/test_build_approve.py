@@ -116,20 +116,22 @@ def test_approving_again_replaces_the_approved_row(tmp_path) -> None:
     assert next(r for r in rows if r["lang"] == "ko")["input_sha256"] != "old"
 
 
-def test_all_reviewed_skips_flagged_withheld_and_violating_rows(tmp_path) -> None:
+def test_all_reviewed_approves_only_pairs_that_are_clean_and_reviewed(tmp_path) -> None:
     flag = {"lang": "ko", "type": "exaggeration", "line": 1, "quote_from_summary": "x"}
     rows = [
-        _row(FID, "ko"), _row(FID, "en", flags=None),
-        _row(OTHER, "ko", flags=[flag]), _row(OTHER, "en"),
-        _row("dart:3", "ko", state="withheld"),
-        _row("dart:4", "en", violations=[{"rule_id": "N1"}]),
+        _row(FID, "ko"), _row(FID, "en"),  # clean and reviewed: approved
+        _row(OTHER, "ko", flags=[flag]), _row(OTHER, "en"),  # one language flagged
+        _row("dart:2", "ko"), _row("dart:2", "en", flags=None),  # reviewer did not run
+        _row("dart:3", "ko", state="withheld"), _row("dart:3", "en"),
+        _row("dart:4", "ko"), _row("dart:4", "en", violations=[{"rule_id": "N1"}]),
+        _row("dart:5", "ko"),  # only one language staged
     ]  # fmt: skip
     staged, approved = _setup(tmp_path, rows)
     result = approve.approve_all_reviewed(staged, approved)
-    assert result.approved == [(FID, "en", "summary"), (FID, "ko", "summary"),
-                               (OTHER, "en", "summary")]  # fmt: skip
-    left = {(r["filing_id"], r["lang"]) for r in read_jsonl(staged)}
-    assert left == {(OTHER, "ko"), ("dart:3", "ko"), ("dart:4", "en")}
+    assert result.approved == [(FID, "en", "summary"), (FID, "ko", "summary")]
+    left = {r["filing_id"] for r in read_jsonl(staged)}
+    assert left == {OTHER, "dart:2", "dart:3", "dart:4", "dart:5"}
+    assert len(read_jsonl(staged)) == len(rows) - 2
 
 
 def test_the_command_line_lists_what_it_approved(tmp_path, capsys) -> None:

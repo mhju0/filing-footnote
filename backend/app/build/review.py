@@ -27,7 +27,7 @@ from typing import Any
 
 from app.build.export import _company_id, _filing_id
 from app.build.model import BuildInput
-from app.build.summaries import STAGED_PATH, company_names, read_jsonl
+from app.build.summaries import STAGED_PATH, company_names, read_jsonl, select_targets
 
 SOURCE_PREFIXES = ("https://dart.fss.or.kr/", "https://www.sec.gov/")
 DART_VIEWER = "https://dart.fss.or.kr/dsaf001/main.do?rcpNo="
@@ -94,6 +94,15 @@ def build_info(data: BuildInput) -> dict[str, FilingInfo]:
     return info
 
 
+def build_sources(data: BuildInput, as_of: datetime.date) -> dict[tuple[str, str], str]:
+    """(filing id, section) -> the source text the summary step sends to the model."""
+    return {
+        (t.filing_id, t.section): t.source_text
+        for t in select_targets(data, as_of)
+        if t.source_text
+    }
+
+
 # -- page ----------------------------------------------------------------------------------------
 
 CSS = """\
@@ -133,6 +142,7 @@ details { margin-top: 8px; }
 summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; }
 dl { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 4px 16px; }
 dd { margin: 0; font-variant-numeric: tabular-nums; }
+.source { white-space: pre-wrap; margin: 8px 0 0; font: inherit; font-size: 14px; }
 """
 
 
@@ -192,7 +202,11 @@ def _command(filing_id: str, section: str) -> str:
 
 
 def _card(
-    filing_id: str, section: str, rows: Sequence[Mapping[str, Any]], info: FilingInfo | None
+    filing_id: str,
+    section: str,
+    rows: Sequence[Mapping[str, Any]],
+    info: FilingInfo | None,
+    source: str | None = None,
 ) -> str:
     anchor = escape(f"{filing_id}-{section}", quote=True)
     head = [f"<h2>{escape(info.company if info and info.company else filing_id)}</h2>"]
@@ -224,6 +238,11 @@ def _card(
         parts.append(
             f"<details><summary>Facts the filing states</summary><dl>{facts}</dl></details>"
         )
+    if source:
+        parts.append(
+            "<details><summary>Source text the summary was written from</summary>"
+            f'<pre class="source">{escape(source)}</pre></details>'
+        )
     if all(r["review_state"] == "staged" and not r.get("violations") for r in rows):
         parts.append(
             '<p class="muted">Approve both languages:</p>'
@@ -239,6 +258,7 @@ def render(
     rows: Sequence[Mapping[str, Any]],
     info: Mapping[str, FilingInfo],
     as_of: datetime.date | None = None,
+    sources: Mapping[tuple[str, str], str] | None = None,
 ) -> str:
     """The whole page as text; deterministic for the same rows, details and date."""
     grouped: dict[tuple[str, str], list[Mapping[str, Any]]] = {}
@@ -248,7 +268,9 @@ def render(
         grouped.setdefault((row["filing_id"], row["section"]), []).append(row)
     order = sorted(grouped, key=lambda k: (_group(grouped[k]), k))
     cards = "\n".join(
-        _card(fid, section, grouped[(fid, section)], info.get(fid)) for fid, section in order
+        _card(fid, section, grouped[(fid, section)], info.get(fid),
+              (sources or {}).get((fid, section)))
+        for fid, section in order
     )
     counts = f"{len(order)} summaries, {len(rows)} rows"
     when = f" as of {as_of.isoformat()}" if as_of else ""
@@ -256,7 +278,7 @@ def render(
         ""
         if info
         else (
-            '<p class="muted">Company, title and facts are not shown: no '
+            '<p class="muted">Company, title, facts and source text are not shown: no '
             "--database-url was given.</p>"
         )
     )
@@ -292,15 +314,19 @@ def run(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--staged", type=Path, default=STAGED_PATH)
     parser.add_argument("--database-url", help="adds company, title, link and facts")
-    parser.add_argument("--as-of", type=datetime.date.fromisoformat)
+    parser.add_argument("--as-of", type=datetime.date.fromisoformat,
+                        help="the summary run's --as-of, for the source text; default today")
     args = parser.parse_args(argv)
     info: dict[str, FilingInfo] = {}
+    sources: dict[tuple[str, str], str] = {}
     if args.database_url:
         from app.build.source import load_build_input
 
-        info = build_info(asyncio.run(load_build_input(args.database_url)))
+        data = asyncio.run(load_build_input(args.database_url))
+        info = build_info(data)
+        sources = build_sources(data, args.as_of or datetime.date.today())
     rows = read_jsonl(args.staged)
-    _write(args.out, render(rows, info, args.as_of))
+    _write(args.out, render(rows, info, args.as_of, sources))
     print(f"wrote {args.out}: {len(rows)} rows from {args.staged}")
     return 0
 

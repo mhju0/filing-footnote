@@ -17,8 +17,9 @@ filing and section move together.
 
 An edit replaces one line of one language and runs the language's lines through the same guard
 the exporter runs (``summaries.guard_lines``) with the company's names; on a violation nothing is
-written. ``--all-reviewed`` approves every staged row with no violations and no reviewer flags
-(a row whose reviewer did not run counts as having none); it lists what it approved.
+written. ``--all-reviewed`` approves a filing section only when both languages are staged,
+hold no violations and have a reviewer result with no flags; a row whose reviewer did not run is
+left for the owner. It lists what it approved.
 """
 
 from __future__ import annotations
@@ -162,12 +163,24 @@ def approve_filing(
     return _commit(staged_path, approved_path, staged, [_approved_row(r) for r in picked])
 
 
+def _clean_and_reviewed(row: Mapping[str, Any]) -> bool:
+    return (
+        row["review_state"] == "staged"
+        and not row.get("violations")
+        and row.get("reviewer_flags") == []
+    )
+
+
 def approve_all_reviewed(staged_path: Path, approved_path: Path) -> ApproveResult:
     staged = read_jsonl(staged_path)
+    pairs: dict[tuple[str, str], list[Row]] = {}
+    for row in staged:
+        pairs.setdefault((row["filing_id"], row["section"]), []).append(row)
     picked = [
         _approved_row(r)
-        for r in staged
-        if r["review_state"] == "staged" and not r.get("violations") and not r.get("reviewer_flags")
+        for rows in pairs.values()
+        if {r["lang"] for r in rows} == set(LANGS) and all(map(_clean_and_reviewed, rows))
+        for r in rows
     ]
     return _commit(staged_path, approved_path, staged, picked)
 
@@ -217,7 +230,7 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--all-reviewed",
         action="store_true",
-        help="approve every staged row with no violations and no reviewer flags",
+        help="approve each filing section whose two languages are clean and reviewed",
     )
     parser.add_argument("--database-url", help="for --edit-line; default: DATABASE_URL")
     parser.add_argument("--staged", type=Path, default=STAGED_PATH)
