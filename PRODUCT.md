@@ -45,13 +45,23 @@ guessing. It explains; it does not advise or trade.
 
 ## Capabilities and Constraints
 
-- 18 companies (Korean and US): each company's latest annual report and up to five recent
-  event filings, with two years per figure (2026-11-18, owner; D72). Metrics: revenue,
+- 18 companies (Korean and US): each company's latest annual report and up to ten recent
+  filings from the last 12 months, with two years per figure (2026-11-19, owner; D72,
+  D76). The filings are official company filings a shareholder would want to see: results,
+  unit sales, company outlook, buybacks, dividends, capital, deals, leadership, legal
+  matters, shareholder value, shareholder meetings, operations, loans and guarantees,
+  management matters and answers to press reports. Notices (IR events, record dates and
+  similar) are listed together on one row and are not summarised. Metrics: revenue,
   operating income, net income, net income attributable to owners, EPS, diluted EPS, and
   derived operating margin.
-- Core flow: pick a company → read how it did in one sentence → tap a figure for its
-  meaning and earlier years → compare with last year or with another company → see the
-  calculation → open the source filing. A glossary explains terms.
+- Company outlook ("회사 전망 / Company outlook") shows what the company forecast, always
+  attributed to the company and never used in a comparison; the app does not compute a
+  gap against a forecast. (2026-11-19, owner)
+- Core flow is filing-first: pick a company → see its recent filings → open one to read
+  what it says and the numbers it states → tap a figure for its meaning and earlier years →
+  compare with last year or with another company → see the calculation → open the source
+  filing. A glossary explains terms. (2026-11-18, owner: "they pick a company, and we list
+  the recent filings and let them pick the filing and go from there")
 - Comparisons: same company, metric, currency, basis and period end; no percentage when
   the baseline is zero or negative; cross-company comparisons use ratios and percentages
   only, never currency conversion, with a caveat about differing accounting standards
