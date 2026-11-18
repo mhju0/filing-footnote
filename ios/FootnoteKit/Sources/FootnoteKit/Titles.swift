@@ -4,6 +4,10 @@
 /// label. Nothing is inferred from the filing's text. An unknown DART report name keeps its
 /// original wording in Korean and falls back to the category label in English.
 public enum Titles {
+    /// The separator between parts of a line: a middle dot held to the word before it by a
+    /// no-break space, so a line never starts with `·` (D86). A line may end on `word ·`.
+    public static let separator = "\u{00A0}· "
+
     // MARK: - Filings
 
     public static func title(for filing: Filing, language: Language) -> String {
@@ -142,7 +146,7 @@ public enum Titles {
         var title = titles.map { language == .ko ? $0.ko : $0.en }
             ?? (language == .ko ? "\(filing.category.label(.ko)) 관련 공시" : "\(filing.category.label(.en)) filing")
         if name.subsidiary { title += language == .ko ? " (자회사)" : " (subsidiary)" }
-        if let detail = name.detail.flatMap({ dartDetail($0, language) }) { title += " · " + detail }
+        if let detail = name.detail.flatMap({ dartDetail($0, language) }) { title += separator + detail }
         return title
     }
 

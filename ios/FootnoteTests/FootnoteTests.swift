@@ -95,8 +95,8 @@ struct CopyTests {
         let store = try BundleStore(contentsOf: fixtureURL)
         let page = try #require(CompanyPage(store: store, companyID: "dart:00126380"))
         let report = try #require(page.periodicReports.first)
-        #expect(Copy.revenueLine(report, currency: "KRW", .ko) == "매출 300조 8,709억원 ·\u{00A0}+16.20% 늘었어요")
-        #expect(Copy.revenueLine(report, currency: "KRW", .en) == "Revenue ₩300.87 trillion ·\u{00A0}+16.20%, up")
+        #expect(Copy.revenueLine(report, currency: "KRW", .ko) == "매출 300조 8,709억원\u{00A0}· +16.20% 늘었어요")
+        #expect(Copy.revenueLine(report, currency: "KRW", .en) == "Revenue ₩300.87 trillion\u{00A0}· +16.20%, up")
         #expect(Copy.revenueSpoken(report, currency: "KRW", .en)
             == "Revenue for fiscal 2025, ₩300.87 trillion, up 16.20 percent from the year before")
     }
@@ -312,5 +312,48 @@ struct LaunchRouteTests {
 
     @Test func unknownKindIsIgnored() {
         #expect(LaunchRoute(argument: "settings") == nil)
+    }
+}
+
+@Suite("News and glossary")
+struct NewsGlossaryAppTests {
+    @Test func newsAndGlossaryRoutes() throws {
+        let news = try #require(LaunchRoute(argument: "news=dart:20261029000247"))
+        #expect(news.tab == .news)
+        #expect(news.newsPath == [.filing("dart:20261029000247")])
+        #expect(news.sidebarItem == .news)
+        #expect(news.filingID == "dart:20261029000247")
+        #expect(try #require(LaunchRoute(argument: "news")).newsPath.isEmpty)
+        let glossary = try #require(LaunchRoute(argument: "glossary=metric_revenue"))
+        #expect(glossary.tab == .glossary)
+        #expect(glossary.sidebarItem == .glossary)
+        #expect(glossary.glossaryFocus == "metric_revenue")
+        #expect(glossary.filingID == nil)
+        #expect(try #require(LaunchRoute(argument: "glossary")).glossaryFocus == nil)
+    }
+
+    /// The separator is held to the word before it, so no line starts with `·`; the only
+    /// break opportunity is the ordinary space after it.
+    @Test func dotStaysWithTheWordBeforeIt() throws {
+        #expect(Copy.dot == "\u{00A0}· ")
+        #expect(Copy.dot == Titles.separator)
+        let company = try #require(try BundleStore(contentsOf: fixtureURL).companies.first)
+        let line = PageCopy.figureContext(company, basis: "consolidated", fiscalYear: 2025, .ko)
+        #expect(!line.contains(" ·"))
+        #expect(line.contains("\u{00A0}· "))
+    }
+
+    /// VoiceOver hears a pause for each separator, not the dot.
+    @Test func separatorsAreSpokenAsPauses() {
+        #expect("삼성전자\u{00A0}· 연결 기준\u{00A0}· 2025 회계연도".spokenSeparators
+            == "삼성전자, 연결 기준, 2025 회계연도")
+        #expect("Revenue".spokenSeparators == "Revenue")
+    }
+
+    @Test func newsNoteCountsTheFilings() {
+        #expect(Copy.newsEndNote(listed: 30, capped: true, .en)
+            == "The 30 newest filings across all companies. Each company’s page lists more.")
+        #expect(Copy.newsEndNote(listed: 15, capped: false, .ko) == "모든 기업의 최근 공시 15건을 모두 보여 줘요.")
+        #expect(Copy.glossaryLink("배당", .ko) == "용어 풀이: 배당")
     }
 }

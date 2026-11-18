@@ -89,7 +89,7 @@ struct FigureView: View {
 
     private var spokenHeader: String {
         var parts = [PageCopy.figureContext(page.company, basis: page.basis, fiscalYear: page.fiscalYear, language)
-            .replacingOccurrences(of: Copy.dot, with: ", "), page.metric.name(language)]
+            .spokenSeparators, page.metric.name(language)]
         if let current = page.current {
             parts.append(PageCopy.exact(current, language))
             if current.isRestated { parts.append(PageCopy.restatedTag(language)) }
@@ -123,7 +123,7 @@ struct FigureView: View {
             .padding(.vertical, 4)
             .listRowBackground(Theme.surface)
             .accessibilityElement(children: .combine)
-            LinkRow(title: PageCopy.moreInGlossary(language)) { navigate(.glossary) }
+            LinkRow(title: PageCopy.moreInGlossary(language)) { navigate(.glossary(entry.termKey)) }
                 .accessibilityIdentifier("more-in-glossary")
         } header: {
             Text(words: PageCopy.meaning(language))

@@ -5,6 +5,7 @@ import SwiftUI
 /// 꼽은 위험, then 핵심 숫자 for the report's year and the year before, then the original.
 struct AnnualReportView: View {
     @Environment(\.language) private var language
+    let store: BundleStore
     let page: AnnualPage
 
     var body: some View {
@@ -52,6 +53,8 @@ struct AnnualReportView: View {
                 .id(PageScroll.numbers)
             }
             SourceSection(source: page.source)
+            GlossaryLinkSection(store: store, category: page.filing.category)
+            PageEndMarker()
         }
     }
 

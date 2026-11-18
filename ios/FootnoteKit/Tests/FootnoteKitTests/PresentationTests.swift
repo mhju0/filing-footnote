@@ -255,7 +255,7 @@ struct TitleParityTests {
         let filing = try #require(store.filing(id: "dart:20261029000539"))
         let ko = filing.category.label(.ko)
         let en = filing.category.label(.en)
-        #expect(Titles.title(for: filing, language: .ko) == "\(ko) 관련 공시 · 2025년 재공시")
-        #expect(Titles.title(for: filing, language: .en) == "\(en) filing · 2025 refiling")
+        #expect(Titles.title(for: filing, language: .ko) == "\(ko) 관련 공시\u{00A0}· 2025년 재공시")
+        #expect(Titles.title(for: filing, language: .en) == "\(en) filing\u{00A0}· 2025 refiling")
     }
 }

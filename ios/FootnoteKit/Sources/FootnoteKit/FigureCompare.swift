@@ -79,7 +79,7 @@ public struct FigurePage: Sendable {
         sources = FigureSelection.sources(store, years)
         var meanings: [Language: GlossaryEntry] = [:]
         for language in Language.allCases {
-            meanings[language] = store.glossaryEntry(termKey: "metric_\(metric.rawValue)", language: language)
+            meanings[language] = store.glossaryEntry(termKey: Glossary.key(for: metric), language: language)
         }
         self.meanings = meanings
         change = YearComparePage(

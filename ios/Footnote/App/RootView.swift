@@ -90,8 +90,8 @@ struct RouteDestination: View {
                         + Copy.dot + PageCopy.ratesHeading(page.chosenMeasure, metric: page.reportedMetric, language),
                     calculations: page.calculations, difference: page.difference)
             }
-        case .glossary:
-            GlossaryView(store: store)
+        case .glossary(let focus):
+            GlossaryView(store: store, focus: focus)
         }
     }
 }
@@ -104,9 +104,9 @@ struct FilingDestination: View {
 
     var body: some View {
         if let annual = AnnualPage(store: store, filingID: filingID) {
-            AnnualReportView(page: annual)
+            AnnualReportView(store: store, page: annual)
         } else if let page = FilingPage(store: store, filingID: filingID) {
-            FilingPageView(page: page, labels: labels)
+            FilingPageView(store: store, page: page, labels: labels)
         }
     }
 }
@@ -146,7 +146,7 @@ struct PhoneTabs: View {
             if !store.glossary(language: language).isEmpty {
                 Tab(language("용어", "Glossary"), systemImage: "book", value: TabID.glossary) {
                     NavigationStack {
-                        GlossaryView(store: store)
+                        GlossaryView(store: store, focus: LaunchRoute.current?.glossaryFocus)
                     }
                 }
             }
@@ -163,6 +163,8 @@ struct SplitShell: View {
     let labels: FactLabels
     @State private var sidebar: SidebarView.Item?
     @State private var filingID: String?
+    /// The term chosen in the glossary list, shown in the detail column.
+    @State private var glossaryKey: String?
     /// The screens pushed over the filing in the detail column: figure, compare, calculation.
     @State private var detailPath: [Route]
 
@@ -173,7 +175,13 @@ struct SplitShell: View {
         _sidebar = State(initialValue: launch?.sidebarItem
             ?? store.companies.first.map { .company($0.id) })
         _filingID = State(initialValue: launch?.filingID ?? launch?.figureFilingID(store))
+        _glossaryKey = State(initialValue: launch?.glossaryFocus)
         _detailPath = State(initialValue: launch?.detailPath ?? [])
+    }
+
+    /// What the detail column shows; a new value starts a fresh detail stack.
+    private var detailID: String {
+        sidebar == .glossary ? "term:\(glossaryKey ?? "")" : "filing:\(filingID ?? "")"
     }
 
     var body: some View {
@@ -187,23 +195,36 @@ struct SplitShell: View {
         } detail: {
             NavigationStack(path: $detailPath) {
                 Group {
-                    if let filingID, store.filing(id: filingID) != nil {
+                    if sidebar == .glossary {
+                        if let glossaryKey,
+                           let entry = store.glossaryEntry(termKey: glossaryKey, language: language) {
+                            GlossaryDetailView(entry: entry)
+                        } else {
+                            placeholder("book", Copy.chooseTerm(language))
+                        }
+                    } else if let filingID, store.filing(id: filingID) != nil {
                         FilingDestination(store: store, labels: labels, filingID: filingID)
-                            .id(filingID)
                     } else {
-                        noFiling
+                        placeholder("doc.text", language("공시를 고르면 여기에 보여 줘요", "Choose a filing to see it here"))
                     }
                 }
                 .navigationDestination(for: Route.self) {
                     RouteDestination(store: store, labels: labels, route: $0)
                 }
             }
-            .id(filingID)
+            .id(detailID)
             .environment(\.showsLanguageButton, false)
             .environment(\.navigate, NavigateAction { detailPath.append($0) })
         }
-        .onChange(of: sidebar) { filingID = nil }
+        // A new sidebar item clears the detail column; a new filing or term clears what was
+        // pushed over the old one.
+        .onChange(of: sidebar) {
+            filingID = nil
+            glossaryKey = nil
+            detailPath = []
+        }
         .onChange(of: filingID) { detailPath = [] }
+        .onChange(of: glossaryKey) { detailPath = [] }
         .onChange(of: language) {
             if sidebar == .glossary && store.glossary(language: language).isEmpty {
                 sidebar = store.companies.first.map { .company($0.id) }
@@ -222,19 +243,20 @@ struct SplitShell: View {
             NewsView(store: store)
         case .glossary:
             GlossaryView(store: store)
+                .environment(\.glossarySelection, $glossaryKey)
         case nil:
             Text(words: language("왼쪽에서 기업을 고르세요", "Choose a company on the left"))
                 .foregroundStyle(Theme.muted)
         }
     }
 
-    private var noFiling: some View {
+    private func placeholder(_ symbol: String, _ text: String) -> some View {
         VStack(spacing: 8) {
-            Image(systemName: "doc.text")
+            Image(systemName: symbol)
                 .font(.largeTitle)
                 .foregroundStyle(Theme.muted)
                 .accessibilityHidden(true)
-            Text(words: language("공시를 고르면 여기에 보여 줘요", "Choose a filing to see it here"))
+            Text(words: text)
                 .font(.body)
                 .foregroundStyle(Theme.muted)
         }

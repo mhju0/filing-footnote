@@ -275,7 +275,7 @@ private struct RateRow: View {
             ? Formatting.percentChangeSpoken(rate.rate, language: language)
             : DerivedMetric.operatingMargin.name(language) + " " + Formatting.percent(rate.rate))
         parts.append(PageCopy.ratePeriod(company, fiscalYear: fiscalYear, basis: basis, language)
-            .replacingOccurrences(of: Copy.dot, with: ", "))
+            .spokenSeparators)
         return parts.joined(separator: ", ")
     }
 }

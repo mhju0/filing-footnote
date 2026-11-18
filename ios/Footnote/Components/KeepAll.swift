@@ -1,3 +1,4 @@
+import FootnoteKit
 import SwiftUI
 
 extension String {
@@ -12,6 +13,10 @@ extension String {
             }
             .joined(separator: " ")
     }
+
+    /// The string as VoiceOver should read it: each separator becomes a comma, so the dot
+    /// is a pause, not the word "middle dot".
+    var spokenSeparators: String { replacingOccurrences(of: Titles.separator, with: ", ") }
 }
 
 private extension Unicode.Scalar {
@@ -22,8 +27,9 @@ private extension Unicode.Scalar {
 }
 
 extension Text {
-    /// Text that wraps only between words; VoiceOver reads the plain string.
+    /// Text that wraps only between words; VoiceOver reads the plain string, with a pause
+    /// for each separator.
     init(words string: String) {
-        self = Text(verbatim: string.keepingWords).accessibilityLabel(Text(verbatim: string))
+        self = Text(verbatim: string.keepingWords).accessibilityLabel(Text(verbatim: string.spokenSeparators))
     }
 }

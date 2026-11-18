@@ -17,7 +17,8 @@ enum Route: Hashable {
     /// was chosen) and the year: compare with another company (board 7).
     case companyCompare(CompanyCompareRoute)
     case companyCalculation(CompanyCompareRoute)
-    case glossary
+    /// The glossary, scrolled to and marking one entry (`metric_revenue`) when given.
+    case glossary(String?)
 }
 
 struct CompanyCompareRoute: Hashable {
@@ -43,6 +44,8 @@ extension EnvironmentValues {
     /// Set in the split view: rows then select a filing for the detail column instead of
     /// pushing it.
     @Entry var filingSelection: Binding<String?>? = nil
+    /// Set in the split view's glossary: rows then select a term for the detail column.
+    @Entry var glossarySelection: Binding<String?>? = nil
 }
 
 /// A row that opens a filing: a `NavigationLink` on iPhone, a selection on iPad and Mac.
@@ -52,10 +55,38 @@ struct FilingRowLink<Label: View>: View {
     @ViewBuilder let label: Label
 
     var body: some View {
+        SelectableRow(value: filingID, selection: selection, route: .filing(filingID)) { label }
+    }
+}
+
+/// A row that selects `value` into the split view's detail column, or pushes `route` when
+/// there is no split view. iPad rows are buttons; Mac rows are tagged so the enclosing
+/// `SelectionList` moves the selection with the arrow keys.
+struct SelectableRow<Label: View>: View {
+    let value: String
+    let selection: Binding<String?>?
+    let route: Route
+    /// Set inside the selection tag, so it never wraps the tagged row.
+    var identifier: String?
+    @ViewBuilder let label: Label
+
+    var body: some View {
         if let selection {
-            let isSelected = selection.wrappedValue == filingID
+            let isSelected = selection.wrappedValue == value
+            #if os(macOS)
+            // The selection tag goes last, so no wrapper can hide it from the list; the id
+            // lets a list scroll to the row.
+            label
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+                .listRowBackground(isSelected ? Theme.tint : Theme.surface)
+                .accessibilityAddTraits(isSelected ? .isSelected : [])
+                .accessibilityIdentifier(identifier ?? value)
+                .id(value)
+                .tag(value)
+            #else
             Button {
-                selection.wrappedValue = filingID
+                selection.wrappedValue = value
             } label: {
                 HStack(spacing: 12) {
                     label.frame(maxWidth: .infinity, alignment: .leading)
@@ -66,10 +97,38 @@ struct FilingRowLink<Label: View>: View {
             .buttonStyle(.plain)
             .listRowBackground(isSelected ? Theme.tint : Theme.surface)
             .accessibilityAddTraits(isSelected ? .isSelected : [])
+            .accessibilityIdentifier(identifier ?? value)
+            .id(value)
+            #endif
         } else {
-            NavigationLink(value: Route.filing(filingID)) { label }
+            NavigationLink(value: route) { label }
                 .listRowBackground(Theme.surface)
+                .accessibilityIdentifier(identifier ?? value)
         }
+    }
+}
+
+/// A list whose tagged rows the Mac selects with the arrow keys; Return (or a double click)
+/// selects the focused row too. iPhone and iPad get a plain list: their rows are buttons.
+struct SelectionList<Content: View>: View {
+    let selection: Binding<String?>?
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        #if os(macOS)
+        if let selection {
+            List(selection: selection) { content }
+                .contextMenu(forSelectionType: String.self) { _ in
+                    EmptyView()
+                } primaryAction: { values in
+                    if let value = values.first { selection.wrappedValue = value }
+                }
+        } else {
+            List { content }
+        }
+        #else
+        List { content }
+        #endif
     }
 }
 
@@ -80,6 +139,8 @@ struct FilingMeta: View {
     let dataAsOf: CivilDate
     var showsCategory = true
     var companyName: String?
+    /// False under a day heading (소식), where the row names only the company.
+    var showsDate = true
 
     var body: some View {
         FlowLayout(spacing: 6, lineSpacing: 4) {
@@ -92,18 +153,25 @@ struct FilingMeta: View {
             if Freshness.isNew(filing.filedOn, dataAsOf: dataAsOf) {
                 TagView(text: language("새 공시", "New"), kind: .new)
             }
-            Text(words: dateLine)
-                .font(.footnote)
-                .monospacedDigit()
-                .foregroundStyle(Theme.muted)
-                .fixedSize()
+            if let companyName, !showsDate {
+                Text(words: companyName)
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(Theme.ink)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else {
+                Text(words: dateLine)
+                    .font(.footnote)
+                    .monospacedDigit()
+                    .foregroundStyle(Theme.muted)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
     }
 
     private var dateLine: String {
-        let day = Formatting.monthDay(filing.filedOn, language: language)
+        let day = Copy.unbroken(Formatting.monthDay(filing.filedOn, language: language))
         guard let companyName else { return day }
-        return "\(companyName) · \(day)"
+        return companyName + Copy.dot + day
     }
 }
 
@@ -113,10 +181,11 @@ struct FilingRow: View {
     let filing: Filing
     let dataAsOf: CivilDate
     var companyName: String?
+    var showsDate = true
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            FilingMeta(filing: filing, dataAsOf: dataAsOf, companyName: companyName)
+            FilingMeta(filing: filing, dataAsOf: dataAsOf, companyName: companyName, showsDate: showsDate)
             Text(words: Titles.title(for: filing, language: language))
                 .font(.body)
                 .foregroundStyle(Theme.ink)

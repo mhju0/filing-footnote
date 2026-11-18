@@ -36,6 +36,8 @@ public struct BundleStore: Sendable {
     public let figures: [Figure]
     /// By term key, then language.
     public let glossary: [GlossaryEntry]
+    /// The 소식 feed, built once when the bundle is opened.
+    private var builtNewsFeed: NewsFeed?
 
     public init(contentsOf url: URL) throws(BundleError) {
         let db = try Database(path: url.path)
@@ -158,7 +160,11 @@ public struct BundleStore: Sendable {
                 termKey: try row.text(0), language: try row.choice(1), term: try row.text(2),
                 plain: try row.text(3), formal: try row.optionalText(4))
         }
+        builtNewsFeed = NewsFeed(store: self)
     }
+
+    /// 소식 / News for this bundle (D86).
+    public var newsFeed: NewsFeed { builtNewsFeed ?? NewsFeed(store: self) }
 
     /// Throws for a development bundle, which may hold summaries the owner has not approved.
     /// A release build of the app calls this after opening its bundle.
