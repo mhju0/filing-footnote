@@ -87,11 +87,14 @@ simulator. iPhone uses tabs (기업 · 소식 · 용어); iPad and Mac use a thr
 A development bundle can be built and shown at any time; a release cannot ship until the
 owner has approved what it contains. The gates, in order:
 
-1. `app.build.export` without `--allow-unapproved` (the default) refuses when a filing in
-   scope lacks approved summaries in both languages, when an approval's input hash no longer
-   matches its source text, prompt, model and lexicon, when a line fails the guard, when any
-   glossary entry is unapproved, when a prompt version is `none`, or when any figure or fact
-   differs from its pinned response.
+1. `app.build.export` refuses in every mode, development builds included, when a figure or
+   fact differs from its pinned response, or when an exported summary line or glossary text
+   fails the guard. Without `--allow-unapproved` (a release, the default) it also refuses
+   when a filing in scope lacks approved summaries in both languages, when an approval's
+   input hash no longer matches its source text, prompt, model and lexicon, when any glossary
+   entry is unapproved, when either prompt version is `none`, or when a prior-year figure
+   cannot be checked against its own year's report (`restatement_unchecked`). A development
+   build skips stale approvals and lists them in its report.
 2. `python -m app.build.verify <file> --pinned <dir> --release` checks a finished file on its
    own: it recomputes the fingerprint, re-reads every figure and fact, runs the guard on every
    summary line, checks summary coverage and refuses `allow_unapproved = 1`. It does not

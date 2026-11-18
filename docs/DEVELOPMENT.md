@@ -53,9 +53,9 @@ From `backend/`, with the Compose database running:
 ../.venv/bin/python -m app.build.approve --filing <filing id>
 ```
 
-Groq's free tier allows 1000 output tokens a minute and a fixed number of tokens a day, so
-`generate` waits between calls (`--call-interval`) and a full run spreads over several days.
-Cached sections are not sent again.
+Groq's free tier allows 1000 output tokens a minute (D68), so `generate` waits between calls
+(`--call-interval`). During the 2026-11-19 run it also returned HTTP 429 errors for tokens
+per day. Cached sections are not sent again.
 
 Export and verify, from the repository root:
 

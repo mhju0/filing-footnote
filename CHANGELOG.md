@@ -28,11 +28,13 @@ the release bundle is not built and the walkthrough is not recorded.
   with exact decimals, notices and the wider event scope, and the native
   multiplatform app.
 - Event-filing ingest for DART and SEC with fixed categories, correction
-  chains, notices and up to ten events per company (D65, D72, D76).
-- The bundle export, pinned-response verification and release gates (D66),
-  build-time summaries with the neutrality guard, the owner's review page and
-  approval command (D67 to D71), and template summaries for DART table
-  filings (D78).
+  chains (D65), notices and up to ten events per company (D76).
+- The bundle export, pinned-response verification and release gates (D66,
+  `docs/build-bundle.md`).
+- Build-time summaries with the neutrality guard (D67 to D71) and template
+  summaries for DART table filings (D78).
+- The owner's review page and approval command (`backend/app/build/review.py`,
+  `backend/app/build/approve.py`); the export reads only approved rows (D72).
 - Two fiscal years per figure with restatement checks (D79) and year-over-year
   comparison of consecutive 52/53-week fiscal years (D82).
 - The glossary contract, with every entry awaiting approval (D81).

@@ -6,17 +6,14 @@ Footnote는 한국과 미국의 잘 알려진 기업 18곳이 공식 제출한 �
 
 ## Status
 
-Filing Footnote v0.1 is in development. Nothing is released.
+Filing Footnote v0.1 is in development. Nothing is released. The backend package and the app still carry the predecessor's version, written here as **Status:** v0.5.2 because `backend/tests/test_release_version.py` checks for that text; it changes with the v0.1 release.
 
-**Status:** v0.5.2 is still the version number in the backend package and the app, carried over from the last release of the predecessor code; it changes with the v0.1 release.
-
-- The app, the data pipeline and the release gates are built and tested.
+- Built: ingest, the bundle export and its release gates, and the app. They are checked by the backend offline tests and the FootnoteKit tests, which `scripts/check.sh` runs, and by the app and UI tests, which `xcodebuild` runs.
+- Decisions D81 and D83 to D86 (glossary export, filing and annual pages, comparison screens and their review fixes, news feed and glossary screens) are still PROPOSED in [docs/DECISIONS.md](docs/DECISIONS.md).
 - Summaries are awaiting owner approval. The summary build stages them; none is approved yet, and only approved summaries can ship. Until then every filing page shows its figures and a "summary in review" note, as in the screenshots below.
 - The glossary wording is drafted and awaiting the same approval.
 - The release data bundle is not built yet. A release build refuses a development bundle, so it waits for the approvals.
 - The walkthrough video is not recorded yet.
-
-Walkthrough: **[placeholder: walkthrough link, added once it is recorded]**
 
 ## Screenshots
 

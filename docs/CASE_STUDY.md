@@ -4,8 +4,6 @@ Status on 2026-11-19: v0.1 in development. The pipeline, the app and the release
 built; no summary is approved yet, the release bundle is not built, and the walkthrough is
 not recorded.
 
-Walkthrough: **[placeholder: walkthrough link, added once it is recorded]**
-
 ## The problem
 
 Listed companies publish what matters to shareholders as official filings: annual reports,
@@ -22,9 +20,8 @@ read as advice.
 
 ## Constraints
 
-- Free tools only. Summaries run on Groq's free tier, the app uses the system SQLite and
-  no third-party Swift packages, and the macOS CI job runs only on manual dispatch so the
-  repository spends no paid runner minutes.
+- Summaries run on Groq's free tier (D68), and the macOS CI job runs only on manual
+  dispatch (`.github/workflows/ci.yml`).
 - Offline app. The app reads a bundled, read-only SQLite file. There is no server, no
   account and no text generation on the device; only "open the original" needs a network.
 - The owner approves every summary. Nothing the model or a template writes ships until
@@ -41,10 +38,9 @@ read as advice.
 
 Recorded in [ADR 0006](adr/0006-bundled-sqlite-with-exact-decimals.md), D61, D66.
 
-Every amount is a
-canonical decimal string, read into `Decimal` in Python and Swift; no column or code path
-uses binary floating point, and a FootnoteKit test fails if a source file names `Double`.
-The app costs nothing to run and a figure on screen equals the filed figure. In return the
+No bundle column and no FootnoteKit source file uses binary floating point; amounts are
+stored as canonical decimal strings, and shortened amounts show the exact value one tap
+away. In return the
 data is only as new as the last build, and every new filing means a rebuild and a new app
 build.
 
@@ -53,11 +49,8 @@ build.
 Recorded in [ADR 0004](adr/0004-event-filings-in-scope.md),
 [ADR 0007](adr/0007-notices-and-wider-event-scope.md), D62, D76.
 
-Each filing gets one
-category from a fixed list using the regulator's own form type and report name, or a named
-exclusion. A wrong category cannot appear silently and the rules can be tested. The cost is
-upkeep: a report name no rule knows is excluded as `no_rule` until someone adds a rule, and
-a few generic DART names needed the owner's call on where they belong.
+Categories come from rules that can be read and tested; a filing no rule knows is excluded
+as `no_rule`.
 
 ### Guards on every generated line
 
@@ -78,8 +71,8 @@ Recorded in ADR 0005, D60.
 A second model
 call flags problems but never approves or blocks, because it shares the writer's blind
 spots. Approved rows carry a hash of their source text, prompt, model and lexicon, and a
-release refuses an approval whose hash no longer matches. This makes the owner's time the
-release bottleneck: on 2026-11-19 zero summaries are approved, so no release bundle exists.
+release refuses an approval whose hash no longer matches. No release bundle exists until the
+owner approves the summaries.
 
 ### Groq's free tier for summaries
 
@@ -89,8 +82,9 @@ The first choice, a Gemini model,
 returned errors for a new account, and Groq's `qwen/qwen3.8-27b` passed a pilot. The free
 tier shaped the build: an input limit per minute forced a cap on DART source text (seven
 thousand characters, since Korean costs more tokens per character), output that never
-becomes valid JSON skips the section instead of stopping the run, and a daily token limit
-spreads a full run over several days. Groq's data-use terms were not checked; the filings
+becomes valid JSON skips the section instead of stopping the run, and the free tier's
+output-token limit per minute sets the wait between calls. During the 2026-11-19 run Groq
+also returned HTTP 429 errors for tokens per day. Groq's data-use terms were not checked; the filings
 are public.
 
 ### Templates for filings that are tables
@@ -184,7 +178,9 @@ metric without two years.
 
 ## Measured results
 
-Counted on 2026-11-19 on commit `499ff40`.
+Counted on 2026-11-19. The test counts are from the code at commit `499ff40`. The bundle
+counts below are from the local development bundle, built from commit `57267d6` (its
+`build_meta.source_revision`).
 
 | Measure | Result | How it was counted |
 |---|---|---|
@@ -199,7 +195,8 @@ The app and UI tests were not run for this count because the one simulator slot 
 Pull request #35, the last one merged before this count, reports all 37 app tests passing on
 an iOS simulator and on the Mac, and all 12 UI tests passing on an iOS simulator.
 
-Development bundle (data date 2026-11-19, `allow_unapproved = 1`, counted with `sqlite3`):
+Development bundle (data date 2026-11-19, `allow_unapproved = 1`, source revision
+`57267d6`, counted with `sqlite3`):
 
 | Table | Rows |
 |---|---|
@@ -215,10 +212,9 @@ Summaries:
 
 | Measure | Count |
 |---|---|
-| Filing sections in scope (summary build dry run) | 240: 20 already generated on the current prompts, 21 by template, 199 still to generate |
+| Filing sections in scope | 240: 20 already generated on the current prompts, 21 by template, 199 still to generate. From `python -m app.build.summaries generate --as-of 2026-11-19 --max-calls 1000 --dry-run` against the local build database, run on 2026-11-19 |
 | Staged in `staged.jsonl` | 35 filing sections (70 rows, Korean and English): 33 passed the guard, 2 withheld |
 | Approved | 0 |
 | Glossary entries approved | 0 of 46 |
 
-Approval is the owner's step. Pilot summary text is not quoted here; whether pilot examples
-may be quoted is the owner's decision.
+Approval is the owner's step. Pilot summary text is not quoted here.
