@@ -763,3 +763,12 @@ before the full run, because a later prompt change would re-run every summary.
   uses the plan forms.
 - Apple's one-line summary ran past the length limit in both languages (N6). It now names
   at most three products or businesses.
+
+## D71 · Output that never becomes valid JSON skips the section · 2026-11-18 (`ACCEPTED`)
+
+On prompt `m6-2026-11-18-b`, the Samsung share-disposal summary (156 output tokens on the
+previous prompt) ran past the 768-token cap, and Groq returned HTTP 400
+`json_validate_failed`. Output varies from run to run, so this can happen to any section.
+That error now skips the filing section and the run goes on; the command line lists it as
+`invalid_output`. Nothing is cached, so the next run tries it again. Any other HTTP 400
+still stops the run.

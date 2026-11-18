@@ -409,6 +409,20 @@ def test_a_request_too_large_skips_the_target_and_the_run_goes_on(tmp_path, fake
     assert fake_time.sleeps == []
 
 
+def test_output_that_never_became_valid_json_skips_the_target(tmp_path, fake_time) -> None:
+    body = '{"error":{"code":"json_validate_failed","failed_generation":"max completion tokens"}}'
+    client = FakeClient(LLMApiError(400, body), CLEAN, NO_FLAGS)
+    result, _ = _run(client, [_target(fid="dart:loop"), _target()], tmp_path)
+    assert result.invalid_output == ["dart:loop summary"]
+    assert {r["filing_id"] for r in _staged(tmp_path)} == {FID}
+
+
+def test_other_bad_requests_still_stop_the_run(tmp_path, fake_time) -> None:
+    client = FakeClient(LLMApiError(400, '{"error":{"code":"model_not_found"}}'))
+    with pytest.raises(LLMApiError):
+        _run(client, [_target()], tmp_path)
+
+
 def test_output_caps_fit_one_minute_of_the_groq_free_tier(tmp_path) -> None:
     client = FakeClient(DIGITS, CLEAN, NO_FLAGS)
     _run(client, [_target()], tmp_path)

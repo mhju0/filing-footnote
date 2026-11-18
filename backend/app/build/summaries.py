@@ -859,6 +859,7 @@ class GenerateResult:
     rechecked_withheld: int = 0
     no_source_text: list[str] = field(default_factory=list)
     too_large: list[str] = field(default_factory=list)  # the provider refused the request size
+    invalid_output: list[str] = field(default_factory=list)  # no valid JSON within the cap
     not_attempted: int = 0
     planned: list[tuple[Target, str]] = field(default_factory=list)
 
@@ -931,9 +932,13 @@ async def generate(
         try:
             new_rows = await generate_one(client, stats, target, key)
         except LLMApiError as exc:
-            if exc.status_code != 413:
+            item = f"{target.filing_id} {target.section}"
+            if exc.status_code == 413:
+                result.too_large.append(item)
+            elif exc.status_code == 400 and "json_validate_failed" in exc.body:
+                result.invalid_output.append(item)  # nothing is cached; a later run tries again
+            else:
                 raise
-            result.too_large.append(f"{target.filing_id} {target.section}")
             continue
         for row in new_rows:
             rows[_row_key(row)] = row
@@ -1072,8 +1077,10 @@ async def _run_generate(args: argparse.Namespace, settings: Any) -> None:
         print(f"no_source_text {item}")
     for item in result.too_large:
         print(f"too_large {item}")
+    for item in result.invalid_output:
+        print(f"invalid_output {item}")
     counts = (f"cached {result.cached}, no_source_text {len(result.no_source_text)}, "
-              f"too large {len(result.too_large)}, "
+              f"too large {len(result.too_large)}, invalid output {len(result.invalid_output)}, "
               f"not attempted (max calls) {result.not_attempted}")  # fmt: skip
     if args.dry_run:
         for target, key in result.planned:
