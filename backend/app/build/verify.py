@@ -226,11 +226,15 @@ class PinnedResponses:
     ) -> FigureCheck:
         relative = f"sec/companyfacts/CIK{cik10}.json"
         try:
-            items = parse_companyfacts_payload(self.load(relative))
+            # The ingest's own selection: the 10-K's own year and its prior-year comparative.
+            items = parse_companyfacts_payload(self.load(relative), with_prior=True)
         except SecApiError as exc:
             raise VerifyError(f"{relative}: {exc}") from exc
-        for item in items:
-            if item.accession_number == accession and item.metric == metric:
+        found = [i for i in items if i.accession_number == accession and i.metric == metric]
+        if not found:
+            raise VerifyError(f"{relative}: no {metric} fact for {accession}")
+        for item in found:
+            if item.fiscal_year == period_end.year:
                 if (item.period_start, item.period_end) != (period_start, period_end):
                     raise VerifyError(
                         f"{relative}: {metric} {accession} covers "
@@ -238,7 +242,9 @@ class PinnedResponses:
                     )
                 _require_equal(relative, metric, Decimal(item.value), expected)
                 return FigureCheck(item.tag, relative)
-        raise VerifyError(f"{relative}: no {metric} fact for {accession}")
+        raise VerifyError(
+            f"{relative}: no {metric} fact for {accession} ending in {period_end.year}"
+        )
 
     def dart_event_fact(
         self, *, endpoint: str, stock_code: str, rcept_no: str, key: str, expected: str
@@ -356,8 +362,8 @@ def check_figure(pinned: PinnedResponses, ref: FigureRef) -> FigureCheck:
             fiscal_year=ref.fiscal_year,
             expected=expected,
         )
-    if ref.fiscal_year != ref.filing_year:
-        raise VerifyError("an SEC figure must be the filing's own fiscal year")
+    if end.year != ref.fiscal_year:
+        raise VerifyError(f"period end {end} is not in fiscal year {ref.fiscal_year}")
     return pinned.sec_annual(
         cik10=company_key,
         accession=filing_key,

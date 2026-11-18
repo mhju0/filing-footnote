@@ -479,3 +479,63 @@ def test_parse_companyfacts_entry_missing_end_is_skipped() -> None:
         }
     }
     assert parse_companyfacts_payload(payload) == []
+
+
+# -- with_prior: the latest 10-K's comparative for the fiscal year before its own -----------
+
+
+def _entry(start: str, end: str, val, accn: str = "0000320193-25-000079", fy: int = 2025) -> dict:
+    return {"val": val, "accn": accn, "fy": fy, "fp": "FY", "form": "10-K",
+            "start": start, "end": end}  # fmt: skip
+
+
+def _revenue_payload(entries: list[dict], tag: str = "Revenues") -> dict:
+    return {"facts": {"us-gaap": {tag: {"units": {"USD": entries}}}}}
+
+
+def test_with_prior_keeps_the_contiguous_full_year_comparative() -> None:
+    # Apple-shaped: FY2025 (52 weeks), FY2024, FY2023 and the FY2024 fourth quarter, all
+    # repeated under the FY2025 10-K's accession.
+    payload = _revenue_payload([
+        _entry("2024-09-29", "2025-09-27", 416161000000),
+        _entry("2023-10-01", "2024-09-28", 391035000000),
+        _entry("2024-06-30", "2024-09-28", 94930000000),
+        _entry("2022-09-25", "2023-09-30", 383285000000),
+    ])  # fmt: skip
+    assert [(i.fiscal_year, i.value) for i in parse_companyfacts_payload(payload)] == [
+        (2025, 416161000000)
+    ]
+    items = parse_companyfacts_payload(payload, with_prior=True)
+    assert [(i.fiscal_year, i.period_start.isoformat(), i.period_end.isoformat(), i.value)
+            for i in items] == [
+        (2025, "2024-09-29", "2025-09-27", 416161000000),
+        (2024, "2023-10-01", "2024-09-28", 391035000000),
+    ]  # fmt: skip
+
+
+def test_with_prior_needs_the_same_accession_and_tag() -> None:
+    other_accession = _revenue_payload([
+        _entry("2025-01-01", "2025-12-31", 200),
+        _entry("2024-01-01", "2024-12-31", 100, accn="0000320193-24-000123", fy=2024),
+    ])  # fmt: skip
+    found = parse_companyfacts_payload(other_accession, with_prior=True)
+    # The 2024 row is that older 10-K's own figure, not this 10-K's comparative.
+    assert sorted((i.accession_number, i.fiscal_year) for i in found) == [
+        ("0000320193-24-000123", 2024), ("0000320193-25-000079", 2025)]  # fmt: skip
+    mixed = {"facts": {"us-gaap": {
+        "Revenues": {"units": {"USD": [_entry("2025-01-01", "2025-12-31", 200)]}},
+        "RevenueFromContractWithCustomerExcludingAssessedTax": {
+            "units": {"USD": [_entry("2024-01-01", "2024-12-31", 100)]}},
+    }}}  # fmt: skip
+    # Revenues is the own tag; the other tag's 2024 row is not its comparative.
+    assert [i.fiscal_year for i in parse_companyfacts_payload(mixed, with_prior=True)] == [2025]
+
+
+def test_with_prior_skips_a_gap_or_two_different_values() -> None:
+    gap = _revenue_payload([_entry("2025-01-01", "2025-12-31", 200),
+                            _entry("2023-01-01", "2023-12-31", 100)])  # fmt: skip
+    assert [i.fiscal_year for i in parse_companyfacts_payload(gap, with_prior=True)] == [2025]
+    conflict = _revenue_payload([_entry("2025-01-01", "2025-12-31", 200),
+                                 _entry("2024-01-01", "2024-12-31", 100),
+                                 _entry("2024-01-01", "2024-12-31", 101)])  # fmt: skip
+    assert [i.fiscal_year for i in parse_companyfacts_payload(conflict, with_prior=True)] == [2025]

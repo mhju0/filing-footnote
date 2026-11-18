@@ -244,17 +244,17 @@ _ACCOUNT_ID_TO_METRIC: dict[str, str] = {
 
 # Profit-loss family accounts are emitted redundantly under multiple statements
 # (ifrs-full_ProfitLoss appears once each under IS/CIS/CF; the owners-of-parent
-# subset appears under IS/CIS) with identical values. Keep only the IS row
-# *per account_id* so the financials
-# UNIQUE(company_id, period, metric, source) constraint is not violated by the
-# duplicates -- two distinct account_ids each keep their own IS row.
+# subset appears under IS/CIS) with identical values. Keep one row *per
+# account_id*: the IS row, or the CIS row when the company files a single
+# statement of comprehensive income and has no IS rows (Samsung Biologics,
+# 00877059). Two distinct account_ids each keep their own row.
 _PROFIT_LOSS_ACCOUNT_IDS = frozenset(
     {
         "ifrs-full_ProfitLoss",
         "ifrs-full_ProfitLossAttributableToOwnersOfParent",
     }
 )
-_PROFIT_LOSS_KEEP_SJ_DIV = "IS"
+_PROFIT_LOSS_KEEP_SJ_DIVS = ("IS", "CIS")  # in order of preference
 
 # EPS-family accounts carry a per-share value that can be fractional; they are
 # parsed with parse_dart_decimal (exact Decimal) rather than parse_dart_amount
@@ -444,34 +444,38 @@ def _financial_item_from_row(row: dict[str, Any]) -> FinancialItem:
 
 
 def _dedup_profit_loss(items: list[FinancialItem]) -> list[FinancialItem]:
-    """Drop duplicate profit-loss-family rows, keeping only the IS one per account.
+    """Drop duplicate profit-loss-family rows, keeping one row per account.
 
     Each profit-loss account is emitted identically under multiple statements
     (docs §3 [Verified]): total ``ifrs-full_ProfitLoss`` under IS/CIS/CF, and the
     owners-of-parent subset under IS/CIS. Dedup is grouped *by account_id*: for
-    every account in :data:`_PROFIT_LOSS_ACCOUNT_IDS` keep sj_div=IS and discard
-    its other-statement copies, so the later load does not violate the financials
-    UNIQUE(company_id, period, metric, source) constraint. Two distinct
-    profit-loss account_ids therefore each survive as their own single IS row;
-    every non-profit-loss account passes through untouched. Pure -> unit-tested.
+    every account in :data:`_PROFIT_LOSS_ACCOUNT_IDS` keep sj_div=IS, or sj_div=CIS
+    when that account has no IS row (a single statement of comprehensive income),
+    and discard its other-statement copies, so the later load does not violate the
+    financials UNIQUE(filing_id, period, metric) constraint. An account found only
+    under CF is dropped. Every non-profit-loss account passes through untouched.
+    Pure -> unit-tested.
     """
+    divs: dict[str, set[str]] = {}
+    for it in items:
+        if it.account_id in _PROFIT_LOSS_ACCOUNT_IDS:
+            divs.setdefault(it.account_id, set()).add(it.sj_div)
+    keep = {
+        account_id: next((d for d in _PROFIT_LOSS_KEEP_SJ_DIVS if d in found), None)
+        for account_id, found in divs.items()
+    }
     result: list[FinancialItem] = []
     dropped = 0
     for it in items:
-        is_duplicate_pl = (
-            it.account_id in _PROFIT_LOSS_ACCOUNT_IDS
-            and it.sj_div != _PROFIT_LOSS_KEEP_SJ_DIV
-        )
-        if is_duplicate_pl:
+        if it.account_id in _PROFIT_LOSS_ACCOUNT_IDS and it.sj_div != keep[it.account_id]:
             dropped += 1
             continue
         result.append(it)
     if dropped:
         logger.debug(
             "fnlttSinglAcntAll.json: dropped %d duplicate ProfitLoss row(s) "
-            "(kept sj_div=%s)",
+            "(kept sj_div IS, else CIS)",
             dropped,
-            _PROFIT_LOSS_KEEP_SJ_DIV,
         )
     return result
 

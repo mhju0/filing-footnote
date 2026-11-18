@@ -41,14 +41,21 @@ _ANNUAL_REPRT_CODE = "11011"
 _REPORT_YEAR_RE = re.compile(r"\((\d{4})\.")
 # One page of 정기공시 over ~15 months always contains the latest annual report.
 _LOOKBACK_DAYS = 450
+# --prior reaches one more year back for the report before the latest; a 100-row page of
+# 정기공시 over ~27 months still holds every annual report in it.
+_PRIOR_EXTRA_DAYS = 366
 
 
-def select_latest_annual(filings: list[FilingItem]) -> tuple[FilingItem, str]:
+def select_latest_annual(
+    filings: list[FilingItem], *, prior: bool = False
+) -> tuple[FilingItem, str]:
     """Pick the newest 사업보고서 from a list.json page and its business year.
 
     Pure: filters ``report_nm`` starting with "사업보고서" after any correction prefix such
     as "[기재정정]" (D73: DART's statements API returns the newest version's rows), derives
-    ``bsns_year`` from the "(YYYY.MM)" suffix, orders by ``rcept_dt``.
+    ``bsns_year`` from the "(YYYY.MM)" suffix, orders by ``rcept_dt``. With ``prior`` it
+    picks the newest version of the report for the business year before the latest one
+    (the restatement source).
     Raises ``ValueError`` when the page has no parseable annual report.
     """
     prefix_re = re.compile(load_contract()["dart"]["correction_prefix_pattern"])
@@ -63,6 +70,13 @@ def select_latest_annual(filings: list[FilingItem]) -> tuple[FilingItem, str]:
     if not candidates:
         raise ValueError("no annual report (사업보고서) found in the listing window")
     rcept_dt, item, year = max(candidates, key=lambda c: c[0])
+    if not prior:
+        return item, year
+    wanted = str(int(year) - 1)
+    earlier = [c for c in candidates if c[2] == wanted]
+    if not earlier:
+        raise ValueError(f"no annual report (사업보고서) for {wanted} in the listing window")
+    rcept_dt, item, year = max(earlier, key=lambda c: c[0])
     return item, year
 
 
@@ -79,7 +93,9 @@ def match_ticker(matches: list[SecCompanyMatch], ticker: str) -> SecCompanyMatch
     raise ValueError(f"ticker {ticker!r} not found in SEC company_tickers")
 
 
-async def _run_dart(ticker: str, pinned: PinnedStore | None = None) -> None:
+async def _run_dart(
+    ticker: str, pinned: PinnedStore | None = None, *, prior: bool = False
+) -> None:
     client = DartClient(get_settings())
     try:
         corp_code = await client.resolve_corp_code(ticker)
@@ -87,14 +103,15 @@ async def _run_dart(ticker: str, pinned: PinnedStore | None = None) -> None:
             raise SystemExit(f"ticker {ticker!r} not found in DART corpCode map")
 
         today = datetime.date.today()
-        bgn = today - datetime.timedelta(days=_LOOKBACK_DAYS)
+        lookback = _LOOKBACK_DAYS + (_PRIOR_EXTRA_DAYS if prior else 0)
+        bgn = today - datetime.timedelta(days=lookback)
         filings = await client.list_filings(
             corp_code,
             bgn_de=bgn.strftime("%Y%m%d"),
             end_de=today.strftime("%Y%m%d"),
             pblntf_ty="A",  # 정기공시
         )
-        item, bsns_year = select_latest_annual(filings)
+        item, bsns_year = select_latest_annual(filings, prior=prior)
         logger.info(
             "selected %s (rcept_no=%s, bsns_year=%s)",
             item.report_nm,
@@ -110,6 +127,7 @@ async def _run_dart(ticker: str, pinned: PinnedStore | None = None) -> None:
                 bsns_year=bsns_year,
                 reprt_code=_ANNUAL_REPRT_CODE,
                 pinned=pinned,
+                figures_only=prior,
             ),
             get_async_session,
         )
@@ -127,7 +145,9 @@ async def _run_dart(ticker: str, pinned: PinnedStore | None = None) -> None:
         await get_async_engine().dispose()
 
 
-async def _run_sec(ticker: str, pinned: PinnedStore | None = None) -> None:
+async def _run_sec(
+    ticker: str, pinned: PinnedStore | None = None, *, prior: bool = False
+) -> None:
     client = SecClient(get_settings())
     try:
         matches = await client.search_company(ticker)
@@ -135,7 +155,8 @@ async def _run_sec(ticker: str, pinned: PinnedStore | None = None) -> None:
         logger.info("selected %s (CIK %s)", match.title, match.cik)
 
         result = await ingest_filing(
-            SecFilingAdapter(client=client, cik=match.cik, pinned=pinned), get_async_session
+            SecFilingAdapter(client=client, cik=match.cik, pinned=pinned, prior=prior),
+            get_async_session,
         )
         logger.info(
             "done: company=%s filing=%s financials=%d chunks=%d embeddings=%d",
@@ -177,6 +198,12 @@ def main() -> None:
         help="stock ticker (DART: 6-digit code e.g. 005930; SEC: symbol e.g. MSFT)",
     )
     parser.add_argument("--save-pinned", metavar="DIR", **SAVE_PINNED_HELP)
+    parser.add_argument(
+        "--prior",
+        action="store_true",
+        help="ingest the annual report before the latest one (the original values that "
+        "the latest report's comparatives may restate)",
+    )
     args = parser.parse_args()
 
     # configure_logging (not bare basicConfig): installs the crtfc_key masking
@@ -185,9 +212,9 @@ def main() -> None:
 
     pinned = open_pinned_store(args.save_pinned)
     if args.source == "dart":
-        asyncio.run(_run_dart(args.ticker, pinned))
+        asyncio.run(_run_dart(args.ticker, pinned, prior=args.prior))
     else:
-        asyncio.run(_run_sec(args.ticker, pinned))
+        asyncio.run(_run_sec(args.ticker, pinned, prior=args.prior))
     if pinned is not None:
         print(format_pinned(pinned))
 

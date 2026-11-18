@@ -196,10 +196,12 @@ def test_annual_sec_is_saved_at_the_path_verify_reads_and_the_figures_check(
     assert (tmp_path / store.saved[0]).read_bytes() == SEC_FACTS.read_bytes()
 
     pinned = PinnedResponses([tmp_path])
-    assert filing.financial_facts
+    # The 10-K's own year and its prior-year comparative, both read back from the file.
+    assert {f.period.label for f in filing.financial_facts} == {"2025-annual", "2024-annual"}
     for fact in filing.financial_facts:
         ref = FigureRef(
-            "sec:0000320193", f"sec:{accession}", filing.title, 2025, fact.metric.value, 2025,
+            "sec:0000320193", f"sec:{accession}", filing.title, 2025, fact.metric.value,
+            int(fact.period.label[:4]),
             fact.period.start_date.isoformat(), fact.period.end_date.isoformat(),
             canonical_decimal(fact.value),
         )  # fmt: skip
@@ -523,10 +525,10 @@ def test_a_new_file_appears_complete_or_not_at_all(tmp_path, monkeypatch) -> Non
 def test_every_ingest_command_takes_save_pinned(tmp_path, monkeypatch) -> None:
     given: dict[str, PinnedStore | None] = {}
 
-    async def fake_dart(ticker, pinned=None):
+    async def fake_dart(ticker, pinned=None, *, prior=False):
         given["annual-dart"] = pinned
 
-    async def fake_sec(ticker, pinned=None):
+    async def fake_sec(ticker, pinned=None, *, prior=False):
         given["annual-sec"] = pinned
 
     async def fake_events_dart(ticker, pinned=None):

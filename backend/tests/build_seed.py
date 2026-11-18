@@ -88,7 +88,7 @@ def annual_filings() -> list[NormalizedFiling]:
     )
     sec_items = [
         i
-        for i in parse_companyfacts_payload(json.loads(_SEC_FACTS.read_text()))
+        for i in parse_companyfacts_payload(json.loads(_SEC_FACTS.read_text()), with_prior=True)
         if i.accession_number == _SEC_ACCESSION
     ]
     sec = build_sec_normalized_filing(

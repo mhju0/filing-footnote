@@ -25,6 +25,12 @@ exported, the newest, and an event without a stored body text is left out
 correction rule, no body needed, no cap, never summarised. Annual filings follow
 :data:`app.build.model.ANNUAL_SCOPE`.
 
+Figures cover two fiscal years per company: the year of its latest annual filing and the
+year before. The newest filing that states a figure is its source; a figure whose value an
+earlier filing stated differently is restated, and both values are read from their pinned
+responses. The report lists each restated figure and each company and metric without both
+years (``figure_gaps``).
+
 Output depends only on the database contents and the arguments: ``--as-of`` replaces the
 clock, ``--source-revision`` (default ``git rev-parse HEAD``) names the pipeline, rows are
 inserted in primary-key order and every collection is sorted before use.
@@ -622,7 +628,12 @@ def _figure_candidate(build: _Build, row: FinancialRow) -> _Candidate | None:
             build.problems.append(f"{label}: {exc}")
             return None
     else:
-        if row.period_start is None or row.period_end is None or row.fiscal_year != annual.year:
+        # A 10-K's own year or its prior-year comparative, each with its own period dates.
+        if (
+            row.period_start is None
+            or row.period_end is None
+            or row.period_end.year != row.fiscal_year
+        ):
             build.problems.append(f"{label}: SEC figure without its own period dates")
             return None
         start, end = row.period_start, row.period_end
@@ -636,23 +647,47 @@ def _figure_candidate(build: _Build, row: FinancialRow) -> _Candidate | None:
     )
 
 
+def _latest_years(build: _Build) -> dict[str, int]:
+    """Per company, the fiscal year of its latest kept annual filing."""
+    latest: dict[str, int] = {}
+    for annual in build.annual.values():
+        latest[annual.company_id] = max(latest.get(annual.company_id, annual.year), annual.year)
+    return latest
+
+
 def _figure_choices(
     build: _Build,
-) -> list[tuple[tuple[str, str, str], _Candidate, bool]]:
-    """Per (company, metric, period end): the candidate that wins and whether an earlier
-    filing stated a different value. No pinned response is read here."""
+) -> list[tuple[tuple[str, str, str], _Candidate, list[_Candidate]]]:
+    """Per (company, metric, period end): the candidate that wins and the earlier
+    candidates that stated a different value. No pinned response is read here.
+
+    Two fiscal years per company (D3): the year of its latest annual filing and the year
+    before. An older annual filing still counts: its own-year value is the original that a
+    later comparative restates, and it is the source when the latest filing does not
+    state that year."""
+    latest = _latest_years(build)
     groups: dict[tuple[str, str, str], list[_Candidate]] = defaultdict(list)
+    outside = 0
     for row in build.data.financials:
         candidate = _figure_candidate(build, row)
-        if candidate is not None:
-            key = (candidate.company_id, row.metric, candidate.period_end.isoformat())
-            groups[key].append(candidate)
+        if candidate is None:
+            continue
+        if row.fiscal_year < latest[candidate.company_id] - 1:
+            outside += 1
+            continue
+        key = (candidate.company_id, row.metric, candidate.period_end.isoformat())
+        groups[key].append(candidate)
+    build.report["figures_older_than_two_years"] = outside
     choices = []
     for key, candidates in sorted(groups.items()):
         # The newest filing that states the figure wins (filed date, then filing id); an
         # earlier, different value makes it a restated figure.
         chosen = max(candidates, key=lambda c: (c.filed_on, c.filing_id))
-        choices.append((key, chosen, any(c.row.value != chosen.row.value for c in candidates)))
+        originals = sorted(
+            (c for c in candidates if c.row.value != chosen.row.value),
+            key=lambda c: (c.filed_on, c.filing_id),
+        )
+        choices.append((key, chosen, originals))
     return choices
 
 
@@ -673,31 +708,53 @@ def annual_summary_filings(data: BuildInput, as_of: datetime.date) -> set[str]:
     )
 
 
+def _check_candidate(build: _Build, candidate: _Candidate):
+    """Re-read one candidate's value from its own filing's pinned response."""
+    annual = build.annual[candidate.filing_id]
+    return check_figure(
+        build.pinned,
+        FigureRef(
+            company_id=candidate.company_id,
+            filing_id=candidate.filing_id,
+            filing_title=annual.filing.title,
+            filing_year=annual.year,
+            metric=candidate.row.metric,
+            fiscal_year=candidate.row.fiscal_year,
+            period_start=candidate.period_start.isoformat(),
+            period_end=candidate.period_end.isoformat(),
+            value=canonical_decimal(candidate.row.value),
+        ),
+    )
+
+
 def _figures(build: _Build) -> None:
     checks = []
-    for (company_id, metric, period_end), chosen, is_restated in _figure_choices(build):
+    restated = []
+    for (company_id, metric, period_end), chosen, originals in _figure_choices(build):
         figure_id = f"{company_id}|{metric}|{period_end}|{BASIS}"
         row = chosen.row
         value = canonical_decimal(row.value)
-        annual = build.annual[chosen.filing_id]
+        is_restated = bool(originals)
         try:
-            check = check_figure(
-                build.pinned,
-                FigureRef(
-                    company_id=company_id,
-                    filing_id=chosen.filing_id,
-                    filing_title=annual.filing.title,
-                    filing_year=annual.year,
-                    metric=metric,
-                    fiscal_year=row.fiscal_year,
-                    period_start=chosen.period_start.isoformat(),
-                    period_end=period_end,
-                    value=value,
-                ),
-            )
+            check = _check_candidate(build, chosen)
+            # A restated figure's original value is read from its own pinned response too.
+            original_checks = [(c, _check_candidate(build, c)) for c in originals]
         except VerifyError as exc:
             build.problems.append(f"{figure_id}: {exc}")
             continue
+        if is_restated:
+            restated.append(
+                {
+                    "id": figure_id,
+                    "value": value,
+                    "filing_id": chosen.filing_id,
+                    "originals": [
+                        {"filing_id": c.filing_id, "value": canonical_decimal(c.row.value),
+                         "pinned": oc.pinned}
+                        for c, oc in original_checks
+                    ],  # fmt: skip
+                }
+            )
         build.figures.append(
             (figure_id, company_id, chosen.filing_id, metric, row.fiscal_year,
              chosen.period_start.isoformat(), period_end, value, row.unit, row.currency, BASIS,
@@ -714,6 +771,25 @@ def _figures(build: _Build) -> None:
             }
         )
     build.report["figure_checks"] = checks
+    build.report["restated_figures"] = {"count": len(restated), "figures": restated}
+    build.report["figure_gaps"] = _figure_gaps(build)
+
+
+def _figure_gaps(build: _Build) -> list[dict[str, Any]]:
+    """Each company and reported metric without a figure for both of its two fiscal years:
+    the filings ingested for the company do not state that metric for that year."""
+    present: dict[tuple[str, str], set[int]] = defaultdict(set)
+    for figure in build.figures:
+        present[(figure[1], figure[3])].add(figure[4])
+    gaps = []
+    for company_id, year in sorted(_latest_years(build).items()):
+        for metric in ReportedMetric:
+            missing = [y for y in (year - 1, year) if y not in present[(company_id, metric.value)]]
+            if missing:
+                gaps.append(
+                    {"company_id": company_id, "metric": metric.value, "missing_years": missing}
+                )
+    return gaps
 
 
 # -- companies and summaries ---------------------------------------------------------------------

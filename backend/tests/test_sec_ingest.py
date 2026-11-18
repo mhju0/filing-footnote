@@ -39,6 +39,7 @@ from app.ingest.sec_ingest import (
     build_sec_normalized_filing,
     sec_period,
     sec_unit_for,
+    select_prior_filing,
     select_target_filing,
 )
 
@@ -251,6 +252,30 @@ def test_select_target_filing_empty_raises() -> None:
         select_target_filing([], None)
 
 
+def test_select_prior_filing_is_the_10k_before_the_latest() -> None:
+    assert select_prior_filing([_FILING_2023, _FILING_2022]).accession_number == _ACCN_2022
+    with pytest.raises(SecIngestError, match="no 10-K before the latest"):
+        select_prior_filing([_FILING_2023])
+
+
+def test_sec_adapter_keeps_the_own_year_and_the_prior_year_per_metric() -> None:
+    own = _fact("revenue", 383_285_000_000, accn=_ACCN_2023, fiscal_year=2023,
+                period_start=datetime.date(2022, 9, 25), period_end=datetime.date(2023, 9, 30))
+    prior = _fact("revenue", 394_328_000_000, accn=_ACCN_2023, fiscal_year=2022,
+                  period_start=datetime.date(2021, 9, 26), period_end=datetime.date(2022, 9, 24))
+    filing = build_sec_normalized_filing(
+        company_match=_MATCH, cik10=_CIK, filing=_FILING_2023, fiscal_year=2023,
+        document_url="https://www.sec.gov/Archives/aapl-20230930.htm",
+        financial_items=[own, prior], chunks=[],
+    )  # fmt: skip
+    assert [(f.period.label, f.value, f.period.end_date) for f in filing.financial_facts] == [
+        ("2023-annual", Decimal(383_285_000_000), datetime.date(2023, 9, 30)),
+        ("2022-annual", Decimal(394_328_000_000), datetime.date(2022, 9, 24)),
+    ]
+    assert filing.reporting_period.label == "2023-annual"
+    assert _filing_fiscal_year(_FILING_2023, [prior, own]) == 2023
+
+
 def test_filing_fiscal_year_prefers_facts_own_period() -> None:
     facts = [_fact("revenue", 1, accn=_ACCN_2023, fiscal_year=2023)]
     assert _filing_fiscal_year(_FILING_2023, facts) == 2023
@@ -337,8 +362,9 @@ class _FakeSecClient:
             raw_bytes=self._doc_bytes,
         )
 
-    async def fetch_company_facts(self, cik):
+    async def fetch_company_facts(self, cik, *, with_prior=False):
         self.facts_calls += 1
+        self.with_prior = with_prior
         return list(self._facts)
 
 
@@ -441,6 +467,18 @@ def test_sec_adapter_filters_facts_to_chosen_accession(monkeypatch) -> None:
     assert client.document_request == (_ACCN_2022, "aapl-20220924.htm")
     assert result.source_filing_id == _ACCN_2022
     assert result.financials_written == 1  # only the 2022-accession revenue fact
+    assert client.with_prior is True  # the ingest asks for the prior-year comparatives
+
+
+def test_sec_adapter_prior_ingests_the_10k_before_the_latest(monkeypatch) -> None:
+    _patch_parse(monkeypatch)
+    _patch_persistence(monkeypatch)
+    _patch_backfill(monkeypatch)
+    client = _FakeSecClient(filings=[_FILING_2023, _FILING_2022], facts=_FACTS, match=_MATCH)
+    result = asyncio.run(
+        pipeline.ingest_filing(SecFilingAdapter(client, _CIK, prior=True), _FakeSessionFactory())
+    )
+    assert result.source_filing_id == _ACCN_2022
 
 
 def test_shared_ingestion_preserves_identity_across_reruns(monkeypatch) -> None:
