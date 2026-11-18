@@ -35,6 +35,7 @@ from app.ingest.chunking import chunk_document
 from app.ingest.sec_ingest import (
     SecFilingAdapter,
     SecIngestError,
+    SecPriorYearSkipped,
     _filing_fiscal_year,
     build_sec_normalized_filing,
     sec_period,
@@ -479,6 +480,19 @@ def test_sec_adapter_prior_ingests_the_10k_before_the_latest(monkeypatch) -> Non
         pipeline.ingest_filing(SecFilingAdapter(client, _CIK, prior=True), _FakeSessionFactory())
     )
     assert result.source_filing_id == _ACCN_2022
+
+
+def test_sec_adapter_prior_skips_a_10k_that_is_not_the_year_before(monkeypatch) -> None:
+    _patch_parse(monkeypatch)
+    persistence_calls, _ = _patch_persistence(monkeypatch)
+    _patch_backfill(monkeypatch)
+    # The 10-K before the latest (FY2023) covers FY2021: it is not the restatement source.
+    facts = [*_FACTS[:-1], _fact("revenue", 365_817_000_000, accn=_ACCN_2022, fiscal_year=2021)]
+    client = _FakeSecClient(filings=[_FILING_2023, _FILING_2022], facts=facts, match=_MATCH)
+    factory = _FakeSessionFactory()
+    with pytest.raises(SecPriorYearSkipped, match="covers FY2021, not FY2022"):
+        asyncio.run(pipeline.ingest_filing(SecFilingAdapter(client, _CIK, prior=True), factory))
+    assert persistence_calls == [] and factory.call_count == 0
 
 
 def test_shared_ingestion_preserves_identity_across_reruns(monkeypatch) -> None:

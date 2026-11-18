@@ -1022,7 +1022,7 @@ Decided and left open:
 
 ## D79 · Two fiscal years per figure; the prior annual report is the restatement source · 2026-11-19 (`ACCEPTED`)
 
-Roadmap D3. The owner delegated the choices (2026-11-19, owner delegated): two fiscal years
+The roadmap's two-years-per-figure item. The owner delegated the choices (2026-11-19, owner delegated): two fiscal years
 per figure for every company, and the previous annual report as the source of the value a
 later comparative may restate. A development export had two years for the nine DART
 companies and one for the nine SEC companies, and four DART companies had no net income.
@@ -1046,24 +1046,45 @@ companies and one for the nine SEC companies, and four DART companies had no net
 - Restatement: `python -m app.ingest --source dart|sec --ticker T --prior` ingests the
   annual report before the latest one (DART: the newest version of the previous
   business year's 사업보고서 and its fnlttSinglAcntAll; SEC: the 10-K filed before the
-  latest). `is_restated` is 1 when the latest report's comparative for a year differs from
-  the value that year's own report stated. The original value is also read from its own
-  pinned response, and the build report lists each restated figure with its original
-  (`restated_figures`).
+  latest, skipped with its reason when it does not cover the latest 10-K's fiscal year
+  minus one). The latest DART report is the newest version of the latest business year,
+  so a late correction of an older year is not the latest. `is_restated` is 1 when the
+  latest report's comparative for a year differs from the value that year's own report
+  stated under the same regulator tag. The original value is also read from its own pinned
+  response, and the build report lists each restated figure with both tags and its
+  original (`restated_figures`).
+- A different value under a different tag is not a restatement: the build report lists it
+  as `tag_changed`, and the figure is exported with `is_restated` 0.
+- A prior-year figure whose own year has no annual report stating it is
+  `restatement_unchecked` in the build report, and a release build fails on it.
+- One basis per company and fiscal year: when a year has a restated figure, that year's
+  figures that only the earlier report states are `mixed_basis` in the build report and
+  are not exported.
 - A previous DART report that is not well-formed XML (Kia's corrected 2024 사업보고서,
   rcept 20250313001390) is ingested with `--prior` for its figures only: its prose gives
   no chunks. A parse error on the latest report still fails the ingest.
 - The build report names every company and reported metric without both years
-  (`figure_gaps`): the filings do not state that metric for that year.
+  (`figure_gaps`), with the reason `not_stated` (the filings do not state it) or
+  `mixed_basis`.
 - Pinned responses stay git-ignored (`backend/data/pinned/`); the prior-year files were
   saved there with `--save-pinned`.
+- Known limitation: `app.build.verify` re-reads each exported value and tag from its pinned
+  response but does not re-check `is_restated`. The bundle does not carry the original
+  filing and value, which are only in the build report; carrying them would change the
+  bundle schema the app reads.
 
-Development export on 2026-11-19 after the re-ingest: `figures=196`; all eighteen
+Development export on 2026-11-19 after the re-ingest: `figures=193`; all eighteen
 companies have two fiscal years; `restated_figures` counts four (LG Chem and Samsung
-Biologics, revenue and operating income for 2024). `figure_gaps` names twelve:
+Biologics, revenue and operating income for 2024); `tag_changed` none. `mixed_basis`
+leaves out three FY2024 figures stated only by the earlier report: LG Chem diluted EPS,
+Samsung Biologics EPS and diluted EPS. `restatement_unchecked` names one: Samsung SDI's
+FY2024 diluted EPS, which its FY2024 report states only as one combined basic and diluted
+EPS under the basic tag. A release build fails on it until it is decided. `figure_gaps`
+names fifteen:
 
-- DART: diluted EPS for Kia and LG Electronics (both years) and LG Chem (2025); EPS and
-  diluted EPS for Samsung Biologics in 2025, which reports only continuing and
+- DART, not stated: diluted EPS for Kia and LG Electronics (both years) and LG Chem (2025);
+  EPS and diluted EPS for Samsung Biologics in 2025, which reports only continuing and
   discontinued operations EPS.
-- SEC: `net_income` (`ProfitLoss`) for Apple, Microsoft, Amazon, NVIDIA, Meta and Alphabet
-  (both years) and Costco (the latest year).
+- DART, mixed basis: the three FY2024 figures above.
+- SEC, not stated: `net_income` (`ProfitLoss`) for Apple, Microsoft, Amazon, NVIDIA, Meta
+  and Alphabet (both years) and Costco (the latest year).

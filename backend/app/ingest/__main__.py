@@ -30,7 +30,7 @@ from app.ingest import ingest_filing
 from app.ingest.dart import DartFilingAdapter
 from app.ingest.events import main as events_main
 from app.ingest.pinned import SAVE_PINNED_HELP, PinnedStore, format_pinned, open_pinned_store
-from app.ingest.sec_ingest import SecFilingAdapter
+from app.ingest.sec_ingest import SecFilingAdapter, SecPriorYearSkipped
 from app.logging_config import configure_logging
 
 logger = logging.getLogger(__name__)
@@ -53,9 +53,9 @@ def select_latest_annual(
 
     Pure: filters ``report_nm`` starting with "사업보고서" after any correction prefix such
     as "[기재정정]" (D73: DART's statements API returns the newest version's rows), derives
-    ``bsns_year`` from the "(YYYY.MM)" suffix, orders by ``rcept_dt``. With ``prior`` it
-    picks the newest version of the report for the business year before the latest one
-    (the restatement source).
+    ``bsns_year`` from the "(YYYY.MM)" suffix, orders by (``bsns_year``, ``rcept_dt``).
+    With ``prior`` it picks the newest version of the report for the business year before
+    the latest one (the restatement source).
     Raises ``ValueError`` when the page has no parseable annual report.
     """
     prefix_re = re.compile(load_contract()["dart"]["correction_prefix_pattern"])
@@ -69,7 +69,9 @@ def select_latest_annual(
         candidates.append((item.rcept_dt, item, match.group(1)))
     if not candidates:
         raise ValueError("no annual report (사업보고서) found in the listing window")
-    rcept_dt, item, year = max(candidates, key=lambda c: c[0])
+    # The latest business year, then its newest version: a late correction of an older
+    # year's report is not the latest report.
+    rcept_dt, item, year = max(candidates, key=lambda c: (int(c[2]), c[0]))
     if not prior:
         return item, year
     wanted = str(int(year) - 1)
@@ -154,10 +156,14 @@ async def _run_sec(
         match = match_ticker(matches, ticker)
         logger.info("selected %s (CIK %s)", match.title, match.cik)
 
-        result = await ingest_filing(
-            SecFilingAdapter(client=client, cik=match.cik, pinned=pinned, prior=prior),
-            get_async_session,
-        )
+        try:
+            result = await ingest_filing(
+                SecFilingAdapter(client=client, cik=match.cik, pinned=pinned, prior=prior),
+                get_async_session,
+            )
+        except SecPriorYearSkipped as exc:
+            print(f"skipped: {exc}")
+            return
         logger.info(
             "done: company=%s filing=%s financials=%d chunks=%d embeddings=%d",
             result.company_id,

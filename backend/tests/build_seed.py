@@ -58,10 +58,10 @@ APPLE_CIK = "0000320193"
 CORRECTION = "20261029800099"
 CORRECTION_BODY = DART / "correction" / f"{CORRECTION}.xml"
 
-_DART_ANNUAL = PINNED_BUILD / "dart" / "fnlttSinglAcntAll" / "00126380_2025_11011_CFS.json"
 _SEC_FACTS = PINNED_BUILD / "sec" / "companyfacts" / "CIK0000320193.json"
 _SEC_ACCESSION = "0000320193-25-000079"
-_SEC_URL = "https://www.sec.gov/Archives/edgar/data/320193/000032019325000079/aapl-20250927.htm"
+SAMSUNG_PRIOR = "20250310000456"
+APPLE_PRIOR = "0000320193-24-000123"
 
 
 def _chunk(content: str) -> Chunk:
@@ -69,44 +69,62 @@ def _chunk(content: str) -> Chunk:
                  part_index=0)  # fmt: skip
 
 
-def annual_filings() -> list[NormalizedFiling]:
-    dart_item = _filing_item_from_row(
+def _dart_annual(year: str, rcept_no: str, rcept_dt: str) -> NormalizedFiling:
+    item = _filing_item_from_row(
         {
             "corp_code": "00126380", "corp_name": "삼성전자", "stock_code": "005930",
-            "corp_cls": "Y", "report_nm": "사업보고서 (2025.12)", "rcept_no": "20260310000123",
-            "flr_nm": "삼성전자", "rcept_dt": "20260310", "rm": "연",
+            "corp_cls": "Y", "report_nm": f"사업보고서 ({year}.12)", "rcept_no": rcept_no,
+            "flr_nm": "삼성전자", "rcept_dt": rcept_dt, "rm": "연",
         }
     )  # fmt: skip
-    dart = build_dart_normalized_filing(
-        filing_item=dart_item,
+    payload = PINNED_BUILD / "dart" / "fnlttSinglAcntAll" / f"00126380_{year}_11011_CFS.json"
+    return build_dart_normalized_filing(
+        filing_item=item,
         corp_code="00126380",
         name_en="SAMSUNG ELECTRONICS CO,.LTD",
-        descriptor=period_descriptor("2025", "11011"),
+        descriptor=period_descriptor(year, "11011"),
         filing_type=filing_type_for("11011"),
-        financial_items=DartClient._parse_financials_payload(json.loads(_DART_ANNUAL.read_text())),
+        financial_items=DartClient._parse_financials_payload(json.loads(payload.read_text())),
         chunks=[_chunk("회사의 개요 본문")],
     )
+
+
+def _sec_annual(accession: str, filed: datetime.date, report: datetime.date, year: int,
+                document: str) -> NormalizedFiling:  # fmt: skip
     sec_items = [
         i
         for i in parse_companyfacts_payload(json.loads(_SEC_FACTS.read_text()), with_prior=True)
-        if i.accession_number == _SEC_ACCESSION
+        if i.accession_number == accession
     ]
-    sec = build_sec_normalized_filing(
+    return build_sec_normalized_filing(
         company_match=SecCompanyMatch(cik="0000320193", ticker="AAPL", title="Apple Inc."),
         cik10="0000320193",
         filing=SecFilingItem(
-            accession_number=_SEC_ACCESSION,
+            accession_number=accession,
             form="10-K",
-            filing_date=datetime.date(2025, 10, 31),
-            report_date=datetime.date(2025, 9, 27),
-            primary_document="aapl-20250927.htm",
+            filing_date=filed,
+            report_date=report,
+            primary_document=document,
         ),
-        fiscal_year=2025,
-        document_url=_SEC_URL,
+        fiscal_year=year,
+        document_url=f"https://www.sec.gov/Archives/edgar/data/320193/"
+        f"{accession.replace('-', '')}/{document}",
         financial_items=sec_items,
         chunks=[_chunk("Item 1. Business text")],
     )
-    return [dart, sec]
+
+
+def annual_filings() -> list[NormalizedFiling]:
+    """The latest annual report per company and the one before it, whose own-year values
+    the latest report's comparatives repeat (so the prior-year figures are checked)."""
+    return [
+        _dart_annual("2025", "20260310000123", "20260310"),
+        _dart_annual("2024", SAMSUNG_PRIOR, "20250310"),
+        _sec_annual(_SEC_ACCESSION, datetime.date(2025, 10, 31), datetime.date(2025, 9, 27),
+                    2025, "aapl-20250927.htm"),  # fmt: skip
+        _sec_annual(APPLE_PRIOR, datetime.date(2024, 11, 1), datetime.date(2024, 9, 28), 2024,
+                    "aapl-20240928.htm"),  # fmt: skip
+    ]
 
 
 def _event_client() -> FakeDartClient:

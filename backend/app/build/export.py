@@ -26,10 +26,12 @@ correction rule, no body needed, no cap, never summarised. Annual filings follow
 :data:`app.build.model.ANNUAL_SCOPE`.
 
 Figures cover two fiscal years per company: the year of its latest annual filing and the
-year before. The newest filing that states a figure is its source; a figure whose value an
-earlier filing stated differently is restated, and both values are read from their pinned
-responses. The report lists each restated figure and each company and metric without both
-years (``figure_gaps``).
+year before (D79). The newest filing that states a figure is its source; a figure whose
+value an earlier filing stated differently under the same regulator tag is restated, and
+both values are read from their pinned responses. The report lists restated figures,
+``tag_changed``, ``restatement_unchecked`` (a release build refuses these), ``mixed_basis``
+figures left out so one year has one basis, and each company and metric without both years
+(``figure_gaps``).
 
 Output depends only on the database contents and the arguments: ``--as-of`` replaces the
 clock, ``--source-revision`` (default ``git rev-parse HEAD``) names the pipeline, rows are
@@ -657,11 +659,13 @@ def _latest_years(build: _Build) -> dict[str, int]:
 
 def _figure_choices(
     build: _Build,
-) -> list[tuple[tuple[str, str, str], _Candidate, list[_Candidate]]]:
-    """Per (company, metric, period end): the candidate that wins and the earlier
-    candidates that stated a different value. No pinned response is read here.
+) -> list[tuple[tuple[str, str, str], _Candidate, list[_Candidate], bool]]:
+    """Per (company, metric, period end): the candidate that wins, the earlier candidates
+    that stated a different value, and whether the year's own annual report states it
+    (else a comparative's value has nothing to be checked against). No pinned response is
+    read here.
 
-    Two fiscal years per company (D3): the year of its latest annual filing and the year
+    Two fiscal years per company (D79): the year of its latest annual filing and the year
     before. An older annual filing still counts: its own-year value is the original that a
     later comparative restates, and it is the source when the latest filing does not
     state that year."""
@@ -687,7 +691,8 @@ def _figure_choices(
             (c for c in candidates if c.row.value != chosen.row.value),
             key=lambda c: (c.filed_on, c.filing_id),
         )
-        choices.append((key, chosen, originals))
+        own_report = any(build.annual[c.filing_id].year == c.row.fiscal_year for c in candidates)
+        choices.append((key, chosen, originals, own_report))
     return choices
 
 
@@ -700,7 +705,7 @@ def annual_summary_filings(data: BuildInput, as_of: datetime.date) -> set[str]:
     build = _Build(data, BuildOptions(as_of, "summaries", allow_unapproved=True),
                    PinnedResponses([]))  # fmt: skip
     _annual_versions(build, {(c.regulator, c.key): c for c in data.companies})
-    sources = {chosen.filing_id for _, chosen, _ in _figure_choices(build)}
+    sources = {chosen.filing_id for _, chosen, _, _ in _figure_choices(build)}
     return latest_annual_ids(
         (fid, annual.company_id, f"FY{annual.year}", annual.filing.filed_on.isoformat())
         for fid, annual in build.annual.items()
@@ -727,38 +732,75 @@ def _check_candidate(build: _Build, candidate: _Candidate):
     )
 
 
+def _report_list(entries: list[dict[str, Any]]) -> dict[str, Any]:
+    return {"count": len(entries), "figures": entries}
+
+
 def _figures(build: _Build) -> None:
-    checks = []
-    restated = []
-    for (company_id, metric, period_end), chosen, originals in _figure_choices(build):
+    """Check every chosen figure and its earlier values against the pinned responses, then
+    keep one basis per company and fiscal year (D79).
+
+    An earlier value under the same regulator tag makes the figure restated; under another
+    tag it is reported as ``tag_changed`` and the figure is not restated. A prior-year
+    figure that the year's own report does not state is ``restatement_unchecked``, which
+    fails a release build. When a company's year has a restated figure, that year's figures
+    that come only from an earlier report are ``mixed_basis`` and are not exported."""
+    restated: list[dict[str, Any]] = []
+    tag_changed: list[dict[str, Any]] = []
+    unchecked: list[dict[str, Any]] = []
+    kept: list[tuple[str, _Candidate, Any, bool]] = []
+    for (company_id, metric, period_end), chosen, originals, own_report in _figure_choices(build):
         figure_id = f"{company_id}|{metric}|{period_end}|{BASIS}"
-        row = chosen.row
-        value = canonical_decimal(row.value)
-        is_restated = bool(originals)
+        value = canonical_decimal(chosen.row.value)
         try:
             check = _check_candidate(build, chosen)
-            # A restated figure's original value is read from its own pinned response too.
+            # An earlier value is read from its own pinned response too.
             original_checks = [(c, _check_candidate(build, c)) for c in originals]
         except VerifyError as exc:
             build.problems.append(f"{figure_id}: {exc}")
             continue
-        if is_restated:
-            restated.append(
-                {
-                    "id": figure_id,
-                    "value": value,
-                    "filing_id": chosen.filing_id,
-                    "originals": [
-                        {"filing_id": c.filing_id, "value": canonical_decimal(c.row.value),
-                         "pinned": oc.pinned}
-                        for c, oc in original_checks
-                    ],  # fmt: skip
-                }
+        entry = {"id": figure_id, "value": value, "filing_id": chosen.filing_id,
+                 "regulator_tag": check.regulator_tag}  # fmt: skip
+        same_tag, other_tag = [], []
+        for c, oc in original_checks:
+            (same_tag if oc.regulator_tag == check.regulator_tag else other_tag).append(
+                {"filing_id": c.filing_id, "value": canonical_decimal(c.row.value),
+                 "regulator_tag": oc.regulator_tag, "pinned": oc.pinned}  # fmt: skip
             )
+        if same_tag:
+            restated.append({**entry, "originals": same_tag})
+        if other_tag:
+            tag_changed.append({**entry, "originals": other_tag})
+        if not own_report:
+            unchecked.append({**entry, "fiscal_year": chosen.row.fiscal_year})
+            if not build.options.allow_unapproved:
+                build.problems.append(
+                    f"{figure_id}: release build refused: no annual report for its own year "
+                    "to check a restatement against (restatement_unchecked)"
+                )
+        kept.append((figure_id, chosen, check, bool(same_tag)))
+
+    restating: dict[tuple[str, int], set[str]] = defaultdict(set)
+    for _, chosen, _, is_restated in kept:
+        if is_restated:
+            restating[(chosen.company_id, chosen.row.fiscal_year)].add(chosen.filing_id)
+    checks: list[dict[str, Any]] = []
+    mixed: list[dict[str, Any]] = []
+    excluded: set[tuple[str, str, int]] = set()
+    for figure_id, chosen, check, is_restated in kept:
+        row = chosen.row
+        value = canonical_decimal(row.value)
+        restaters = restating.get((chosen.company_id, row.fiscal_year), set())
+        if restaters and chosen.filing_id not in restaters:
+            excluded.add((chosen.company_id, row.metric, row.fiscal_year))
+            mixed.append({"id": figure_id, "value": value, "filing_id": chosen.filing_id,
+                          "fiscal_year": row.fiscal_year,
+                          "restated_by": sorted(restaters)})  # fmt: skip
+            continue
         build.figures.append(
-            (figure_id, company_id, chosen.filing_id, metric, row.fiscal_year,
-             chosen.period_start.isoformat(), period_end, value, row.unit, row.currency, BASIS,
-             int(is_restated), check.regulator_tag)
+            (figure_id, chosen.company_id, chosen.filing_id, row.metric, row.fiscal_year,
+             chosen.period_start.isoformat(), chosen.period_end.isoformat(), value, row.unit,
+             row.currency, BASIS, int(is_restated), check.regulator_tag)
         )  # fmt: skip
         checks.append(
             {
@@ -771,13 +813,19 @@ def _figures(build: _Build) -> None:
             }
         )
     build.report["figure_checks"] = checks
-    build.report["restated_figures"] = {"count": len(restated), "figures": restated}
-    build.report["figure_gaps"] = _figure_gaps(build)
+    build.report["restated_figures"] = _report_list(restated)
+    build.report["tag_changed"] = _report_list(tag_changed)
+    build.report["restatement_unchecked"] = _report_list(unchecked)
+    build.report["mixed_basis"] = _report_list(mixed)
+    build.report["figure_gaps"] = _figure_gaps(build, excluded)
 
 
-def _figure_gaps(build: _Build) -> list[dict[str, Any]]:
-    """Each company and reported metric without a figure for both of its two fiscal years:
-    the filings ingested for the company do not state that metric for that year."""
+def _figure_gaps(
+    build: _Build, excluded: set[tuple[str, str, int]]
+) -> list[dict[str, Any]]:
+    """Each company and reported metric without a figure for both of its two fiscal years.
+    The reason is ``not_stated`` (the ingested filings do not state it) or ``mixed_basis``
+    (stated only by an earlier report for a year with restated figures, so not exported)."""
     present: dict[tuple[str, str], set[int]] = defaultdict(set)
     for figure in build.figures:
         present[(figure[1], figure[3])].add(figure[4])
@@ -785,10 +833,14 @@ def _figure_gaps(build: _Build) -> list[dict[str, Any]]:
     for company_id, year in sorted(_latest_years(build).items()):
         for metric in ReportedMetric:
             missing = [y for y in (year - 1, year) if y not in present[(company_id, metric.value)]]
-            if missing:
-                gaps.append(
-                    {"company_id": company_id, "metric": metric.value, "missing_years": missing}
-                )
+            left_out = [y for y in missing if (company_id, metric.value, y) in excluded]
+            for reason, years in (
+                ("not_stated", [y for y in missing if y not in left_out]),
+                ("mixed_basis", left_out),
+            ):
+                if years:
+                    gaps.append({"company_id": company_id, "metric": metric.value,
+                                 "missing_years": years, "reason": reason})  # fmt: skip
     return gaps
 
 

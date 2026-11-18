@@ -1,0 +1,15 @@
+{
+  "_note": "Synthetic test fixture shaped like an OpenDART fnlttSinglAcntAll.json response (fs_div=CFS) for the FY2024 report. Its own-year amounts equal the FY2025 test report's comparatives. The amounts are made up for tests and are not the company's filed figures.",
+  "status": "000",
+  "message": "정상",
+  "list": [
+    {"rcept_no": "20250310000456", "reprt_code": "11011", "bsns_year": "2024", "corp_code": "00126380", "sj_div": "IS", "sj_nm": "손익계산서", "account_id": "ifrs-full_Revenue", "account_nm": "영업수익", "thstrm_amount": "258935494000000", "frmtrm_amount": "", "ord": "1", "currency": "KRW"},
+    {"rcept_no": "20250310000456", "reprt_code": "11011", "bsns_year": "2024", "corp_code": "00126380", "sj_div": "IS", "sj_nm": "손익계산서", "account_id": "ifrs-full_CostOfSales", "account_nm": "매출원가", "thstrm_amount": "180388580000000", "frmtrm_amount": "", "ord": "2", "currency": "KRW"},
+    {"rcept_no": "20250310000456", "reprt_code": "11011", "bsns_year": "2024", "corp_code": "00126380", "sj_div": "IS", "sj_nm": "손익계산서", "account_id": "dart_OperatingIncomeLoss", "account_nm": "영업이익", "thstrm_amount": "6566976000000", "frmtrm_amount": "", "ord": "3", "currency": "KRW"},
+    {"rcept_no": "20250310000456", "reprt_code": "11011", "bsns_year": "2024", "corp_code": "00126380", "sj_div": "IS", "sj_nm": "손익계산서", "account_id": "ifrs-full_ProfitLoss", "account_nm": "당기순이익", "thstrm_amount": "15487100000000", "frmtrm_amount": "", "ord": "4", "currency": "KRW"},
+    {"rcept_no": "20250310000456", "reprt_code": "11011", "bsns_year": "2024", "corp_code": "00126380", "sj_div": "CIS", "sj_nm": "포괄손익계산서", "account_id": "ifrs-full_ProfitLoss", "account_nm": "당기순이익", "thstrm_amount": "15487100000000", "frmtrm_amount": "", "ord": "4", "currency": "KRW"},
+    {"rcept_no": "20250310000456", "reprt_code": "11011", "bsns_year": "2024", "corp_code": "00126380", "sj_div": "IS", "sj_nm": "손익계산서", "account_id": "ifrs-full_ProfitLossAttributableToOwnersOfParent", "account_nm": "지배기업 소유주지분", "thstrm_amount": "14473401000000", "frmtrm_amount": "", "ord": "5", "currency": "KRW"},
+    {"rcept_no": "20250310000456", "reprt_code": "11011", "bsns_year": "2024", "corp_code": "00126380", "sj_div": "IS", "sj_nm": "손익계산서", "account_id": "ifrs-full_BasicEarningsLossPerShare", "account_nm": "기본주당이익", "thstrm_amount": "2131", "frmtrm_amount": "", "ord": "6", "currency": "KRW"},
+    {"rcept_no": "20250310000456", "reprt_code": "11011", "bsns_year": "2024", "corp_code": "00126380", "sj_div": "IS", "sj_nm": "손익계산서", "account_id": "ifrs-full_DilutedEarningsLossPerShare", "account_nm": "희석주당이익", "thstrm_amount": "2131", "frmtrm_amount": "", "ord": "7", "currency": "KRW"}
+  ]
+}

@@ -211,6 +211,28 @@ def select_prior_filing(filings: list[SecFilingItem]) -> SecFilingItem:
     return dated[-2]
 
 
+class SecPriorYearSkipped(SecIngestError):
+    """The 10-K before the latest is not the latest's prior fiscal year; nothing is stored."""
+
+
+def _require_prior_year(
+    filings: list[SecFilingItem],
+    facts: list[SecFinancialItem],
+    prior: SecFilingItem,
+    prior_year: int,
+) -> None:
+    """Raise :class:`SecPriorYearSkipped` unless ``prior`` covers the latest 10-K's fiscal
+    year minus one (an amended or late 10-K can sit between them). Pure."""
+    latest = select_target_filing(filings, None)
+    latest_facts = [f for f in facts if f.accession_number == latest.accession_number]
+    latest_year = _filing_fiscal_year(latest, latest_facts)
+    if prior_year != latest_year - 1:
+        raise SecPriorYearSkipped(
+            f"10-K {prior.accession_number} covers FY{prior_year}, not FY{latest_year - 1} "
+            f"before the latest 10-K {latest.accession_number} (FY{latest_year})"
+        )
+
+
 def _filing_fiscal_year(filing: SecFilingItem, own_facts: list[SecFinancialItem]) -> int:
     """Derive the filing's fiscal year: the facts' own period, else report_date.year.
 
@@ -274,6 +296,8 @@ class SecFilingAdapter:
             if fact.accession_number == target.accession_number
         ]
         fiscal_year = _filing_fiscal_year(target, own_facts)
+        if self.prior:
+            _require_prior_year(filings, facts, target, fiscal_year)
         normalized = build_sec_normalized_filing(
             company_match=company_match,
             cik10=cik10,
