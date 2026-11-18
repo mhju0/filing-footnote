@@ -270,7 +270,6 @@ struct SourceSection: View {
                 }
                 .listRowBackground(Color.clear)
                 .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
-                .id(PageScroll.end)
             }
         }
     }

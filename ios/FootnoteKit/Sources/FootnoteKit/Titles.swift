@@ -142,7 +142,7 @@ public enum Titles {
         var title = titles.map { language == .ko ? $0.ko : $0.en }
             ?? (language == .ko ? "\(filing.category.label(.ko)) 관련 공시" : "\(filing.category.label(.en)) filing")
         if name.subsidiary { title += language == .ko ? " (자회사)" : " (subsidiary)" }
-        if let detail = name.detail.flatMap({ dartDetail($0, language) }) { title += " · " + detail }
+        if let detail = name.detail.flatMap({ dartDetail($0, language) }) { title += "\u{00A0}· " + detail }
         return title
     }
 

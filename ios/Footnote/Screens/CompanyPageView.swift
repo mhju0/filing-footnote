@@ -7,6 +7,7 @@ struct CompanyPageView: View {
     @Environment(\.language) private var language
     let store: BundleStore
     let page: CompanyPage
+    @Environment(\.filingSelection) private var selection
     @State private var showsNotices: Bool
 
     init(store: BundleStore, page: CompanyPage) {
@@ -18,7 +19,7 @@ struct CompanyPageView: View {
     private var name: String { Titles.name(of: page.company, language: language) }
 
     var body: some View {
-        List {
+        SelectionList(selection: selection) {
             header
             if !page.periodicReports.isEmpty {
                 Section(language("정기 보고서", "Periodic reports")) {
@@ -86,7 +87,7 @@ struct CompanyPageView: View {
     private func monthTitle(_ month: FilingMonth, first: Bool) -> String {
         let title = Formatting.month(
             month.month, year: month.year, currentYear: page.dataAsOf.year, language: language)
-        return first ? language("최근 공시 · ", "Recent filings · ") + title : title
+        return first ? language("최근 공시", "Recent filings") + Copy.dot + title : title
     }
 
     private var noticesRow: some View {

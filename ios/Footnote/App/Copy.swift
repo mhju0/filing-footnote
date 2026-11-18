@@ -24,8 +24,9 @@ enum Copy {
     }
 
     static let noBreak = "\u{00A0}"
-    /// A middle dot that stays with the word after it, so no line ends on a lone `·`.
-    static let dot = " ·\u{00A0}"
+    /// A middle dot held to the word before it by a no-break space, so a line never starts
+    /// with `·` (D86). A line may end on `word ·`; the next part starts the next line.
+    static let dot = "\u{00A0}· "
 
     static func dataDate(_ date: CivilDate, _ language: Language) -> String {
         let day = unbroken(Formatting.monthDay(date, language: language))
@@ -72,6 +73,29 @@ enum Copy {
         return language(
             "최근 1년 동안 낸 공시 \(listed)건을 모두 보여 줘요.",
             "These are all \(listed) filings from the last 12 months.")
+    }
+
+    /// Draft: the note under the 소식 feed (D86). The empty feed uses board 19's
+    /// "no filings in the last 12 months" line (`endNote(listed: 0, …)`).
+    static func newsEndNote(listed: Int, capped: Bool, _ language: Language) -> String {
+        if capped {
+            return language(
+                "모든 기업의 최근 공시 \(listed)건이에요. 기업마다 최근 공시를 더 보려면 기업 화면을 여세요.",
+                "The \(listed) newest filings across all companies. Each company’s page lists more.")
+        }
+        return language(
+            "모든 기업의 최근 공시 \(listed)건을 모두 보여 줘요.",
+            "These are all \(listed) recent filings across the companies.")
+    }
+
+    /// Draft: the link from a filing or annual page to the glossary entry for its category.
+    static func glossaryLink(_ term: String, _ language: Language) -> String {
+        language("용어 풀이: \(term)", "Glossary: \(term)")
+    }
+
+    /// Draft: the split view's detail column before a term is chosen.
+    static func chooseTerm(_ language: Language) -> String {
+        language("용어를 고르면 여기에 보여 줘요", "Choose a term to see it here")
     }
 
     static func allFilingsLink(_ regulator: Regulator, _ language: Language) -> String {

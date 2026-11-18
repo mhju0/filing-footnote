@@ -5,6 +5,7 @@ import SwiftUI
 /// outlook banner (outlook only), the sentences, the numbers, the original.
 struct FilingPageView: View {
     @Environment(\.language) private var language
+    let store: BundleStore
     let page: FilingPage
     let labels: FactLabels
 
@@ -53,6 +54,8 @@ struct FilingPageView: View {
                 }
             }
             SourceSection(source: page.source)
+            GlossaryLinkSection(store: store, category: page.filing.category)
+            PageEndMarker()
         }
     }
 

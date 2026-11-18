@@ -3,8 +3,9 @@ import SwiftUI
 
 /// Debug builds only: opens a screen at launch from `-FootnoteOpen <kind>=<id>`, so the
 /// screenshot script (`ios/scripts/screenshots.sh`) can capture each screen without UI
-/// scripting. Kinds: `company`, `notices` (company id), `filing` (filing id), `news`,
-/// `glossary`; `figure`, `picker` (the figure with the company picker open), `yearcompare`
+/// scripting. Kinds: `company`, `notices` (company id), `filing` (filing id), `news` (an
+/// optional filing id to open), `glossary` (an optional term key to mark);
+/// `figure`, `picker` (the figure with the company picker open), `yearcompare`
 /// and `yearcalc` take `<company id>|<metric>|<fiscal year>`; `compare` and `companycalc`
 /// take `<company id>|<peer id>|<metric>|<measure or none>|<fiscal year>`. Release builds
 /// ignore the argument.
@@ -44,7 +45,8 @@ struct LaunchRoute: Sendable {
             let pieces = id.split(separator: "|", maxSplits: 1).map(String.init)
             return pieces.count == 2 ? (pieces[0], pieces[1]) : (nil, id)
         case .company, .notices: return (id, nil)
-        case .news, .glossary: return (nil, nil)
+        case .news: return (nil, id)
+        case .glossary: return (nil, nil)
         case .figure, .picker, .yearcompare, .yearcalc, .compare, .companycalc:
             return (id.split(separator: "|").first.map(String.init), nil)
         }
@@ -123,7 +125,10 @@ struct LaunchRoute: Sendable {
         return path + detailPath
     }
 
-    var newsPath: [Route] { [] }
+    var newsPath: [Route] { kind == .news ? parts.filing.map { [.filing($0)] } ?? [] : [] }
+
+    /// The glossary entry a `glossary=<term key>` launch opens and marks.
+    var glossaryFocus: String? { kind == .glossary ? id : nil }
 
     var sidebarItem: SidebarView.Item? {
         switch kind {

@@ -123,7 +123,7 @@ struct FigureView: View {
             .padding(.vertical, 4)
             .listRowBackground(Theme.surface)
             .accessibilityElement(children: .combine)
-            LinkRow(title: PageCopy.moreInGlossary(language)) { navigate(.glossary) }
+            LinkRow(title: PageCopy.moreInGlossary(language)) { navigate(.glossary(entry.termKey)) }
                 .accessibilityIdentifier("more-in-glossary")
         } header: {
             Text(words: PageCopy.meaning(language))
