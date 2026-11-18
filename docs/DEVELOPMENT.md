@@ -1,192 +1,108 @@
-> History: this document describes Filing Digest, the predecessor project, and is kept as a record. Filing Footnote's current docs are PRODUCT.md and docs/design/DESIGN.md.
-
 # Development
 
-Local setup, data ingestion, tests and device builds for Filing Digest. The [README](../README.md) gives the overview; [ARCHITECTURE.md](ARCHITECTURE.md) explains the design.
+How to run the checks, build a data bundle and test the app. [ARCHITECTURE.md](ARCHITECTURE.md)
+explains the parts. Run every command from the repository root unless it says otherwise.
 
-## Local setup
-
-Prerequisites: Python 3.11, Docker with Compose, and Xcode 16 or newer for the
-iOS client.
+## Checks
 
 ```bash
 python3.11 -m venv .venv
-.venv/bin/pip install -r backend/requirements.lock
-.venv/bin/pip install ruff==0.15.21
-cp backend/.env.example backend/.env
-docker compose up -d db
-cd backend
-../.venv/bin/python -m uvicorn app.main:app --reload --port 8001
+.venv/bin/pip install -r backend/requirements.lock ruff==0.15.21
+scripts/check.sh
 ```
 
-On Linux, preinstall the CPU build with
-`.venv/bin/pip install torch==2.13.0 --index-url https://download.pytorch.org/whl/cpu`
-before installing requirements, as CI and the Docker image do. This avoids
-unused CUDA libraries; see [PyTorch CPU installation](https://pytorch.org/get-started/locally/).
+The gate passes only when the last line is `GATE: PASS`. It runs, in order:
 
-Fill in `backend/.env` before using DART, SEC ingestion, or generated narrative.
-The file is ignored by Git. The embedding model is downloaded from Hugging Face
-on first use; set `EMBEDDING_WARMUP_ENABLED=false` when you only need lightweight
-API or health checks.
+1. `make lint`: Ruff over `backend/`.
+2. `make test`: the offline pytest suite, with `DART_API_KEY` and `TEST_DATABASE_URL` unset
+   and `EMBEDDING_WARMUP_ENABLED=false`, so no network, key or model is used.
+3. `swift test --package-path ios/FootnoteKit` (macOS only).
+4. Regenerates `ios/Footnote.xcodeproj` with XcodeGen 2.46.0 and fails if it differs from the
+   committed copy (skipped when XcodeGen is not installed; fails on another version).
+5. A grep that fails if app code names an exchange rate or a currency conversion (D84).
 
-| Variable | Required | Purpose |
-|---|---:|---|
-| `DART_API_KEY` | DART ingestion | OpenDART credential |
-| `DART_BASE_URL` | No | Defaults to `https://opendart.fss.or.kr/api` |
-| `LLM_API_KEY` | Narrative | Gemini API key (or another OpenAI-compatible provider's) |
-| `LLM_BASE_URL` | No | Defaults to `https://generativelanguage.googleapis.com/v1beta/openai` |
-| `LLM_MODEL` | No | Defaults to `gemini-3.5-flash-lite` |
-| `SEC_BASE_URL` | No | Defaults to `https://data.sec.gov` |
-| `SEC_USER_AGENT` | SEC ingestion | Must contain real contact information |
-| `DATABASE_URL` | No | Local default targets PostgreSQL on port 5433 |
-| `ALLOWED_HOSTS` | No | JSON array of accepted HTTP host names; defaults to localhost and loopback |
-| `EMBEDDING_MODEL` | No | Defaults to `nlpai-lab/KURE-v1` |
-| `EMBEDDING_OFFLINE_FIRST` | No | Prefer a cached model snapshot |
-| `EMBEDDING_WARMUP_ENABLED` | No | Load the model during API startup |
-
-The Compose backend is optional and isolated behind the `container` profile. It
-reads the same gitignored `backend/.env` as native uvicorn and persists the
-Hugging Face model cache in a named volume:
+Other targets:
 
 ```bash
-docker compose --profile container up -d --build backend
+make test TESTS='tests/test_comparison_cases.py'   # one backend test file
+make test-db                                       # PostgreSQL suites in a throwaway *_test database
 ```
 
-Host API and database ports bind to `127.0.0.1`. Physical-device testing over
-LAN requires an explicit API bind and adding the Mac's address to
-`ALLOWED_HOSTS`. Use a trusted private network and restore loopback afterward;
-the API has no authentication. Do not expose PostgreSQL for device testing.
+`make test-db` creates and removes its own database. Point it at the Compose PostgreSQL on
+port 5433 (`docker compose up -d db`), never at a database that holds real data.
 
-### Upgrade an existing local database
+## Building a data bundle
 
-Fresh databases receive the v0.3 schema from `backend/db/init.sql`. Before
-running the current application against an older persistent volume, back it up
-and apply the versioned migration from the repository root:
+This needs network access, a DART API key, an SEC contact string and, for summaries, a Groq
+API key. Put them in `backend/.env`, which is git-ignored and must never be committed:
+`DART_API_KEY`, `SEC_USER_AGENT`, `LLM_API_KEY` and `DATABASE_URL` for the build database.
+
+From `backend/`, with the Compose database running:
 
 ```bash
-docker compose exec -T db sh -c \
-  'pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB"' > filing-digest-pre-v0.3.sql
-docker compose exec -T db sh -c \
-  'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" "$POSTGRES_DB"' \
-  < backend/db/migrations/0001_normalized_filing_snapshots.sql
-cd backend
-../.venv/bin/python -m app.embeddings.backfill
+# Annual report and statements, then the report before it for restatement checks
+../.venv/bin/python -m app.ingest --source dart --ticker 005930 --save-pinned data/pinned
+../.venv/bin/python -m app.ingest --source dart --ticker 005930 --prior --save-pinned data/pinned
+# Twelve months of event filings
+../.venv/bin/python -m app.ingest events --source dart --ticker 005930 --save-pinned data/pinned
+
+# Summaries: stage, proofread, approve (the owner runs approve)
+../.venv/bin/python -m app.build.summaries generate --as-of 2026-11-19 --dry-run
+../.venv/bin/python -m app.build.summaries generate --as-of 2026-11-19
+../.venv/bin/python -m app.build.review --out ../dist/review.html
+../.venv/bin/python -m app.build.approve --filing <filing id>
 ```
 
-Use PostgreSQL 16 `pg_dump` and `pg_restore` with this PostgreSQL 16 database.
-Check both client versions first; do not use a newer default client blindly.
-Restore the backup into a disposable database and verify rows before migration.
-Keep dumps outside Git. The legacy v0.2 migration and restore path are covered
-by `make test-db`; null filing identities fail and roll back rather than being invented.
+Groq's free tier allows 1000 output tokens a minute and a fixed number of tokens a day, so
+`generate` waits between calls (`--call-interval`) and a full run spreads over several days.
+Cached sections are not sent again.
 
-The migration never invents historical Reporting Period dates. Re-ingest a
-filing to enrich exact dates when its regulator provides them. The final
-backfill command publishes `indexed_at` only after every chunk in each filing is
-ready, so partially indexed filings stay out of search.
-
-### Ingest data
-
-From `backend/` with the database running:
+Export and verify, from the repository root:
 
 ```bash
-../.venv/bin/python -m app.ingest --source dart --ticker 000660
-../.venv/bin/python -m app.ingest --source sec --ticker NVDA
+make data AS_OF=2026-11-19 PINNED=backend/data/pinned                                   # release
+make data AS_OF=2026-11-19 PINNED=backend/data/pinned DATA_FLAGS=--allow-unapproved     # development
+cd backend && ../.venv/bin/python -m app.build.verify ../dist/footnote.sqlite --pinned data/pinned --release
 ```
 
-The reference portfolio corpus used for the screenshots contains four DART
-companies (Samsung Electronics, SK Hynix, NAVER, Hyundai Motor) and four SEC
-companies (Apple, Microsoft, NVIDIA, Tesla). That database is local and is not
-distributed with the repository; a fresh checkout starts empty. As of September
-9, 2026, the owner's qualified local corpus adds ten companies beyond that
-screenshot set; see [coverage](COVERAGE.md).
+The bundle and its report land in `dist/` (git-ignored). A release export fails until every
+summary and glossary entry in scope is approved; see the release gates in
+[ARCHITECTURE.md](ARCHITECTURE.md#release-gates). To run the app on a development bundle,
+copy it to `ios/Footnote/Resources/footnote.sqlite`, which is git-ignored. Never commit a
+real bundle.
 
-### Validate
+## App
 
-From the repository root:
+`ios/project.yml` is the source of the Xcode project. After editing it:
 
 ```bash
-make check                                      # Ruff, offline tests, Compose
-make test TESTS='tests/test_search.py -k health'  # targeted test
-make test-db                                    # fresh database, smoke + persistence
+xcodegen generate --spec ios/project.yml   # XcodeGen 2.46.0
 ```
 
-`make test-db` creates a unique temporary database on the server configured by
-`DATABASE_URL`, applies the checked-in schema and seed, runs the PostgreSQL
-suites, and removes that database even when a test fails. It never resets the
-application database. The PostgreSQL role needs `CREATEDB` and permission to
-install pgvector. When the application role lacks those privileges, supply a
-separate test connection; for local Homebrew PostgreSQL:
+and commit the regenerated `ios/Footnote.xcodeproj`. Tests:
 
 ```bash
-TEST_DATABASE_ADMIN_URL=postgresql:///postgres make test-db
+xcodebuild test -project ios/Footnote.xcodeproj -scheme Footnote \
+  -destination 'platform=iOS Simulator,id=<UDID>' CODE_SIGNING_ALLOWED=NO
+xcodebuild test -project ios/Footnote.xcodeproj -scheme Footnote \
+  -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO
+xcodebuild test -project ios/Footnote.xcodeproj -scheme FootnoteUITests \
+  -destination 'platform=iOS Simulator,id=<UDID>' CODE_SIGNING_ALLOWED=NO
 ```
 
-`PYTHON` and `RUFF` can point to an existing environment when working in another
-checkout, for example `make check PYTHON=/path/to/.venv/bin/python
-RUFF=/path/to/.venv/bin/ruff`. No additional worktree configuration is required.
+Run one simulator job at a time. The UI tests open the FootnoteKit fixture through the debug
+launch argument `-FootnoteBundle`. `ios/scripts/screenshots.sh` captures the screens in
+[screenshots/footnote/](screenshots/footnote/) from a built app on a booted simulator.
 
-Build the iOS client from the repository root:
+## Changing a shared contract
 
-```bash
-xcodebuild -project ios/FilingDigest.xcodeproj -scheme FilingDigest \
-  -destination 'generic/platform=iOS Simulator' build
-```
+- After editing `contracts/comparison-cases.json`, `financial-vocabulary.json` or
+  `filing-categories.json`, run `ios/FootnoteKit/scripts/sync-contracts.sh`; tests fail while
+  the copies differ.
+- After changing the bundle schema, rewrite the FootnoteKit fixture with
+  `cd backend && ../.venv/bin/python -m tests.footnotekit_fixture`.
+- A change to the summary prompt, a template or the lexicon changes the summary cache key, so
+  every affected summary is generated and approved again.
 
-GitHub Actions lints with Ruff, validates the Compose file, applies
-`backend/db/init.sql` and the smoke-test seed to a fresh pgvector/PostgreSQL 16
-service, runs offline, smoke, and persistence tests through the same Make targets,
-then builds the app and runs unit tests plus the core XCUITest flow on a macOS iOS Simulator. The
-live evaluation harness remains manual because it requires an ingested corpus
-and a configured LLM key. Retrieval cases compare canonical filing periods
-returned by the API, so regenerated database UUIDs do not require an eval-map
-update; see [`backend/evals/README.md`](../backend/evals/README.md).
-
-### Run on a device
-
-The Simulator shares the host's network stack, so a fresh checkout needs no
-configuration: `APIClient` falls back to `http://127.0.0.1:8001`. On a real
-device that address is the phone itself, so the build has to be told where the
-Mac is. Create `ios/Local.xcconfig`. It is gitignored because a signing
-identity and a LAN address belong to one machine, not to the repository:
-
-```text
-DEVELOPMENT_TEAM = YOURTEAMID
-FD_SLASH = /
-FD_BACKEND_URL = http:$(FD_SLASH)$(FD_SLASH)your-mac.local:8001
-```
-
-`//` opens a comment in an xcconfig, so a literal URL silently truncates to
-`http:`; routing the slashes through `FD_SLASH` avoids it. The value reaches the
-app as `FDBackendURL` in `ios/FilingDigest-Info.plist`, and an unset or
-malformed value falls back to loopback rather than failing the build.
-
-```bash
-xcodebuild -project ios/FilingDigest.xcodeproj -scheme FilingDigest \
-  -xcconfig ios/Local.xcconfig -destination 'id=<device-udid>' \
-  -allowProvisioningUpdates build
-```
-
-Serve on the LAN with `--host 0.0.0.0`, and note that this exposes an
-unauthenticated API to everyone on the same Wi-Fi. macOS also blocks incoming
-connections to the venv Python binary by default; allow it in System Settings →
-Network → Firewall. App Transport Security permits the plain-HTTP dev server
-through `NSAllowsLocalNetworking`, which covers `.local` and unqualified
-hostnames only, not arbitrary internet loads.
-
-## API
-
-| Method | Path | Purpose |
-|---|---|---|
-| `GET` | `/health` | Process liveness and version |
-| `GET` | `/companies?q=` | Company browse/filter data |
-| `GET` | `/companies/{company_id}/digest?lang=ko\|en` | Metrics, summaries, and Filing Sources |
-| `POST` | `/search` | Bounded semantic search over filing chunks |
-| `POST` | `/answer` | Guarded narrative, figures, Citations, and Filing Sources |
-
-Ingestion is intentionally CLI-only. The application does not expose a remote
-write endpoint.
-
-Digest metric cards transport `key`, `value`, `unit`, `yoy_delta_pct`, `source`,
-and `filing_source_id`. Presentation labels are deliberately absent from the
-wire contract and are resolved by the iOS `FigureDisplay` module.
-
+The Filing Digest setup (FastAPI server, device builds over the LAN, API contract) is kept in
+[history/filing-digest-development.md](history/filing-digest-development.md).
