@@ -130,10 +130,13 @@ struct FactRow: View {
             if typeSize.isAccessibilitySize {
                 stacked
             } else if layout == .split {
+                // Split rows carry short metric and item names: the label stays on one line
+                // (a squeezed English word would be hyphenated) and the value column takes
+                // the rest, wrapping between words.
                 HStack(alignment: .firstTextBaseline, spacing: 12) {
-                    labelText
+                    labelText.fixedSize()
                     Spacer(minLength: 8)
-                    valueColumn.layoutPriority(1)
+                    valueColumn
                 }
             } else {
                 ViewThatFits(in: .horizontal) {

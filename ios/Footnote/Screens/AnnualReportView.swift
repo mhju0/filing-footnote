@@ -94,8 +94,10 @@ private struct AnnualFigureRowView: View {
                 .font(.body.weight(.semibold))
                 .foregroundStyle(Theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
-            yearLine(fiscalYear, row.current, emphasized: true)
-            yearLine(fiscalYear - 1, row.prior, emphasized: false)
+            YearValueLines(lines: [
+                yearValue(fiscalYear, row.current, emphasized: true),
+                yearValue(fiscalYear - 1, row.prior, emphasized: false),
+            ])
             if let change = changeLine {
                 Text(words: change)
                     .font(.subheadline)
@@ -116,22 +118,13 @@ private struct AnnualFigureRowView: View {
         .accessibilityLabel(spoken)
     }
 
-    private func yearLine(_ year: Int, _ figure: Figure?, emphasized: Bool) -> some View {
-        FlowLayout(spacing: 8, lineSpacing: 2) {
-            Text(words: PageCopy.fiscalYear(year, language))
-                .font(.subheadline)
-                .monospacedDigit()
-                .foregroundStyle(Theme.muted)
-                .fixedSize()
-            Text(words: figure.map(value) ?? PageCopy.noFigure(language))
-                .font(emphasized && figure != nil ? .body.weight(.semibold) : .body)
-                .monospacedDigit()
-                .foregroundStyle(figure == nil ? Theme.muted : Theme.ink)
-                .fixedSize(horizontal: false, vertical: true)
-            if figure?.isRestated == true {
-                TagView(text: PageCopy.restatedTag(language), kind: .corrected)
-            }
-        }
+    private func yearValue(_ year: Int, _ figure: Figure?, emphasized: Bool) -> YearValueLines.Line {
+        YearValueLines.Line(
+            year: PageCopy.fiscalYear(year, language),
+            value: figure.map(value) ?? PageCopy.noFigure(language),
+            emphasized: emphasized && figure != nil,
+            missing: figure == nil,
+            tag: figure?.isRestated == true ? PageCopy.restatedTag(language) : nil)
     }
 
     private func value(_ figure: Figure) -> String {
@@ -175,26 +168,124 @@ private struct MarginRowView: View {
     let margin: AnnualMarginRow
 
     var body: some View {
-        FactRow(
-            label: DerivedMetric.operatingMargin.name(language),
-            value: line(margin.fiscalYear, margin.current),
-            details: [line(margin.fiscalYear - 1, margin.prior), PageCopy.marginFormula(language)],
-            layout: .split)
+        VStack(alignment: .leading, spacing: 4) {
+            Text(words: DerivedMetric.operatingMargin.name(language))
+                .font(.body.weight(.semibold))
+                .foregroundStyle(Theme.ink)
+                .fixedSize(horizontal: false, vertical: true)
+            YearValueLines(lines: [
+                line(margin.fiscalYear, margin.current, emphasized: true),
+                line(margin.fiscalYear - 1, margin.prior, emphasized: false),
+            ])
+            Text(words: PageCopy.marginFormula(language))
+                .font(.footnote)
+                .foregroundStyle(Theme.muted)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.vertical, 4)
+        .frame(maxWidth: .infinity, minHeight: Theme.minTarget, alignment: .leading)
+        .listRowBackground(Theme.surface)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(
+            ([DerivedMetric.operatingMargin.name(language)]
+                + [margin.fiscalYear, margin.fiscalYear - 1].map { spokenLine($0) }
+                + [PageCopy.marginFormula(language)]).joined(separator: ", "))
     }
 
-    private func line(_ year: Int, _ comparison: Comparison<OperatingMargin>?) -> String {
-        let value: String = switch comparison {
+    private func text(_ comparison: Comparison<OperatingMargin>?) -> String? {
+        switch comparison {
         case .result(let margin)?: Formatting.percent(margin.operatingMargin)
         case .refusal(let refusal)?: PageCopy.refusal(refusal, language)
-        case nil: PageCopy.noFigure(language)
+        case nil: nil
         }
-        return PageCopy.fiscalYear(year, language) + " " + value
+    }
+
+    private func comparison(_ year: Int) -> Comparison<OperatingMargin>? {
+        year == margin.fiscalYear ? margin.current : margin.prior
+    }
+
+    private func line(_ year: Int, _ value: Comparison<OperatingMargin>?, emphasized: Bool) -> YearValueLines.Line {
+        let shown = text(value)
+        let isResult = if case .result? = value { true } else { false }
+        return YearValueLines.Line(
+            year: PageCopy.fiscalYear(year, language),
+            value: shown ?? PageCopy.noFigure(language),
+            emphasized: emphasized && isResult,
+            missing: !isResult,
+            tag: nil)
+    }
+
+    private func spokenLine(_ year: Int) -> String {
+        PageCopy.fiscalYear(year, language) + " " + (text(comparison(year)) ?? PageCopy.noFigure(language))
+    }
+}
+
+/// A year label and its value per line. The labels form one column so the values line up and
+/// a long value wraps inside its own column; at accessibility sizes each value flows under
+/// its label.
+private struct YearValueLines: View {
+    struct Line {
+        let year: String
+        let value: String
+        let emphasized: Bool
+        let missing: Bool
+        let tag: String?
+    }
+
+    @Environment(\.dynamicTypeSize) private var typeSize
+    let lines: [Line]
+
+    var body: some View {
+        if typeSize.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: 4) {
+                ForEach(Array(lines.enumerated()), id: \.offset) { _, line in
+                    FlowLayout(spacing: 8, lineSpacing: 2) {
+                        yearText(line)
+                        valueText(line)
+                        tagView(line)
+                    }
+                }
+            }
+        } else {
+            Grid(alignment: .leadingFirstTextBaseline, horizontalSpacing: 8, verticalSpacing: 4) {
+                ForEach(Array(lines.enumerated()), id: \.offset) { _, line in
+                    GridRow {
+                        yearText(line)
+                        HStack(alignment: .firstTextBaseline, spacing: 6) {
+                            valueText(line)
+                            tagView(line)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                }
+            }
+        }
+    }
+
+    private func yearText(_ line: Line) -> some View {
+        Text(words: line.year)
+            .font(.subheadline)
+            .monospacedDigit()
+            .foregroundStyle(Theme.muted)
+            .fixedSize()
+    }
+
+    private func valueText(_ line: Line) -> some View {
+        Text(words: line.value)
+            .font(line.emphasized ? .body.weight(.semibold) : .body)
+            .monospacedDigit()
+            .foregroundStyle(line.missing ? Theme.muted : Theme.ink)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    @ViewBuilder private func tagView(_ line: Line) -> some View {
+        if let tag = line.tag { TagView(text: tag, kind: .corrected) }
     }
 }
 
 /// One figure (DESIGN.md, Figure): its meaning from the glossary, every year in the bundle
-/// as a list, then the latest change with its inputs and formula. The tap target of each annual row (I8 builds the
-/// full screen with its meaning and the compare action).
+/// as a list, then the latest change with its inputs and formula. The tap target of each
+/// annual row; I8 builds the full screen with the compare action.
 struct FigureView: View {
     @Environment(\.language) private var language
     let store: BundleStore
