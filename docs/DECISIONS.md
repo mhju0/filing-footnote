@@ -1261,3 +1261,80 @@ what each page shows; the SwiftUI views only lay them out.
   sentence came from a template or the model (the "how written" note is generic until
   then).
 - Open, owner review: the drafted copy the pull request lists.
+
+## D84 · Figure, year and company comparison screens · 2026-11-19 (`PROPOSED`)
+
+Roadmap I8 and I9. The figure screen (board 5A), compare with last year (board 6) and its
+calculation (6b), the company picker (7A), compare with another company (7) and the
+refusal screen (8 to 10) are built on three FootnoteKit models in `FigureCompare.swift`:
+`FigurePage`, `YearComparePage` and `CompanyComparePage`. Each holds the figures it shows
+and the `Calculator` outcome, so `swift test` reaches every result and refusal; the
+SwiftUI views only lay them out.
+
+- The accounting standard comes from the regulator (DART: K-IFRS, SEC: US GAAP). The
+  bundle has no `accounting_standard` column; one is added only if a company's standard
+  ever differs from its regulator's. The year-end month comes from
+  `companies.fiscal_year_end`. The caveat under a cross-company result names both;
+  board 7's wording covers two standards and two year-ends, the other three cases are
+  drafts.
+- Companies compare by growth rate or operating margin only. An amount comparison is
+  always refused (`incompatible_currency` when the currencies differ, else the
+  calculator's own refusal), and no code path converts a currency: a FootnoteKit test
+  greps the app sources, and `scripts/check.sh` runs the same grep.
+- A refusal is a `RefusalExplanation`: the calculator's reason and detail, the companies,
+  the missing year or the zero-or-below baseline, and "what is possible instead" actions.
+  Two overrides make the reason name the real cause: a single company with no inputs is
+  `missing_period`/`missing_fact`, and an amount request across currencies is
+  `incompatible_currency` even when a figure is missing. Each of the six reasons is
+  reached through the screen models in FootnoteKit tests and in the app's copy tests.
+- Compare with another company shows each company's rate with a grey bar only when every
+  rate is zero or above (a bar for a negative rate would read as a ranking), and the
+  difference as the absolute gap in percentage points with the formula
+  `|a − b| = d%p`. No "higher", "better" or ordering words; the companies keep the order
+  they were chosen in.
+- The peer's year is its newest fiscal year, because year-ends differ; each rate row
+  names its own fiscal year, year-end month and standard.
+- Navigation: screens push through an environment `navigate` action. iPhone pushes onto
+  the tab's stack; iPad and Mac push onto a detail-column stack that resets when the
+  filing changes. Debug launch routes (`figure`, `picker`, `yearcompare`, `yearcalc`,
+  `compare`, `companycalc`) open any of these screens for the UI tests and screenshots.
+- Tests edit copies of the fixture: Samsung's figures moved to the separate basis
+  (`unsupported_basis`) and Samsung's FY2024 EPS set to a negative value
+  (`nonpositive_baseline`). The fixture itself is unchanged.
+- Screenshots come from `ios/scripts/screenshots.sh` on the real dev bundle. The
+  unsupported-basis shot opens a temporary copy with Samsung's figures on the separate
+  basis; the other refusals use real data (LG Chem's negative FY2024 EPS, Costco's single
+  year of net income, Samsung and Apple amounts).
+- Open, owner review: the drafted copy the pull request lists.
+
+## D85 · Comparison review fixes: amounts, culprits, periods and year-ends · 2026-11-19 (`PROPOSED`)
+
+Follows D84 after the PR #34 review.
+
+- An amount request between two companies that report in the same currency
+  (`absolute_amount_across_companies`) has its own title (board 8's "금액은 비교하지
+  않아요" / "Amounts are not compared"), body and reason line. It no longer borrows
+  `incompatible_comparison`'s period, basis and unit text.
+- `RefusalExplanation` carries `culpritID`: the company whose own figures caused the
+  refusal. The basis and conditions sentences name it, not the company the screen was
+  opened from. For an amount request, which the calculator refuses before any company's
+  own check runs, a basis refusal falls back to the company with a figure off a supported
+  basis.
+- A zero or negative revenue in the operating-margin compare has a margin title, not the
+  growth rate's.
+- The margin picks the peer's newest year that has both revenue and operating income.
+- The caveat leads with a sentence saying the two years are not the same period when
+  their fiscal-year labels differ or their period ends are more than thirty-one days
+  apart. That is a month, which leaves out 52/53-week drift of a few days.
+- `fiscalYearEndMonth` is nil unless `fiscal_year_end` is a valid `MM-DD`. An unknown
+  month leaves the year-end part out of the caveat, the rate line and the picker. Bad data
+  no longer turns into December.
+- The two-year check reads "이어지는 두 해" / "Consecutive years" when the two lengths
+  differ. The English rounding line follows board 6b: "rounded to two decimals".
+- `scripts/check.sh` and the FootnoteKit test share one no-conversion pattern, which now
+  also catches `usd_to_krw`-style names and a bare `fx`. The step fails on a match, on a
+  grep error (exit 2) and on a missing source folder.
+- Known limit, not changed: the figure screen picks its basis per metric, while the
+  company compare picks it across all of a company's figures. The two can differ for a
+  company with mixed bases.
+- Open, owner review: the new drafted copy the pull request lists.

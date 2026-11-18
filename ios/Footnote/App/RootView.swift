@@ -46,6 +46,7 @@ struct AppShell: View {
 
 /// Resolves a route to its screen; shared by every navigation stack.
 struct RouteDestination: View {
+    @Environment(\.language) private var language
     let store: BundleStore
     let labels: FactLabels
     let route: Route
@@ -60,10 +61,37 @@ struct RouteDestination: View {
             FilingDestination(store: store, labels: labels, filingID: id)
         case .figure(let companyID, let metric, let fiscalYear):
             if let metric = ReportedMetric(rawValue: metric),
-               let history = FigureHistory(store: store, companyID: companyID, metric: metric)
+               let page = FigurePage(store: store, companyID: companyID, metric: metric, fiscalYear: fiscalYear)
             {
-                FigureView(store: store, history: history, fiscalYear: fiscalYear)
+                FigureView(store: store, page: page)
             }
+        case .yearCompare(let companyID, let metric, let fiscalYear):
+            if let page = YearComparePage(store: store, companyID: companyID, metric: metric, fiscalYear: fiscalYear) {
+                YearCompareView(store: store, page: page)
+            }
+        case .yearCalculation(let companyID, let metric, let fiscalYear):
+            if let page = YearComparePage(store: store, companyID: companyID, metric: metric, fiscalYear: fiscalYear),
+               let calculation = page.calculation
+            {
+                CalculationView(
+                    context: PageCopy.compareContext(
+                        page.company, metric: calculation.metric.name(language), basis: page.basis, language),
+                    calculations: [.growth(calculation)])
+            }
+        case .companyCompare(let compare):
+            CompanyCompareView(store: store, route: compare)
+        case .companyCalculation(let compare):
+            if let page = CompanyComparePage(
+                store: store, companyID: compare.companyID, peerID: compare.peerID, metric: compare.metric,
+                measure: compare.measure, fiscalYear: compare.fiscalYear)
+            {
+                CalculationView(
+                    context: PageCopy.companiesContext(page.companies, language)
+                        + Copy.dot + PageCopy.ratesHeading(page.chosenMeasure, metric: page.reportedMetric, language),
+                    calculations: page.calculations, difference: page.difference)
+            }
+        case .glossary:
+            GlossaryView(store: store)
         }
     }
 }
@@ -102,6 +130,7 @@ struct PhoneTabs: View {
                             RouteDestination(store: store, labels: labels, route: $0)
                         }
                 }
+                .environment(\.navigate, NavigateAction { companiesPath.append($0) })
             }
             Tab(language("소식", "News"), systemImage: "newspaper", value: TabID.news) {
                 NavigationStack(path: $newsPath) {
@@ -110,6 +139,7 @@ struct PhoneTabs: View {
                             RouteDestination(store: store, labels: labels, route: $0)
                         }
                 }
+                .environment(\.navigate, NavigateAction { newsPath.append($0) })
             }
             // The glossary tab appears once the bundle holds glossary rows in the current
             // language (R-24: no tab without a real destination).
@@ -133,6 +163,8 @@ struct SplitShell: View {
     let labels: FactLabels
     @State private var sidebar: SidebarView.Item?
     @State private var filingID: String?
+    /// The screens pushed over the filing in the detail column: figure, compare, calculation.
+    @State private var detailPath: [Route]
 
     init(store: BundleStore, labels: FactLabels) {
         self.store = store
@@ -140,7 +172,8 @@ struct SplitShell: View {
         let launch = LaunchRoute.current
         _sidebar = State(initialValue: launch?.sidebarItem
             ?? store.companies.first.map { .company($0.id) })
-        _filingID = State(initialValue: launch?.filingID)
+        _filingID = State(initialValue: launch?.filingID ?? launch?.figureFilingID(store))
+        _detailPath = State(initialValue: launch?.detailPath ?? [])
     }
 
     var body: some View {
@@ -152,7 +185,7 @@ struct SplitShell: View {
                 // Wide enough for a company's large title on iPad ("Samsung Electronics").
                 .navigationSplitViewColumnWidth(min: 360, ideal: 420)
         } detail: {
-            NavigationStack {
+            NavigationStack(path: $detailPath) {
                 Group {
                     if let filingID, store.filing(id: filingID) != nil {
                         FilingDestination(store: store, labels: labels, filingID: filingID)
@@ -167,8 +200,10 @@ struct SplitShell: View {
             }
             .id(filingID)
             .environment(\.showsLanguageButton, false)
+            .environment(\.navigate, NavigateAction { detailPath.append($0) })
         }
         .onChange(of: sidebar) { filingID = nil }
+        .onChange(of: filingID) { detailPath = [] }
         .onChange(of: language) {
             if sidebar == .glossary && store.glossary(language: language).isEmpty {
                 sidebar = store.companies.first.map { .company($0.id) }
