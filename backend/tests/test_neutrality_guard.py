@@ -88,6 +88,32 @@ def test_n1_english_numbers(line: str) -> None:
 
 
 @pytest.mark.parametrize(
+    ("line", "lang"),
+    [("The company reported its fourth quarter results.", "en"),
+     ("The company reported third-quarter deliveries.", "en"),
+     ("The company said First Half sales rose.", "en"),
+     ("회사는 사분기 실적을 보고했어요", "ko"),
+     ("회사는 일분기 실적을 보고했어요", "ko"),
+     ("회사는 하반기 생산을 보고했어요", "ko")],
+)
+def test_n1_ordinal_periods(line: str, lang: str) -> None:
+    # D74, owner-approved 2026-11-18: a line does not say which quarter or half.
+    assert {v.rule_id for v in check_line(line, lang)} == {"N1"}
+
+
+@pytest.mark.parametrize(
+    ("line", "lang"),
+    [("The company said it is the second largest maker.", "en"),
+     ("The company said it will first review the plan.", "en"),
+     ("회사는 이 분기 실적을 보고했어요", "ko"),
+     ("회사는 분기 실적을 보고했어요", "ko"),
+     ("회사는 수익이 분기마다 달라진다고 밝혔어요", "ko")],
+)
+def test_n1_leaves_other_ordinals_and_this_quarter_alone(line: str, lang: str) -> None:
+    assert "N1" not in {v.rule_id for v in check_line(line, lang)}
+
+
+@pytest.mark.parametrize(
     "word",
     ["surge", "surged", "surges", "surging", "soar", "soared", "soaring", "skyrocketed",
      "skyrocketing", "jumped", "jumps", "plunged", "plunging", "slumped", "slumping",

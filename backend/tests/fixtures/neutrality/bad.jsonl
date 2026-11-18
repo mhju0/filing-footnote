@@ -18,9 +18,9 @@
 {"lang": "ko", "company": "삼성전자", "line": "주가가 오를 것으로 보여요", "rules": ["N3", "N4"], "note": "plan fixture: prediction, no subject, no reporting ending"}
 {"lang": "ko", "company": "삼성전자", "line": "회사는 배당이 늘어날 전망이에요", "rules": ["N3", "N4"], "note": "전망이에요 and ~ㄹ 전망; not a reporting ending"}
 {"lang": "ko", "company": "삼성전자", "line": "회사는 자기주식을 취득할 예정이에요", "rules": ["N3", "N4"], "note": "plan stated by the summary, not attributed (예정이에요 is gated, not 예정이라고)"}
-{"lang": "ko", "company": "삼성전자", "line": "회사는 하반기 실적이 기대돼요", "rules": ["N3", "N4"], "note": "기대돼요"}
+{"lang": "ko", "company": "삼성전자", "line": "회사는 하반기 실적이 기대돼요", "rules": ["N1", "N3", "N4"], "note": "기대돼요"}
 {"lang": "ko", "company": "삼성바이오로직스", "line": "회사는 수주가 이어질 것으로 기대된다고 밝혔어요", "rules": ["N3"], "note": "기대된다 inside an attributed line still fails"}
-{"lang": "ko", "company": "삼성전자", "line": "회사는 하반기 매출이 회복될 것으로 공시했어요", "rules": ["N3"], "note": "~ㄹ 것으로 without a listed verb"}
+{"lang": "ko", "company": "삼성전자", "line": "회사는 하반기 매출이 회복될 것으로 공시했어요", "rules": ["N1", "N3"], "note": "~ㄹ 것으로 without a listed verb"}
 {"lang": "ko", "company": "삼성전자", "line": "회사는 주가가 바닥을 지난 것으로 보인다고 밝혔어요", "rules": ["N3"], "note": "보인다 (judgement), compare the past 보인 which is not listed"}
 {"lang": "ko", "company": "삼성전자", "line": "회사는 자기주식을 취득할 계획이라고 공시한 것으로 보입니다", "rules": ["N3", "N4"], "note": "계획이라고 is allowed only in a line that passes N4; 보입니다 also fails"}
 {"lang": "ko", "company": "삼성전자", "line": "자기주식을 취득하기로 결정했어요", "rules": ["N4"], "note": "line one without 회사는 or the company name"}

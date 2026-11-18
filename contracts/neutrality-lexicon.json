@@ -1,7 +1,7 @@
 {
   "about": "Neutrality guard lexicon for generated Filing Footnote summaries. Read by backend/app/llm/neutrality_guard.py. Every rule has an id; severity 'fail' blocks a line, 'warn' only reports it. Match modes: 'substring' finds the term anywhere (Korean); 'word' needs word boundaries, case-insensitive, spaces match any whitespace (English); 'inflected_word' is 'word' plus English verb and noun endings (-s, -es, -ed, -ing, -ly, -ness, -en, -less; a final e is dropped before -ing/-ed/-y; a final consonant + y becomes -ies/-ied), and comparative -er/-est only for terms in 'adjectives'. 'phrases' are matched as written, without endings (in Korean a space matches an optional space); 'patterns' are regular expressions. A hit that lies wholly inside an 'allow' phrase is ignored; in Korean allow phrases a space matches an optional space (장내 매수 also covers 장내매수). Company names the caller passes are also exempt from N2 (not from N1). 'narrowed' records every listed word that no longer matches as a bare word, with the reason; 'added' records everything beyond the M5 plan list.",
-  "version": 1,
-  "updated": "2026-11-17",
+  "version": 2,
+  "updated": "2026-11-18",
   "rules": [
     {
       "id": "N1",
@@ -18,18 +18,20 @@
         {"term": "Korean numeral + 만/억/조/천/백, optional space, then 원/달러/퍼센트/% (천억 원, 삼조 원) or 주 (삼백만 주)", "reason": "number_guard._KOREAN_SPELLED_RE needs the unit and 원 joined; spaced amounts passed. Defined in neutrality_guard.py, number_guard.py unchanged. 원 followed by 칙/가/본/료/화/래/인/격/자/천 is a separate word (원칙, 원가) and does not count."},
         {"term": "numeral + 만/억/조/천 before 규모/어치/명/건/개/주/원/달러 (일조 규모)", "reason": "bare spelled magnitude used as an amount"},
         {"term": "$, €, £ or ₩ followed by a spelled number ($two billion)", "reason": "_CURRENCY_PREFIX_RE needs digits; _SPELLED_PREFIX_RE needs a currency code"},
-        {"term": "ko: 절반, 삼분기, 두 배, native count 한/두/세/네 + 곳/명/건/개/배; en: doubled", "reason": "owner-approved 2026-11-17"}
+        {"term": "ko: 절반, 삼분기, 두 배, native count 한/두/세/네 + 곳/명/건/개/배; en: doubled", "reason": "owner-approved 2026-11-17"},
+        {"term": "ko: 일분기, 이분기, 사분기 (no space; 이 분기 means this quarter), 상반기, 하반기; en: first/second/third/fourth + quarter/half", "reason": "owner-approved 2026-11-18 (D74): the pilot wrote fourth quarter and third quarter"}
       ],
       "ko": {
         "match": "substring",
-        "terms": ["절반", "삼분기"],
+        "terms": ["절반", "삼분기", "상반기", "하반기"],
         "phrases": ["두 배"],
-        "patterns": ["(?<![가-힣])(?:한|두|세|네)\\s?(?:곳|명|건|개|배)(?=$|[^가-힣]|[의를을이가는은와과로에씩도만])"],
+        "patterns": ["(?<![가-힣])(?:일|이|사)분기", "(?<![가-힣])(?:한|두|세|네)\\s?(?:곳|명|건|개|배)(?=$|[^가-힣]|[의를을이가는은와과로에씩도만])"],
         "note": "Native counts: the counter must stand alone or take a particle, so 한 개발, 두 배당, 세 건물 are clear; a syllable before 한/두/세/네 (달성한, 공시한) also clears it."
       },
       "en": {
         "match": "word",
-        "terms": ["doubled"]
+        "terms": ["doubled"],
+        "patterns": ["(?i)\\b(?:first|second|third|fourth)[\\s-]+(?:quarter|half)s?\\b"]
       }
     },
     {

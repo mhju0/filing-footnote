@@ -812,3 +812,18 @@ On the real data, LG Electronics and Samsung Biologics failed the build.
   marked `is_corrected` in the bundle rather than refused.
 - Both companies were re-ingested; a development bundle now builds on the real data
   (18 companies, 108 filings, 127 figures).
+
+## D74 · N1 catches named quarters and halves · 2026-11-18 (`ACCEPTED`)
+
+The second pilot wrote "fourth quarter" (Apple) and "third quarter" (Tesla) in English, and
+N1 let them through: it catches digits and spelled amounts, not ordinals. Prompt
+`m6-2026-11-18-b` already says a line does not name the quarter, half or year (D70). The
+owner approved adding them to the N1 lexicon.
+
+- English: first, second, third or fourth followed by quarter or half, with a space or a
+  hyphen. "second largest" and "first review" still pass.
+- Korean: 일분기, 이분기, 사분기 written without a space (삼분기 was already listed),
+  상반기 and 하반기. "이 분기" (this quarter) and plain 분기 still pass.
+- Lexicon version 2. It is part of the summary cache key, so every summary is generated
+  again; none was approved.
+- Two bad fixtures that use 하반기 as prediction examples (N3) now trip N1 as well.
