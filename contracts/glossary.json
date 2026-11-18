@@ -76,7 +76,7 @@
       },
       "en": {
         "term": "Diluted EPS",
-        "plain": "Earnings per share, counting securities that can turn into shares as if they already had.",
+        "plain": "Earnings per share, counting securities that can turn into shares as if they already had been.",
         "formal": "Diluted earnings per share"
       }
     },
@@ -180,8 +180,8 @@
       },
       "en": {
         "term": "Annual report",
-        "plain": "The yearly report in which a company sets out its business and finances. In the US it is the ten-K.",
-        "formal": "Form ten-K in the US"
+        "plain": "The yearly report in which a company sets out its business and finances. US companies file a similar yearly report with the SEC.",
+        "formal": null
       }
     },
     "category_earnings": {
@@ -544,7 +544,7 @@
       },
       "en": {
         "term": "Basis not supported",
-        "plain": "This accounting basis is not one the app compares, so it did not answer.",
+        "plain": "The app does not compare figures on this accounting basis, so it did not answer.",
         "formal": null
       }
     },
@@ -557,7 +557,7 @@
       },
       "en": {
         "term": "Item not covered",
-        "plain": "This item is not one the app covers, so it did not answer.",
+        "plain": "The app does not cover this item, so it did not answer.",
         "formal": null
       }
     },

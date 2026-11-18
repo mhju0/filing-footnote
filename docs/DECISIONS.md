@@ -1112,7 +1112,8 @@ not approved any wording.
   category in `filing-categories.json`, `refusal_<reason>` for each refusal reason in
   `comparison-cases.json`, and `notices`, `basis_consolidated`, `basis_separate`,
   `restated`, `k_ifrs`, `us_gaap` and `fiscal_year_end`. The annual report entry is
-  `category_annual`; its English text says "ten-K" because the guard bans digits.
+  `category_annual`; the form name "10-K" is left out of its text because the guard bans
+  digits, and the app shows the form name from the filing record instead.
 - Wording is one or two short sentences, plain Korean in 해요체, neutral, no digits. Every
   text passes the same neutrality guard as a summary line (`check_line`, run per sentence;
   N4 attribution does not apply to a definition, and a Korean term may be a Latin
