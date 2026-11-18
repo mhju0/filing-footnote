@@ -851,6 +851,7 @@ class GenerateResult:
     cached: int = 0
     rechecked_withheld: int = 0
     no_source_text: list[str] = field(default_factory=list)
+    too_large: list[str] = field(default_factory=list)  # the provider refused the request size
     not_attempted: int = 0
     planned: list[tuple[Target, str]] = field(default_factory=list)
 
@@ -920,7 +921,13 @@ async def generate(
             result.planned.append((target, key))
             continue
         assert client is not None
-        new_rows = await generate_one(client, stats, target, key)
+        try:
+            new_rows = await generate_one(client, stats, target, key)
+        except LLMApiError as exc:
+            if exc.status_code != 413:
+                raise
+            result.too_large.append(f"{target.filing_id} {target.section}")
+            continue
         for row in new_rows:
             rows[_row_key(row)] = row
         if new_rows[0]["review_state"] == "staged":
@@ -1056,7 +1063,10 @@ async def _run_generate(args: argparse.Namespace, settings: Any) -> None:
           f"lexicon_version: {load_lexicon().version}  as_of: {args.as_of}")  # fmt: skip
     for item in result.no_source_text:
         print(f"no_source_text {item}")
+    for item in result.too_large:
+        print(f"too_large {item}")
     counts = (f"cached {result.cached}, no_source_text {len(result.no_source_text)}, "
+              f"too large {len(result.too_large)}, "
               f"not attempted (max calls) {result.not_attempted}")  # fmt: skip
     if args.dry_run:
         for target, key in result.planned:
