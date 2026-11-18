@@ -762,9 +762,9 @@ def test_event_targets_follow_the_window_and_exclusions() -> None:
         _event("20260821000004", "본문", category=None, excluded_reason="out_of_scope"),
     )
     targets = select_targets(BuildInput((SAMSUNG,), (), (), events), AS_OF)
+    # 20260821000002 has no stored body: never a target (D72).
     assert [(t.filing_id, t.section, t.skip_reason) for t in targets] == [
         ("dart:20260821000001", "summary", None),
-        ("dart:20260821000002", "summary", "no_source_text"),
     ]
     assert targets[0].company_names == ("삼성전자", "SAMSUNG ELECTRONICS CO,.LTD")
 

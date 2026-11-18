@@ -172,8 +172,12 @@ def event_input() -> tuple[list[dict], dict[str, list[EventFactRow]]]:
     :func:`app.build.source.event_rows`."""
     rows, facts = [], {}
     for record in asyncio.run(_event_records()):
-        # The database fills source (default 'dart') and body_text (NULL) for a DART row.
-        rows.append({"source": "dart", "body_text": None, **record.to_row()})
+        # The database fills source (default 'dart') for a DART row. Every fixture event gets a
+        # stored body (a placeholder when it has none): the exporter leaves out an event
+        # without one (D72).
+        row = {"source": "dart", **record.to_row()}
+        row["body_text"] = row.get("body_text") or f"본문 {record.key}"
+        rows.append(row)
         facts[record.key] = [
             EventFactRow(f.key, f.kind, f.unit, f.source_field, f.raw, f.value_decimal,
                          f.value_date, f.value_text, f.error)
@@ -201,6 +205,11 @@ async def seed(database_url: str) -> None:
                 await persist_normalized_filing(session, filing)
         for batch in await _event_batches():
             await persist_events(factory, batch)
+        # The same placeholder body event_input() gives every event (D72).
+        async with engine.begin() as connection:
+            await connection.execute(
+                text("UPDATE event_filings SET body_text = '본문 ' || rcept_no WHERE body_text IS NULL")
+            )
     finally:
         await engine.dispose()
 

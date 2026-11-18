@@ -45,6 +45,13 @@ BUILD_DIR = Path(__file__).resolve().parents[1] / "app" / "build"
 SAMSUNG_2025 = "20260310000123"
 
 
+@pytest.fixture(autouse=True)
+def _no_event_cap(monkeypatch) -> None:
+    """These tests exercise chains, windows and facts over the whole seed; the per-company cap
+    (D72) has its own tests in test_build_event_scope.py."""
+    monkeypatch.setattr(export, "EVENT_CAP", 1000)
+
+
 @pytest.fixture(scope="module")
 def data() -> BuildInput:
     return fixture_build_input()
@@ -587,7 +594,7 @@ def _figure(bundle, prefix: str) -> tuple:
 
 def test_release_verify_rejects_the_edited_development_file(data, tmp_path) -> None:
     out = tmp_path / "footnote.sqlite"
-    assert _export(data, out, "--allow-unapproved") == 0
+    assert _export(data, out, "--allow-unapproved", "--prompt-version", "none") == 0
     _rehash(out, "UPDATE build_meta SET allow_unapproved = 0",
             f"UPDATE figures SET value = '999' WHERE id = '{SEC_REVENUE}'")  # fmt: skip
 
@@ -967,13 +974,9 @@ def test_event_source_hash_covers_the_stored_body_when_there_is_one(data) -> Non
     assert source_hash(
         _with_rows(data, **{"20260430800097": {"body_text": dart_body + " "}}), dart
     ) != with_body
-    # A DART row without a stored body: its placeholder hashes the list row.
-    no_body = {"body_text": None}
-    placeholder = source_hash(_with_rows(data, **{"20260430800097": no_body}), dart)
-    assert placeholder != with_body
-    assert source_hash(
-        _with_rows(data, **{"20260430800097": {**no_body, "rm": ""}}), dart
-    ) != placeholder
+    # A DART row without a stored body is not exported at all (D72).
+    no_body = _with_rows(data, **{"20260430800097": {"body_text": None}})
+    assert dart not in _filing_ids(no_body)
 
 
 # item 5: annual scope
@@ -1073,7 +1076,7 @@ def test_rows_are_inserted_in_primary_key_order(data, tmp_path) -> None:
     approved = _all_approved(data, build_bundle(data, _options(), PINNED_DIRS),
                              prompt_version="none")
     out = tmp_path / "footnote.sqlite"
-    write_bundle(build_bundle(approved, _options(), PINNED_DIRS), out)
+    write_bundle(build_bundle(approved, _options(prompt_version="none"), PINNED_DIRS), out)
     for table, (_, key) in TABLES.items():
         columns = ", ".join(key)
         by_rowid = _rows(out, f"SELECT {columns} FROM {table} ORDER BY rowid")
@@ -1157,7 +1160,7 @@ def test_every_schema_column_is_in_the_fingerprint(data, tmp_path) -> None:
     approved = _all_approved(data, build_bundle(data, _options(), PINNED_DIRS),
                              prompt_version="none")
     out = tmp_path / "footnote.sqlite"
-    write_bundle(build_bundle(approved, _options(), PINNED_DIRS), out)
+    write_bundle(build_bundle(approved, _options(prompt_version="none"), PINNED_DIRS), out)
     with sqlite3.connect(out) as connection:
         lines = [json.loads(line) for line in canonical_dump_lines(connection)]
     seen: dict[str, set[str]] = {}
@@ -1174,7 +1177,8 @@ def test_release_export_refuses_prompt_version_none(data, tmp_path, capsys) -> N
     approved = _all_approved(data, build_bundle(data, _options(), PINNED_DIRS),
                              prompt_version="none")
     out = tmp_path / "footnote.sqlite"
-    assert _export(approved, out, "--release") == 1 and _no_outputs(tmp_path)
+    assert _export(approved, out, "--release", "--prompt-version", "none") == 1
+    assert _no_outputs(tmp_path)
     err = capsys.readouterr().err
     assert "release build refused: --prompt-version is 'none'" in err
     assert "lack approved summaries" not in err

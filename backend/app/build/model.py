@@ -27,6 +27,11 @@ FACT_VALUE_KINDS: dict[str, str] = {
 }
 DECIMAL_VALUE_KINDS = frozenset({"amount", "shares", "ratio"})
 
+# The summary prompt's version. It is part of the summary cache key (summary_input_sha256), so
+# bump it on any change to a prompt, the schema or the source-text layout. It lives here so the
+# exporter's default and the summary build read the one value (D72).
+PROMPT_VERSION = "m6-2026-11-18-b"
+
 LANGS = ("ko", "en")
 SUMMARY_SECTIONS = {"event": ("summary",), "annual": ("one_line", "business", "changes", "risks")}
 # Sections written as three lines, checked as one summary by the neutrality guard.

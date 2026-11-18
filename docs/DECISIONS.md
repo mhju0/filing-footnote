@@ -772,3 +772,28 @@ previous prompt) ran past the 768-token cap, and Groq returned HTTP 400
 That error now skips the filing section and the run goes on; the command line lists it as
 `invalid_output`. Nothing is cached, so the next run tries it again. Any other HTTP 400
 still stops the run.
+
+## D72 · Event scope: the latest five per company · 2026-11-18 (`ACCEPTED`)
+
+The owner decided that the app shows the latest five events per company.
+
+- One function, `app.build.export.event_scope`, picks the exported events. The exporter and
+  `summaries.select_targets` both call it, so the summary targets and the bundle cannot
+  disagree.
+- The rule: filed in the 12-month window, not excluded, the shown version of its correction
+  chain, with a stored body text, then at most five per company. The five are the newest
+  by `filed_on`, ties broken by `filing_key` descending. A corrected chain counts once.
+- An event with no stored body text can never get a summary. It is left out of the export,
+  does not count toward the five, and the build report lists it
+  (`event_filings_without_body`). Events dropped by the cap are counted per company in
+  `event_filings_over_cap`.
+- `PRODUCT.md` says "23 filings"; that line is now out of date. The owner approves
+  product-truth edits, so it is not changed here.
+- The exporter's default prompt version is the summary build's `PROMPT_VERSION`
+  (previously the placeholder `none`, which a release refuses). The constant moved from
+  `app/build/summaries.py` to `app/build/model.py` so the exporter can read it without
+  importing the summary build, which imports the exporter. `summaries.PROMPT_VERSION` is
+  still available as an import of that constant.
+- A database build reads owner-approved rows from `backend/data/summaries/approved.jsonl`
+  (`source.read_summaries`); a missing file means no approved summaries. A release names
+  every approved row whose input hash no longer matches and fails.
