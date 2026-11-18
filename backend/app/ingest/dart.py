@@ -207,6 +207,7 @@ def build_dart_normalized_filing(
                     section_title=chunk.section_title,
                     section_order=chunk.section_order,
                     part_index=chunk.part_index,
+                    part_title=chunk.part_title,
                 ),
             )
             for chunk in chunks

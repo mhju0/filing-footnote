@@ -129,6 +129,7 @@ class ChunkRow:
     chunk_index: int
     section_title: str | None
     content: str
+    part_title: str | None = None  # enclosing top-level part; None in chunks stored before it
 
 
 @dataclass(frozen=True)
@@ -183,9 +184,10 @@ def section_chunks(regulator: str, section: str, chunks: Sequence[ChunkRow]) -> 
     """The chunks a section is written from, in chunk order.
 
     A chunk belongs when its own heading matches, or when it follows a matching top-level
-    heading before the next top-level heading. Chunk meta has no parent titles, and ingest
-    drops a heading with no text of its own, so children of an empty top-level part are not
-    found; see the M6 notes.
+    heading before the next top-level heading. A chunk also belongs when its stored
+    ``part_title`` matches, which finds the children of a top-level part with no text of its
+    own (ingest stores no chunk for that heading). Chunks stored without ``part_title`` rely
+    on the chunk-order rule alone.
     """
     rule = SECTION_HEADINGS[regulator][SECTION_SOURCE[section]]
     top = TOP_LEVEL_HEADING[regulator]
@@ -194,7 +196,7 @@ def section_chunks(regulator: str, section: str, chunks: Sequence[ChunkRow]) -> 
         title = chunk.section_title
         if top is not None and title and top.search(title):
             inside = rule.matches(title)
-        if inside or rule.matches(title):
+        if inside or rule.matches(title) or rule.matches(chunk.part_title):
             picked.append(chunk)
     return picked
 

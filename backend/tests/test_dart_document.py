@@ -465,3 +465,25 @@ def test_trailing_duplicate_attribute_quote_keeps_prose_and_drops_table():
     assert "검증할 사업 설명" in sections[0].content
     assert "표 다음 설명" in sections[0].content
     assert "99999" not in sections[0].content
+
+
+def test_extract_dsd_prose_records_the_top_level_part_title() -> None:
+    # Newer layout: IV is an empty parent; its prose sits under child sections.
+    doc = (
+        "<DOCUMENT>"
+        "<SECTION-1><TITLE>II. 사업의 내용</TITLE><P>사업 머리말</P></SECTION-1>"
+        "<SECTION-1><TITLE>IV. 이사의 경영진단 및 분석의견</TITLE>"
+        "<SECTION-2><TITLE>2. 개요</TITLE><P>경영 개요</P>"
+        "<SECTION-3><TITLE>2-1. 세부</TITLE><P>세부 내용</P></SECTION-3></SECTION-2>"
+        "<SECTION-2><TITLE>3. 재무상태 및 영업실적</TITLE><P>영업실적</P></SECTION-2>"
+        "</SECTION-1>"
+        "</DOCUMENT>"
+    )
+    sections = extract_dsd_prose(doc)
+    assert [(s.section_title, s.part_title) for s in sections] == [
+        ("II. 사업의 내용", "II. 사업의 내용"),  # a top-level section is its own part
+        ("IV. 이사의 경영진단 및 분석의견", "IV. 이사의 경영진단 및 분석의견"),  # empty parent
+        ("2. 개요", "IV. 이사의 경영진단 및 분석의견"),
+        ("2-1. 세부", "IV. 이사의 경영진단 및 분석의견"),
+        ("3. 재무상태 및 영업실적", "IV. 이사의 경영진단 및 분석의견"),
+    ]

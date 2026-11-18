@@ -147,6 +147,33 @@ def test_reingestion_replaces_the_complete_authoritative_snapshot() -> None:
     asyncio.run(run())
 
 
+def test_chunk_part_title_is_stored_in_meta_only_when_recorded() -> None:
+    async def run() -> None:
+        async with _database() as factory:
+            async with factory() as session:
+                base = _snapshot(include_eps=False, include_second_chunk=False)
+                chunks = (
+                    FilingChunk(
+                        0,
+                        "child text",
+                        FilingChunkLocation(section_title="2. 개요", part_title="IV. 경영진단"),
+                    ),
+                    FilingChunk(1, "no part", FilingChunkLocation(section_title="Item 1.")),
+                )
+                await persist_normalized_filing(session, replace(base, filing_chunks=chunks))
+                loaded = await load_normalized_filing(session, base.identity)
+                metas = (
+                    await session.execute(select(ChunkRow.meta).order_by(ChunkRow.chunk_index))
+                ).scalars().all()
+
+            assert loaded is not None
+            assert [c.location.part_title for c in loaded.filing_chunks] == ["IV. 경영진단", None]
+            assert metas[0]["part_title"] == "IV. 경영진단"
+            assert "part_title" not in metas[1]
+
+    asyncio.run(run())
+
+
 def test_indexing_one_filing_never_exposes_an_unfinished_filing(monkeypatch) -> None:
     vector = [1.0] + [0.0] * 1023
     monkeypatch.setattr(

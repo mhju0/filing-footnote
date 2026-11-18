@@ -65,6 +65,7 @@ class FilingChunkLocation:
     section_title: str | None = None
     section_order: int | None = None
     part_index: int | None = None
+    part_title: str | None = None  # enclosing top-level part (DART); None when not recorded
 
     def __post_init__(self) -> None:
         if self.section_order is not None and self.section_order < 0:
