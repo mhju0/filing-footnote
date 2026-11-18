@@ -74,7 +74,8 @@ class FakeClient:
 
     async def complete(self, messages, *, response_format=None, temperature=0.2,
                        max_tokens=1024) -> LLMResult:  # fmt: skip
-        self.requests.append({"messages": messages, "response_format": response_format})
+        self.requests.append({"messages": messages, "response_format": response_format,
+                              "max_tokens": max_tokens})  # fmt: skip
         assert self.bodies, "LLM called more times than expected"
         body = self.bodies.pop(0)
         if isinstance(body, Exception):
@@ -315,6 +316,117 @@ def test_a_reviewer_api_error_keeps_the_summary_staged_and_is_logged(tmp_path) -
     assert "unavailable" not in (tmp_path / "calls.jsonl").read_text(encoding="utf-8")
 
 
+NS = 1_000_000_000
+
+
+class FakeTime:
+    """A nanosecond clock that only moves when the code sleeps, or when a test advances it."""
+
+    def __init__(self) -> None:
+        self.now = 1_000 * NS
+        self.sleeps: list[float] = []
+
+    def clock(self) -> int:
+        return self.now
+
+    async def sleep(self, seconds: float) -> None:
+        self.sleeps.append(seconds)
+        self.now += round(seconds * NS)
+
+
+@pytest.fixture
+def fake_time(monkeypatch) -> FakeTime:
+    clock = FakeTime()
+    monkeypatch.setattr(summaries, "_clock", clock.clock)
+    monkeypatch.setattr(summaries, "_sleep", clock.sleep)
+    return clock
+
+
+def test_calls_are_paced_by_the_call_interval(tmp_path, fake_time) -> None:
+    client = FakeClient(DIGITS, CLEAN, NO_FLAGS)
+    result, stats = _run(client, [_target()], tmp_path, call_interval=61)
+    assert (result.generated, stats.calls) == (1, 3)
+    # No wait before the first call; then a full interval before each later call.
+    assert fake_time.sleeps == [61.0, 61.0]
+
+
+def test_the_wait_counts_time_already_passed(tmp_path, fake_time) -> None:
+    stats = summaries.CallStats(MODEL, None, call_interval=61)
+    client = FakeClient(NO_FLAGS, NO_FLAGS)
+    lines = {"ko": ["가"], "en": ["The company said a."]}
+    asyncio.run(summaries.review(client, stats, SOURCE, lines))
+    fake_time.now += 40 * NS
+    asyncio.run(summaries.review(client, stats, SOURCE, lines))
+    assert fake_time.sleeps == [21.0]
+
+
+def test_no_wait_without_a_call_interval(tmp_path, fake_time) -> None:
+    _run(FakeClient(DIGITS, CLEAN, NO_FLAGS), [_target()], tmp_path)
+    assert fake_time.sleeps == []
+
+
+def test_a_rate_limit_waits_and_retries_once_without_using_the_call_cap(
+    tmp_path, fake_time
+) -> None:
+    client = FakeClient(LLMApiError(429, "rate limit"), CLEAN, NO_FLAGS)
+    result, stats = _run(client, [_target()], tmp_path, max_calls=3)
+    assert (result.generated, stats.calls, stats.rate_limited) == (1, 2, 1)
+    assert fake_time.sleeps == [summaries.RATE_LIMIT_WAIT_SECONDS]
+    assert client.requests[0] == client.requests[1]
+    log = read_jsonl(tmp_path / "calls.jsonl")
+    assert [(e["purpose"], e.get("error")) for e in log] == [
+        ("generate", "LLMApiError 429"), ("generate", None), ("review", None)]  # fmt: skip
+
+
+def test_a_rate_limit_wait_replaces_the_call_interval(tmp_path, fake_time) -> None:
+    client = FakeClient(LLMApiError(429, "rate limit"), CLEAN, NO_FLAGS)
+    _run(client, [_target()], tmp_path, call_interval=61)
+    assert fake_time.sleeps == [summaries.RATE_LIMIT_WAIT_SECONDS, 61.0]
+
+
+def test_a_second_rate_limit_stops_the_run(tmp_path, fake_time) -> None:
+    client = FakeClient(LLMApiError(429, "rate limit"), LLMApiError(429, "rate limit"))
+    with pytest.raises(LLMApiError):
+        _run(client, [_target()], tmp_path)
+    assert client.calls == 2
+    assert not (tmp_path / "staged.jsonl").exists()
+
+
+def test_other_api_errors_are_not_retried(tmp_path, fake_time) -> None:
+    client = FakeClient(LLMApiError(503, "unavailable"))
+    with pytest.raises(LLMApiError):
+        _run(client, [_target()], tmp_path)
+    assert (client.calls, fake_time.sleeps) == (1, [])
+
+
+def test_output_caps_fit_one_minute_of_the_groq_free_tier(tmp_path) -> None:
+    client = FakeClient(DIGITS, CLEAN, NO_FLAGS)
+    _run(client, [_target()], tmp_path)
+    assert [r["max_tokens"] for r in client.requests] == [768, 768, 512]
+    # Groq reserves max_tokens against the account's output tokens per minute (1000).
+    assert all(r["max_tokens"] <= 1000 for r in client.requests)
+
+
+def test_pick_filings_keeps_only_the_named_filings_in_order() -> None:
+    targets = [_target(fid="dart:a"), _target(fid="dart:b"), _target(fid="dart:a", section="risks")]
+    picked = summaries.pick_filings(targets, ["dart:a"])
+    assert [(t.filing_id, t.section) for t in picked] == [("dart:a", "summary"), ("dart:a", "risks")]
+    assert summaries.pick_filings(targets, []) == targets
+
+
+def test_pick_filings_refuses_an_unknown_filing() -> None:
+    with pytest.raises(ValueError, match="dart:zzz"):
+        summaries.pick_filings([_target(fid="dart:a")], ["dart:a", "dart:zzz"])
+
+
+def test_the_command_line_takes_filings_and_a_call_interval() -> None:
+    args = summaries._parser().parse_args(
+        ["generate", "--filing", "dart:a", "--filing", "dart:b", "--call-interval", "5"])
+    assert (args.filing, args.call_interval) == (["dart:a", "dart:b"], 5)
+    args = summaries._parser().parse_args(["generate"])
+    assert (args.filing, args.call_interval) == ([], summaries.DEFAULT_CALL_INTERVAL)
+
+
 def test_the_reviewer_sees_the_source_and_both_languages() -> None:
     client = FakeClient({"flags": []})
     stats = summaries.CallStats(MODEL, None)
@@ -426,6 +538,15 @@ def test_annual_prompts_name_the_schema_and_the_attribution_forms(section) -> No
                  "The company", "plans to", "intends to", "예정이라고", "계획이라고"):  # fmt: skip
         assert form in prompt and form in summaries.event_system_prompt()
     assert len(schema["required"]) == (2 if section == "one_line" else 6)
+
+
+def test_the_event_prompt_names_people_and_forbids_repeating_a_fact() -> None:
+    prompt = summaries.event_system_prompt()
+    assert "name them as the filing does" in prompt
+    assert "family name first" in prompt
+    assert "does not repeat a fact" in prompt
+    for section in ("one_line", "business", "changes", "risks"):
+        assert "name them as the filing does" not in summaries.annual_system_prompt(section)
 
 
 def test_prompt_word_lists_come_from_the_lexicon() -> None:

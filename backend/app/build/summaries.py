@@ -1,6 +1,7 @@
 """Build-time summaries (M6): generate, guard, review and stage filing summaries.
 
-    python -m app.build.summaries generate [--limit N] [--max-calls N] [--dry-run]
+    python -m app.build.summaries generate [--filing ID ...] [--limit N] [--max-calls N]
+        [--call-interval SECONDS] [--dry-run]
     python -m app.build.summaries measure-reviewer [--max-calls N]
 
 ``generate`` reads the build database, picks the filings and sections that need summaries,
@@ -29,6 +30,12 @@ purpose and cache result; prompts, headers and keys are never logged.
 
 Calls are made one at a time. ``--max-calls`` caps them; a summary is started only when the
 calls it may need (generate, retry, review) fit under the cap, in a dry run too.
+
+Rate limits (Groq free tier, D68): Groq reserves ``max_tokens`` against the account's output
+tokens per minute, so the output caps stay under that limit and ``--call-interval`` waits
+between calls. A request refused with HTTP 429 is logged, waits
+:data:`RATE_LIMIT_WAIT_SECONDS` and is sent once more; it does not count against
+``--max-calls``, because the provider generated nothing. A second refusal stops the run.
 """
 
 from __future__ import annotations
@@ -41,6 +48,7 @@ import os
 import re
 import sys
 import tempfile
+import time
 from collections import defaultdict
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
@@ -88,13 +96,23 @@ FIXTURES_DIR = BACKEND_DIR / "tests" / "fixtures" / "neutrality"
 
 # Bump on any change to a prompt, the schema or the source-text layout: it is part of the
 # cache key, and a release build refuses the exporter's placeholder "none".
-PROMPT_VERSION = "m6-2026-11-17-b"
+PROMPT_VERSION = "m6-2026-11-18-a"
 
 DEFAULT_MAX_CALLS = 10
 # Worst case per summary: the first call, one retry, one reviewer call.
 CALLS_PER_TARGET = 3
-_MAX_TOKENS = 1024
+# Each fits under the Groq free tier's output tokens per minute (1000), which Groq checks
+# against max_tokens before it generates.
+_MAX_TOKENS = 768
 _REVIEW_MAX_TOKENS = 512
+# Seconds between the end of one call and the start of the next in the command line; the
+# Groq pilot ran without a 429 at this pace (2026-11-17).
+DEFAULT_CALL_INTERVAL = 61
+RATE_LIMIT_WAIT_SECONDS = 61
+_NS_PER_SECOND = 1_000_000_000
+# Replaced in tests. The clock counts integer nanoseconds.
+_clock = time.monotonic_ns
+_sleep = asyncio.sleep
 NO_ANSWER = "(no answer)"
 
 # USD per one million tokens, paid tier, standard (not batch) text input and output.
@@ -206,8 +224,12 @@ def event_system_prompt() -> str:
         "does not read filings. Write exactly three lines in Korean and the same three lines "
         "in English.\n\n"
         "Line one says what the company decided, disclosed or reported. Lines two and three "
-        "give the purpose, method, conditions or other details the filing states. If the "
-        "filing attaches a condition or says something may change, keep that in the line.\n\n"
+        "give the purpose, method, conditions or other details the filing states. Each line "
+        "says something the others do not; a line does not repeat a fact. If the filing "
+        "attaches a condition or says something may change, keep that in the line.\n\n"
+        "When the filing names the people a decision concerns, such as the directors before "
+        "and after a change, name them as the filing does. In English, write a name as the "
+        "filing gives it in English; otherwise romanise the Korean name, family name first.\n\n"
         + _common_rules()
         + "\nRespond with JSON matching the required schema: "
         + ", ".join(_schema_keys("summary")) + "."
@@ -402,6 +424,17 @@ def select_targets(data: BuildInput, as_of: datetime.date) -> list[Target]:
     return targets
 
 
+def pick_filings(targets: Sequence[Target], filing_ids: Sequence[str]) -> list[Target]:
+    """Only the targets of ``filing_ids``, in target order; all of them when none are named.
+    A named filing with no target is an error, so a typo never runs nothing quietly."""
+    if not filing_ids:
+        return list(targets)
+    missing = sorted(set(filing_ids) - {t.filing_id for t in targets})
+    if missing:
+        raise ValueError("no summary target for: " + ", ".join(missing))
+    return [t for t in targets if t.filing_id in set(filing_ids)]
+
+
 # -- cache key and staged file -------------------------------------------------------------------
 
 
@@ -561,6 +594,9 @@ class CallStats:
     tokens_in: int = 0
     tokens_out: int = 0
     tokens_missing: bool = False
+    call_interval: int = 0  # seconds
+    rate_limited: int = 0
+    last_call_end: int | None = None  # _clock() nanoseconds
     entries: list[dict[str, Any]] = field(default_factory=list)
 
     def record(
@@ -584,7 +620,10 @@ class CallStats:
             "cost_usd": None,
         }
         if error is not None:
-            self.calls += 1  # sent, but the provider returned an error and no usage
+            if error == "LLMApiError 429":
+                self.rate_limited += 1  # refused before generating; not a call against the cap
+            else:
+                self.calls += 1  # sent, but the provider returned an error and no usage
             entry["error"] = error
         if result is not None:
             self.calls += 1
@@ -623,14 +662,27 @@ async def _call(
     filing_id: str | None,
     section: str | None,
 ) -> LLMResult:
-    try:
-        result = await client.complete(messages, response_format=response_format,
-                                       max_tokens=max_tokens)  # fmt: skip
-    except LLMApiError as exc:
-        stats.record(purpose, "miss", filing_id, section, error=f"LLMApiError {exc.status_code}")
-        raise
-    stats.record(purpose, "miss", filing_id, section, result)
-    return result
+    for attempt in (1, 2):
+        if stats.last_call_end is not None and stats.call_interval > 0:
+            wait = stats.call_interval * _NS_PER_SECOND - (_clock() - stats.last_call_end)
+            if wait > 0:
+                await _sleep(wait / _NS_PER_SECOND)
+        try:
+            result = await client.complete(messages, response_format=response_format,
+                                           max_tokens=max_tokens)  # fmt: skip
+        except LLMApiError as exc:
+            stats.last_call_end = _clock()
+            stats.record(purpose, "miss", filing_id, section,
+                         error=f"LLMApiError {exc.status_code}")  # fmt: skip
+            if exc.status_code != 429 or attempt == 2:
+                raise
+            await _sleep(RATE_LIMIT_WAIT_SECONDS)
+            stats.last_call_end = None  # the wait above replaces the call interval
+            continue
+        stats.last_call_end = _clock()
+        stats.record(purpose, "miss", filing_id, section, result)
+        return result
+    raise AssertionError("unreachable")
 
 
 def _source_message(source_text: str) -> str:
@@ -832,10 +884,13 @@ async def generate(
     max_calls: int = DEFAULT_MAX_CALLS,
     dry_run: bool = False,
     retry_withheld: bool = False,
+    call_interval: int = 0,
 ) -> tuple[GenerateResult, CallStats]:
-    """Summarise ``targets`` in order, one call at a time. ``limit`` caps the summaries
-    generated (cache hits do not count). A dry run makes no call and writes no file."""
-    stats = CallStats(model=model, log_path=None if dry_run else calls_path)
+    """Summarise ``targets`` in order, one call at a time, at least ``call_interval`` seconds
+    apart. ``limit`` caps the summaries generated (cache hits do not count). A dry run makes
+    no call and writes no file."""
+    stats = CallStats(model=model, log_path=None if dry_run else calls_path,
+                      call_interval=call_interval)  # fmt: skip
     staged = read_jsonl(staged_path)
     cached = _cached_keys(staged, read_jsonl(approved_path), retry_withheld)
     rows = {_row_key(row): row for row in staged}
@@ -894,12 +949,16 @@ def _percent(part: int, whole: int) -> str:
 
 
 async def measure_reviewer(
-    client: LLMClient, model: str, max_calls: int, calls_path: Path | None = CALLS_PATH
+    client: LLMClient,
+    model: str,
+    max_calls: int,
+    calls_path: Path | None = CALLS_PATH,
+    call_interval: int = 0,
 ) -> tuple[list[str], CallStats]:
     """Recall on ``bad.jsonl`` (a bad line counts as found when the reviewer flags anything
     for it) and the false-flag rate on ``good.jsonl``. The fixtures carry no filing text, so
     the reviewer judges the lines alone. Stopping at ``max_calls`` marks the result partial."""
-    stats = CallStats(model=model, log_path=calls_path)
+    stats = CallStats(model=model, log_path=calls_path, call_interval=call_interval)
     report = []
     for name in ("bad", "good"):
         rows = _fixture_rows(FIXTURES_DIR / f"{name}.jsonl")
@@ -949,6 +1008,8 @@ def _parser() -> argparse.ArgumentParser:
     commands = parser.add_subparsers(dest="command", required=True)
     gen = commands.add_parser("generate", help="summarise filings into staged.jsonl")
     gen.add_argument("--as-of", type=datetime.date.fromisoformat, default=datetime.date.today())
+    gen.add_argument("--filing", action="append", default=[], metavar="ID",
+                     help="only this filing id, such as dart:2025..., repeatable")  # fmt: skip
     gen.add_argument("--limit", type=int, help="most summaries to generate (cache hits excluded)")
     gen.add_argument("--dry-run", action="store_true", help="list what would run; no calls")
     gen.add_argument("--retry-withheld", action="store_true",
@@ -963,6 +1024,9 @@ def _parser() -> argparse.ArgumentParser:
         sub.add_argument("--max-calls", type=int, default=DEFAULT_MAX_CALLS,
                          help=f"stop before exceeding this many calls (default "
                               f"{DEFAULT_MAX_CALLS})")  # fmt: skip
+        sub.add_argument("--call-interval", type=int, default=DEFAULT_CALL_INTERVAL,
+                         help=f"seconds between calls (default {DEFAULT_CALL_INTERVAL}, "
+                              "for the Groq free tier)")  # fmt: skip
     return parser
 
 
@@ -974,14 +1038,16 @@ def _client(settings: Any) -> Any:
 
 async def _run_generate(args: argparse.Namespace, settings: Any) -> None:
     model = settings.llm_model
-    targets = await load_targets(args.database_url or settings.database_url, args.as_of)
+    targets = pick_filings(
+        await load_targets(args.database_url or settings.database_url, args.as_of), args.filing
+    )
     client = None if args.dry_run else _client(settings)
     try:
         result, stats = await generate(
             client, targets, model=model, staged_path=args.staged,
             approved_path=args.approved, calls_path=args.calls_log, limit=args.limit,
             max_calls=args.max_calls, dry_run=args.dry_run,
-            retry_withheld=args.retry_withheld,
+            retry_withheld=args.retry_withheld, call_interval=args.call_interval,
         )  # fmt: skip
     finally:
         if client is not None:
@@ -1002,14 +1068,14 @@ async def _run_generate(args: argparse.Namespace, settings: Any) -> None:
     print(counts + f", cached now withheld {result.rechecked_withheld}")
     print(f"staged: {args.staged}")
     print(f"generated {result.generated}, withheld {result.withheld}, calls {stats.calls}, "
-          f"est. cost {stats.cost_text()}")  # fmt: skip
+          f"rate-limited {stats.rate_limited}, est. cost {stats.cost_text()}")  # fmt: skip
 
 
 async def _run_measure(args: argparse.Namespace, settings: Any) -> None:
     client = _client(settings)
     try:
         report, stats = await measure_reviewer(client, settings.llm_model, args.max_calls,
-                                               args.calls_log)  # fmt: skip
+                                               args.calls_log, args.call_interval)  # fmt: skip
     finally:
         await client.aclose()
     print(f"model: {settings.llm_model}  prompt_version: {PROMPT_VERSION}")

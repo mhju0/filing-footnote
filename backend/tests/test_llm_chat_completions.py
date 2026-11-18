@@ -30,7 +30,7 @@ _MESSAGES: list[ChatMessage] = [
 # A minimal but well-formed chat-completions response body (OpenAI shape).
 _OK_RESPONSE = {
     "id": "chatcmpl-xyz",
-    "model": "gemini-3.5-flash-lite",
+    "model": "qwen/qwen3.8-27b",
     "choices": [
         {
             "index": 0,
@@ -86,7 +86,7 @@ def test_request_shape_has_auth_header_and_json_body_without_response_format() -
     # Secret rides ONLY in the Authorization header (never the URL).
     assert captured["auth"] == f"Bearer {_FAKE_KEY}"
     body = captured["json"]
-    assert body["model"] == "gemini-3.5-flash-lite"
+    assert body["model"] == "qwen/qwen3.8-27b"
     assert body["messages"] == _MESSAGES
     assert body["temperature"] == 0.2
     assert body["max_tokens"] == 1024
@@ -114,7 +114,7 @@ def test_response_parses_into_llm_result() -> None:
     result = _run_complete(handler)
     assert isinstance(result, LLMResult)
     assert result.text == "A concise summary."
-    assert result.model == "gemini-3.5-flash-lite"
+    assert result.model == "qwen/qwen3.8-27b"
     assert result.finish_reason == "stop"
     assert result.input_tokens == 42
     assert result.output_tokens == 7
@@ -123,7 +123,7 @@ def test_response_parses_into_llm_result() -> None:
 
 def test_missing_usage_yields_none_token_counts() -> None:
     body = {
-        "model": "gemini-3.5-flash-lite",
+        "model": "qwen/qwen3.8-27b",
         "choices": [
             {"message": {"role": "assistant", "content": "hi"}, "finish_reason": "stop"}
         ],
