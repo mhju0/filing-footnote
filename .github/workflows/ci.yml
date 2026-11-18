@@ -51,6 +51,9 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
+      # The shared package runs on the host Mac, without a simulator.
+      - name: FootnoteKit tests
+        run: swift test --package-path ios/FootnoteKit
       # Runner images do not always ship the same simulators, so resolve one that
       # is actually installed instead of pinning a device name.
       - name: Build app and run iOS tests

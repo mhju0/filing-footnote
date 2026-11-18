@@ -31,6 +31,8 @@ dist/
 *.log
 *.sqlite
 *.sqlite3
+# FootnoteKit's development fixture bundle (backend/tests/footnotekit_fixture.py), never shipped.
+!ios/FootnoteKit/Tests/FootnoteKitTests/Fixtures/footnote.sqlite
 
 # Xcode / Swift
 build/
@@ -38,6 +40,7 @@ build/
 !backend/app/build/
 !backend/tests/fixtures/build/
 DerivedData/
+.build/
 *.xcuserstate
 xcuserdata/
 .swiftpm/
