@@ -138,6 +138,11 @@ struct Company: Codable, Identifiable, Hashable, Sendable {
         case "MSFT": "마이크로소프트"
         case "NVDA": "엔비디아"
         case "TSLA": "테슬라"
+        case "AMZN": "아마존"
+        case "COST": "코스트코"
+        case "GOOGL": "알파벳"
+        case "META": "메타"
+        case "WMT": "월마트"
         case "035420": "네이버"
         default: name
         }

@@ -208,7 +208,10 @@ _US_GAAP_TO_METRIC: dict[str, str] = {
     "Revenues": "revenue",
     "RevenueFromContractWithCustomerExcludingAssessedTax": "revenue",
     "OperatingIncomeLoss": "operating_income",
-    "NetIncomeLoss": "net_income",
+    # NetIncomeLoss is the figure attributable to the parent; ProfitLoss is the
+    # consolidated total, which DART's ifrs-full_ProfitLoss also is (D75).
+    "NetIncomeLoss": "net_income_attributable",
+    "ProfitLoss": "net_income",
     "EarningsPerShareBasic": "eps",
     "EarningsPerShareDiluted": "eps_diluted",
 }

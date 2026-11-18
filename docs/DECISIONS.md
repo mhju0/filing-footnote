@@ -827,3 +827,20 @@ owner approved adding them to the N1 lexicon.
 - Lexicon version 2. It is part of the summary cache key, so every summary is generated
   again; none was approved.
 - Two bad fixtures that use 하반기 as prediction examples (N3) now trip N1 as well.
+
+## D75 · US net income means the parent's share, as DART's does · 2026-11-18 (`PROPOSED`)
+
+SEC's `NetIncomeLoss` is net income attributable to the parent, but the mapper stored it as
+`net_income`, while DART stores the consolidated total (`ifrs-full_ProfitLoss`) there and
+the parent's share as `net_income_attributable`. The same key meant two things. Five US
+companies also had no Korean name, so their `name_ko` fell back to the English name.
+The owner has not yet approved the mapping or the names.
+
+- SEC `NetIncomeLoss` now feeds `net_income_attributable` for all nine US companies.
+- SEC `ProfitLoss` feeds `net_income` only where a company reports it (the pinned data has
+  it for Walmart, Costco and Tesla). The other six have no `net_income` figure.
+- `net_income_attributable` was already in `contracts/financial-vocabulary.json` and the
+  Swift enums; no vocabulary change.
+- `contracts/family-glossary.json` gains 아마존, 코스트코, 알파벳, 메타 and 월마트; the iOS
+  Korean display names match. A test asserts every glossary company has a Hangul name.
+- Stored figures change only on re-ingest; the pinned files are untouched.
