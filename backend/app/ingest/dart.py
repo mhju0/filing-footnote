@@ -10,6 +10,7 @@ row construction belongs solely to :mod:`app.filings.persistence`.
 
 import logging
 from dataclasses import dataclass
+from xml.etree.ElementTree import ParseError
 
 import httpx
 
@@ -246,6 +247,9 @@ class DartFilingAdapter:
     reprt_code: str
     fs_div: str = "CFS"
     pinned: PinnedStore | None = None
+    # A prior annual report (``--prior``) is only a figures source and is never
+    # summarised, so a document whose text cannot be parsed keeps zero chunks.
+    figures_only: bool = False
 
     async def fetch(self) -> NormalizedFiling:
         """Return a complete snapshot without opening a database session."""
@@ -263,9 +267,18 @@ class DartFilingAdapter:
 
         text = decode_dart_bytes(document.content)
         document_format = detect_document_format(text)
+        chunks: list[Chunk] = []
         if document_format == "dsd":
-            sections = extract_dsd_prose(text)
-            chunks = chunk_document(sections)
+            try:
+                chunks = chunk_document(extract_dsd_prose(text))
+            except ParseError as exc:
+                if not self.figures_only:
+                    raise
+                logger.warning(
+                    "DART filing %s text is not parseable (%s); figures only, zero chunks",
+                    self.filing_item.rcept_no,
+                    exc,
+                )
         else:
             logger.warning(
                 "DART filing %s format=%s is not parseable; using zero chunks",

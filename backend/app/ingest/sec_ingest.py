@@ -8,7 +8,8 @@ Design (mirrors the DART adapter; the differences are all SEC-specific):
 
 1. **Numbers come only from companyfacts.** ``fetch_company_facts`` is the single
    source of figures (never the LLM/document); the facts are filtered to the
-   chosen accession's *own-period* rows before they become ``financials`` rows.
+   chosen accession's *own-period* rows and its prior-year comparatives before
+   they become ``financials`` rows.
 
 2. **USD units, not KRW.** SEC facts use their own unit vocabulary while the
    adapter translates ``SecFinancialItem.value`` directly into canonical
@@ -110,14 +111,17 @@ def build_sec_normalized_filing(
     financial_items: list[SecFinancialItem],
     chunks: list[Chunk],
 ) -> NormalizedFiling:
-    """Adapt one fetched SEC filing to the public Normalized Filing seam."""
+    """Adapt one fetched SEC filing to the public Normalized Filing seam.
+
+    One fact per metric and fiscal year: the filing's own year and, when the items carry
+    it, the prior-year comparative."""
     facts: list[FinancialFact] = []
-    seen: set[ReportedMetric] = set()
+    seen: set[tuple[ReportedMetric, int]] = set()
     for item in financial_items:
         metric = ReportedMetric(item.metric)
-        if metric in seen:
+        if (metric, item.fiscal_year) in seen:
             continue
-        seen.add(metric)
+        seen.add((metric, item.fiscal_year))
         has_complete_range = item.period_start is not None and item.period_end is not None
         period = ReportingPeriod(
             label=sec_period(item.fiscal_year),
@@ -195,6 +199,40 @@ def select_target_filing(
     )
 
 
+def select_prior_filing(filings: list[SecFilingItem]) -> SecFilingItem:
+    """The 10-K filed before the latest one: the source of the values the latest 10-K's
+    comparatives may restate. Raises :class:`SecIngestError` when there is none. Pure."""
+    dated = sorted(
+        (f for f in filings if f.filing_date is not None),
+        key=lambda f: (f.filing_date, f.accession_number),
+    )
+    if len(dated) < 2:
+        raise SecIngestError(f"no 10-K before the latest among {len(filings)} 10-K filing(s)")
+    return dated[-2]
+
+
+class SecPriorYearSkipped(SecIngestError):
+    """The 10-K before the latest is not the latest's prior fiscal year; nothing is stored."""
+
+
+def _require_prior_year(
+    filings: list[SecFilingItem],
+    facts: list[SecFinancialItem],
+    prior: SecFilingItem,
+    prior_year: int,
+) -> None:
+    """Raise :class:`SecPriorYearSkipped` unless ``prior`` covers the latest 10-K's fiscal
+    year minus one (an amended or late 10-K can sit between them). Pure."""
+    latest = select_target_filing(filings, None)
+    latest_facts = [f for f in facts if f.accession_number == latest.accession_number]
+    latest_year = _filing_fiscal_year(latest, latest_facts)
+    if prior_year != latest_year - 1:
+        raise SecPriorYearSkipped(
+            f"10-K {prior.accession_number} covers FY{prior_year}, not FY{latest_year - 1} "
+            f"before the latest 10-K {latest.accession_number} (FY{latest_year})"
+        )
+
+
 def _filing_fiscal_year(filing: SecFilingItem, own_facts: list[SecFinancialItem]) -> int:
     """Derive the filing's fiscal year: the facts' own period, else report_date.year.
 
@@ -205,8 +243,9 @@ def _filing_fiscal_year(filing: SecFilingItem, own_facts: list[SecFinancialItem]
     :class:`SecIngestError` if neither is available -- ``financials.period`` and
     the filing title need a year and we never guess one. Pure.
     """
-    for fact in own_facts:
-        return fact.fiscal_year
+    if own_facts:
+        # The own period is the latest; a prior-year comparative is one year earlier.
+        return max(fact.fiscal_year for fact in own_facts)
     if filing.report_date is not None:
         return filing.report_date.year
     raise SecIngestError(
@@ -226,6 +265,8 @@ class SecFilingAdapter:
     cik: str | int
     accession_number: str | None = None
     pinned: PinnedStore | None = None
+    # The 10-K before the latest one (the restatement source), instead of the latest.
+    prior: bool = False
 
     async def fetch(self) -> NormalizedFiling:
         """Return a complete snapshot without opening a database session."""
@@ -234,7 +275,10 @@ class SecFilingAdapter:
         filings = await self.client.list_filings(
             self.cik, filing_types=[_FORM_10K]
         )
-        target = select_target_filing(filings, self.accession_number)
+        if self.prior:
+            target = select_prior_filing(filings)
+        else:
+            target = select_target_filing(filings, self.accession_number)
 
         document = await self.client.fetch_document(
             self.cik, target.accession_number, target.primary_document
@@ -245,13 +289,15 @@ class SecFilingAdapter:
         save: dict = {}
         if self.pinned is not None:
             save["on_body"] = self.pinned.sink(sec_companyfacts_path(cik10))
-        facts = await self.client.fetch_company_facts(self.cik, **save)
+        facts = await self.client.fetch_company_facts(self.cik, with_prior=True, **save)
         own_facts = [
             fact
             for fact in facts
             if fact.accession_number == target.accession_number
         ]
         fiscal_year = _filing_fiscal_year(target, own_facts)
+        if self.prior:
+            _require_prior_year(filings, facts, target, fiscal_year)
         normalized = build_sec_normalized_filing(
             company_match=company_match,
             cik10=cik10,

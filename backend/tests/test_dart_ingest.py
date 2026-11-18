@@ -220,6 +220,37 @@ def test_dart_filing_adapter_fetches_complete_snapshot_without_refetching_listin
     assert len(filing.filing_chunks) == 1
 
 
+def test_figures_only_adapter_keeps_figures_when_the_text_does_not_parse(monkeypatch) -> None:
+    # Kia's 2024 사업보고서 text is not well-formed XML; as a prior report (--prior) it is
+    # only the source of figures, so its figures are kept with zero chunks.
+    class _FakeDartClient:
+        async def fetch_financials(self, corp_code, bsns_year, reprt_code, fs_div):
+            return [_fin_item("revenue", 1000, prior_amount=900)]
+
+        async def fetch_company_eng_name(self, corp_code):
+            return None
+
+        async def fetch_document(self, rcept_no):
+            return DocumentPayload(rcept_no, f"{rcept_no}.xml", b"<DOCUMENT />",
+                                   (f"{rcept_no}.xml",))  # fmt: skip
+
+    def broken(text):
+        raise dart.ParseError("not well-formed (invalid token)")
+
+    monkeypatch.setattr(dart, "detect_document_format", lambda text: "dsd")
+    monkeypatch.setattr(dart, "extract_dsd_prose", broken)
+
+    def adapter(figures_only: bool) -> DartFilingAdapter:
+        return DartFilingAdapter(client=_FakeDartClient(), corp_code="00126380",
+                                 filing_item=_filing_item(), bsns_year="2023",
+                                 reprt_code="11011", figures_only=figures_only)  # fmt: skip
+
+    filing = asyncio.run(adapter(True).fetch())
+    assert len(filing.financial_facts) == 2 and filing.filing_chunks == ()
+    with pytest.raises(dart.ParseError):
+        asyncio.run(adapter(False).fetch())
+
+
 def test_dart_adapter_maps_company_and_filing_metadata() -> None:
     filing = _normalized()
 

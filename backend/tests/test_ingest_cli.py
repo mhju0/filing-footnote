@@ -80,6 +80,29 @@ class TestSelectLatestAnnual:
         assert item.rcept_no == "R-2022"
         assert year == "2022"
 
+    def test_prior_picks_the_newest_version_of_the_year_before_the_latest(self):
+        filings = [
+            _item("사업보고서 (2023.12)", datetime.date(2024, 3, 12), "R-2023"),
+            _item("사업보고서 (2024.12)", datetime.date(2025, 3, 11), "R-2024"),
+            _item("[기재정정]사업보고서 (2024.12)", datetime.date(2025, 5, 2), "R-2024-corrected"),
+            _item("사업보고서 (2025.12)", datetime.date(2026, 3, 10), "R-2025"),
+        ]
+        item, year = select_latest_annual(filings, prior=True)
+        assert (item.rcept_no, year) == ("R-2024-corrected", "2024")
+
+    def test_a_late_correction_of_an_older_year_is_not_the_latest(self):
+        filings = [
+            _item("사업보고서 (2025.12)", datetime.date(2026, 3, 10), "R-2025"),
+            _item("[기재정정]사업보고서 (2024.12)", datetime.date(2026, 5, 20), "R-2024-late"),
+        ]
+        assert select_latest_annual(filings) == (filings[0], "2025")
+        assert select_latest_annual(filings, prior=True) == (filings[1], "2024")
+
+    def test_prior_without_the_earlier_report_raises(self):
+        filings = [_item("사업보고서 (2025.12)", datetime.date(2026, 3, 10))]
+        with pytest.raises(ValueError, match="for 2024"):
+            select_latest_annual(filings, prior=True)
+
 
 class TestMatchTicker:
     _matches = [

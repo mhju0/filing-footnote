@@ -194,6 +194,25 @@ def test_dedup_profit_loss_keeps_total_and_attributable_separately() -> None:
     )
 
 
+def test_dedup_profit_loss_keeps_the_cis_row_when_there_is_no_is_statement() -> None:
+    # Samsung Biologics (00877059) files one statement of comprehensive income: its
+    # profit-loss accounts appear under CIS and CF only. The CIS row is kept.
+    items = [
+        _fin("ifrs-full_ProfitLoss", "CIS", 1_784_352_060_593),
+        _fin("ifrs-full_ProfitLoss", "CF", 1_784_352_060_593),
+        _fin("ifrs-full_ProfitLossAttributableToOwnersOfParent", "CIS", 1_784_352_060_593),
+    ]
+    deduped = _dedup_profit_loss(items)
+    assert [(it.metric, it.sj_div) for it in deduped] == [
+        ("net_income", "CIS"),
+        ("net_income_attributable", "CIS"),
+    ]
+
+
+def test_dedup_profit_loss_drops_an_account_found_only_under_cf() -> None:
+    assert _dedup_profit_loss([_fin("ifrs-full_ProfitLoss", "CF")]) == []
+
+
 def test_dedup_profit_loss_leaves_other_accounts_untouched() -> None:
     # Non-ProfitLoss rows (even multi-statement) must pass through unchanged.
     items = [

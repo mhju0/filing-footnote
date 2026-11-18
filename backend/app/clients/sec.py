@@ -381,7 +381,53 @@ def _dedup_keep_latest_period(items: list[SecFinancialItem]) -> list[SecFinancia
     return list(best.values())
 
 
-def parse_companyfacts_payload(payload: Any) -> list[SecFinancialItem]:
+# A fiscal year of 52 or 53 weeks runs 363 to 370 days from start to end; quarterly
+# durations ending on the same day are far shorter.
+_FULL_YEAR_DAYS = range(350, 381)
+
+
+def _prior_year_comparatives(
+    items: list[SecFinancialItem], own: list[SecFinancialItem]
+) -> list[SecFinancialItem]:
+    """For each own-period fact, the same 10-K's fact for the fiscal year just before it.
+
+    The comparative has the same ``accn`` and the same tag, a full-year duration, and
+    ends the day before the own period starts, so its fiscal year is the one before the
+    filing's. No comparative is returned when none matches, or when matching entries
+    disagree on the value. Pure.
+    """
+    result: list[SecFinancialItem] = []
+    for fact in own:
+        if fact.period_start is None or fact.period_end is None:
+            continue
+        wanted_end = fact.period_start - datetime.timedelta(days=1)
+        matches = [
+            it
+            for it in items
+            if it.accession_number == fact.accession_number
+            and it.tag == fact.tag
+            and it.period_end == wanted_end
+            and it.period_start is not None
+            and (it.period_end - it.period_start).days in _FULL_YEAR_DAYS
+            and it.fiscal_year == fact.fiscal_year - 1
+        ]
+        if not matches:
+            continue
+        if len({m.value for m in matches}) > 1:
+            logger.warning(
+                "companyfacts: %s %s states two values for %s; no comparative kept",
+                fact.accession_number,
+                fact.tag,
+                wanted_end,
+            )
+            continue
+        result.append(matches[0])
+    return result
+
+
+def parse_companyfacts_payload(
+    payload: Any, *, with_prior: bool = False
+) -> list[SecFinancialItem]:
     """Turn a ``companyfacts/CIK##########.json`` body into SecFinancialItems.
 
     Only annual (``form == "10-K"``) facts for the mapped us-gaap tags are kept;
@@ -389,6 +435,9 @@ def parse_companyfacts_payload(payload: Any) -> list[SecFinancialItem]:
     :func:`parse_sec_decimal` (Decimal). One fact survives per
     (accession_number, metric) -- see :func:`_dedup_keep_latest_period` --
     since a 10-K repeats prior-year comparative figures under its own ``accn``.
+    With ``with_prior`` the 10-K's comparative for the fiscal year before its own
+    is kept as well, one per (accession_number, metric), from the same tag
+    (:func:`_prior_year_comparatives`).
     ``fiscal_year`` is derived from ``period_end.year``, not SEC's ``fy`` (see
     :class:`SecFinancialItem`); an entry whose ``end`` is missing/unparseable
     is skipped since fiscal_year cannot be derived. Split from network I/O so
@@ -468,6 +517,8 @@ def parse_companyfacts_payload(payload: Any) -> list[SecFinancialItem]:
         len(items),
         len(deduped),
     )
+    if with_prior:
+        return deduped + _prior_year_comparatives(items, deduped)
     return deduped
 
 
@@ -848,13 +899,18 @@ class SecClient:
         return parse_filing_index_html(resp.text)
 
     async def fetch_company_facts(
-        self, cik: str | int, on_body: Callable[[bytes], None] | None = None
+        self,
+        cik: str | int,
+        on_body: Callable[[bytes], None] | None = None,
+        *,
+        with_prior: bool = False,
     ) -> list[SecFinancialItem]:
         """Fetch structured XBRL company facts, mapped to standard metric keys.
 
         ★ Numbers must come only from this structured API, never from LLM text.
         Only annual (form == "10-K") facts for the mapped us-gaap tags are
-        returned (see :data:`_US_GAAP_TO_METRIC`). No DB write happens here.
+        returned (see :data:`_US_GAAP_TO_METRIC`); ``with_prior`` as in
+        :func:`parse_companyfacts_payload`. No DB write happens here.
         """
         cik10 = format_cik(cik)
         client = self._get_client()
@@ -864,7 +920,7 @@ class SecClient:
         resp.raise_for_status()
         # Numbers are read as text, as app.build.verify reads the pinned file, so the two
         # accept or refuse the same value.
-        items = parse_companyfacts_payload(resp.json(parse_float=str))
+        items = parse_companyfacts_payload(resp.json(parse_float=str), with_prior=with_prior)
         if on_body is not None and items:
             on_body(resp.content)  # the body as received, after it parsed to rows
         return items
