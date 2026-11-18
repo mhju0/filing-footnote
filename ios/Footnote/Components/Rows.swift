@@ -143,6 +143,12 @@ struct PeriodicRow: View {
                     .foregroundStyle(Theme.muted)
                     .fixedSize(horizontal: false, vertical: true)
             }
+            if let note = Copy.fiscalYearEndsNote(report, language) {
+                Text(words: note)
+                    .font(.footnote)
+                    .foregroundStyle(Theme.muted)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
         .padding(.vertical, 6)
         .accessibilityElement(children: .ignore)
@@ -161,6 +167,7 @@ struct PeriodicRow: View {
         if let note = Copy.restatedNote(report, language) {
             parts.append(language("정정됨", "Restated") + ". " + note)
         }
+        if let note = Copy.fiscalYearEndsNote(report, language) { parts.append(note) }
         return parts.joined(separator: ", ")
     }
 }

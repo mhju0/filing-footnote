@@ -123,6 +123,8 @@ def yoy_case(case_id, description, metric, prior, current, *, order=None):
             "current_period_end": current["period_end"],
             "prior_is_restated": prior["is_restated"],
             "current_is_restated": current["is_restated"],
+            "period_ends_differ":
+                prior["period_end"][5:] != current["period_end"][5:],
         }
     })
 
@@ -538,12 +540,84 @@ refuse("period-overlapping",
        yoy_in("revenue", [fact(A, "revenue", "200", "2022-01-01", "2023-12-31"),
                           fact(A, "revenue", "220", "2023-01-01", "2024-12-31")]),
        "incompatible_comparison", "overlapping_periods")
-refuse("period-february-leap-year-end",
-       "A year ending on February 29 against one ending on February 28: the "
-       "month-day differs, so v1 refuses.",
-       yoy_in("revenue", [fact(A, "revenue", "100", "2023-03-01", "2024-02-29"),
-                          fact(A, "revenue", "110", "2024-03-01", "2025-02-28")]),
+yoy_case("period-february-leap-year-end",
+         "A year ending on February 29 against one ending on February 28: two "
+         "full years whose ends are a day apart in month-day, so they compare "
+         "and carry period_ends_differ (D82).",
+         "revenue", fact(A, "revenue", "100", "2023-03-01", "2024-02-29"),
+         fact(A, "revenue", "110", "2024-03-01", "2025-02-28"))
+assert cases[-1]["expected"]["result"]["period_ends_differ"] is True
+
+# --- 52/53-week fiscal years (D82) -------------------------------------------
+yoy_case("yoy-fiscal-weeks-apple-like",
+         "Apple-like 52-week years ending 2024-09-28 and 2025-09-27: full "
+         "fiscal years a year apart whose ends differ by a day compare, with "
+         "period_ends_differ set.",
+         "revenue",
+         fact(A, "revenue", "391035000000", "2023-10-01", "2024-09-28",
+              currency="USD"),
+         fact(A, "revenue", "416161000000", "2024-09-29", "2025-09-27",
+              currency="USD"))
+assert cases[-1]["expected"]["result"]["period_ends_differ"] is True
+yoy_case("yoy-fiscal-weeks-53-week-year",
+         "A 53-week year (371 days) after a 52-week year: the end moves six "
+         "days later in month-day and still compares, with the flag.",
+         "revenue",
+         fact(A, "revenue", "100", "2021-09-26", "2022-09-24", currency="USD"),
+         fact(A, "revenue", "98", "2022-09-25", "2023-09-30", currency="USD"))
+assert cases[-1]["expected"]["result"]["period_ends_differ"] is True
+yoy_case("yoy-fiscal-weeks-across-new-year",
+         "A year ending on December 30 against the next ending on January 1: "
+         "the ends sit two days apart across the new year, so they compare.",
+         "revenue",
+         fact(A, "revenue", "100", "2023-01-01", "2023-12-30", currency="USD"),
+         fact(A, "revenue", "105", "2023-12-31", "2025-01-01", currency="USD"))
+assert cases[-1]["expected"]["result"]["period_ends_differ"] is True
+yoy_case("yoy-equal-ends-no-flag",
+         "Equal year-end month-days keep the calendar-year path and carry no "
+         "flag.",
+         "revenue", fy(2024, value="100"), fy(2025, value="110"))
+assert cases[-1]["expected"]["result"]["period_ends_differ"] is False
+refuse("fiscal-weeks-end-too-far",
+       "Ends 2024-09-28 and 2025-10-10: both look like full years, but the "
+       "later end is twelve days past the anniversary, so it refuses.",
+       yoy_in("revenue", [fact(A, "revenue", "100", "2023-10-01", "2024-09-28",
+                               currency="USD"),
+                          fact(A, "revenue", "110", "2024-10-12", "2025-10-10",
+                               currency="USD")]),
        "incompatible_comparison", "period_end_mismatch")
+refuse("fiscal-weeks-end-eight-days-early",
+       "Two full years whose ends are 357 days apart: the later end falls "
+       "eight days before the anniversary, past the seven-day limit.",
+       yoy_in("revenue", [fact(A, "revenue", "100", "2023-10-01", "2024-09-28",
+                               currency="USD"),
+                          fact(A, "revenue", "110", "2024-09-29", "2025-09-20",
+                               currency="USD")]),
+       "incompatible_comparison", "period_end_mismatch")
+refuse("fiscal-weeks-half-year-against-full-year",
+       "A half year against a full fiscal year whose end differs by a day: "
+       "the half year is not a full fiscal year, so it refuses.",
+       yoy_in("revenue", [fact(A, "revenue", "100", "2023-10-01", "2024-09-28",
+                               currency="USD"),
+                          fact(A, "revenue", "55", "2025-03-30", "2025-09-27",
+                               currency="USD")]),
+       "incompatible_comparison", "period_end_mismatch")
+refuse("fiscal-weeks-two-years-apart",
+       "Two 52-week years with a year between them: the ends are two years "
+       "apart, so it refuses as a period-end mismatch.",
+       yoy_in("revenue", [fact(A, "revenue", "100", "2022-09-25", "2023-09-30",
+                               currency="USD"),
+                          fact(A, "revenue", "110", "2024-09-29", "2025-09-27",
+                               currency="USD")]),
+       "incompatible_comparison", "period_end_mismatch")
+refuse("fiscal-weeks-overlapping",
+       "A 53-week year that starts before the prior 52-week year ends: the "
+       "periods share days, so neither is a baseline.",
+       yoy_in("revenue", [fact(A, "revenue", "100", "2023-09-24", "2024-09-21",
+                               currency="USD"),
+                          fact(A, "revenue", "110", "2024-09-21", "2025-09-26",
+                               currency="USD")]),
+       "incompatible_comparison", "overlapping_periods")
 refuse("cross-company-growth-length-mismatch",
        "One company's full years against another's first quarters.",
        cross_in("revenue", "growth_rate",

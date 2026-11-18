@@ -39,12 +39,24 @@ periods is allowed. The current period must start after the prior period ends: t
 two-year periods a year apart share a year, so neither is a baseline for the other
 (`overlapping_periods`).
 
-Two year-ends fail the month-day check and are refused in v1:
+When the period ends differ in month-day, the two periods still compare as
+consecutive fiscal years (D82) when all of these hold, counting both end days:
 
-- A fiscal year that ends on a different date each year (a 52/53-week year).
-- A year that ends on the last day of February: February 29 in a leap year against
-  February 28 in the next year is refused as `period_end_mismatch`, even though both
-  are the last day of the month.
+- each period runs 357 to 371 days, which covers a 52-week year (364), a 53-week year
+  (371) and a calendar year (365 or 366);
+- the later period ends 357 to 371 days after the earlier one;
+- the later end falls within seven days of the earlier end's anniversary (the same
+  month-day a year later, February 29 read as February 28), which also covers ends that
+  move across the new year;
+- the current period starts after the prior period ends (`overlapping_periods`
+  otherwise).
+
+Such a result carries `period_ends_differ: true` so the UI can say the fiscal years end
+a few days apart. Equal month-days keep the rules above and give
+`period_ends_differ: false`. Any other pair whose ends differ is refused as
+`period_end_mismatch`, such as a half year against a full year, or ends more than a
+week from the anniversary. This covers 52/53-week years (Apple, NVIDIA, Costco) and a
+year ending on February 29 against one ending on February 28.
 
 ### Operating margin (`operating_margin`)
 
@@ -175,7 +187,9 @@ swapping any two such checks fails at least one case.
    - Year over year: fewer than two figures (`missing_period`), more than two
      (`ambiguous_request`), then metric, company, basis, currency, unit, period-end
      month-day, period-start month-day, same period (`ambiguous_request`), overlapping
-     periods, period length, consecutive years, and last the baseline.
+     periods, period length, consecutive years, and last the baseline. When the
+     period-end month-days differ, the consecutive-fiscal-year test replaces the
+     period-end month-day check, and only the overlap and the baseline follow it.
    - Operating margin: a figure for another metric, two figures for one metric
      (`ambiguous_request`), a missing figure (`missing_period`), then company, basis,
      currency, unit, period end, period start, and last the baseline.

@@ -25,6 +25,12 @@ _ARITHMETIC = Context(prec=_PRECISION, rounding=ROUND_HALF_EVEN)
 # Periods of companies set side by side may differ by a leap day or a
 # 52/53-week year, not by a quarter.
 _MAX_CROSS_COMPANY_LENGTH_DIFFERENCE_DAYS = 7
+# A 52/53-week fiscal year runs 364 or 371 days, counting both ends; a calendar
+# year runs 365 or 366. Both fall in this range, and so does the step from one
+# such year end to the next.
+_FISCAL_YEAR_DAYS = range(357, 372)
+# How far a 52/53-week year end may drift from the prior end's anniversary.
+_MAX_YEAR_END_DRIFT_DAYS = 7
 
 
 class RefusalReason(StrEnum):
@@ -111,6 +117,9 @@ class YearOverYear:
     current_period_end: datetime.date
     prior_is_restated: bool
     current_is_restated: bool
+    # True when the two periods end on different month-days: consecutive
+    # 52/53-week fiscal years.
+    period_ends_differ: bool
 
 
 @dataclass(frozen=True)
@@ -189,6 +198,30 @@ def _check_bases(facts: Sequence[Fact]) -> Refusal | None:
     return None
 
 
+def _anniversary(date: datetime.date) -> datetime.date:
+    """The same month-day a year later; February 29 becomes February 28."""
+    try:
+        return date.replace(year=date.year + 1)
+    except ValueError:
+        return datetime.date(date.year + 1, 2, 28)
+
+
+def _consecutive_fiscal_years(prior: Fact, current: Fact) -> bool:
+    """Whether two periods whose ends differ in month-day are consecutive full
+    fiscal years, as 52/53-week years are (docs/DECISIONS.md D82)."""
+
+    def days(fact: Fact) -> int:
+        return (fact.period_end - fact.period_start).days + 1
+
+    drift = (current.period_end - _anniversary(prior.period_end)).days
+    return (
+        days(prior) in _FISCAL_YEAR_DAYS
+        and days(current) in _FISCAL_YEAR_DAYS
+        and (current.period_end - prior.period_end).days in _FISCAL_YEAR_DAYS
+        and abs(drift) <= _MAX_YEAR_END_DRIFT_DAYS
+    )
+
+
 _REPORTED = frozenset(m.value for m in ReportedMetric)
 _MARGIN = frozenset({DerivedMetric.operating_margin.value})
 
@@ -223,34 +256,44 @@ def _year_over_year(metric: str, facts: Sequence[Fact]) -> YearOverYear | Refusa
     def month_day(date: datetime.date) -> tuple[int, int]:
         return date.month, date.day
 
-    if month_day(prior.period_end) != month_day(current.period_end):
-        return _refuse(
-            RefusalReason.incompatible_comparison, RefusalDetail.period_end_mismatch
-        )
-    if month_day(prior.period_start) != month_day(current.period_start):
-        return _refuse(
-            RefusalReason.incompatible_comparison,
-            RefusalDetail.period_length_mismatch,
-        )
-    end_gap = current.period_end.year - prior.period_end.year
-    start_gap = current.period_start.year - prior.period_start.year
-    if end_gap == 0 and start_gap == 0:
-        return _refuse(
-            RefusalReason.ambiguous_request, RefusalDetail.duplicate_period
-        )
-    if current.period_start <= prior.period_end:
-        return _refuse(
-            RefusalReason.incompatible_comparison, RefusalDetail.overlapping_periods
-        )
-    if start_gap != end_gap:
-        return _refuse(
-            RefusalReason.incompatible_comparison,
-            RefusalDetail.period_length_mismatch,
-        )
-    if end_gap > 1:
-        return _refuse(
-            RefusalReason.missing_period, RefusalDetail.non_consecutive_years
-        )
+    ends_differ = month_day(prior.period_end) != month_day(current.period_end)
+    if ends_differ:
+        if not _consecutive_fiscal_years(prior, current):
+            return _refuse(
+                RefusalReason.incompatible_comparison,
+                RefusalDetail.period_end_mismatch,
+            )
+        if current.period_start <= prior.period_end:
+            return _refuse(
+                RefusalReason.incompatible_comparison,
+                RefusalDetail.overlapping_periods,
+            )
+    else:
+        if month_day(prior.period_start) != month_day(current.period_start):
+            return _refuse(
+                RefusalReason.incompatible_comparison,
+                RefusalDetail.period_length_mismatch,
+            )
+        end_gap = current.period_end.year - prior.period_end.year
+        start_gap = current.period_start.year - prior.period_start.year
+        if end_gap == 0 and start_gap == 0:
+            return _refuse(
+                RefusalReason.ambiguous_request, RefusalDetail.duplicate_period
+            )
+        if current.period_start <= prior.period_end:
+            return _refuse(
+                RefusalReason.incompatible_comparison,
+                RefusalDetail.overlapping_periods,
+            )
+        if start_gap != end_gap:
+            return _refuse(
+                RefusalReason.incompatible_comparison,
+                RefusalDetail.period_length_mismatch,
+            )
+        if end_gap > 1:
+            return _refuse(
+                RefusalReason.missing_period, RefusalDetail.non_consecutive_years
+            )
 
     with localcontext(_ARITHMETIC):
         delta = current.value - prior.value
@@ -274,6 +317,7 @@ def _year_over_year(metric: str, facts: Sequence[Fact]) -> YearOverYear | Refusa
         current_period_end=current.period_end,
         prior_is_restated=prior.is_restated,
         current_is_restated=current.is_restated,
+        period_ends_differ=ends_differ,
     )
 
 

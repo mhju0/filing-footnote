@@ -1167,3 +1167,32 @@ not approved any wording.
   file; the release export is the gate.
 - Open: the owner reviews the wording (the pull request lists every entry) and approves
   entries by editing the `approved` flags.
+
+## D82 · Consecutive 52/53-week fiscal years compare year over year · 2026-11-19 (`ACCEPTED`)
+
+Decided by the lead under the owner's delegation. Reason: comparing consecutive 52/53-week
+fiscal years is how these companies and the SEC present their own year-over-year figures.
+
+Apple, NVIDIA and Costco end their fiscal year on a weekday near a date, so the end moves
+by a few days each year. The calculator refused every such pair as `period_end_mismatch`,
+and their periodic rows showed revenue with no change (the open item in D80).
+
+- Two periods of one company count as the same fiscal period for a year-over-year
+  comparison when the end month-days differ and: both run 357 to 371 days counting both
+  end days; the later end is 357 to 371 days after the earlier one; and the later end is
+  within seven days of the earlier end's anniversary (February 29 read as February 28).
+  The current period must still start after the prior one ends. Equal end month-days keep
+  the earlier rules. Anything else still refuses as `period_end_mismatch`.
+- The pinned SEC company facts fit the ranges without change: Apple, NVIDIA and Costco
+  annual revenue periods run 364 or 371 days with ends 364 or 371 days apart, at most six
+  days from the anniversary; Walmart and Microsoft run 365 or 366 days on fixed month-days.
+- The year-over-year result carries `period_ends_differ` (Swift `periodEndsDiffer`), true
+  on this path. The app's periodic row shows "회계연도 마감일이 며칠 달라요." / "The fiscal
+  years end a few days apart." under the change when it is set.
+- A year ending February 29 against one ending February 28 now compares with the flag;
+  the contract case `period-february-leap-year-end` changes from a refusal to a result.
+- Currency, basis, metric and unit rules are unchanged, and so are the cross-company
+  rules. Cross-company growth runs each company's year-over-year check, so a 52/53-week
+  company now gets a growth rate there too; that result has `same_period_end` and the
+  caveat but no per-company flag.
+- Rules: `docs/comparison-rules.md`; cases: `contracts/comparison-cases.json`.

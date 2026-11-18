@@ -101,6 +101,27 @@ struct CopyTests {
             == "Revenue for fiscal 2025, ₩300.87 trillion, up 16.20 percent from the year before")
     }
 
+    /// Apple's 52-week years end a day apart: the row notes it; Samsung's calendar years do not.
+    @Test func fiscalYearEndsNote() throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("weeks-\(UUID().uuidString).sqlite")
+        try FileManager.default.copyItem(at: fixtureURL, to: url)
+        var db: OpaquePointer?
+        #expect(sqlite3_open(url.path, &db) == SQLITE_OK)
+        #expect(sqlite3_exec(db, """
+            INSERT INTO figures VALUES ('apple-revenue-2024', 'sec:0000320193',
+              'sec:0000320193-25-000079', 'revenue', 2024, '2023-10-01', '2024-09-28',
+              '391035000000', 'USD', 'USD', 'consolidated', 0,
+              'RevenueFromContractWithCustomerExcludingAssessedTax')
+            """, nil, nil, nil) == SQLITE_OK)
+        sqlite3_close(db)
+        let store = try BundleStore(contentsOf: url)
+        let apple = try #require(CompanyPage(store: store, companyID: "sec:0000320193")?.periodicReports.first)
+        #expect(Copy.fiscalYearEndsNote(apple, .ko) == "회계연도 마감일이 며칠 달라요.")
+        #expect(Copy.fiscalYearEndsNote(apple, .en) == "The fiscal years end a few days apart.")
+        let samsung = try #require(CompanyPage(store: store, companyID: "dart:00126380")?.periodicReports.first)
+        #expect(Copy.fiscalYearEndsNote(samsung, .ko) == nil)
+    }
+
     /// No em dash in any copy (antislop R-02).
     @Test func noEmDash() throws {
         let date = try #require(CivilDate(iso: "2026-11-18"))
