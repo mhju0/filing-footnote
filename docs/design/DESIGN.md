@@ -12,7 +12,7 @@ replaces the Ledger system inherited from Filing Digest. Older files under
 |---|---|---|
 | Pine | `#10645B` | Primary: actions, links, selected tab, category marks |
 | Saffron | `#E9A23B` | Accent: only the "새 공시" tag, plus at most one highlight per screen. Text on it is Ink |
-| Ink | `#152A31` | Text and the dark latest-filing card |
+| Ink | `#152A31` | Text |
 | Tint | `#E7F0EE` | Category mark and selected-row background |
 | Background | `#F5F6F8` | Screen background |
 | Muted | `#5B6475` | Secondary text |
@@ -38,15 +38,43 @@ first UI milestone ships.
 
 ## Screens
 
-1. **Companies list.** Grouped list of companies; tap one.
-2. **Company page.** Dark latest-filing card (Ink), the three most recent filings
-   with category tags, and one 핵심 숫자 row.
-3. **Filing detail.** Three-line summary, 공시에 적힌 숫자, a glossary link, and
-   원문 보기 to open the source filing.
-4. **Annual at a glance.** One line, then four sections: 무슨 사업, 무엇이 바뀌었나,
-   회사가 꼽은 위험, 핵심 숫자.
-5. **Figure.** What the number means, earlier years, and the calculation.
-6. **Compare with last year.** Same company, metric and basis, with the calculation.
-7. **Compare with another company.** Growth rates only, with a caveat about
-   accounting standards and year-ends. No currency conversion.
-8. **Refusal.** Says plainly why a comparison is not possible and what is.
+The flow is filing-first (`PRODUCT.md`). Every limit below is a maximum; a part with no
+data is removed, never shown empty. Picks are from the design canvas
+(https://claude.ai/artifact/8zsRsVmN6gQrfzYWhJeYFh): G1 boards 1–10 all A (2026-11-18,
+owner), boards 11A, 12A, 13 and 14–20 (2026-11-19, owner).
+
+| Screen | Shows | One tap away | Never shown |
+|---|---|---|---|
+| Companies list | 18 rows: name and ticker; 새 공시 tag | Search (later) | Prices, charts, daily change |
+| Company page | Up to 2 periodic reports with one figure each; up to 10 filings grouped by month (tag, date, title); notices row; insider row; data date | Notices sheet, insider screen, all filings on DART | Price, news, analyst views, scores, a preview line per filing row |
+| Filing page | Tag and status, title, date; outlook banner (outlook only); up to 3 sentences; how they were written; up to 6 numbers; up to 2 related filings; original | Glossary, other versions | Model confidence, judgement words, a gap against a forecast |
+| Quarter report | 3 figures, each against the same quarter last year; related preliminary filing; IR materials link | Year-to-date figures, Figure | Quarter-on-quarter change, charts |
+| Annual at a glance | One line, then 무슨 사업, 무엇이 바뀌었나, 회사가 꼽은 위험, 핵심 숫자 | Figure, compare | |
+| Notices sheet | Medium-detent sheet: date, title, related filing, original link | | Summaries |
+| Insider and ownership (later) | 12-month counts, then a dated list: person, role, shares | Each report on DART | Net buying or selling words, commentary |
+| Figure | Meaning, earlier years as a list, calculation | Compare | |
+| Compare | With last year or another company (growth and margin only, caveat on standards and year-ends); refusal says why and what is possible | Calculation | Currency conversion |
+
+Details:
+
+- Company page: periodic reports are pinned above the filings; the subtitle is the data
+  date ("11월 18일까지 낸 공시 / Filings up to Nov 18"); the list ends with a note on what
+  it covers and a link to every filing on DART or SEC.
+- 새 공시 / New: only on filings made within 7 days of the data date.
+- Notices row: "안내 공시 N건 / N notices", counting notices filed in the same span as
+  the listed filings; hidden when there are none.
+- Filing page order is fixed for every type: sentences, then numbers, then the original.
+- Company outlook: banner saying it is the company's forecast; a corrected forecast shows
+  old and new values side by side; the filing's own prior-year target and result may be
+  shown, but the app computes no gap.
+- Clarification: the press report as quoted, the company's answer, its status and the
+  re-filing due date, and earlier answers to the same report.
+- Corrected filings: 정정됨 / Corrected tag; the corrected version shows, the first opens
+  from "다른 버전 / Other versions".
+- G1 picks: language switch is a globe "EN" button in the nav bar; earlier years are a
+  list; the company picker is one list by market; direction is sign plus word with no
+  colour; a restated figure has a 정정됨 / Restated tag beside the value and a note below.
+- State copy (board 19, approved): data date; "the 10 newest filings from the last 12
+  months"; fewer than ten ("these are all N filings"); summary in review; numbers section
+  hidden when empty; outlook without figures; corrected filing; notices row hidden.
+  There is no loading or offline state because the app reads a bundled file.

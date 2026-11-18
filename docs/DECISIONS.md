@@ -850,11 +850,13 @@ The owner approved the mapping and the names (2026-11-18, owner: "1 yes").
   Korean display names match. A test asserts every glossary company has a Hangul name.
 - Stored figures change only on re-ingest; the pinned files are untouched.
 
-## D76 · Official company filings: wider event scope, ten per company, a notices row · 2026-11-19 (`PROPOSED`)
+## D76 · Official company filings: wider event scope, ten per company, a notices row · 2026-11-19 (`ACCEPTED`)
 
 The owner wants as many official company filings about outlook and decisions as the app can
 show (2026-11-18/19, owner). Supersedes the cap of D72 (five); D72's other rules stand.
-Detail in [ADR 0007](adr/0007-notices-and-wider-event-scope.md).
+Detail in [ADR 0007](adr/0007-notices-and-wider-event-scope.md). The owner approved the
+categories, the cap and the six mapping calls below (2026-11-19, owner: "I approve all
+recommendations. Yes for all 1-5").
 
 - `contracts/filing-categories.json` version 2. Seven new event categories, counted toward
   the cap and summarised later: 회사 전망 / Company outlook (`outlook`: 장래사업ㆍ경영계획,
@@ -869,7 +871,7 @@ Detail in [ADR 0007](adr/0007-notices-and-wider-event-scope.md).
   revenue and profit against the prior year.
 - 수시공시의무관련사항(공정공시) is a generic name. The five read on DART (Kia, LG Chem,
   NAVER, Samsung Electronics, SK hynix) all announce shareholder-return plans, so it is
-  `shareholder_value`. To confirm with the owner.
+  `shareholder_value` (owner approved).
 - Company outlook is always attributed to the company and labelled as its outlook, and is
   never used in a comparison.
 - Notices form a separate kind (`notice_categories`), not an exclusion: IR events, record
@@ -891,5 +893,10 @@ Detail in [ADR 0007](adr/0007-notices-and-wider-event-scope.md).
 - Rows stored as excluded before this change carry old reason keys until the next ingest,
   which classifies every listed filing again and fetches the body of each one now in an
   event category. An export over a database not yet re-ingested fails on the unknown reasons.
-- `PRODUCT.md` still says "up to five recent event filings"; the owner approves
-  product-truth edits, so it is not changed here.
+- Approved mapping calls: the 30% change filing counts as `earnings` (a second results row
+  can share a date with the preliminary results); 수시공시의무관련사항 is `shareholder_value`;
+  기타경영사항(배당기준일변경안내) is a record-date notice; SEC 5.03 is `management` and
+  5.07 wins over it; derivative losses sit under Loans and guarantees; a corrected notice
+  shows only its corrected version.
+- `PRODUCT.md` now says up to ten filings, with the filing-first flow and the company
+  outlook rule (owner approved, 2026-11-19).
