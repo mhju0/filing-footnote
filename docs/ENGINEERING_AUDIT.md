@@ -1,3 +1,5 @@
+> History: this document describes Filing Digest, the predecessor project, and is kept as a record. Filing Footnote's current docs are PRODUCT.md and docs/design/DESIGN.md.
+
 # Engineering audit · 2026-09-05
 
 Scope: owner-authorized cleanup (D48), starting at `d752423`. API v0.4, schema
