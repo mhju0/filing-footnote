@@ -29,6 +29,7 @@ from app.build.verify import (
 )
 from app.clients.dart import DartClient, DocumentPayload
 from app.clients.dart_events import endpoint_for_report_key
+from app.clients.dart_tables import table_for
 from app.clients.sec import (
     SecClient,
     SecDocumentPayload,
@@ -46,7 +47,7 @@ from app.ingest.pinned import PinnedError, PinnedStore, scan_for_key
 from app.ingest.sec_events import collect_sec_events
 from app.ingest.sec_ingest import SecFilingAdapter
 from tests.build_seed import annual_filings
-from tests.event_fakes import FakeDartClient
+from tests.event_fakes import NAVER_RESULTS, FakeDartClient
 from tests.sec_fakes import FakeSecClient
 
 BUILD_PINNED = Path(__file__).parent / "fixtures" / "build" / "pinned"
@@ -230,19 +231,41 @@ def test_dart_events_save_each_structured_endpoint_once_and_the_facts_check(tmp_
     called = sorted(c[1] for c in client.calls if c[0] == "structured")
     assert called == ["piicDecsn.json", "tsstkDpDecsn.json"]  # one call per endpoint per company
     # The endpoint without data (status 013) is a response the parser consumed, so it is saved.
-    assert store.saved == [
+    structured = [p for p in store.saved if p.startswith("dart/structured/")]
+    assert structured == [
         "dart/structured/piicDecsn_035420.json",
         "dart/structured/tsstkDpDecsn_035420.json",
     ]
+    # The bodies whose table gave facts (D77) are saved as received.
+    assert sorted(p for p in store.saved if p.startswith("dart/document/")) == [
+        f"dart/document/{r}.xml" for r in NAVER_RESULTS
+    ]
     assert _tree(tmp_path) == sorted(store.saved)
     fixture = Path(__file__).parent / "fixtures/events/dart/structured/piicDecsn_035420.json"
-    assert (tmp_path / store.saved[0]).read_bytes() == fixture.read_bytes()
-    assert json.loads((tmp_path / store.saved[1]).read_bytes())["status"] == "013"
+    assert (tmp_path / structured[0]).read_bytes() == fixture.read_bytes()
+    assert json.loads((tmp_path / structured[1]).read_bytes())["status"] == "013"
+    body = Path(__file__).parent / "fixtures/events/classifier/dart/document/20260807800028.xml"
+    assert (tmp_path / "dart/document/20260807800028.xml").read_bytes() == body.read_bytes()
 
     pinned = PinnedResponses([tmp_path])
-    checked = 0
+    checked = tabled = 0
     for record in records:
         endpoint = endpoint_for_report_key(record.base_key)
+        table = table_for(record.classification.category, record.base_key)
+        if table is not None:
+            for fact in record.facts or []:
+                kwargs = dict(
+                    filing_id=f"dart:{record.key}", company_id="dart:00266961",
+                    stock_code="035420", origin=f"dartdoc:{table}.{fact.key}", fact_key=fact.key,
+                )  # fmt: skip
+                expected = (canonical_decimal(fact.value_decimal) if fact.value_decimal
+                            is not None else fact.value_date.isoformat())  # fmt: skip
+                path = check_fact(pinned, **kwargs, value_text=expected)
+                assert path == f"dart/document/{record.key}.xml"
+                with pytest.raises(VerifyError):
+                    check_fact(pinned, **kwargs, value_text=expected + "0")
+                tabled += 1
+            continue
         for fact in record.facts or []:
             if fact.error:
                 continue
@@ -257,11 +280,12 @@ def test_dart_events_save_each_structured_endpoint_once_and_the_facts_check(tmp_
                 filing_id=f"dart:{record.key}", company_id="dart:00266961", stock_code="035420",
                 origin=f"opendart:{endpoint}.{fact.source_field}", fact_key=fact.key,
             )  # fmt: skip
-            assert check_fact(pinned, **kwargs, value_text=expected) == store.saved[0]
+            assert check_fact(pinned, **kwargs, value_text=expected) == structured[0]
             with pytest.raises(VerifyError):
                 check_fact(pinned, **kwargs, value_text=expected + "0")
             checked += 1
     assert checked == 5  # every structured fact the ingest extracted was re-read
+    assert tabled == sum(len(r.facts or []) for r in records if r.key in NAVER_RESULTS) > 0
     # A directory that was not written to has nothing for verify to read.
     with pytest.raises(VerifyError, match="no pinned response"):
         check_fact(
@@ -292,17 +316,23 @@ def test_a_key_like_value_in_a_response_is_refused_and_reported_not_saved(tmp_pa
     store = PinnedStore(tmp_path)
     records, summary = _dart_collect(_KeyedStructured("035420"), store)
     assert store.commit() == []
-    assert store.saved == [] and _tree(tmp_path) == []
+    assert not any(p.startswith("dart/structured/") for p in store.saved)
+    assert not any(p.startswith("dart/structured/") for p in _tree(tmp_path))
     assert any(p.startswith("pinned dart/structured/piicDecsn_035420.json") for p in summary.problems)
     assert not summary.ok
     assert any(r.facts for r in records)  # the ingest itself carried on
 
 
-def test_the_documents_a_run_reads_are_not_saved(tmp_path) -> None:
+def test_only_the_documents_whose_table_gave_facts_are_saved(tmp_path) -> None:
     store = PinnedStore(tmp_path)
-    _dart_collect(FakeDartClient("035420"), store)
+    client = FakeDartClient("035420")
+    _dart_collect(client, store)
     store.commit()
-    assert all(path.startswith("dart/structured/") for path in _tree(tmp_path))
+    read = {c[1] for c in client.calls if c[0] == "document"}
+    assert len(read) > len(NAVER_RESULTS)  # the run read many more bodies than it saved
+    assert sorted(p for p in _tree(tmp_path) if not p.startswith("dart/structured/")) == [
+        f"dart/document/{r}.xml" for r in NAVER_RESULTS
+    ]
 
 
 # -- SEC events ----------------------------------------------------------------------------------
@@ -597,6 +627,7 @@ def test_the_stock_code_in_the_path_is_the_one_verify_reads_not_the_corp_code(
     assert set(store.saved) == {
         "dart/structured/piicDecsn_035420.json",
         "dart/structured/tsstkDpDecsn_035420.json",
+        *(f"dart/document/{r}.xml" for r in NAVER_RESULTS),
     }
     assert set(_tree(tmp_path)) == set(store.saved)
 

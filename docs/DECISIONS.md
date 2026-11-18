@@ -900,3 +900,84 @@ recommendations. Yes for all 1-5").
   shows only its corrected version.
 - `PRODUCT.md` now says up to ten filings, with the filing-first flow and the company
   outlook rule (owner approved, 2026-11-19).
+
+## D77 · Table filings get their figures from the table and a template summary · 2026-11-19 (`PROPOSED`)
+
+The owner approved the approach on 2026-11-19: a filing whose content is a regular table gets
+its figures from that table and its summary lines from a fixed template, with no model call.
+This entry records the wording and the open calls for the owner's yes or no.
+
+- `contracts/filing-facts.json` version 2 adds a `documents` block: five tables read from the
+  filing's own `document.xml` body by `app.clients.dart_tables`. `results` (잠정실적:
+  연결재무제표기준영업(잠정)실적 and 영업(잠정)실적 classified `earnings`), `change`
+  (매출액또는손익구조30%(대규모법인은15%)이상변경), `units` (영업(잠정)실적 classified
+  `unit_sales`), `dividend` (현금ㆍ현물배당결정) and `outlook` (영업실적등에대한전망 and its
+  연결 form, with each correction's before and after value). 장래사업ㆍ경영계획 is prose, not
+  a table: it has no facts and the model summarises it.
+- Values are exact `Decimal` in the unit the filing states (백만원, 조원, 억원, 천원, 원, 대,
+  %, 대수). `-` gives no fact. A table without the expected shape, or a number cell that does
+  not parse, gives no facts at all, and the model writes the summary. Facts go in
+  `filing_facts` as today; no schema change and no migration.
+- Origin in the bundle: `dartdoc:<table>.<key>`. The pinned check re-reads
+  `dart/document/<rcept_no>.xml` with the same parser. Ingest with `--save-pinned` writes that
+  file for each filing whose table gave facts. A release therefore needs one re-ingest with
+  `--save-pinned` before it can verify these facts.
+- Templates (`app.build.templates`, version `t1-2026-11-19`) are staged by `generate` with
+  model `template`, `prompt_version` set to the template version and no reviewer flags, and
+  logged to `calls.jsonl` with cache `template`. The guard (N1 to N8) decides staged or
+  withheld. Only the owner approves them; `--all-reviewed` skips them because they have no
+  reviewer result. The cache key is the template's input (table, category, title, correction
+  flag, caveat flag, facts) with model `template` and the template version, so a wording
+  change restages every template summary.
+- Direction words compare the table's current value with the prior one as `Decimal`. When the
+  prior value is zero or negative, the line states only that both figures were disclosed. No
+  percentage is written. Outlook lines only attribute and never compare with results.
+- `PROMPT_VERSION` becomes `m6-2026-11-19-a`: the event prompt gains guidance for outlook
+  filings no template covers, clarification, management, shareholder_value, meeting,
+  operations and lending. The outlook guidance tells the model to write outlook, target or
+  plan, never forecast.
+- Exported DART scope on 2026-11-19 after a re-ingest: earnings 17 templated, unit_sales 7,
+  dividend 4, outlook 2 templated and 4 by the model (장래사업ㆍ경영계획).
+
+Template wording. {M} is 매출액/revenue or 영업이익/operating income; base is 전년 같은 기간 /
+the same period a year earlier (results, units) or 직전 사업연도 / the previous fiscal year
+(change).
+
+| Line | Korean | English |
+|---|---|---|
+| Results 1 | 회사는 [연결 기준 ]잠정 실적을 공시했어요 | The company disclosed preliminary results[ on a consolidated basis]. |
+| Results 1, correction | 회사는 [연결 기준 ]잠정 실적을 고쳐 다시 공시했어요 | The company filed corrected preliminary results[ on a consolidated basis]. |
+| Change 1 | 회사는 [연결 기준 \| 별도 기준 ]매출액 또는 손익구조 변동을 공시했어요 | The company disclosed a change in revenue or profit structure[ on a consolidated basis \| on a separate basis]. |
+| Change 1, correction | 회사는 [연결 기준 ]매출액 또는 손익구조 변동 내용을 고쳐 다시 공시했어요 | The company filed a corrected disclosure of a change in revenue or profit structure[ on a consolidated basis]. |
+| Results and change 2, 3: up | 회사는 {M}이 {base}보다 늘었다고 밝혔어요 | The company said {M} increased from {base}. |
+| down | 회사는 {M}이 {base}보다 줄었다고 밝혔어요 | The company said {M} decreased from {base}. |
+| same | 회사는 {M}이 {base}와 같았다고 밝혔어요 | The company said {M} was unchanged from {base}. |
+| prior zero or negative | 회사는 {M}과 {base}의 {M}을 함께 공시했어요 | The company disclosed {M} together with the figure for {base}. |
+| Units 1 | 회사는 잠정 판매 실적을 공시했어요 | The company disclosed preliminary unit sales. |
+| Units 1, correction | 회사는 잠정 판매 실적을 고쳐 다시 공시했어요 | The company filed corrected preliminary unit sales. |
+| Units 2 | 회사는 전체 판매 대수가 전년 같은 기간보다 늘었다고 / 줄었다고 밝혔어요; 같았다고; or 회사는 전체 판매 대수와 전년 같은 기간의 판매 대수를 함께 공시했어요 | The company said the total number of units sold increased / decreased / was unchanged from the same period a year earlier; or The company disclosed the total number of units sold together with the figure for the same period a year earlier. |
+| Units 3 | The same with 누적 판매 대수 (the year to date) | The same with the cumulative number of units sold |
+| Dividend 1 | 회사는 [분기 \| 중간 \| 결산 ]현금 배당을 결정했어요 (현물 배당 for 현물배당) | The company decided on a [quarterly \| interim \| year-end ]cash dividend. (dividend in kind) |
+| Dividend 1, correction | 회사는 [분기 ]현금 배당 결정을 고쳐 다시 공시했어요 | The company filed a corrected decision on a [quarterly ]cash dividend. |
+| Dividend 2 | 회사는 보통주[와 종류주]의 주당 배당금[과 시가배당률]을 밝혔어요 | The company stated the dividend per share[ and the dividend yield] for common shares[ and other share classes]. |
+| Dividend 3 | 회사는 배당금 총액, 배당 기준일과 지급 예정일을 밝혔어요 (the items present) | The company stated the total dividend, the record date and the planned payment date. (the items present) |
+| Outlook 1 | 회사는 [연결 기준 ]영업실적 전망을 공시했어요 | The company disclosed its outlook for results[ on a consolidated basis]. |
+| Outlook 1, correction | 회사는 [연결 기준 ]영업실적 전망을 고쳐 다시 공시했어요 | The company filed a corrected outlook for results[ on a consolidated basis]. |
+| Outlook 2 | 회사는 {매출액, 영업이익, 세전이익, 당기순이익, 판매 목표, 기타 항목} 전망치를 밝혔어요 | The company stated outlook figures for {revenue, operating income, pre-tax income, net income, sales targets, other items}. |
+| Outlook 3, correction with figures | 회사는 고치기 전과 고친 후의 전망치를 함께 밝혔어요 | The company stated the outlook figures before and after the correction. |
+| Outlook 3, otherwise | 회사는 이 전망이 예측 정보로서 실제 결과와 다를 수 있다고 밝혔어요 | The company said the outlook is projected information and actual results may differ. |
+
+A template is used only when its facts are there: results and change need current and prior
+revenue and operating income; units need the total and the cumulative total with their
+year-earlier values; a dividend needs its kind, type, the common per-share amount and one
+line-three item; an outlook needs one figure, and line three needs either a correction with
+figures or the filing's 예측정보 caveat. Otherwise the model writes the summary.
+
+Open for the owner:
+
+- The lexicon blocks the word forecast in English (N3 `forecast*`). The templates and the
+  outlook prompt write outlook instead; the lexicon is unchanged. Allowing "the company's
+  forecast" in attributed form would be a lexicon change for the owner to decide.
+- Outlook item units are the filing's label in parentheses, such as 대수 for
+  판매목표(대수).
+- The new fact keys have no iOS labels yet; the app work is outside this change.

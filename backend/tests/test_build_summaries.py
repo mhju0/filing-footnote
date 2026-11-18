@@ -28,6 +28,7 @@ from app.build.model import (
     section_chunks,
 )
 from app.build.summaries import Target, generate, input_sha256, read_jsonl, select_targets
+from app.build.templates import template_input_sha256
 from app.build.verify import summary_problems
 from app.llm.base import LLMResult
 from app.llm.chat_completions import LLMApiError
@@ -579,7 +580,7 @@ def test_prompts_cover_the_second_pilot_mistakes() -> None:
         assert "Greater China is 중화권" in prompt  # Apple 10-K wrote 대만
         assert "never ~할 것이라고" in prompt  # Microsoft 8-K tripped N3
     assert "at most three" in summaries.annual_system_prompt("one_line")  # Apple one_line ran long
-    assert summaries.PROMPT_VERSION == "m6-2026-11-18-b"
+    assert summaries.PROMPT_VERSION == "m6-2026-11-19-a"
 
 
 def test_prompt_word_lists_come_from_the_lexicon() -> None:
@@ -799,7 +800,8 @@ def _approve(data: BuildInput, targets: list[Target], skip: frozenset = frozense
                  if t.section == "summary" else (ONE_LINE["ko_line1"], None, None),
                  (CLEAN["en_line1"], CLEAN["en_line2"], CLEAN["en_line3"])
                  if t.section == "summary" else (ONE_LINE["en_line1"], None, None))  # fmt: skip
-        key = input_sha256(t.source_text, MODEL, t.section)
+        key = (template_input_sha256(t.template, load_lexicon().version) if t.template
+               else input_sha256(t.source_text, MODEL, t.section))  # fmt: skip
         for lang, text in zip(("ko", "en"), lines, strict=True):
             rows.append(SummaryRow(t.filing_id, lang, t.section, *text, "approved", key))
     return dataclasses.replace(data, summaries=tuple(rows))

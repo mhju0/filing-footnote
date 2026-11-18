@@ -7,6 +7,7 @@ received, under ``DIR``:
 - ``sec/companyfacts/CIK<cik10>.json``
 - ``dart/structured/<endpoint>_<stock_code>.json``
 - ``sec/submissions/CIK<cik10>.json``
+- ``dart/document/<rcept_no>.xml`` (the body member of ``document.xml``, for table facts)
 
 Bodies are first *staged* in memory and written by :meth:`PinnedStore.commit` only after the
 run's database transaction has committed, so a run that fails or rolls back never replaces a
@@ -45,6 +46,10 @@ def sec_companyfacts_path(cik10: str) -> str:
 
 def dart_structured_path(endpoint: str, stock_code: str) -> str:
     return f"dart/structured/{endpoint}_{stock_code}.json"
+
+
+def dart_document_path(rcept_no: str) -> str:
+    return f"dart/document/{rcept_no}.xml"
 
 
 def sec_submissions_path(cik10: str) -> str:

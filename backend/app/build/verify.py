@@ -7,6 +7,7 @@ directory in order:
 - ``sec/companyfacts/CIK<10-digit cik>.json``
 - ``dart/structured/<endpoint>_<stock_code>.json`` (event facts, M3 layout)
 - ``sec/submissions/CIK<10-digit cik>.json`` (8-K facts: items and event date)
+- ``dart/document/<rcept_no>.xml`` (event facts read from a filing's table, D77)
 
 A pinned response is parsed and its row selected by the same code the ingest uses, and the
 figure must equal the stored value exactly, as a ``Decimal`` and as its canonical string. Any
@@ -49,7 +50,12 @@ from app.build.model import (
     required_summaries,
 )
 from app.clients.dart import DartApiError, DartClient
-from app.clients.dart_events import load_facts_contract, parse_structured_payload
+from app.clients.dart_events import (
+    load_facts_contract,
+    parse_structured_payload,
+    read_event_document,
+)
+from app.clients.dart_tables import parse_table_facts
 from app.clients.sec import SecApiError, parse_companyfacts_payload, parse_submissions_payload
 from app.filings.categories import load_contract as load_categories_contract
 from app.ingest.dart import _dart_financial_facts, period_descriptor
@@ -67,6 +73,7 @@ BASIS = "consolidated"
 _DART_TITLE_PERIOD_RE = re.compile(r"\(([0-9]{4})\.([0-9]{2})\)")
 _FISCAL_YEAR_LABEL_RE = re.compile(r"FY([0-9]{4})")
 _ORIGIN_RE = re.compile(r"opendart:([A-Za-z]+)\.([A-Za-z0-9_]+)")
+_DOCUMENT_ORIGIN_RE = re.compile(r"dartdoc:([a-z_]+)\.([a-z0-9_]+)")
 
 
 class VerifyError(Exception):
@@ -158,6 +165,13 @@ class PinnedResponses:
                 raise VerifyError(f"no pinned response {relative}")
         return self._cache[relative]
 
+    def load_bytes(self, relative: str) -> bytes:
+        for directory in self.directories:
+            path = directory / relative
+            if path.is_file():
+                return path.read_bytes()
+        raise VerifyError(f"no pinned response {relative}")
+
     def dart_annual(
         self,
         *,
@@ -240,16 +254,28 @@ class PinnedResponses:
             for fact in event.facts:
                 if fact.key != key or fact.error:
                     continue
-                if fact.value_decimal is not None:
-                    actual = canonical_decimal(fact.value_decimal)
-                elif fact.value_date is not None:
-                    actual = fact.value_date.isoformat()
-                else:
-                    actual = str(fact.value_text)
+                actual = _fact_text(fact)
                 if actual != expected:
                     raise VerifyError(f"{relative}: {rcept_no} {key} is {actual}, not {expected}")
                 return relative
         raise VerifyError(f"{relative}: no {key} for {rcept_no}")
+
+    def dart_document_fact(self, *, table: str, rcept_no: str, key: str, expected: str) -> str:
+        """Re-read a table fact from the pinned body with the ingest's own parser."""
+        relative = f"dart/document/{rcept_no}.xml"
+        if relative not in self._cache:
+            document = read_event_document(self.load_bytes(relative))
+            self._cache[relative] = {
+                name: parse_table_facts(name, document.rows) for name in _document_tables()
+            }
+        for fact in self._cache[relative][table]:
+            if fact.key != key:
+                continue
+            actual = _fact_text(fact)
+            if actual != expected:
+                raise VerifyError(f"{relative}: {key} is {actual}, not {expected}")
+            return relative
+        raise VerifyError(f"{relative}: no {key} in its {table} table")
 
     def sec_event_fact(
         self, *, cik10: str, accession: str, origin: str, key: str, expected: str
@@ -271,6 +297,19 @@ class PinnedResponses:
                 raise VerifyError(f"{relative}: {accession} {key} is {actual}, not {expected}")
             return relative
         raise VerifyError(f"{relative}: no {key} for {accession}")
+
+
+def _fact_text(fact: Any) -> str:
+    if fact.value_decimal is not None:
+        return canonical_decimal(fact.value_decimal)
+    if fact.value_date is not None:
+        return fact.value_date.isoformat()
+    return str(fact.value_text)
+
+
+@functools.cache
+def _document_tables() -> tuple[str, ...]:
+    return tuple(spec["table"] for spec in load_facts_contract()["documents"])
 
 
 def _require_equal(relative: str, metric: str, actual: Decimal, expected: Decimal) -> None:
@@ -341,7 +380,8 @@ def check_fact(
 ) -> str:
     """Re-read one event fact from its pinned response; return the response's path.
 
-    A DART fact is found by endpoint, stock code and 접수번호; a SEC fact by CIK (from
+    A DART fact is found by endpoint, stock code and 접수번호, or, for a table fact
+    (``dartdoc:<table>.<key>``), by 접수번호 in the pinned document; a SEC fact by CIK (from
     ``company_id``) and accession.
     """
     regulator, rcept_no = _split_id(filing_id)
@@ -353,6 +393,13 @@ def check_fact(
             raise VerifyError(f"SEC filing {filing_id} on non-SEC company {company_id}")
         return pinned.sec_event_fact(
             cik10=cik10, accession=rcept_no, origin=origin, key=fact_key, expected=value_text
+        )
+    document = _DOCUMENT_ORIGIN_RE.fullmatch(origin)
+    if regulator == "dart" and document is not None:
+        if document.group(1) not in _document_tables():
+            raise VerifyError(f"origin {origin!r} names no filing-facts document table")
+        return pinned.dart_document_fact(
+            table=document.group(1), rcept_no=rcept_no, key=fact_key, expected=value_text
         )
     match = _ORIGIN_RE.fullmatch(origin)
     if regulator != "dart" or match is None:

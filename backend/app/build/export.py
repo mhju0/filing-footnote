@@ -80,6 +80,7 @@ from app.build.model import (
     required_summaries,
     summary_input_sha256,
 )
+from app.build.templates import event_summary_key
 from app.build.verify import (
     BASIS,
     DEFAULT_PINNED_DIR,
@@ -516,14 +517,19 @@ def _event_filings(build: _Build, companies: dict[tuple[str, str], CompanyRow]) 
 def _facts_index() -> dict[tuple[str, str, str], tuple[str, int]]:
     """(regulator, fact key, source field) -> (origin, order in the contract).
 
-    A DART origin is ``opendart:<endpoint>.<field>``; a SEC origin is the contract's
-    ``sec:submissions.<field>`` as it stands.
+    A DART origin is ``opendart:<endpoint>.<field>``, or ``dartdoc:<table>.<key>`` for a fact
+    read from a filing's table; a SEC origin is the contract's ``sec:submissions.<field>`` as
+    it stands.
     """
     contract = load_facts_contract()
     index = {}
     for spec in contract["endpoints"]:
         for order, item in enumerate(spec["fields"]):
             origin = f"opendart:{spec['endpoint']}.{item['source_field']}"
+            index[("DART", item["key"], item["source_field"])] = (origin, order)
+    for spec in contract["documents"]:
+        for order, item in enumerate(spec["fields"]):
+            origin = f"dartdoc:{spec['table']}.{item['key']}"
             index[("DART", item["key"], item["source_field"])] = (origin, order)
     for order, item in enumerate(contract["sec"]["fields"]):
         index[("SEC", item["key"], item["source_field"])] = (item["source_field"], order)
@@ -741,11 +747,13 @@ def _companies(build: _Build, companies: dict[tuple[str, str], CompanyRow]) -> l
 
 def current_input_sha256(build: _Build, filing_id: str, section: str) -> str | None:
     """The key a summary of this filing and section has now (the summary build's cache key,
-    :func:`app.build.model.summary_input_sha256`), or None when there is no source text."""
+    :func:`app.build.model.summary_input_sha256`, or the template's for a templated event,
+    :func:`app.build.templates.event_summary_key`), or None when there is no source text."""
     if build.filing_kinds[filing_id] == "event":
-        source = event_source_text(build.events[filing_id])
-    else:
-        source = annual_source_text(build.annual[filing_id].filing, section)
+        event = build.events[filing_id]
+        return event_summary_key(event, event_source_text(event), build.options.llm_model,
+                                 build.options.prompt_version, load_lexicon().version)  # fmt: skip
+    source = annual_source_text(build.annual[filing_id].filing, section)
     if source is None:
         return None
     return summary_input_sha256(source, build.options.llm_model, section,

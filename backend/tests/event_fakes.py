@@ -12,7 +12,10 @@ DART = Path(__file__).parent / "fixtures" / "events" / "dart"
 CLASSIFIER_DOCUMENTS = Path(__file__).parent / "fixtures" / "events" / "classifier" / "dart" / "document"
 
 
-BLANK_BODY = "<html><body><p>본문 없음</p></body></html>".encode()
+# NAVER's 영업(잠정)실적 filings with a saved body: each is a results table (D77).
+NAVER_RESULTS = ("20260206800015", "20260430800024", "20260807800028", "20261112800028")
+
+BLANK_BODY ="<html><body><p>본문 없음</p></body></html>".encode()
 
 
 class _Response:
