@@ -828,17 +828,22 @@ owner approved adding them to the N1 lexicon.
   again; none was approved.
 - Two bad fixtures that use 하반기 as prediction examples (N3) now trip N1 as well.
 
-## D75 · US net income means the parent's share, as DART's does · 2026-11-18 (`PROPOSED`)
+## D75 · US net income means the parent's share, as DART's does · 2026-11-18 (`ACCEPTED`)
 
 SEC's `NetIncomeLoss` is net income attributable to the parent, but the mapper stored it as
 `net_income`, while DART stores the consolidated total (`ifrs-full_ProfitLoss`) there and
 the parent's share as `net_income_attributable`. The same key meant two things. Five US
 companies also had no Korean name, so their `name_ko` fell back to the English name.
-The owner has not yet approved the mapping or the names.
+The owner approved the mapping and the names (2026-11-18, owner: "1 yes").
 
 - SEC `NetIncomeLoss` now feeds `net_income_attributable` for all nine US companies.
-- SEC `ProfitLoss` feeds `net_income` only where a company reports it (the pinned data has
-  it for Walmart, Costco and Tesla). The other six have no `net_income` figure.
+- SEC `ProfitLoss` feeds `net_income` only where a company reports it. In the pinned data
+  Walmart and Tesla report it for every year; Costco reports it through FY2025, but its
+  FY2026 10-K does not, so Costco's latest year has no `net_income`. The other six have no
+  `net_income` figure. There is no fallback between the two tags.
+- The company digest's metric list (`backend/app/digests/metrics.py`) has `net_income` but
+  not `net_income_attributable`, so after re-ingest its net income card disappears for
+  those US companies.
 - `net_income_attributable` was already in `contracts/financial-vocabulary.json` and the
   Swift enums; no vocabulary change.
 - `contracts/family-glossary.json` gains 아마존, 코스트코, 알파벳, 메타 and 월마트; the iOS
