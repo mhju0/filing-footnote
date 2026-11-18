@@ -1,3 +1,5 @@
+> History: this document describes Filing Digest, the predecessor project, and is kept as a record. Filing Footnote's current docs are PRODUCT.md and docs/design/DESIGN.md.
+
 # Qualified local coverage
 
 As of 2026-09-09, the owner's local corpus contains **18 companies, 23 filings,

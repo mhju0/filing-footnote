@@ -1,3 +1,5 @@
+> History: this document describes Filing Digest, the predecessor project, and is kept as a record. Filing Footnote's current docs are PRODUCT.md and docs/design/DESIGN.md.
+
 # DART Integration Notes
 
 Concise reference for the response behaviors encoded in

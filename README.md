@@ -16,7 +16,7 @@ The finished app will run from a bundled read-only SQLite file built on the owne
 
 ## Status · 현재 상태
 
-**Status:** v0.5.2 code base inherited from Filing Digest; Filing Footnote v0.1 is in progress.
+**Status:** v0.5.2 code base inherited from Filing Digest, being replaced piece by piece. Filing Footnote v0.1 is in development; nothing is released and no site is published.
 
 | Area | Today | Planned for v0.1 |
 |---|---|---|
@@ -25,7 +25,7 @@ The finished app will run from a bundled read-only SQLite file built on the owne
 | App | Filing Digest's iPhone app (SwiftUI) | One SwiftUI app for iPhone, iPad and Mac |
 | Checks | `scripts/check.sh` runs lint and offline backend tests | Contract tests for the SQLite file and the text guards |
 
-The code in this repository is still Filing Digest's backend and iPhone app. The event-filing pipeline, the SQLite build and the multiplatform app are planned and not built. [PRODUCT.md](PRODUCT.md) describes the intended product; [docs/adr/](docs/adr/) holds the proposed decisions.
+The code in this repository is mostly still Filing Digest's backend and iPhone app. Event-filing ingest and the bundle build (`backend/app/build/`) exist and are being tested; the finished SQLite file and the multiplatform app are not built. [PRODUCT.md](PRODUCT.md) describes the intended product; [docs/adr/](docs/adr/) holds the architecture decisions.
 
 ## Run the checks
 

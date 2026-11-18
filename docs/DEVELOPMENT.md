@@ -1,3 +1,5 @@
+> History: this document describes Filing Digest, the predecessor project, and is kept as a record. Filing Footnote's current docs are PRODUCT.md and docs/design/DESIGN.md.
+
 # Development
 
 Local setup, data ingestion, tests and device builds for Filing Digest. The [README](../README.md) gives the overview; [ARCHITECTURE.md](ARCHITECTURE.md) explains the design.

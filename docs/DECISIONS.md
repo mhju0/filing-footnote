@@ -901,7 +901,29 @@ recommendations. Yes for all 1-5").
 - `PRODUCT.md` now says up to ten filings, with the filing-first flow and the company
   outlook rule (owner approved, 2026-11-19).
 
-## D77 · Table filings get their figures from the table and a template summary · 2026-11-19 (`PROPOSED`)
+## D77 · Predecessor site removed · 2026-11-19 (`ACCEPTED`)
+
+D59 to D61 were already accepted by D62, D63 and D64, so this entry records only the
+removal. The public GitHub Pages site under `docs/` (`index.html`, `contact.html`, their
+scripts, styles, fonts, favicon, social preview and captured screenshots) described
+Filing Digest and linked to Filing Agent. A portfolio reviewer must see Filing Footnote
+only, so the site and `backend/tests/test_portfolio_demo.py` (which asserted it) are
+deleted; the repository history keeps them. `docs/screenshots/verification/` stays as a
+dated record.
+
+- `docs/ARCHITECTURE.md`, `DEVELOPMENT.md`, `ENGINEERING_AUDIT.md`, `COVERAGE.md` and
+  `dart-api-notes.md` get a one-line history banner and nothing else; `CONTEXT.md` is
+  retitled Filing Footnote.
+- The README status section now says Filing Footnote is in development.
+- `.github/dependabot.yml` drops the "closed for maintenance" wording.
+- Not changed: the `filing_digest` database, user and password defaults in
+  `docker-compose.yml`, `.github/workflows/ci.yml` and `backend/app/config.py`. They are
+  local-development defaults that existing Compose volumes and local `.env` files depend
+  on; a rename waits for the backend replacement.
+- The `filing-agent.vercel.app` link in the iOS ledger row (`ios/`) is outside this
+  change and remains until the app is replaced.
+
+## D78 · Table filings get their figures from the table and a template summary · 2026-11-19 (`PROPOSED`)
 
 The owner approved the approach on 2026-11-19: a filing whose content is a regular table gets
 its figures from that table and its summary lines from a fixed template, with no model call.
