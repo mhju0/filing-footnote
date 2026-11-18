@@ -23,21 +23,35 @@ enum Library: Sendable {
     /// Opens `footnote.sqlite` from the app bundle. Debug builds accept a development bundle;
     /// release builds refuse one, so a build with unapproved summaries cannot ship by accident.
     static func loadBundled() -> Library {
-        #if DEBUG
         let arguments = ProcessInfo.processInfo.arguments
-        let requireRelease = arguments.contains("-FootnoteRequireRelease")
+        let requireRelease = requiresRelease(isDebugBuild: isDebugBuild, arguments: arguments)
+        #if DEBUG
         // UI tests open the FootnoteKit fixture: `-FootnoteBundle <absolute path>`.
         if let index = arguments.firstIndex(of: "-FootnoteBundle"), index + 1 < arguments.count {
             return load(url: URL(fileURLWithPath: arguments[index + 1]), labels: FactLabels.bundled,
                         requireRelease: requireRelease)
         }
-        #else
-        let requireRelease = true
         #endif
         guard let url = Bundle.main.url(forResource: "footnote", withExtension: "sqlite") else {
             return .failed(.cannotOpen(path: "footnote.sqlite", message: "missing from the app bundle"))
         }
         return load(url: url, labels: FactLabels.bundled, requireRelease: requireRelease)
+    }
+
+    /// False in the Release configuration. Unit tests build Debug, so they test
+    /// `requiresRelease(isDebugBuild: false, …)` rather than this constant.
+    static let isDebugBuild: Bool = {
+        #if DEBUG
+        true
+        #else
+        false
+        #endif
+    }()
+
+    /// Whether this launch refuses a development bundle: always in a release build; in a
+    /// debug build only with `-FootnoteRequireRelease`.
+    static func requiresRelease(isDebugBuild: Bool, arguments: [String]) -> Bool {
+        !isDebugBuild || arguments.contains("-FootnoteRequireRelease")
     }
 
     static func load(url: URL, labels: FactLabels, requireRelease: Bool) -> Library {

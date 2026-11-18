@@ -359,9 +359,11 @@ struct FilingFormattingTests {
             == "\(Formatting.minus)1조 8,194억 4,900만원")
         #expect(Formatting.exactAmount(Support.decimal("7.49"), currency: "USD", language: .ko) == "7.49 달러")
         #expect(Formatting.exactAmount(0, currency: "KRW", language: .ko) == "0원")
-        // English keeps the board's two places in the largest unit.
+        // English writes every digit, grouped.
         #expect(Formatting.exactAmount(Support.decimal("271545960000"), currency: "KRW", language: .en)
-            == "₩271.55 billion")
+            == "₩271,545,960,000")
+        #expect(Formatting.exactAmount(Support.decimal("-7.5"), currency: "USD", language: .en)
+            == "\(Formatting.minus)$7.50")
     }
 
     @Test func statedUnits() {
@@ -369,7 +371,20 @@ struct FilingFormattingTests {
             Support.decimal("45110247"), unit: "백만원", fallbackCurrency: "KRW", language: .ko)
         #expect(hundredMillion == "45조 1,102억 4,700만원")
         #expect(Formatting.stated(Support.decimal("45110247"), unit: "백만원", fallbackCurrency: "KRW", language: .en)
+            == "₩45,110,247,000,000")
+        // Compact, as the company page writes it; only money is shortened.
+        #expect(Formatting.stated(
+            Support.decimal("45110247"), unit: "백만원", fallbackCurrency: "KRW", language: .ko, precision: .compact)
+            == "45조 1,102억원")
+        #expect(Formatting.stated(
+            Support.decimal("45110247"), unit: "백만원", fallbackCurrency: "KRW", language: .en, precision: .compact)
             == "₩45.11 trillion")
+        #expect(Formatting.stated(
+            Support.decimal("917385"), unit: "shares", fallbackCurrency: "KRW", language: .en, precision: .compact)
+            == "917,385 shares")
+        #expect(Formatting.stated(
+            Support.decimal("0.8"), unit: "%", fallbackCurrency: "KRW", language: .en, precision: .compact)
+            == "0.8%")
         #expect(Formatting.stated(Support.decimal("54684"), unit: "억원", fallbackCurrency: "KRW", language: .ko)
             == "5조 4,684억원")
         #expect(Formatting.stated(Support.decimal("4000000"), unit: "대수", fallbackCurrency: "KRW", language: .ko)
@@ -378,7 +393,9 @@ struct FilingFormattingTests {
             == "4,000,000 units")
         #expect(Formatting.stated(Support.decimal("917385"), unit: "shares", fallbackCurrency: "KRW", language: .ko)
             == "917,385주")
-        #expect(Formatting.stated(Support.decimal("0.8"), unit: "%", fallbackCurrency: "KRW", language: .en) == "0.80%")
+        #expect(Formatting.stated(Support.decimal("0.8"), unit: "%", fallbackCurrency: "KRW", language: .en) == "0.8%")
+        #expect(Formatting.stated(Support.decimal("-12.345"), unit: "%", fallbackCurrency: "KRW", language: .ko)
+            == "−12.345%")
         #expect(Formatting.stated(Support.decimal("4950"), unit: "KRW_PER_SHARE", fallbackCurrency: "KRW", language: .en)
             == "₩4,950")
         #expect(Formatting.stated(1, unit: "furlongs", fallbackCurrency: "KRW", language: .ko) == nil)
@@ -404,13 +421,14 @@ struct FigureHistoryTests {
         let store = try BundleStore(contentsOf: Support.fixtureURL)
         let history = try #require(FigureHistory(store: store, companyID: "dart:00126380", metric: .revenue))
         #expect(history.years.map(\.fiscalYear) == [2025, 2024])
-        guard case .result(let change)? = history.latestChange else {
+        guard case .result(let change)? = history.change(fiscalYear: 2025) else {
             Issue.record("no change")
             return
         }
         #expect(change.percentChange == Support.decimal("16.20"))
         let apple = try #require(FigureHistory(store: store, companyID: "sec:0000320193", metric: .revenue))
         #expect(apple.years.count == 1)
-        #expect(apple.latestChange == nil)
+        #expect(apple.change(fiscalYear: apple.years[0].fiscalYear) == nil)
+        #expect(history.change(fiscalYear: 2024) == nil)
     }
 }

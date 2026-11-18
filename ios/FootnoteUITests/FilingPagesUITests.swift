@@ -39,6 +39,14 @@ final class FilingPagesUITests: XCTestCase {
         XCTAssertTrue(element("요약을 확인하고 있어요", in: app).exists)
         XCTAssertTrue(element("공시의 숫자", in: app).exists)
         XCTAssertTrue(element("처분 주식 수, 4,690주", in: app).exists)
+        // An amount shows shortened; VoiceOver reads the exact value, and a tap shows it.
+        let amount = element("처분 금액, 11억 3,498만원", in: app)
+        reveal(amount, in: app)
+        XCTAssertTrue(amount.exists)
+        XCTAssertTrue(app.staticTexts["11억원"].exists)
+        XCTAssertFalse(app.staticTexts["정확한 값 11억 3,498만원"].exists)
+        amount.tap()
+        XCTAssertTrue(app.staticTexts["정확한 값 11억 3,498만원"].waitForExistence(timeout: 2))
 
         let original = app.buttons["open-original"]
         reveal(original, in: app)
@@ -57,7 +65,7 @@ final class FilingPagesUITests: XCTestCase {
         XCTAssertTrue(app.descendants(matching: .any)["filing-page"].waitForExistence(timeout: 10))
         XCTAssertTrue(app.staticTexts["회사는 이 공시를 제출했다고 밝혔어요"].exists)
         XCTAssertFalse(element("요약을 확인하고 있어요", in: app).exists)
-        XCTAssertTrue(app.staticTexts["공시를 바탕으로 미리 써 두고, 게시 전에 확인한 문장이에요."].exists)
+        XCTAssertTrue(app.staticTexts["공시를 바탕으로 쓰고, 게시 전에 확인한 문장이에요."].exists)
     }
 
     @MainActor func testAnnualPageShowsTwoYearsAndOpensAFigure() throws {

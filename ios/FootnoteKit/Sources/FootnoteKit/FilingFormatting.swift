@@ -28,16 +28,23 @@ public enum StatedUnit: Sendable, Hashable {
     }
 }
 
+/// How a money amount is written: `compact` as on the company page (`333조 6,059억원`,
+/// `₩333.61 trillion`), `exact` with every digit.
+public enum AmountPrecision: Sendable, Hashable {
+    case compact
+    case exact
+}
+
 extension Formatting {
     // MARK: - Exact amounts
 
-    /// A money amount as a filing page shows it. Korean writes every digit in 조, 억 and 만
-    /// with nothing rounded (`2,715억 4,596만원`, `45조 1,102억 4,700만원`); English uses
-    /// `amount(_:currency:language:)` (`₩271.55 billion`), as the approved boards do.
+    /// A money amount with nothing rounded. Korean writes every digit in 조, 억 and 만
+    /// (`2,715억 4,596만원`, `45조 1,102억 4,700만원`); English writes the full grouped digits
+    /// (`₩271,545,960,000`).
     public static func exactAmount(_ value: Decimal, currency: String, language: Language) -> String {
-        guard language == .ko else { return amount(value, currency: currency, language: language) }
         let sign = value < 0 ? minus : ""
         let magnitude = value < 0 ? -value : value
+        guard language == .ko else { return sign + currencySymbol(currency) + exact(magnitude) }
         let suffix = switch currency {
         case "KRW": "원"
         case "USD": " 달러"
@@ -68,23 +75,35 @@ extension Formatting {
         return sign + parts.joined(separator: " ") + suffix
     }
 
-    /// A value in its stated unit: money as `exactAmount`, units as `4,000,000대` or
-    /// `4,000,000 units`, shares as `917,385주` or `917,385 shares`, a percentage with two
-    /// places. Nil for a unit `StatedUnit` does not know.
+    /// A value in its stated unit: money as `amount` (compact) or `exactAmount`, units as
+    /// `4,000,000대` or `4,000,000 units`, shares as `917,385주` or `917,385 shares`, a
+    /// percentage exactly as the filing states it (`0.8%`). Only money is ever shortened. Nil
+    /// for a unit `StatedUnit` does not know.
     public static func stated(
-        _ value: Decimal, unit: String?, fallbackCurrency: String, language: Language
+        _ value: Decimal, unit: String?, fallbackCurrency: String, language: Language,
+        precision: AmountPrecision = .exact
     ) -> String? {
         guard let stated = StatedUnit(unit, fallbackCurrency: fallbackCurrency) else { return nil }
         switch stated {
         case .money(let currency, let scale):
-            return exactAmount(value * scale, currency: currency, language: language)
+            return precision == .compact
+                ? amount(value * scale, currency: currency, language: language)
+                : exactAmount(value * scale, currency: currency, language: language)
         case .units:
             return number(value) + (language == .ko ? "대" : " units")
         case .shares:
             return number(value) + (language == .ko ? "주" : " shares")
         case .percent:
-            return percent(value)
+            return statedPercent(value)
         }
+    }
+
+    /// A percentage a filing states, with its digits as written and the true minus sign:
+    /// `0.8%`, `12.345%`. A computed rate uses `percent(_:)`, two places, instead.
+    public static func statedPercent(_ value: Decimal) -> String {
+        let magnitude = value < 0 ? -value : value
+        let digits = groupedNumber(DecimalText.canonical(magnitude)) + "%"
+        return value < 0 ? minus + digits : digits
     }
 
     // MARK: - Periods

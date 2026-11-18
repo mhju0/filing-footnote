@@ -46,7 +46,29 @@ struct FilingPageView: View {
                     block: block, currency: page.company.currency, labels: labels, isFirst: index == 0)
                     .id(index == 0 ? PageScroll.numbers : "block-\(index)")
             }
+            if hasAmounts {
+                Section {
+                    SectionNote(text: PageCopy.amountsShortened(language))
+                        .listRowBackground(Theme.surface)
+                }
+            }
             SourceSection(source: page.source)
+        }
+    }
+
+    /// Whether any number on the page is a money amount, the only kind that is shortened.
+    private var hasAmounts: Bool {
+        let units: [String?] = page.blocks.flatMap { block -> [String?] in
+            switch block {
+            case .comparison(let block): block.rows.map(\.unit)
+            case .outlook(let block): block.items.map(\.unit)
+            case .rows(let rows): rows.compactMap {
+                if case .stated(_, let unit) = $0.value { unit } else { nil }
+            }
+            }
+        }
+        return units.contains {
+            if case .money? = StatedUnit($0, fallbackCurrency: page.company.currency) { true } else { false }
         }
     }
 
@@ -93,9 +115,7 @@ private struct FactBlockSection: View {
             }
         case .rows(let rows):
             Section {
-                ForEach(rows, id: \.self) { row in
-                    FactRow(label: name(row), value: value(row.value))
-                }
+                ForEach(rows, id: \.self) { row in factRow(row) }
             } header: {
                 if isFirst { Text(words: PageCopy.numbers(language)) }
             }
@@ -112,18 +132,28 @@ private struct FactBlockSection: View {
         }
     }
 
-    private func stated(_ value: Decimal, unit: String?) -> String {
-        Formatting.stated(value, unit: unit, fallbackCurrency: currency, language: language)
+    /// A value in its stated unit; money in the company page's compact form unless `exact`.
+    private func stated(_ value: Decimal, unit: String?, precision: AmountPrecision = .compact) -> String {
+        Formatting.stated(value, unit: unit, fallbackCurrency: currency, language: language, precision: precision)
             ?? Formatting.number(value) + (unit.map { " \($0)" } ?? "")
+    }
+
+    /// The exact form of a value, when it differs from the shortened one.
+    private func exact(_ value: Decimal, unit: String?) -> String? {
+        let full = stated(value, unit: unit, precision: .exact)
+        return full == stated(value, unit: unit) ? nil : full
     }
 
     private func comparedRow(_ row: ComparedValue, kind: ComparisonBlock.Kind) -> some View {
         var details: [String] = []
-        var spoken = [row.name.text(language), stated(row.current, unit: row.unit)]
+        var spoken = [row.name.text(language), stated(row.current, unit: row.unit, precision: .exact)]
+        var exactLines = exact(row.current, unit: row.unit).map { [PageCopy.exactValue($0, language)] } ?? []
         if let base = row.base {
-            let line = PageCopy.baseValue(stated(base, unit: row.unit), kind: kind, language)
-            details.append(line)
-            spoken.append(line)
+            details.append(PageCopy.baseValue(stated(base, unit: row.unit), kind: kind, language))
+            spoken.append(PageCopy.baseValue(stated(base, unit: row.unit, precision: .exact), kind: kind, language))
+            if let full = exact(base, unit: row.unit) {
+                exactLines.append(PageCopy.baseValue(full, kind: kind, language))
+            }
         }
         if let change = row.change {
             details.append(Formatting.percentChange(change, language: language))
@@ -134,16 +164,34 @@ private struct FactBlockSection: View {
         }
         return FactRow(
             label: row.name.text(language), value: stated(row.current, unit: row.unit),
-            details: details, spoken: spoken.joined(separator: ", "), layout: .split)
+            details: details, spoken: spoken.joined(separator: ", "), exact: exactLines)
     }
 
     private func outlookRow(_ item: OutlookItem, year: String?) -> some View {
-        let details = item.before.map {
-            [PageCopy.beforeCorrection(stated($0, unit: item.unit), language)]
-        } ?? []
+        let label = item.name(language, blockYear: year)
+        var details: [String] = []
+        var spoken = [label, stated(item.value, unit: item.unit, precision: .exact)]
+        var exactLines = exact(item.value, unit: item.unit).map { [PageCopy.exactValue($0, language)] } ?? []
+        if let before = item.before {
+            details.append(PageCopy.beforeCorrection(stated(before, unit: item.unit), language))
+            spoken.append(PageCopy.beforeCorrection(stated(before, unit: item.unit, precision: .exact), language))
+            if let full = exact(before, unit: item.unit) {
+                exactLines.append(PageCopy.beforeCorrection(full, language))
+            }
+        }
         return FactRow(
-            label: item.name(language, blockYear: year), value: stated(item.value, unit: item.unit),
-            details: details, layout: .split)
+            label: label, value: stated(item.value, unit: item.unit), details: details,
+            spoken: spoken.joined(separator: ", "), exact: exactLines)
+    }
+
+    private func factRow(_ row: FactRowValue) -> some View {
+        let label = name(row)
+        guard case .stated(let amount, let unit) = row.value, let full = exact(amount, unit: unit) else {
+            return FactRow(label: label, value: value(row.value))
+        }
+        return FactRow(
+            label: label, value: value(row.value), spoken: label + ", " + full,
+            exact: [PageCopy.exactValue(full, language)])
     }
 
     /// The plain name, else the contract's name for the fact.

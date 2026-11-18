@@ -58,11 +58,11 @@ struct RouteDestination: View {
             }
         case .filing(let id):
             FilingDestination(store: store, labels: labels, filingID: id)
-        case .figure(let companyID, let metric):
+        case .figure(let companyID, let metric, let fiscalYear):
             if let metric = ReportedMetric(rawValue: metric),
                let history = FigureHistory(store: store, companyID: companyID, metric: metric)
             {
-                FigureView(store: store, history: history)
+                FigureView(store: store, history: history, fiscalYear: fiscalYear)
             }
         }
     }
@@ -149,9 +149,8 @@ struct SplitShell: View {
         } content: {
             content
                 .environment(\.filingSelection, $filingID)
-                #if os(macOS)
+                // Wide enough for a company's large title on iPad ("Samsung Electronics").
                 .navigationSplitViewColumnWidth(min: 360, ideal: 420)
-                #endif
         } detail: {
             NavigationStack {
                 Group {

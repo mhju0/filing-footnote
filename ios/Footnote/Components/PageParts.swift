@@ -106,16 +106,10 @@ struct TintNote: View {
     }
 }
 
-/// A label and value row. Any `details` lines go under the value.
+/// A label and value row: the value on the right while label and value fit on one line,
+/// else under the label, so a long label wraps instead of squeezing the value. Any
+/// `details` lines go under the value; any `exact` lines appear under the row on a tap.
 struct FactRow: View {
-    enum Layout {
-        /// The value on the right while it fits on one line, else under the label.
-        case adaptive
-        /// Always the value column on the right, wrapping between words, so every row of a
-        /// compared block lines up the same way.
-        case split
-    }
-
     @Environment(\.dynamicTypeSize) private var typeSize
     let label: String
     let value: String
@@ -123,21 +117,16 @@ struct FactRow: View {
     var tag: String?
     /// What VoiceOver reads; the visible text when nil.
     var spoken: String?
-    var layout: Layout = .adaptive
+    /// The exact values behind a shortened amount, shown when the row is tapped.
+    var exact: [String] = []
+    /// VoiceOver spells the value character by character (receipt and accession numbers).
+    var spellsOutValue = false
+    @State private var showsExact = false
 
     var body: some View {
-        Group {
+        VStack(alignment: .leading, spacing: 4) {
             if typeSize.isAccessibilitySize {
                 stacked
-            } else if layout == .split {
-                // Split rows carry short metric and item names: the label stays on one line
-                // (a squeezed English word would be hyphenated) and the value column takes
-                // the rest, wrapping between words.
-                HStack(alignment: .firstTextBaseline, spacing: 12) {
-                    labelText.fixedSize()
-                    Spacer(minLength: 8)
-                    valueColumn
-                }
             } else {
                 ViewThatFits(in: .horizontal) {
                     HStack(alignment: .firstTextBaseline, spacing: 12) {
@@ -148,12 +137,31 @@ struct FactRow: View {
                     stacked
                 }
             }
+            if showsExact {
+                ForEach(Array(exact.enumerated()), id: \.offset) { _, line in
+                    Text(words: line)
+                        .font(.footnote)
+                        .monospacedDigit()
+                        .foregroundStyle(Theme.ink)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
         }
         .padding(.vertical, 2)
         .frame(minHeight: Theme.minTarget)
+        .contentShape(Rectangle())
+        .onTapGesture { if !exact.isEmpty { showsExact.toggle() } }
         .listRowBackground(Theme.surface)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(spoken ?? ([label, value] + (tag.map { [$0] } ?? []) + details).joined(separator: ", "))
+        .accessibilityLabel(accessibilityText)
+    }
+
+    private var accessibilityText: Text {
+        if let spoken { return Text(spoken) }
+        let rest = (tag.map { [$0] } ?? []) + details
+        let valueText = spellsOutValue ? Text(value).speechSpellsOutCharacters() : Text(value)
+        return rest.reduce(Text(label + ", ") + valueText) { $0 + Text(", " + $1) }
     }
 
     private var valueColumn: some View {
@@ -225,7 +233,8 @@ struct SourceSection: View {
         Section {
             FactRow(label: PageCopy.form(language), value: source.form)
             FactRow(label: PageCopy.filed(language), value: Formatting.fullDate(source.filedOn, language: language))
-            FactRow(label: PageCopy.receiptNumber(source.regulator, language), value: source.receiptNumber)
+            FactRow(label: PageCopy.receiptNumber(source.regulator, language), value: source.receiptNumber,
+                    spellsOutValue: true)
         } header: {
             Text(words: PageCopy.original(language))
         }

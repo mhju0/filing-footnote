@@ -1217,9 +1217,21 @@ built from two FootnoteKit models, `FilingPage` and `AnnualPage`, so `swift test
 what each page shows; the SwiftUI views only lay them out.
 
 - Numbers come from `filing_facts` in their stated unit. `StatedUnit` maps the unit
-  column (`백만원`, `억원`, `대`, `shares`, `%`, currency codes) to a scale, and Korean
-  amounts are written in full 조, 억 and 만 groups with nothing rounded
-  (`Formatting.exactAmount`). English keeps the two-place style of the approved boards.
+  column (`백만원`, `억원`, `대`, `shares`, `%`, currency codes) to a scale.
+- Lead decision (2026-11-19, PR #33 review, under delegation): on the filing and annual
+  pages a money amount shows in the company page's compact form in both languages
+  (`333조 6,059억원`, `₩333.61 trillion`; `Formatting.amount`), and each page with amounts
+  carries one note: "금액은 줄여서 보여 줘요. 숫자를 누르면 정확한 값을 볼 수 있어요." /
+  "Amounts are shortened. Tap a figure to see the exact value." The exact value
+  (`Formatting.exactAmount`: Korean in full 조, 억 and 만 groups, English in full grouped
+  digits) is on the figure screen, and on a filing page under the row when it is tapped;
+  VoiceOver always reads the exact value. Shares, units and dates are never shortened. A
+  percentage the filing states shows exactly as stated; a computed rate keeps two places.
+- The figure screen compares the year of the report it was opened from with the year
+  before (`Route.figure` carries that fiscal year), not the newest year in the bundle.
+- Release wiring: `Library.requiresRelease(isDebugBuild:arguments:)` decides whether a
+  launch calls `requireRelease`, and is unit tested; only the `#if DEBUG` constant fed
+  into it is outside the Debug test build.
 - A results, change or unit-sales table becomes a compared block: each figure with the
   base figure the filing itself states beside it (the same period a year earlier, or the
   previous fiscal year). The rate comes from `Calculator.percentage` and shows as sign

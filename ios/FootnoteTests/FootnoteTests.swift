@@ -193,13 +193,24 @@ struct FilingPageTests {
     }
 
     /// Roadmap I7: in a release-flag build, every sentence a page renders is an approved
-    /// row, and a bundle holding any other review state does not open at all.
+    /// row, and a bundle holding any other review state does not open at all. A staged row
+    /// cannot sit beside an approved one in a bundle that opens (BundleStore refuses it, the
+    /// second half), so the first half seeds a filing approved in Korean only: Korean shows
+    /// that line, English shows none.
     @Test func releaseBuildRendersApprovedSummariesOnly() throws {
-        let release = try Self.edited("UPDATE build_meta SET allow_unapproved = 0;")
+        let seeded = "dart:20261029000539"
+        let release = try Self.edited("""
+            UPDATE build_meta SET allow_unapproved = 0;
+            INSERT INTO filing_summaries VALUES
+              ('\(seeded)', 'ko', 'summary', '회사는 자기주식을 사기로 했다고 밝혔어요.', NULL, NULL, 'approved', 'x');
+            """)
         guard case .ready(let store, _) = Library.load(url: release, labels: .bundled, requireRelease: true) else {
             Issue.record("a release bundle did not open")
             return
         }
+        let page = try #require(FilingPage(store: store, filingID: seeded))
+        #expect(page.summaryLines(.ko) == ["회사는 자기주식을 사기로 했다고 밝혔어요."])
+        #expect(page.summaryLines(.en).isEmpty)
         var rendered = 0
         for filing in store.filings {
             for language in Language.allCases {
@@ -229,6 +240,15 @@ struct FilingPageTests {
             return
         }
         #expect(error == .invalidValue(table: "filing_summaries", column: "review_state", value: "staged"))
+    }
+
+    /// The launch wiring: a release build always calls `requireRelease`; a debug build only
+    /// when asked. `Library.isDebugBuild` is the `#if DEBUG` constant fed into this.
+    @Test func releaseBuildAlwaysRequiresARelease() {
+        #expect(Library.requiresRelease(isDebugBuild: false, arguments: []))
+        #expect(Library.requiresRelease(isDebugBuild: false, arguments: ["-FootnoteBundle", "/tmp/x.sqlite"]))
+        #expect(!Library.requiresRelease(isDebugBuild: true, arguments: []))
+        #expect(Library.requiresRelease(isDebugBuild: true, arguments: ["-FootnoteRequireRelease"]))
     }
 
     /// A number the plain names do not cover is named from the fact contract.

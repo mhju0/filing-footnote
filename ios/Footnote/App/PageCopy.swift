@@ -40,8 +40,16 @@ enum PageCopy {
     /// from a template or a model, so the note covers both.
     static func howWritten(_ language: Language) -> String {
         language(
-            "공시를 바탕으로 미리 써 두고, 게시 전에 확인한 문장이에요.",
-            "Written in advance from the filing and checked before publishing.")
+            "공시를 바탕으로 쓰고, 게시 전에 확인한 문장이에요.",
+            "Written from the filing and checked before publishing.")
+    }
+
+    /// Lead decision (D83): pages show money amounts in the company page's compact form, and
+    /// the exact value on tap. One sentence per line, so neither wraps a lone word.
+    static func amountsShortened(_ language: Language) -> String {
+        language(
+            "금액은 줄여서 보여 줘요.\n숫자를 누르면 정확한 값을 볼 수 있어요.",
+            "Amounts are shortened.\nTap a figure to see the exact value.")
     }
 
     // MARK: - Outlook (board 16)
@@ -62,6 +70,11 @@ enum PageCopy {
                 : language("\(year)년 판매 목표 (대수)", "\(year) sales target (units)")
         }
         return year.isEmpty ? language("회사 전망", "Company outlook") : language("\(year)년 전망", "\(year) outlook")
+    }
+
+    /// The exact value under a shortened amount, shown on a tap.
+    static func exactValue(_ value: String, _ language: Language) -> String {
+        language("정확한 값 \(value)", "Exact: \(value)")
     }
 
     /// Draft: the value a corrected outlook item had before this filing.
@@ -102,11 +115,25 @@ enum PageCopy {
                 return language("직전 사업연도와 비교했어요.", "Compared with the previous fiscal year.")
             }
             let span = Formatting.period(base.start, base.end, language: language)
-            return language("직전 사업연도(\(span))과 비교했어요.", "Compared with the previous fiscal year, \(span).")
+            return language("직전 사업연도(\(span))와 비교했어요.", "Compared with the previous fiscal year, \(span).")
         case .units:
-            return language("작년 같은 달과 비교했어요. 누적은 올해 처음부터예요.",
-                            "Compared with the same month a year earlier. Year to date starts in January.")
+            guard let span = yearEarlier(block.period, language) else {
+                return language("작년 같은 기간과 비교했어요. 누적은 작년 누적과 비교했어요.",
+                                "Compared with the same period a year earlier; year to date with last year’s.")
+            }
+            return language("작년 같은 기간(\(span))과 비교했어요. 누적은 작년 누적과 비교했어요.",
+                            "Compared with \(span); year to date with last year’s.")
         }
+    }
+
+    /// The same months one year earlier, written as a period; nil without a period.
+    private static func yearEarlier(_ period: DatePeriod?, _ language: Language) -> String? {
+        guard let period,
+              let start = CivilDate(year: period.start.year - 1, month: period.start.month, day: period.start.day),
+              let end = CivilDate(year: period.end.year - 1, month: period.end.month, day: period.end.day)
+                ?? CivilDate(year: period.end.year - 1, month: period.end.month, day: period.end.day - 1)
+        else { return nil }
+        return Formatting.period(start, end, language: language)
     }
 
     /// Draft: the base value beside a compared figure.
@@ -155,9 +182,9 @@ enum PageCopy {
 
     static func keyFigures(_ language: Language) -> String { language("핵심 숫자", "Key figures") }
 
-    /// `FY2025 · 연결 기준 · 원`.
+    /// `2025 회계연도 · 연결 기준 · 원` / `FY2025 · Consolidated · Korean won`.
     static func figuresBasis(fiscalYear: Int, basis: String?, currency: String, _ language: Language) -> String {
-        var parts = ["FY\(fiscalYear)"]
+        var parts = [Self.fiscalYear(fiscalYear, language)]
         if basis == "consolidated" { parts.append(language("연결 기준", "Consolidated")) }
         if basis == "separate" { parts.append(language("별도 기준", "Separate")) }
         parts.append(currencyName(currency, language))
@@ -195,7 +222,7 @@ enum PageCopy {
     static func notStated(_ metrics: [ReportedMetric], _ language: Language) -> String? {
         guard !metrics.isEmpty else { return nil }
         let names = metrics.map { $0.name(language) }.joined(separator: language(", ", ", "))
-        return language("이 보고서에서 가져온 숫자가 없는 항목: \(names)", "No figure taken from this report: \(names)")
+        return language("이 두 해의 숫자가 없는 항목: \(names)", "No figure for either year: \(names)")
     }
 
     /// The formula line under the operating margin (board 4 derives it).

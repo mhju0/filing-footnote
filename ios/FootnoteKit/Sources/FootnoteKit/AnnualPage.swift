@@ -142,9 +142,16 @@ public struct FigureHistory: Sendable {
         years = figures.filter { $0.basis == basis }.sorted { $0.fiscalYear > $1.fiscalYear }
     }
 
-    /// The newest year against the one before, when both are in the bundle.
-    public var latestChange: Comparison<YearOverYear>? {
-        guard years.count >= 2, years[0].fiscalYear == years[1].fiscalYear + 1 else { return nil }
-        return Calculator.yearOverYear(metric: metric.rawValue, facts: [years[1].fact, years[0].fact])
+    /// The figure for one fiscal year, when the bundle has it.
+    public func figure(fiscalYear: Int) -> Figure? {
+        years.first { $0.fiscalYear == fiscalYear }
+    }
+
+    /// `fiscalYear` against the year before, the pair the report it was opened from shows;
+    /// nil when either year is missing.
+    public func change(fiscalYear: Int) -> Comparison<YearOverYear>? {
+        guard let current = figure(fiscalYear: fiscalYear), let prior = figure(fiscalYear: fiscalYear - 1)
+        else { return nil }
+        return Calculator.yearOverYear(metric: metric.rawValue, facts: [prior.fact, current.fact])
     }
 }

@@ -24,7 +24,7 @@ struct AnnualReportView: View {
             if let year = page.fiscalYear, !page.rows.isEmpty {
                 Section {
                     ForEach(page.rows) { row in
-                        NavigationLink(value: Route.figure(page.company.id, row.metric.rawValue)) {
+                        NavigationLink(value: Route.figure(page.company.id, row.metric.rawValue, year)) {
                             AnnualFigureRowView(row: row, fiscalYear: year)
                         }
                         .listRowBackground(Theme.surface)
@@ -42,8 +42,11 @@ struct AnnualReportView: View {
                             .textCase(nil)
                     }
                 } footer: {
-                    if let note = PageCopy.notStated(page.notStated, language) {
-                        SectionNote(text: note)
+                    VStack(alignment: .leading, spacing: 6) {
+                        if let note = PageCopy.notStated(page.notStated, language) {
+                            SectionNote(text: note)
+                        }
+                        SectionNote(text: PageCopy.amountsShortened(language))
                     }
                 }
                 .id(PageScroll.numbers)
@@ -121,14 +124,16 @@ private struct AnnualFigureRowView: View {
     private func yearValue(_ year: Int, _ figure: Figure?, emphasized: Bool) -> YearValueLines.Line {
         YearValueLines.Line(
             year: PageCopy.fiscalYear(year, language),
-            value: figure.map(value) ?? PageCopy.noFigure(language),
+            value: figure.map { value($0, precision: .compact) } ?? PageCopy.noFigure(language),
             emphasized: emphasized && figure != nil,
             missing: figure == nil,
             tag: figure?.isRestated == true ? PageCopy.restatedTag(language) : nil)
     }
 
-    private func value(_ figure: Figure) -> String {
-        Formatting.stated(figure.value, unit: figure.unit, fallbackCurrency: figure.currency ?? "KRW", language: language)
+    /// Shortened on screen; VoiceOver reads the exact value.
+    private func value(_ figure: Figure, precision: AmountPrecision = .exact) -> String {
+        Formatting.stated(figure.value, unit: figure.unit, fallbackCurrency: figure.currency ?? "KRW",
+                          language: language, precision: precision)
             ?? Formatting.number(figure.value)
     }
 
@@ -145,7 +150,8 @@ private struct AnnualFigureRowView: View {
     private var spoken: String {
         var parts = [row.metric.name(language)]
         for (year, figure) in [(fiscalYear, row.current), (fiscalYear - 1, row.prior)] {
-            var part = PageCopy.fiscalYear(year, language) + " " + (figure.map(value) ?? PageCopy.noFigure(language))
+            var part = PageCopy.fiscalYear(year, language) + " "
+                + (figure.map { value($0) } ?? PageCopy.noFigure(language))
             if figure?.isRestated == true { part += ", " + PageCopy.restatedTag(language) }
             parts.append(part)
         }
@@ -284,12 +290,14 @@ private struct YearValueLines: View {
 }
 
 /// One figure (DESIGN.md, Figure): its meaning from the glossary, every year in the bundle
-/// as a list, then the latest change with its inputs and formula. The tap target of each
-/// annual row; I8 builds the full screen with the compare action.
+/// as a list with exact values, then the change of the report's year (`fiscalYear`) against
+/// the year before, with its inputs and formula. The tap target of each annual row; I8 builds
+/// the full screen with the compare action.
 struct FigureView: View {
     @Environment(\.language) private var language
     let store: BundleStore
     let history: FigureHistory
+    let fiscalYear: Int
 
     var body: some View {
         List {
@@ -333,12 +341,16 @@ struct FigureView: View {
     }
 
     @ViewBuilder private var calculation: some View {
-        switch history.latestChange {
+        switch history.change(fiscalYear: fiscalYear) {
         case .result(let change)?:
-            FactRow(label: PageCopy.fiscalYear(history.years[0].fiscalYear, language),
-                    value: amount(change.currentValue, history.years[0]))
-            FactRow(label: PageCopy.fiscalYear(history.years[1].fiscalYear, language),
-                    value: amount(change.priorValue, history.years[1]))
+            if let current = history.figure(fiscalYear: fiscalYear),
+               let prior = history.figure(fiscalYear: fiscalYear - 1)
+            {
+                FactRow(label: PageCopy.fiscalYear(fiscalYear, language),
+                        value: amount(change.currentValue, current))
+                FactRow(label: PageCopy.fiscalYear(fiscalYear - 1, language),
+                        value: amount(change.priorValue, prior))
+            }
             FactRow(
                 label: PageCopy.growthFormula(language),
                 value: Formatting.percentChange(change.percentChange, language: language),
