@@ -47,11 +47,22 @@ class TestSelectLatestAnnual:
         assert item.rcept_no == "R-2024"
         assert year == "2024"
 
-    def test_correction_prefix_variant_is_still_matched(self):
-        # DART lists corrected reports as "사업보고서 (2023.12)" under the same
-        # prefix family; a [기재정정] prefix would NOT match and that is
-        # deliberate — a correction changes the rcept_no and needs review.
-        filings = [_item("[기재정정]사업보고서 (2023.12)", datetime.date(2024, 4, 2))]
+    def test_a_newer_corrected_annual_report_wins(self):
+        # D73: DART's fnlttSinglAcntAll returns the corrected report's rows, so ingest
+        # must take the newest version, as the export's annual scope already does (D66).
+        filings = [
+            _item("사업보고서 (2025.12)", datetime.date(2026, 3, 13), "R-original"),
+            _item("[기재정정]사업보고서 (2025.12)", datetime.date(2026, 7, 6), "R-corrected"),
+        ]
+        item, year = select_latest_annual(filings)
+        assert (item.rcept_no, year) == ("R-corrected", "2025")
+
+    def test_a_corrected_report_alone_is_matched(self):
+        filings = [_item("[기재정정] 사업보고서 (2023.12)", datetime.date(2024, 4, 2))]
+        assert select_latest_annual(filings)[1] == "2023"
+
+    def test_a_bracketed_other_report_is_not_an_annual_report(self):
+        filings = [_item("[기재정정]분기보고서 (2024.03)", datetime.date(2024, 5, 16))]
         with pytest.raises(ValueError):
             select_latest_annual(filings)
 
