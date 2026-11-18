@@ -61,11 +61,12 @@ from app.build.export import (
     _company_id,
     _filing_id,
     _korean_names,
-    _shown_versions,
     annual_summary_filings,
+    event_scope,
 )
 from app.build.model import (
     LANGS,
+    PROMPT_VERSION,
     THREE_LINE_SECTIONS,
     BuildInput,
     CompanyRow,
@@ -75,7 +76,6 @@ from app.build.model import (
     event_source_text,
     summary_input_sha256,
 )
-from app.ingest.events import window_bounds
 from app.llm.base import ChatMessage, LLMClient, LLMResult
 from app.llm.chat_completions import LLMApiError
 from app.llm.neutrality_guard import (
@@ -94,9 +94,8 @@ APPROVED_PATH = SUMMARIES_DIR / "approved.jsonl"
 CALLS_PATH = SUMMARIES_DIR / "calls.jsonl"
 FIXTURES_DIR = BACKEND_DIR / "tests" / "fixtures" / "neutrality"
 
-# Bump on any change to a prompt, the schema or the source-text layout: it is part of the
-# cache key, and a release build refuses the exporter's placeholder "none".
-PROMPT_VERSION = "m6-2026-11-18-b"
+# PROMPT_VERSION lives in app.build.model (D72); bump it there on any change to a prompt, the
+# schema or the source-text layout: it is part of the cache key.
 
 DEFAULT_MAX_CALLS = 10
 # Worst case per summary: the first call, one retry, one reviewer call.
@@ -396,19 +395,13 @@ def select_targets(data: BuildInput, as_of: datetime.date) -> list[Target]:
     """Every filing and section that needs a summary as of ``as_of``, events first, each
     group in filing id order.
 
-    Events follow the exporter: filed in the window, not excluded, the shown version of its
-    chain. Annual reports are the exporter's own choice, :func:`annual_summary_filings`.
+    Events are the exporter's own, :func:`app.build.export.event_scope`. Annual reports are
+    the exporter's own choice, :func:`annual_summary_filings`.
     """
     names = company_names(data.companies)
     targets: list[Target] = []
 
-    start, end = window_bounds(as_of)
-    shown, _ = _shown_versions(list(data.events), as_of)
-    for event in sorted(data.events, key=lambda e: (e.regulator, e.filing_key)):
-        if event.filed_on is None or not start <= event.filed_on <= end:
-            continue
-        if event.excluded_reason is not None or event.filing_key not in shown:
-            continue
+    for event in event_scope(data, as_of).exported:
         fid = _filing_id(event.regulator, event.filing_key)
         source = event_source_text(event)
         targets.append(

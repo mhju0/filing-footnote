@@ -10,11 +10,13 @@ import datetime
 import hashlib
 from collections import defaultdict
 from collections.abc import Mapping, Sequence
+from pathlib import Path
 from typing import Any
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncConnection, create_async_engine
 
+from app.build import summaries
 from app.build.model import (
     AnnualFilingRow,
     BuildInput,
@@ -284,12 +286,14 @@ async def read_event_rows(connection: AsyncConnection) -> list[EventRow]:
     return event_rows([dict(row._mapping) for row in result], facts)
 
 
-async def read_summaries(connection: AsyncConnection) -> list[SummaryRow]:
-    """No summary store exists until M6/M9, so a database build has no summaries yet."""
-    return []
+def read_summaries(path: Path | None = None) -> list[SummaryRow]:
+    """The owner-approved rows of ``approved.jsonl`` (``summaries.APPROVED_PATH`` by default).
+    A missing file means no approved summaries, which a development build allows and a release
+    refuses."""
+    return summaries.read_approved(path or summaries.APPROVED_PATH)
 
 
-async def load_build_input(database_url: str) -> BuildInput:
+async def load_build_input(database_url: str, summaries_path: Path | None = None) -> BuildInput:
     engine = create_async_engine(database_url)
     try:
         async with engine.connect() as connection:
@@ -299,7 +303,7 @@ async def load_build_input(database_url: str) -> BuildInput:
                 annual_filings=tuple(await read_annual_filings(connection)),
                 financials=tuple(await read_financials(connection)),
                 events=tuple(await read_event_rows(connection)),
-                summaries=tuple(await read_summaries(connection)),
+                summaries=tuple(read_summaries(summaries_path)),
             )
     finally:
         await engine.dispose()

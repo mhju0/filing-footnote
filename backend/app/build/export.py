@@ -19,8 +19,9 @@ line fails the neutrality guard, and when ``--prompt-version`` is ``none``.
 Summaries not yet approved are never written, because ``review_state`` must be ``approved``.
 
 Event filings: the version of each correction chain shown is the newest one filed on or
-before ``--as-of``; ingest's ``is_latest`` is not used. Annual filings follow
-:data:`app.build.model.ANNUAL_SCOPE`.
+before ``--as-of``; ingest's ``is_latest`` is not used. At most five events per company are
+exported, the newest, and an event without a stored body text is left out
+(:func:`event_scope`). Annual filings follow :data:`app.build.model.ANNUAL_SCOPE`.
 
 Output depends only on the database contents and the arguments: ``--as-of`` replaces the
 clock, ``--source-revision`` (default ``git rev-parse HEAD``) names the pipeline, rows are
@@ -60,6 +61,7 @@ from app.build.model import (
     DECIMAL_VALUE_KINDS,
     FACT_VALUE_KINDS,
     LANGS,
+    PROMPT_VERSION,
     SUMMARY_SECTIONS,
     AnnualFilingRow,
     BuildError,
@@ -107,7 +109,7 @@ ANNUAL_CATEGORY = "annual"
 CURRENCY = {"DART": "KRW", "SEC": "USD"}
 REGULATOR_ORDER = {"DART": 0, "SEC": 1}
 DEFAULT_LLM_MODEL = "qwen/qwen3.8-27b"  # D68
-DEFAULT_PROMPT_VERSION = NO_PROMPT_VERSION
+DEFAULT_PROMPT_VERSION = PROMPT_VERSION
 
 _ANNUAL_PERIOD_RE = re.compile(r"([0-9]{4})-annual")
 _REPORTED_METRICS = frozenset(m.value for m in ReportedMetric)
@@ -340,6 +342,70 @@ def _shown_versions(events: list[EventRow], as_of: datetime.date) -> tuple[set[s
     return shown, unresolved
 
 
+EVENT_CAP = 5  # the latest events kept per company (D72)
+
+
+@dataclass
+class EventScope:
+    """The event filings a build exports, and why every other one is not."""
+
+    exported: list[EventRow]  # in (regulator, filing_key) order
+    window: tuple[datetime.date, datetime.date]
+    undated: list[str] = field(default_factory=list)
+    outside_window: int = 0
+    excluded: list[dict[str, str]] = field(default_factory=list)
+    superseded: list[str] = field(default_factory=list)
+    superseded_unresolved: list[str] = field(default_factory=list)
+    without_body: list[str] = field(default_factory=list)
+    capped: dict[str, list[str]] = field(default_factory=dict)  # company id -> dropped ids
+
+
+def event_scope(data: BuildInput, as_of: datetime.date) -> EventScope:
+    """The one rule for which events a build exports and summarises (D72).
+
+    Filed inside the 12-month window, not excluded, the shown version of its correction chain
+    (:func:`_shown_versions`), with a stored body text (an event without one can never get a
+    summary and does not count toward the cap), and at most :data:`EVENT_CAP` per company:
+    the newest by ``filed_on``, ties broken by ``filing_key`` descending.
+    """
+    start, end = window_bounds(as_of)
+    scope = EventScope([], (start, end))
+    events = sorted(data.events, key=lambda e: (e.regulator, e.filing_key))
+    shown, unresolved = _shown_versions(events, as_of)
+    per_company: dict[tuple[str, str], list[EventRow]] = defaultdict(list)
+    for event in events:
+        fid = _filing_id(event.regulator, event.filing_key)
+        if event.filed_on is None:
+            scope.undated.append(fid)
+            continue
+        if not start <= event.filed_on <= end:
+            scope.outside_window += 1
+            continue
+        if event.excluded_reason is not None:
+            scope.excluded.append({"id": fid, "reason": event.excluded_reason})
+            continue
+        if event.filing_key in unresolved:
+            scope.superseded_unresolved.append(fid)
+            continue
+        if event.filing_key not in shown:
+            scope.superseded.append(fid)
+            continue
+        if event_source_text(event) is None:
+            scope.without_body.append(fid)
+            continue
+        per_company[(event.regulator, event.company_key)].append(event)
+    kept: set[tuple[str, str]] = set()
+    for (regulator, company_key), members in per_company.items():
+        newest = sorted(members, key=lambda e: (e.filed_on, e.filing_key), reverse=True)
+        kept.update((e.regulator, e.filing_key) for e in newest[:EVENT_CAP])
+        if len(newest) > EVENT_CAP:
+            scope.capped[_company_id(regulator, company_key)] = [
+                _filing_id(e.regulator, e.filing_key) for e in newest[EVENT_CAP:]
+            ]
+    scope.exported = [e for e in events if (e.regulator, e.filing_key) in kept]
+    return scope
+
+
 def _event_filings(build: _Build, companies: dict[tuple[str, str], CompanyRow]) -> None:
     categories_contract = load_categories_contract()
     categories = {c["key"] for c in categories_contract["categories"]}
@@ -351,35 +417,16 @@ def _event_filings(build: _Build, companies: dict[tuple[str, str], CompanyRow]) 
             return event.report_nm  # 8-K or 8-K/A
         return " ".join(prefix_re.sub("", event.report_nm).split())
 
-    start, end = window_bounds(build.options.as_of)
-    events = sorted(build.data.events, key=lambda e: (e.regulator, e.filing_key))
-    shown, unresolved = _shown_versions(events, build.options.as_of)
+    scope = event_scope(build.data, build.options.as_of)
+    build.problems.extend(f"{fid}: no filing date" for fid in scope.undated)
+    for item in scope.excluded:
+        if item["reason"] not in reasons:
+            build.problems.append(f"{item['id']}: unknown excluded reason {item['reason']!r}")
 
-    excluded: list[dict[str, str]] = []
-    superseded: list[str] = []
-    superseded_unresolved: list[str] = []
-    outside_window = 0
     fact_errors: list[dict[str, str]] = []
     fact_checks: list[dict[str, str]] = []
-    for event in events:
+    for event in scope.exported:
         fid = _filing_id(event.regulator, event.filing_key)
-        if event.filed_on is None:
-            build.problems.append(f"{fid}: no filing date")
-            continue
-        if not start <= event.filed_on <= end:
-            outside_window += 1
-            continue
-        if event.excluded_reason is not None:
-            if event.excluded_reason not in reasons:
-                build.problems.append(f"{fid}: unknown excluded reason {event.excluded_reason!r}")
-            excluded.append({"id": fid, "reason": event.excluded_reason})
-            continue
-        if event.filing_key in unresolved:
-            superseded_unresolved.append(fid)
-            continue
-        if event.filing_key not in shown:
-            superseded.append(fid)
-            continue
         if event.category not in categories:
             build.problems.append(f"{fid}: unknown category {event.category!r}")
             continue
@@ -398,20 +445,33 @@ def _event_filings(build: _Build, companies: dict[tuple[str, str], CompanyRow]) 
         build.events[fid] = event
         _event_facts(build, fid, company_id, event, fact_errors, fact_checks)
 
-    by_reason = Counter(e["reason"] for e in excluded)
+    by_reason = Counter(e["reason"] for e in scope.excluded)
     build.report["excluded_filings"] = {
-        "count": len(excluded),
+        "count": len(scope.excluded),
         "by_reason": dict(sorted(by_reason.items())),
-        "filings": excluded,
+        "filings": scope.excluded,
     }
-    build.report["superseded_filings"] = {"count": len(superseded), "ids": superseded}
+    build.report["superseded_filings"] = {
+        "count": len(scope.superseded),
+        "ids": scope.superseded,
+    }
     build.report["superseded_unresolved"] = {
-        "count": len(superseded_unresolved),
-        "ids": superseded_unresolved,
+        "count": len(scope.superseded_unresolved),
+        "ids": scope.superseded_unresolved,
     }
     build.report["event_filings_outside_window"] = {
-        "window": [start.isoformat(), end.isoformat()],
-        "count": outside_window,
+        "window": [scope.window[0].isoformat(), scope.window[1].isoformat()],
+        "count": scope.outside_window,
+    }
+    build.report["event_filings_without_body"] = {
+        "count": len(scope.without_body),
+        "ids": scope.without_body,
+    }
+    build.report["event_filings_over_cap"] = {
+        "cap": EVENT_CAP,
+        "count": sum(len(ids) for ids in scope.capped.values()),
+        "by_company": {cid: len(ids) for cid, ids in sorted(scope.capped.items())},
+        "ids": sorted(i for ids in scope.capped.values() for i in ids),
     }
     build.report["fact_errors"] = {"count": len(fact_errors), "facts": fact_errors}
     build.report["fact_checks"] = fact_checks
@@ -706,8 +766,7 @@ def _summaries(build: _Build, company_rows: list[tuple]) -> list[tuple]:
     if stale and not build.options.allow_unapproved:
         build.problems.append(
             f"release build refused: {len(stale)} approved summaries do not match the current "
-            f"source text, prompt version, model or word lists ({', '.join(stale[:10])}"
-            f"{' ...' if len(stale) > 10 else ''})"
+            f"source text, prompt version, model or word lists ({', '.join(stale)})"
         )
     missing = sorted(
         fid
@@ -855,6 +914,11 @@ def _parser() -> argparse.ArgumentParser:
         help=f"directory of pinned regulator responses, repeatable (default {DEFAULT_PINNED_DIR})",
     )
     parser.add_argument("--source-revision", help="default: git rev-parse HEAD")
+    parser.add_argument(
+        "--approved",
+        type=Path,
+        help="file of approved summaries (default backend/data/summaries/approved.jsonl)",
+    )
     parser.add_argument("--llm-model", default=DEFAULT_LLM_MODEL)
     parser.add_argument(
         "--prompt-version",
@@ -875,7 +939,9 @@ def _load_from_database(args: argparse.Namespace) -> BuildInput:
     from app.build.source import load_build_input
     from app.config import get_settings
 
-    return asyncio.run(load_build_input(args.database_url or get_settings().database_url))
+    return asyncio.run(
+        load_build_input(args.database_url or get_settings().database_url, args.approved)
+    )
 
 
 def run(
