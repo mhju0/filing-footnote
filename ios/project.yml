@@ -89,6 +89,8 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.filingfootnote.footnote.tests
         GENERATE_INFOPLIST_FILE: YES
+        # A Mac app keeps its executable under Contents/MacOS.
+        "TEST_HOST[sdk=macosx*]": $(BUILT_PRODUCTS_DIR)/Footnote.app/Contents/MacOS/Footnote
 schemes:
   Footnote:
     build:
