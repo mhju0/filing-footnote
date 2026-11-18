@@ -399,6 +399,16 @@ def test_other_api_errors_are_not_retried(tmp_path, fake_time) -> None:
     assert (client.calls, fake_time.sleeps) == (1, [])
 
 
+def test_a_request_too_large_skips_the_target_and_the_run_goes_on(tmp_path, fake_time) -> None:
+    client = FakeClient(LLMApiError(413, "request too large"), CLEAN, NO_FLAGS)
+    targets = [_target(fid="dart:big"), _target()]
+    result, stats = _run(client, targets, tmp_path)
+    assert result.too_large == ["dart:big summary"]
+    assert result.generated == 1
+    assert {r["filing_id"] for r in _staged(tmp_path)} == {FID}
+    assert fake_time.sleeps == []
+
+
 def test_output_caps_fit_one_minute_of_the_groq_free_tier(tmp_path) -> None:
     client = FakeClient(DIGITS, CLEAN, NO_FLAGS)
     _run(client, [_target()], tmp_path)
@@ -843,9 +853,17 @@ def test_a_source_change_after_approval_is_refused_by_a_release() -> None:
     assert not any(row[0] == SAMSUNG_2025 for row in dev.rows["filing_summaries"])
 
 
-def test_source_text_is_cut_at_the_limit() -> None:
-    text = event_source_text(_event("1", "가" * (MAX_SOURCE_CHARS + 50)))
-    assert text is not None and text.count("가") == MAX_SOURCE_CHARS
+@pytest.mark.parametrize("regulator", ["DART", "SEC"])
+def test_source_text_is_cut_at_the_regulator_limit(regulator) -> None:
+    limit = MAX_SOURCE_CHARS[regulator]
+    text = event_source_text(_event("1", "가" * (limit + 50), regulator=regulator))
+    assert text is not None and text.count("가") == limit
+
+
+def test_a_korean_source_with_a_retry_fits_the_groq_input_limit() -> None:
+    # Measured on the pilot, 2026-11-18: Korean up to 0.65 tokens a character, about 1200
+    # prompt tokens, about 500 more on a retry. Groq's free tier takes 7000 input tokens a minute.
+    assert MAX_SOURCE_CHARS["DART"] * 65 // 100 + 1200 + 500 < 7000
 
 
 # -- reviewer measurement ------------------------------------------------------------------------

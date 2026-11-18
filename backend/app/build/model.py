@@ -224,7 +224,9 @@ def mandatory_annual_sections(filing_id: str) -> tuple[str, ...]:
 # -- summary source text and cache key -----------------------------------------------------------
 
 # Source text sent per filing and section, in characters; longer text is cut at this point.
-MAX_SOURCE_CHARS = 12000
+# Korean takes two to three times the tokens of English per character, and one request must
+# fit Groq's free-tier limit of 7000 input tokens a minute (D69).
+MAX_SOURCE_CHARS: dict[str, int] = {"DART": 7000, "SEC": 12000}
 
 
 def event_source_text(row: EventRow) -> str | None:
@@ -233,7 +235,8 @@ def event_source_text(row: EventRow) -> str | None:
     body = row.body_text
     if body is None or not body.strip():
         return None
-    return f"Filing title: {row.report_nm}\n\nFiling text:\n{body.strip()[:MAX_SOURCE_CHARS]}"
+    limit = MAX_SOURCE_CHARS[row.regulator]
+    return f"Filing title: {row.report_nm}\n\nFiling text:\n{body.strip()[:limit]}"
 
 
 def annual_source_text(filing: AnnualFilingRow, section: str) -> str | None:
@@ -242,7 +245,7 @@ def annual_source_text(filing: AnnualFilingRow, section: str) -> str | None:
         return None
     parts = [f"Report: {filing.title}"]
     parts += [f"[{c.section_title}]\n{c.content.strip()}" for c in picked]
-    return "\n\n".join(parts)[:MAX_SOURCE_CHARS]
+    return "\n\n".join(parts)[: MAX_SOURCE_CHARS[filing.regulator]]
 
 
 def summary_input_sha256(

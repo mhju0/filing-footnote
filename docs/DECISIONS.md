@@ -735,3 +735,17 @@ neutrality guard. Groq's data-use terms were not checked; the filings are public
 - Prompt version `m6-2026-11-18-a`: an event summary names the people the filing names
   (romanised in English, family name first), and no line repeats another line's fact.
 - Groq has no price table here, so the cost reads "cost unknown".
+
+## D69 · Source text cap per regulator · 2026-11-18 (`ACCEPTED`)
+
+Groq's free tier refused the first Hyundai Motor annual-report request with HTTP 413: the
+input-token limit is 7000 a minute, and the request needed 7274. In the pilot, Korean took
+about 0.5 to 0.65 tokens a character and English about 0.22, on top of about 1200 prompt
+tokens; a retry adds about 500.
+
+- Source text is cut at 7000 characters for DART and stays at 12000 for SEC. A Korean
+  request with a retry stays under about 6300 input tokens.
+- A request refused with HTTP 413 skips that filing section and the run goes on; the
+  command line lists it as `too_large`. Sending it again cannot succeed.
+- The shorter DART text changes the cache key of every DART summary. None was approved.
+- Groq's paid Dev Tier would raise the limit; that is the owner's call.
