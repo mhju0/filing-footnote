@@ -68,7 +68,15 @@ jobs:
             exit 1
           fi
           xcodebuild test \
-            -project ios/FilingDigest.xcodeproj \
-            -scheme FilingDigest \
+            -project ios/Footnote.xcodeproj \
+            -scheme Footnote \
             -destination "platform=iOS Simulator,id=$simulator" \
+            CODE_SIGNING_ALLOWED=NO
+      # The same target builds natively for the Mac (ADR 0008).
+      - name: Build Mac app
+        run: |
+          xcodebuild build \
+            -project ios/Footnote.xcodeproj \
+            -scheme Footnote \
+            -destination 'platform=macOS' \
             CODE_SIGNING_ALLOWED=NO

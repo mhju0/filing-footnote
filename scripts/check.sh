@@ -35,4 +35,25 @@ if [ "$(uname -s)" = "Darwin" ]; then
 else
   echo "== FootnoteKit tests skipped: swift test needs macOS"
 fi
+
+# ios/Footnote.xcodeproj is generated from ios/project.yml and committed. Regenerate it
+# and compare; on drift, restore the checked-in copy and fail.
+xcodeproj_current() {
+  snapshot="$(mktemp -d)"
+  cp -R ios/Footnote.xcodeproj "$snapshot/"
+  xcodegen generate --quiet --spec ios/project.yml
+  if ! diff -r "$snapshot/Footnote.xcodeproj" ios/Footnote.xcodeproj >/dev/null; then
+    rm -rf ios/Footnote.xcodeproj
+    cp -R "$snapshot/Footnote.xcodeproj" ios/
+    rm -rf "$snapshot"
+    echo "ios/Footnote.xcodeproj is stale: run xcodegen generate --spec ios/project.yml" >&2
+    return 1
+  fi
+  rm -rf "$snapshot"
+}
+if command -v xcodegen >/dev/null 2>&1; then
+  run "Xcode project matches project.yml" xcodeproj_current
+else
+  echo "== Xcode project check skipped: xcodegen is not installed"
+fi
 # Contract tests are added here.

@@ -1,0 +1,105 @@
+# Filing Footnote: one SwiftUI app for iPhone, iPad and native Mac (ADR 0008).
+# Generate the project after editing this file, from the repository root:
+#   xcodegen generate --spec ios/project.yml
+# The generated Footnote.xcodeproj is committed; scripts/check.sh fails while it is stale.
+name: Footnote
+options:
+  bundleIdPrefix: com.filingfootnote
+  deploymentTarget:
+    iOS: "18.0"
+    macOS: "15.0"
+  createIntermediateGroups: true
+  developmentLanguage: ko
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+    MARKETING_VERSION: 0.5.2
+    CURRENT_PROJECT_VERSION: 1
+    DEAD_CODE_STRIPPING: YES
+packages:
+  FootnoteKit:
+    path: FootnoteKit
+targets:
+  Footnote:
+    type: application
+    platform: auto
+    supportedDestinations: [iOS, macOS]
+    sources:
+      - path: Footnote
+        excludes:
+          # A development bundle copied here by hand; the build phase below copies it.
+          - Resources/footnote.sqlite
+      # Korean and English fact names, shared with the backend.
+      - path: ../contracts/filing-facts.json
+        buildPhase: resources
+    dependencies:
+      - package: FootnoteKit
+    postCompileScripts:
+      - name: Copy data bundle
+        basedOnDependencyAnalysis: false
+        script: |
+          set -euo pipefail
+          # FOOTNOTE_BUNDLE (a build setting) wins, then ios/Footnote/Resources/footnote.sqlite
+          # (git-ignored), then the FootnoteKit test fixture so a clean checkout builds.
+          source="${FOOTNOTE_BUNDLE:-${SRCROOT}/Footnote/Resources/footnote.sqlite}"
+          if [ ! -f "$source" ]; then
+            source="${SRCROOT}/FootnoteKit/Tests/FootnoteKitTests/Fixtures/footnote.sqlite"
+            echo "note: no data bundle at ios/Footnote/Resources/footnote.sqlite; using the FootnoteKit test fixture"
+          fi
+          destination="${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/footnote.sqlite"
+          mkdir -p "$(dirname "$destination")"
+          cp "$source" "$destination"
+    settings:
+      base:
+        PRODUCT_NAME: Footnote
+        PRODUCT_BUNDLE_IDENTIFIER: com.filingfootnote.footnote
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Footnote
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.finance
+        INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: UIInterfaceOrientationPortrait
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: >-
+          UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown
+          UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight
+        TARGETED_DEVICE_FAMILY: "1,2"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        # Theme.swift names the colours; generated symbols would clash with it.
+        ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS: NO
+        # The copy phase reads an optional file, which a sandboxed script cannot declare.
+        ENABLE_USER_SCRIPT_SANDBOXING: NO
+        ENABLE_APP_SANDBOX: YES
+        ENABLE_HARDENED_RUNTIME: YES
+        ENABLE_PREVIEWS: YES
+  FootnoteTests:
+    type: bundle.unit-test
+    platform: auto
+    supportedDestinations: [iOS, macOS]
+    sources:
+      - path: FootnoteTests
+      # The FootnoteKit development fixture, for the release-gate test.
+      - path: FootnoteKit/Tests/FootnoteKitTests/Fixtures/footnote.sqlite
+        buildPhase: resources
+    dependencies:
+      - target: Footnote
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.filingfootnote.footnote.tests
+        GENERATE_INFOPLIST_FILE: YES
+schemes:
+  Footnote:
+    build:
+      targets:
+        Footnote: all
+        FootnoteTests: [test]
+    test:
+      targets:
+        - FootnoteTests
+      gatherCoverageData: false
+    run:
+      config: Debug
+    archive:
+      config: Release

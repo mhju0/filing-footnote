@@ -119,6 +119,41 @@ public enum Formatting {
         }
     }
 
+    /// A full date: Korean `2026년 11월 20일`, English `Nov 20, 2026`.
+    public static func fullDate(_ date: CivilDate, language: Language) -> String {
+        switch language {
+        case .ko: "\(date.year)년 \(date.month)월 \(date.day)일"
+        case .en: "\(englishMonths[date.month - 1]) \(date.day), \(date.year)"
+        }
+    }
+
+    private static let englishMonthNames = [
+        "January", "February", "March", "April", "May", "June", "July", "August",
+        "September", "October", "November", "December",
+    ]
+
+    /// A month heading: Korean `10월`, English `October`; the year is added when it is not
+    /// `currentYear` (`2025년 12월`, `December 2025`).
+    public static func month(_ month: Int, year: Int, currentYear: Int, language: Language) -> String {
+        let sameYear = year == currentYear
+        switch language {
+        case .ko: return sameYear ? "\(month)월" : "\(year)년 \(month)월"
+        case .en:
+            let name = englishMonthNames[month - 1]
+            return sameYear ? name : "\(name) \(year)"
+        }
+    }
+
+    // MARK: - Counts
+
+    /// An exact number with digit grouping and the true minus sign (`917,385`, `0.125`).
+    /// Nothing is rounded.
+    public static func number(_ value: Decimal) -> String {
+        let magnitude = value < 0 ? -value : value
+        let text = groupedNumber(DecimalText.canonical(magnitude))
+        return value < 0 ? minus + text : text
+    }
+
     // MARK: - Grouping
 
     /// Commas every three digits of the integer part of an unsigned plain decimal string.

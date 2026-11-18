@@ -33,7 +33,7 @@ def test_product_release_version_is_consistent() -> None:
         in (REPOSITORY_ROOT / "docs" / "ARCHITECTURE.md").read_text()
     )
     project = (
-        REPOSITORY_ROOT / "ios" / "FilingDigest.xcodeproj" / "project.pbxproj"
+        REPOSITORY_ROOT / "ios" / "Footnote.xcodeproj" / "project.pbxproj"
     ).read_text()
     marketing_versions = set(
         re.findall(r"MARKETING_VERSION = ([^;]+);", project)
