@@ -1,10 +1,9 @@
 version: 2
 
-# The project is closed for maintenance, so routine version updates are off:
+# Routine version updates are off while Filing Footnote is built:
 # `open-pull-requests-limit: 0` disables them per ecosystem. Dependabot security
 # updates are configured separately in repository settings and still open pull
-# requests, because a vulnerability fix is inside the maintenance policy while a
-# routine bump is not.
+# requests, because a vulnerability fix is still wanted while a routine bump is not.
 updates:
   - package-ecosystem: pip
     directory: /backend

@@ -1,4 +1,4 @@
-# Filing Digest
+# Filing Footnote
 
 This context turns corporate filings into structured financial evidence, concise digests, and answers whose claims remain traceable to the original filing.
 

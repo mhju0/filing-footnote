@@ -1,3 +1,5 @@
+> History: this document describes Filing Digest, the predecessor project, and is kept as a record. Filing Footnote's current docs are PRODUCT.md and docs/design/DESIGN.md.
+
 # Filing Digest Architecture
 
 This document describes the v0.5.2 portfolio architecture. The API contract is
