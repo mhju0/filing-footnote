@@ -249,7 +249,7 @@ Footnote merges two earlier projects of the same owner, Filing Digest and Filing
 | Measure | Count | Source |
 |---|---|---|
 | Pull requests merged | 40 | `gh pr list --state merged` |
-| Commits, not counting merges | 77 | `git log --since=2026-11-17 --no-merges` |
+| Commits, not counting merges | 79 | `git log --since=2026-11-17 --no-merges` |
 | Decision entries | D59 to D89 | [DECISIONS.md](DECISIONS.md) |
 
 The code was written by an AI coding agent (Claude Code; each commit carries an `Agent:`
@@ -267,7 +267,7 @@ development bundle, exported from commit `44b787f` (its `build_meta.source_revis
 
 | Measure | Result | How it was counted |
 |---|---|---|
-| Backend offline tests | BACKEND_COUNT | `scripts/check.sh` (the `make test` step) |
+| Backend offline tests | 1714 passed, 57 skipped (a checkout without the local pinned files skips more) | `scripts/check.sh` (the `make test` step) |
 | FootnoteKit tests | 140 tests in 22 suites, all passed | `scripts/check.sh` (`swift test`) |
 | App unit tests | 38 `@Test` functions | Counted in `ios/FootnoteTests/`; not run for this count |
 | UI tests | 26 test methods | Counted in `ios/FootnoteUITests/`; not run for this count |

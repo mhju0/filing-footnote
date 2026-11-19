@@ -51,6 +51,9 @@ From `backend/`, with the Compose database running:
 ../.venv/bin/python -m app.build.summaries generate --as-of 2026-11-19
 ../.venv/bin/python -m app.build.review --out ../dist/review.html
 ../.venv/bin/python -m app.build.approve --filing <filing id>
+
+# Counts: guard results, retries, reviewer flags, approvals, calls and tokens (read-only)
+../.venv/bin/python -m app.build.quality
 ```
 
 Groq's free tier allows 1000 output tokens a minute (D68), so `generate` waits between calls
