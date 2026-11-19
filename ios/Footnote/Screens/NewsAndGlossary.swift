@@ -42,7 +42,7 @@ struct NewsView: View {
                             }
                         }
                     } header: {
-                        Text(words: dayTitle(day.date))
+                        SectionTitle(dayTitle(day.date))
                             .accessibilityAddTraits(.isHeader)
                     }
                 }

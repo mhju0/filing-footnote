@@ -42,6 +42,7 @@ struct AnnualReportView: View {
                             .font(.footnote)
                             .textCase(nil)
                     }
+                    .foregroundStyle(Theme.muted)
                 } footer: {
                     VStack(alignment: .leading, spacing: 6) {
                         if let note = PageCopy.notStated(page.notStated, language) {
@@ -63,7 +64,7 @@ struct AnnualReportView: View {
             Section {
                 InReviewRow()
             } header: {
-                Text(words: PageCopy.sentences(language))
+                SectionTitle(PageCopy.sentences(language))
             }
         } else {
             let oneLine = page.lines(.oneLine, language)
@@ -80,7 +81,7 @@ struct AnnualReportView: View {
                     Section {
                         SentenceRows(lines: lines)
                     } header: {
-                        Text(words: PageCopy.annualSections(section, language))
+                        SectionTitle(PageCopy.annualSections(section, language))
                     }
                 }
             }

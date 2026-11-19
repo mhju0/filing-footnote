@@ -33,3 +33,52 @@ extension Text {
         self = Text(verbatim: string.keepingWords).accessibilityLabel(Text(verbatim: string.spokenSeparators))
     }
 }
+
+/// Text in phrases that break only between phrases when the whole line does not fit, so a
+/// short last word never sits alone on a line at large text sizes
+/// (`+16.20%` / `늘었어요 · 작년보다`). The phrases joined with spaces are the visible text,
+/// unchanged. When even one phrase is wider than the line, the text wraps between words as
+/// usual. The caller sets the font and the accessibility label.
+struct PhraseLines: View {
+    let phrases: [String]
+
+    var body: some View {
+        ViewThatFits(in: .horizontal) {
+            Text(words: joined).fixedSize()
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(Array(phrases.enumerated()), id: \.offset) { _, phrase in
+                    Text(words: phrase).fixedSize()
+                }
+            }
+            Text(words: joined).fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private var joined: String { phrases.joined(separator: " ") }
+}
+
+/// Figures in full digits (`(333,605,938,000,000 − 300,870,903,000,000) ÷ …`). The text
+/// wraps only at its spaces, never inside a number; a number wider than the whole line
+/// shrinks to fit instead. A word without digits wider than the line (a long DART form name)
+/// wraps as usual, so it keeps its text size. VoiceOver reads it as one text, as it read the
+/// single `Text` this replaces. The caller sets the font.
+struct UnbrokenNumbers: View {
+    let text: String
+
+    var body: some View {
+        FlowLayout(spacing: 5, lineSpacing: 2) {
+            ForEach(Array(text.split(separator: " ").enumerated()), id: \.offset) { _, token in
+                if token.contains(where: \.isNumber) {
+                    Text(verbatim: String(token))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.4)
+                } else {
+                    Text(words: String(token)).fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(verbatim: text.spokenSeparators))
+        .accessibilityAddTraits(.isStaticText)
+    }
+}

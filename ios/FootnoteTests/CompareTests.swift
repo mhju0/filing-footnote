@@ -242,3 +242,19 @@ struct CompareCopyTests {
             == "FY2025" + Copy.dot + "US GAAP consolidated")
     }
 }
+
+@Suite("Line breaks at accessibility sizes")
+struct PhraseBreakTests {
+    /// The figure's direction line splits between the rate and its words only; joined with
+    /// a space the phrases are the approved line exactly.
+    @Test(arguments: [Decimal(string: "16.2")!, Decimal(string: "-14.334")!, Decimal(0)])
+    func directionPhrasesJoinToTheApprovedLine(_ percent: Decimal) {
+        for language in [Language.ko, .en] {
+            let phrases = PageCopy.changeFromLastYearPhrases(percent, language)
+            #expect(phrases.count == 2)
+            #expect(phrases.joined(separator: " ") == PageCopy.changeFromLastYear(percent, language))
+        }
+        #expect(PageCopy.changeFromLastYearPhrases(Decimal(string: "16.2")!, .ko)
+            == ["+16.20%", "늘었어요\u{00A0}· 작년보다"])
+    }
+}

@@ -22,7 +22,7 @@ struct PeerPicker: View {
                         Section {
                             ForEach(peers) { peer in row(peer) }
                         } header: {
-                            Text(words: PageCopy.pickerSection(
+                            SectionTitle(PageCopy.pickerSection(
                                 regulator, notesYearEnds: peers.contains(where: differs), language))
                         }
                     }
@@ -140,12 +140,15 @@ struct CompanyCompareView: View {
             Section {
                 picker.pickerStyle(.inline).labelsHidden()
             } header: {
-                Text(words: PageCopy.compareBy(language))
+                SectionTitle(PageCopy.compareBy(language))
             }
             .listRowBackground(Theme.surface)
         } else {
             Section {
+                // Extra large: the regular segments are 32 points tall, under the 44-point
+                // target.
                 picker.pickerStyle(.segmented).labelsHidden()
+                    .controlSize(.extraLarge)
                     .frame(minHeight: Theme.minTarget)
                     .buttonRow()
             }
@@ -169,7 +172,7 @@ struct CompanyCompareView: View {
                     .accessibilityIdentifier("rate-difference")
             }
         } header: {
-            Text(words: PageCopy.ratesHeading(page.chosenMeasure, metric: page.reportedMetric, language))
+            SectionTitle(PageCopy.ratesHeading(page.chosenMeasure, metric: page.reportedMetric, language))
         }
         Section {
             HStack(alignment: .firstTextBaseline, spacing: 10) {
@@ -331,7 +334,7 @@ struct RefusalSections: View {
                 .accessibilityIdentifier("instead-\(index)")
             }
         } header: {
-            Text(words: PageCopy.insteadHeading(language))
+            SectionTitle(PageCopy.insteadHeading(language))
         }
     }
 }

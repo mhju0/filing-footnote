@@ -22,26 +22,32 @@ struct CompanyPageView: View {
         SelectionList(selection: selection) {
             header
             if !page.periodicReports.isEmpty {
-                Section(language("정기 보고서", "Periodic reports")) {
+                Section {
                     ForEach(page.periodicReports, id: \.filing.id) { report in
                         FilingRowLink(filingID: report.filing.id) {
                             PeriodicRow(report: report, company: page.company, dataAsOf: page.dataAsOf)
                         }
                     }
+                } header: {
+                    SectionTitle(language("정기 보고서", "Periodic reports"))
                 }
             }
             ForEach(Array(page.months.enumerated()), id: \.element.id) { index, month in
-                Section(monthTitle(month, first: index == 0)) {
+                Section {
                     ForEach(month.filings) { filing in
                         FilingRowLink(filingID: filing.id) {
                             FilingRow(filing: filing, dataAsOf: page.dataAsOf)
                         }
                     }
+                } header: {
+                    SectionTitle(monthTitle(month, first: index == 0))
                 }
             }
             if !page.notices.isEmpty {
-                Section(language("그 밖의 공시", "Other filings")) {
+                Section {
                     noticesRow
+                } header: {
+                    SectionTitle(language("그 밖의 공시", "Other filings"))
                 }
             }
             Section {
@@ -133,7 +139,7 @@ struct NoticesSheet: View {
                         NoticeRow(notice: notice, regulator: page.company.regulator)
                     }
                 } header: {
-                    Text(words: Copy.noticesIntro(
+                    SectionTitle(Copy.noticesIntro(
                         count: page.notices.count, since: page.noticesSince, dataAsOf: page.dataAsOf, language))
                         .font(.footnote)
                         .foregroundStyle(Theme.muted)

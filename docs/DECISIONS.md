@@ -1386,3 +1386,51 @@ owner's final check.
   gate that refuses a development bundle.
 - Open, owner review: the drafted copy the pull request lists, and the thirty-filing size of
   the feed.
+
+## D87 · Accessibility audit in UI tests, its filters, and figures that never break · 2026-11-19 (`PROPOSED`)
+
+Roadmap Q1. Decided by the lead under the owner's delegation.
+
+- `FootnoteUITests` runs Apple's `performAccessibilityAudit()` on twenty-one screens in
+  Korean and English, at the default size, at Accessibility XL and in dark mode, at the top
+  of each screen and after each swipe. A finding fails the test unless a filter in
+  `AccessibilityAuditUITests.falsePositive` names its audit type and the elements it
+  applies to, with the reason in a comment. Two filters are broad: Dynamic Type findings on
+  every static text and button, and contrast, Dynamic Type and clipping findings that name no
+  element. Dynamic Type is therefore checked only by `testTextGrowsAtAccessibilitySizes` (five
+  elements, Korean, two screens) and the AX5 screenshots, and text clipping only on the first
+  pass of each screen.
+- Filters, each checked against screenshots: contrast on text under the translucent
+  navigation and tab bars (only real bars count; iOS 27 also reports a toolbar element the
+  size of the window), on text laid out below the screen, and on text after a swipe (every
+  text colour is a palette token measured at 4.9:1 or more; the first pass of each screen is
+  checked as it stands); Dynamic Type on SwiftUI text and buttons (they scale: a separate
+  test measures them growing at Accessibility XL) and on the language button (a bar item,
+  which shows the large content viewer instead); clipped text on a number that shrinks to
+  fit, on the navigation bar's inline title, on the notices sheet's introduction, on the
+  comparison's "Compare by" header and its rows on iPad, on the iPad sidebar's
+  `News` and `Glossary` labels, and on text after a swipe; contrast on the `원문` header and
+  on text in or under the iPad's floating sidebar glass; contrast, Dynamic Type and
+  clipped-text findings that
+  name no element; and "Potentially inaccessible text" with no element. The log prints each
+  filtered finding as `FILTERED|<reason>|`. Element-less findings of other types still
+  fail.
+- Figures in full digits (the calculation's equation, the year-over-year difference, the
+  value in a fact row, a receipt number) wrap only at their spaces. A number wider than the
+  whole line shrinks to fit (down to 40%) rather than breaking inside its digits. A word
+  without digits keeps its size and wraps as before.
+- Section headers use Muted instead of the system header grey, which the audit measured
+  just under the contrast threshold.
+- The companies list puts the ticker under the name when the name and ticker do not fit
+  on one line, so a name never breaks inside a word.
+- The compare screen's segmented control uses the extra-large control size, so each
+  segment is at least 44 points tall.
+- A filing tag keeps its own width unless that is wider than the row; then it wraps inside
+  the row. Before, `Management matters` at the accessibility sizes pushed the whole row past
+  both edges of its card on the company page and in News.
+- The iPad sidebar's selected company row draws its name and ticker in the system's primary
+  style, like the labels beside it: light on the Pine fill while the sidebar has focus, dark
+  on the grey fill while another column has it. Before, they stayed Ink and Muted on Pine
+  and were hard to read. The audit did not report it; the iPad screenshots did.
+- Not changed: the release gates and the wording of approved copy. One no-break space now
+  joins `보여 줘요` in D83's amounts note; the owner confirms or reverts it.

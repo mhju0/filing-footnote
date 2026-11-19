@@ -66,11 +66,10 @@ struct FigureView: View {
             }
             switch page.change {
             case .result(let change):
-                Text(words: PageCopy.changeFromLastYear(change.percentChange, language))
+                PhraseLines(phrases: PageCopy.changeFromLastYearPhrases(change.percentChange, language))
                     .font(.body)
                     .monospacedDigit()
                     .foregroundStyle(Theme.ink)
-                    .fixedSize(horizontal: false, vertical: true)
                 if let note = PageCopy.fiscalYearsNote(change, language) {
                     SectionNote(text: note)
                 }
@@ -126,7 +125,7 @@ struct FigureView: View {
             LinkRow(title: PageCopy.moreInGlossary(language)) { navigate(.glossary(entry.termKey)) }
                 .accessibilityIdentifier("more-in-glossary")
         } header: {
-            Text(words: PageCopy.meaning(language))
+            SectionTitle(PageCopy.meaning(language))
         }
     }
 
@@ -141,7 +140,7 @@ struct FigureView: View {
                     tag: figure.isRestated ? PageCopy.restatedTag(language) : nil)
             }
         } header: {
-            Text(words: PageCopy.earlierYears(language))
+            SectionTitle(PageCopy.earlierYears(language))
         } footer: {
             VStack(alignment: .leading, spacing: 6) {
                 if page.hasRestated { SectionNote(text: PageCopy.restatedNote(language)) }
@@ -270,11 +269,10 @@ private struct RateHeadline: View {
                 .font(.title3.weight(.semibold))
                 .foregroundStyle(Theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
-            Text(words: PageCopy.signedExact(change.delta, unit: change.unit, currency: change.currency, language))
+            UnbrokenNumbers(text: PageCopy.signedExact(change.delta, unit: change.unit, currency: change.currency, language))
                 .font(.subheadline)
                 .monospacedDigit()
                 .foregroundStyle(Theme.muted)
-                .fixedSize(horizontal: false, vertical: true)
             if let note = PageCopy.fiscalYearsNote(change, language) {
                 SectionNote(text: note)
             }
@@ -356,7 +354,7 @@ private struct GrowthCalculation: View {
                 result: PageCopy.signedPercent(change.percentChange), unit: PageCopy.unitAndRounding(change.unit, language),
                 spokenResult: Formatting.percentChangeSpoken(change.percentChange, language: language))
         } header: {
-            Text(words: companyName.map { $0 + Copy.dot + PageCopy.formula(language) } ?? PageCopy.formula(language))
+            SectionTitle(companyName.map { $0 + Copy.dot + PageCopy.formula(language) } ?? PageCopy.formula(language))
         }
         Section {
             ForEach([
@@ -368,7 +366,7 @@ private struct GrowthCalculation: View {
                 label: PageCopy.difference(language),
                 value: PageCopy.signedExact(change.delta, unit: change.unit, currency: change.currency, language))
         } header: {
-            Text(words: PageCopy.inputs(language))
+            SectionTitle(PageCopy.inputs(language))
         } footer: {
             if let source = calculation.currentSource, calculation.priorSource == source {
                 SectionNote(text: PageCopy.bothFrom(source, language))
@@ -379,7 +377,7 @@ private struct GrowthCalculation: View {
                 CheckRow(label: PageCopy.checkLabel(check, language), value: PageCopy.checkValue(check, language))
             }
         } header: {
-            Text(words: PageCopy.checks(language))
+            SectionTitle(PageCopy.checks(language))
         }
     }
 }
@@ -398,13 +396,13 @@ private struct MarginCalculationSections: View {
                 unit: PageCopy.unitAndRounding(calculation.revenue.unit, language),
                 spokenResult: DerivedMetric.operatingMargin.name(language) + " " + Formatting.percent(margin.operatingMargin))
         } header: {
-            Text(words: companyName.map { $0 + Copy.dot + PageCopy.formula(language) } ?? PageCopy.formula(language))
+            SectionTitle(companyName.map { $0 + Copy.dot + PageCopy.formula(language) } ?? PageCopy.formula(language))
         }
         Section {
             InputRow(figure: calculation.revenue, source: calculation.source)
             InputRow(figure: calculation.operatingIncome, source: calculation.source)
         } header: {
-            Text(words: PageCopy.inputs(language))
+            SectionTitle(PageCopy.inputs(language))
         }
         Section {
             CheckRow(label: PageCopy.checkLabel(.sameCompany(calculation.company), language),
@@ -417,7 +415,7 @@ private struct MarginCalculationSections: View {
                      value: Formatting.period(margin.periodStart, margin.periodEnd, language: language))
             CheckRow(label: PageCopy.revenueAboveZero(language), value: PageCopy.exact(calculation.revenue, language))
         } header: {
-            Text(words: PageCopy.checks(language))
+            SectionTitle(PageCopy.checks(language))
         }
     }
 }
@@ -436,11 +434,10 @@ private struct Equation: View {
                 .font(.subheadline)
                 .foregroundStyle(Theme.muted)
                 .fixedSize(horizontal: false, vertical: true)
-            Text(words: equation)
+            UnbrokenNumbers(text: equation)
                 .font(.body)
                 .monospacedDigit()
                 .foregroundStyle(Theme.ink)
-                .fixedSize(horizontal: false, vertical: true)
             Text(words: "= " + result)
                 .font(.title2.bold())
                 .monospacedDigit()
