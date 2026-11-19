@@ -333,8 +333,10 @@ def _annual_filings(build: _Build) -> None:
 def _quarters(build: _Build, companies: dict[tuple[str, str], CompanyRow]) -> None:
     """Each company's latest quarterly report filed on or before --as-of, with its
     three-month figures and the same three months a year earlier, each checked against the
-    pinned response. Only a company with an exported annual filing gets one. A metric the
-    report does not state is left out and listed in the report's ``quarter_gaps``."""
+    pinned response. Only a company that already has an exported event or annual filing gets
+    one. A figure missing for either quarter is listed in the report's ``quarter_gaps``; a
+    report with no figure for its own quarter is not exported and is listed in
+    ``quarterly_filings_without_figures``."""
     contract = load_categories_contract()
     if QUARTERLY_CATEGORY not in {c["key"] for c in contract.get("non_event_categories", [])}:
         build.problems.append(f"category {QUARTERLY_CATEGORY!r} is not in the categories contract")

@@ -38,9 +38,12 @@ extension PageCopy {
             "\(monthNames[start.month - 1])–\(monthNames[end.month - 1]) \(start.year)")
     }
 
-    /// Board 15: the note under the figures, naming the quarter a year earlier.
+    /// Board 15: the note under the figures, naming the quarter a year earlier. Draft: the
+    /// second sentence says what a tap opens, the figure's meaning and its yearly figures
+    /// (the Figure screen), instead of board 15's "뜻과 계산".
     static func quarterNote(prior: (start: CivilDate, end: CivilDate)?, _ language: Language) -> String {
-        let tap = language("숫자를 누르면 뜻과 계산을 볼 수 있어요.", "Tap a figure for its meaning and calculation.")
+        let tap = language("숫자를 누르면 뜻과 연도별 숫자를 볼 수 있어요.",
+                           "Tap a figure for its meaning and its figures by year.")
         guard let prior else { return tap }
         let period = quarterPeriod(start: prior.start, end: prior.end, language)
         return language("작년 같은 기간(\(period))과 비교했어요. ", "Compared with \(period). ") + tap

@@ -148,16 +148,21 @@ def quarter_label(fiscal_year: int, fiscal_quarter: int) -> str:
     return f"{fiscal_year}-Q{fiscal_quarter}"
 
 
-def dart_quarter_facts(
+def dart_quarter_rows(
     items: list[FinancialItem], descriptor: PeriodDescriptor
-) -> tuple[FinancialFact, ...]:
+) -> list[tuple[FinancialItem, FinancialFact]]:
     """The quarter's three months and the same three months a year earlier, from the
-    income-statement rows of a quarterly or half-year report (I11).
+    income-statement rows of a quarterly or half-year report (I11), each with the row it was
+    read from.
 
     ``thstrm_amount`` is the quarter and ``frmtrm_q_amount`` the same quarter a year earlier.
     After the first quarter a row must also state the year to date (``thstrm_add_amount``),
-    or it does not show which of the two ``thstrm_amount`` is, and the row is left out.
-    Raises ``ValueError`` when a row names a period other than the report code's.
+    or it does not show which of the two ``thstrm_amount`` is, and the row is left out. A row
+    whose quarter equals its year to date is left out too, and a year-earlier quarter equal
+    to that year's year to date (``frmtrm_add_amount``) is not read: after the first quarter
+    the two can match only when one amount was filed in both columns. Per metric and period
+    the first row read wins. Raises ``ValueError`` when a row names a period other than the
+    report code's.
     """
     quarter = descriptor.fiscal_quarter
     if quarter is None:
@@ -169,7 +174,7 @@ def dart_quarter_facts(
     prior_period = ReportingPeriod(
         quarter_label(descriptor.fiscal_year - 1, quarter), PeriodKind.duration
     )
-    facts: list[FinancialFact] = []
+    rows: list[tuple[FinancialItem, FinancialFact]] = []
     seen: set[tuple[ReportedMetric, str]] = set()
     for item in items:
         if item.metric is None or item.sj_div not in _QUARTER_SJ_DIVS:
@@ -179,24 +184,34 @@ def dart_quarter_facts(
                 f"{item.rcept_no}: thstrm_nm {item.thstrm_nm!r} is not the {expected} period "
                 f"of reprt_code for {descriptor.period}"
             )
-        if quarter > 1 and item.thstrm_add_amount is None:
+        if quarter > 1 and (item.thstrm_add_amount is None
+                            or item.thstrm_amount == item.thstrm_add_amount):  # fmt: skip
             continue
+        prior_value = item.frmtrm_q_amount
+        if quarter > 1 and prior_value is not None and prior_value == item.frmtrm_add_amount:
+            prior_value = None
         metric = ReportedMetric(item.metric)
         for period, value in ((current_period, item.thstrm_amount),
-                              (prior_period, item.frmtrm_q_amount)):  # fmt: skip
+                              (prior_period, prior_value)):  # fmt: skip
             if value is None or (metric, period.label) in seen:
                 continue
             seen.add((metric, period.label))
-            facts.append(
-                FinancialFact(
-                    metric=metric,
-                    period=period,
-                    value=value,
-                    unit=unit_for(metric.value),
-                    currency=item.currency or DEFAULT_CURRENCY,
-                )
+            fact = FinancialFact(
+                metric=metric,
+                period=period,
+                value=value,
+                unit=unit_for(metric.value),
+                currency=item.currency or DEFAULT_CURRENCY,
             )
-    return tuple(facts)
+            rows.append((item, fact))
+    return rows
+
+
+def dart_quarter_facts(
+    items: list[FinancialItem], descriptor: PeriodDescriptor
+) -> tuple[FinancialFact, ...]:
+    """The facts of :func:`dart_quarter_rows`, without their rows."""
+    return tuple(fact for _, fact in dart_quarter_rows(items, descriptor))
 
 
 def _dart_financial_facts(

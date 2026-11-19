@@ -138,12 +138,16 @@ final class AccessibilityAuditUITests: XCTestCase {
         // leading edge and is narrower than a third of the window).
         let sidebar = bars.first { $0.minX == 0 && $0.width < window.width / 3 }
             .map { CGRect(x: 0, y: 0, width: $0.width, height: window.height) }
+        // The quarter report's investor event row (I11), for the `bottom-edge` filter.
+        let investorRow = app.descendants(matching: .any)["investor-event"].firstMatch
+        let investorEvent = investorRow.exists ? investorRow.frame : nil
         if recording { print("BARS|\(config) #\(pass): \(bars.map(\.integral)) window=\(window.integral)") }
         try app.performAccessibilityAudit(for: .all) { issue in
             let element = issue.element
             let where_ = "\(config) #\(pass): \(issue.auditType.name) · \(issue.compactDescription) · "
                 + "id=\(element?.identifier ?? "-") label=\(element?.label ?? "-") type=\(element?.elementType.rawValue ?? 0)"
-            if let reason = Self.falsePositive(issue, bars: bars, sidebar: sidebar, window: window, afterSwipe: pass > 0) {
+            if let reason = Self.falsePositive(issue, bars: bars, sidebar: sidebar, window: window,
+                                                 investorEvent: investorEvent, afterSwipe: pass > 0) {
                 // Issues without an element are always printed, so a log shows them.
                 if self.recording || element == nil { print("FILTERED|\(reason)|" + where_) }
                 return true
@@ -161,7 +165,8 @@ final class AccessibilityAuditUITests: XCTestCase {
     /// Findings checked by hand and judged false positives. Each names one audit type and
     /// the elements it applies to; anything else fails the test.
     @MainActor private static func falsePositive(_ issue: XCUIAccessibilityAuditIssue, bars: [CGRect],
-                                                 sidebar: CGRect?, window: CGRect, afterSwipe: Bool) -> String? {
+                                                 sidebar: CGRect?, window: CGRect, investorEvent: CGRect?,
+                                                 afterSwipe: Bool) -> String? {
         guard let element = issue.element else {
             // Some contrast, Dynamic Type and clipped-text findings name no element and no
             // frame (SwiftUI nodes the audit cannot hand back). Q1 checked each such pass
@@ -204,8 +209,8 @@ final class AccessibilityAuditUITests: XCTestCase {
             // The quarter report's figures header in English (`July–September · Consolidated`,
             // `Mar 29–Jun 27 · Consolidated`): it shows in full on one line at the default size
             // and wraps between words at Accessibility XL (I11 audit screenshots of quarter and
-            // quarter-sec, English). The Korean header, the same view, passes.
-            if element.label.hasSuffix(", Consolidated") { return "quarter-header" }
+            // quarter-sec, English, and i11-quarter-hyundai-en-ax). The Korean header passes.
+            if element.identifier == "quarter-figures-header" { return "quarter-header" }
             // The same picker's rows on the iPad (`Amount` in the detail column): each row
             // shows in full on one line at the top and after each swipe (q1 iPad audit
             // screenshots of company-compare, English, Accessibility XL).
@@ -225,12 +230,14 @@ final class AccessibilityAuditUITests: XCTestCase {
             // text measures above the threshold once it is clear of the bars, which the other
             // passes of the same screen audit.
             if bars.contains(where: { $0.intersects(frame) }) { return "under-bar" }
-            // The band just above the bottom tab bar, where iOS fades list content into the
-            // bar (the scroll edge effect). I11 audit screenshots: `Investor event notice` at
-            // y 706–727 over a tab bar from about y 732 is drawn faded by the system, and the
-            // same colours pass higher on the screen (Ink and Muted tokens, Q1 "Contrast").
-            // Only text ending within 48 points above a bar in the lower half of the window.
-            if bars.contains(where: { $0.minY > window.midY && frame.maxY <= $0.minY && $0.minY - frame.maxY < 48 }) {
+            // The quarter report's investor event row when the list lays it out just above the
+            // bottom tab bar, where iOS fades list content into the bar (the scroll edge
+            // effect). I11 audit screenshots: `Investor event notice` at y 706–727 over a tab
+            // bar from about y 732 is drawn faded by the system; its colours are the Ink and
+            // Muted tokens measured in Q1 ("Contrast"). Only text inside that row, ending
+            // within 48 points above a bar in the lower half of the window.
+            if element.elementType == .staticText, let investorEvent, investorEvent.contains(frame),
+               bars.contains(where: { $0.minY > window.midY && frame.maxY <= $0.minY && $0.minY - frame.maxY < 48 }) {
                 return "bottom-edge"
             }
             // The iPad sidebar floats over the content column as translucent glass, and the

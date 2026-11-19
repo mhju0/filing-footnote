@@ -32,8 +32,9 @@ public enum QuarterComparison {
     /// The three months a year earlier may end a few days apart (52/53-week quarters), so
     /// the two ends lie this many days apart, as a fiscal year's two ends do.
     static let yearApartDays = Calculator.fiscalYearDays
-    /// A quarter of three calendar months or of 13 or 14 weeks, counting both ends.
-    static let quarterDays = 89...98
+    /// One fiscal quarter: 12 to 14 weeks, counting both ends (calendar quarters run 90 to 92
+    /// days, Costco's 12-week quarters 84). The backend's `sec._QUARTER_DAYS` uses the same rule.
+    static let quarterDays = 84...98
 
     /// `current` against `prior`: same company, metric, basis, currency and unit; both one
     /// quarter long and a year apart. A base of zero or below is refused, as

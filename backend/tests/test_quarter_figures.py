@@ -104,6 +104,33 @@ def test_dart_quarter_leaves_out_a_row_that_does_not_state_the_year_to_date() ->
     assert ("operating_income", "2026-Q3") in values
 
 
+def test_dart_quarter_leaves_out_a_quarter_equal_to_the_year_to_date() -> None:
+    """After the first quarter, a quarter equal to its year to date is one amount filed in
+    both columns: the row is left out. A year-earlier quarter equal to that year's year to
+    date is not read, and the row's own quarter still is."""
+    rows = json.loads(DART_Q3.read_text())["list"]
+    for row in rows:
+        if row["account_id"] == "ifrs-full_Revenue":
+            row["thstrm_amount"] = row["thstrm_add_amount"]
+        if row["account_id"] == "dart_OperatingIncomeLoss":
+            row["frmtrm_q_amount"] = row["frmtrm_add_amount"]
+    values = _facts_by_label(dart_quarter_facts(_dart_items(rows), period_descriptor("2026", "11014")))
+    assert not any(metric == "revenue" for metric, _ in values)
+    assert values[("operating_income", "2026-Q3")] == Decimal("12166062000000")
+    assert ("operating_income", "2025-Q3") not in values
+    assert values[("net_income_attributable", "2025-Q3")] == Decimal("9780000000000")
+
+
+def test_dart_first_quarter_may_equal_its_year_to_date() -> None:
+    rows = [
+        row | {"reprt_code": "11013", "thstrm_nm": "제 58 기 1분기",
+               "thstrm_add_amount": row.get("thstrm_amount")}
+        for row in json.loads(DART_Q3.read_text())["list"]
+    ]  # fmt: skip
+    values = _facts_by_label(dart_quarter_facts(_dart_items(rows), period_descriptor("2026", "11013")))
+    assert values[("revenue", "2026-Q1")] == Decimal("86061747000000")
+
+
 def test_dart_first_quarter_needs_no_year_to_date() -> None:
     rows = [
         {k: v for k, v in row.items() if k != "thstrm_add_amount"}
@@ -198,6 +225,50 @@ def test_sec_quarter_keeps_a_negative_prior_quarter_exactly() -> None:
     items = parse_quarter_facts(payload, APPLE_QUARTER)
     prior = next(i for i in items if i.metric == "net_income_attributable" and i.fiscal_year == 2025)
     assert prior.value == -4000000000
+
+
+def _set_quarter_start(payload: dict, tag: str, end: str, days: int) -> None:
+    """Give the 10-Q's three-month entry for ``tag`` ending on ``end`` a length of ``days``,
+    counting both ends. The nine-month entry (starting 2025-09-28) is left alone."""
+    for entry in payload["facts"]["us-gaap"][tag]["units"]["USD"]:
+        if entry["accn"] == APPLE_QUARTER and entry["end"] == end and entry["start"] != "2025-09-28":
+            last = datetime.date.fromisoformat(end)
+            entry["start"] = (last - datetime.timedelta(days=days - 1)).isoformat()
+
+
+def test_sec_quarter_accepts_twelve_and_fourteen_week_quarters() -> None:
+    """A quarter is 12 to 14 weeks counting both ends (84 to 98 days), as in
+    FootnoteKit's QuarterComparison: Costco's 12-week quarters are 84 days."""
+    for days in (84, 98):
+        payload = _companyfacts()
+        tag = "RevenueFromContractWithCustomerExcludingAssessedTax"
+        _set_quarter_start(payload, tag, "2026-06-27", days)
+        _set_quarter_start(payload, tag, "2025-06-28", days)
+        got = {(i.metric, i.fiscal_year): i for i in parse_quarter_facts(payload, APPLE_QUARTER)}
+        own, prior = got[("revenue", 2026)], got[("revenue", 2025)]
+        assert (own.period_end - own.period_start).days + 1 == days
+        assert (prior.period_end - prior.period_start).days + 1 == days
+
+
+def test_sec_quarter_refuses_a_quarter_shorter_than_twelve_weeks() -> None:
+    """83 days is not a quarter. The same quarter a year earlier is then not taken for the
+    own quarter: the own quarter must end on the 10-Q's latest date."""
+    payload = _companyfacts()
+    _set_quarter_start(payload, "RevenueFromContractWithCustomerExcludingAssessedTax", "2026-06-27", 83)
+    items = parse_quarter_facts(payload, APPLE_QUARTER)
+    assert not any(i.metric == "revenue" for i in items)
+    assert any(i.metric == "operating_income" and i.fiscal_year == 2026 for i in items)
+
+
+def test_sec_quarter_tries_the_next_tag_when_the_first_gives_no_quarter() -> None:
+    payload = _companyfacts()
+    entries = payload["facts"]["us-gaap"]["RevenueFromContractWithCustomerExcludingAssessedTax"]["units"]["USD"]
+    payload["facts"]["us-gaap"]["Revenues"] = {
+        "units": {"USD": [{**e, "start": "2026-01-01"} for e in entries if e["end"] == "2026-06-27"]}
+    }
+    got = {(i.metric, i.fiscal_year): i for i in parse_quarter_facts(payload, APPLE_QUARTER)}
+    assert got[("revenue", 2026)].tag == "RevenueFromContractWithCustomerExcludingAssessedTax"
+    assert got[("revenue", 2026)].value == 95000000000
 
 
 def _ten_q() -> SecFilingItem:

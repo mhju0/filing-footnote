@@ -44,7 +44,9 @@ struct QuarterReportView: View {
                     }
                 }
             } header: {
-                SectionTitle(PageCopy.quarterFigures(start: period.start, end: period.end, language))            } footer: {
+                SectionTitle(PageCopy.quarterFigures(start: period.start, end: period.end, language))
+                    .accessibilityIdentifier("quarter-figures-header")
+            } footer: {
                 SectionNote(text: PageCopy.quarterNote(prior: page.priorPeriod, language))
             }
             .id(PageScroll.numbers)

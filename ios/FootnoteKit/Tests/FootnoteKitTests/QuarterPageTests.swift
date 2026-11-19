@@ -102,6 +102,15 @@ import Testing
             == .refusal(Refusal(.incompatibleComparison, .periodEndMismatch)))
         #expect(QuarterComparison.compare(prior: edited(prior, currency: "USD"), current: current)
             == .refusal(Refusal(.incompatibleCurrency, .currencyMismatch)))
+        // A quarter is 12 to 14 weeks counting both ends, as the backend's `_QUARTER_DAYS`:
+        // 84 days (Costco's 12-week quarters) and 98 days compare; 83 and 99 do not.
+        func lasting(_ start2026: String, _ start2025: String) -> Comparison<QuarterChange> {
+            QuarterComparison.compare(prior: edited(prior, start: start2025), current: edited(current, start: start2026))
+        }
+        if case .refusal = lasting("2026-07-09", "2025-07-09") { Issue.record("84 days is a quarter") }
+        if case .refusal = lasting("2026-06-25", "2025-06-25") { Issue.record("98 days is a quarter") }
+        #expect(lasting("2026-07-10", "2025-07-09") == .refusal(Refusal(.incompatibleComparison, .periodLengthMismatch)))
+        #expect(lasting("2026-06-24", "2025-06-25") == .refusal(Refusal(.incompatibleComparison, .periodLengthMismatch)))
     }
 
     @Test func companyPageShowsTheQuarterAboveOneAnnualReport() throws {
@@ -120,5 +129,24 @@ import Testing
         let apple = try #require(store.filing(id: BundleStoreTests.appleQuarter))
         #expect(Titles.title(for: apple, language: .ko) == "2026 회계연도 3분기 보고서 (10-Q)")
         #expect(Titles.title(for: apple, language: .en) == "Q3 FY2026 report (10-Q)")
+    }
+
+    /// A 반기보고서 (report code 11012, FY2026-Q2) keeps DART's name.
+    @Test func halfYearReportTitles() throws {
+        let q3 = try #require(store.filing(id: BundleStoreTests.samsungQuarter))
+        func filing(form: String, title: String, label: String?) -> Filing {
+            Filing(id: q3.id, companyID: q3.companyID, kind: .quarterly, category: .quarterly, form: form,
+                   secItems: nil, titleOriginal: title, filedOn: q3.filedOn, periodLabel: label,
+                   sourceURL: q3.sourceURL, isCorrected: false, sourceTextSHA256: q3.sourceTextSHA256)
+        }
+        let half = filing(form: "반기보고서", title: "반기보고서 (2026.06)", label: "FY2026-Q2")
+        #expect(Titles.title(for: half, language: .ko) == "2026년 반기보고서")
+        #expect(Titles.title(for: half, language: .en) == "H1 2026 report")
+        let unlabelled = filing(form: "반기보고서", title: "반기보고서 (2026.06)", label: nil)
+        #expect(Titles.title(for: unlabelled, language: .ko) == "반기보고서")
+        #expect(Titles.title(for: unlabelled, language: .en) == "Half-year report")
+        let first = filing(form: "분기보고서", title: "분기보고서 (2026.03)", label: "FY2026-Q1")
+        #expect(Titles.title(for: first, language: .ko) == "2026년 1분기 보고서")
+        #expect(Titles.title(for: first, language: .en) == "Q1 2026 report")
     }
 }

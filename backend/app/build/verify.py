@@ -65,7 +65,7 @@ from app.clients.sec import (
     parse_submissions_payload,
 )
 from app.filings.categories import load_contract as load_categories_contract
-from app.ingest.dart import _dart_financial_facts, dart_quarter_facts, period_descriptor
+from app.ingest.dart import _dart_financial_facts, dart_quarter_rows, period_descriptor
 from app.ingest.sec_events import sec_facts
 from app.llm.neutrality_guard import check_line, check_source_url, check_summary
 
@@ -295,18 +295,20 @@ class PinnedResponses:
         if others:
             raise VerifyError(f"{relative}: rows belong to {others}, not {rcept_no}")
         try:
-            facts = dart_quarter_facts(items, period_descriptor(str(bsns_year), reprt_code))
+            rows = dart_quarter_rows(items, period_descriptor(str(bsns_year), reprt_code))
         except ValueError as exc:
             raise VerifyError(f"{relative}: {exc}") from exc
         label = f"{fiscal_year}-Q{fiscal_quarter}"
-        fact = next(
-            (f for f in facts if f.metric.value == metric and f.period.label == label), None
-        )
-        if fact is None:
+        found = next(
+            ((item, fact) for item, fact in rows
+             if fact.metric.value == metric and fact.period.label == label),
+            None,
+        )  # fmt: skip
+        if found is None:
             raise VerifyError(f"{relative}: no {metric} {label} row")
+        item, fact = found
         _require_equal(relative, metric, fact.value, expected)
-        tag = next(i.account_id for i in items if i.metric == metric and i.sj_div in ("IS", "CIS"))
-        return FigureCheck(tag, relative)
+        return FigureCheck(item.account_id, relative)
 
     def sec_quarter(
         self,

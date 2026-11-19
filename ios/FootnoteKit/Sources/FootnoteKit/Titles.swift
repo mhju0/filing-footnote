@@ -58,11 +58,16 @@ public enum Titles {
         return (String(year), quarter)
     }
 
-    /// Board 15: `2026년 3분기 보고서` / `Q3 2026 report`.
+    /// Board 15: `2026년 3분기 보고서` / `Q3 2026 report`. Draft: a 반기보고서 keeps DART's
+    /// name, `2026년 반기보고서` / `H1 2026 report`. Draft: without a period label, the
+    /// category label `분기 보고서` / `Quarterly report`, or `반기보고서` / `Half-year report`.
     private static func dartQuarter(_ filing: Filing, _ language: Language) -> String {
+        let halfYear = filing.form == "반기보고서"
         guard let (year, quarter) = fiscalQuarter(filing) else {
+            if halfYear { return language == .ko ? "반기보고서" : "Half-year report" }
             return language == .ko ? "분기 보고서" : "Quarterly report"
         }
+        if halfYear { return language == .ko ? "\(year)년 반기보고서" : "H1 \(year) report" }
         return language == .ko ? "\(year)년 \(quarter)분기 보고서" : "Q\(quarter) \(year) report"
     }
 

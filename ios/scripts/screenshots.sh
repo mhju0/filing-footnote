@@ -136,6 +136,7 @@ shots=(
   "i11-quarter-hyundai-en-light;filing=$hyundai|$hyundai_quarter;en;light;large;top"
   "i11-quarter-hyundai-ko-dark;filing=$hyundai|$hyundai_quarter;ko;dark;large;top"
   "i11-quarter-hyundai-ko-ax;filing=$hyundai|$hyundai_quarter;ko;light;accessibility-extra-large;center"
+  "i11-quarter-hyundai-en-ax;filing=$hyundai|$hyundai_quarter;en;light;accessibility-extra-large;top"
   "i11-quarter-sdi-ko-light;filing=$sdi|$sdi_quarter;ko;light;large;top"
   "i11-quarter-apple-ko-light;filing=$apple|$apple_quarter;ko;light;large;top"
   "i11-quarter-apple-en-light;filing=$apple|$apple_quarter;en;light;large;top"

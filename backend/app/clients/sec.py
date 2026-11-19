@@ -524,8 +524,10 @@ def parse_companyfacts_payload(
 
 
 QUARTERLY_FORM = "10-Q"
-# One fiscal quarter, start to end: 12 to 14 weeks (Costco's 12-week quarters run 83 days).
-_QUARTER_DAYS = range(80, 99)
+# One fiscal quarter: 12 to 14 weeks, counting both ends (84 to 98 days). Calendar quarters
+# run 90 to 92 days; Costco's 12-week quarters 84. FootnoteKit's `QuarterComparison` uses the
+# same rule.
+_QUARTER_DAYS = range(84, 99)
 # The same quarter a year earlier ends 52 or 53 weeks (or a calendar year) before it.
 _YEAR_APART_DAYS = range(357, 372)
 _QUARTER_PERIODS = frozenset({"Q1", "Q2", "Q3"})
@@ -534,8 +536,9 @@ _QUARTER_PERIODS = frozenset({"Q1", "Q2", "Q3"})
 def parse_quarter_facts(payload: Any, accession_number: str) -> list[SecFinancialItem]:
     """One 10-Q's three-month figures and the same three months a year earlier (I11).
 
-    Per metric, the first tag in :data:`_US_GAAP_TO_METRIC` order with a three-month fact in
-    the 10-Q (``accn``) gives the own quarter: the three-month fact with the latest end. The
+    Per metric, the first tag in :data:`_US_GAAP_TO_METRIC` order that has one three-month
+    fact (12 to 14 weeks, counting both ends) in the 10-Q (``accn``) ending on the 10-Q's
+    latest date for that tag gives the own quarter; otherwise the next tag is tried. The
     prior quarter is the same tag and ``accn``, three months, ending 357 to 371 days earlier.
     ``fiscal_year`` is the 10-Q's ``fy`` for the own quarter and one less for the prior one;
     ``fiscal_period`` is its ``fp``. Per-share tags are left out. A metric whose entries
@@ -548,11 +551,14 @@ def parse_quarter_facts(payload: Any, accession_number: str) -> list[SecFinancia
     if not isinstance(us_gaap, dict):
         return []
 
-    def quarter_entries(tag: str) -> list[SecFinancialItem]:
+    def quarter_entries(tag: str) -> tuple[list[SecFinancialItem], datetime.date | None]:
+        """The 10-Q's three-month entries for ``tag``, and the latest end of any of its
+        entries for ``tag`` (the 10-Q's own period end, which its year-to-date entry shares)."""
         fact = us_gaap.get(tag)
         units = fact.get("units") if isinstance(fact, dict) else None
         entries = units.get("USD") if isinstance(units, dict) else None
         found = []
+        latest: datetime.date | None = None
         for entry in entries if isinstance(entries, list) else []:
             if not isinstance(entry, dict) or entry.get("form") != QUARTERLY_FORM:
                 continue
@@ -562,9 +568,11 @@ def parse_quarter_facts(payload: Any, accession_number: str) -> list[SecFinancia
             end = _parse_sec_date(str(entry.get("end") or ""))
             value = parse_sec_amount(entry.get("val"))
             fy, fp = entry.get("fy"), str(entry.get("fp") or "").strip()
+            if end is not None and (latest is None or end > latest):
+                latest = end
             if start is None or end is None or value is None or not isinstance(fy, int):
                 continue
-            if (end - start).days not in _QUARTER_DAYS or fp not in _QUARTER_PERIODS:
+            if (end - start).days + 1 not in _QUARTER_DAYS or fp not in _QUARTER_PERIODS:
                 continue
             found.append(
                 SecFinancialItem(
@@ -574,7 +582,7 @@ def parse_quarter_facts(payload: Any, accession_number: str) -> list[SecFinancia
                     filed=_parse_sec_date(str(entry.get("filed") or "")),
                 )
             )  # fmt: skip
-        return found
+        return found, latest
 
     def single(candidates: list[SecFinancialItem]) -> SecFinancialItem | None:
         if len({(c.period_start, c.period_end, c.value) for c in candidates}) != 1:
@@ -591,14 +599,12 @@ def parse_quarter_facts(payload: Any, accession_number: str) -> list[SecFinancia
     for tag, metric in _US_GAAP_TO_METRIC.items():
         if tag in _EPS_TAGS or metric in done:
             continue
-        entries = quarter_entries(tag)
-        if not entries:
-            continue
-        done.add(metric)
-        latest = max(e.period_end for e in entries)
+        entries, latest = quarter_entries(tag)
+        # The own quarter ends on the 10-Q's latest date; without it the next tag is tried.
         own = single([e for e in entries if e.period_end == latest])
         if own is None:
             continue
+        done.add(metric)
         result.append(own)
         prior = single([e for e in entries if (latest - e.period_end).days in _YEAR_APART_DAYS])
         if prior is not None:

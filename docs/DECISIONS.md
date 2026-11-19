@@ -1472,12 +1472,21 @@ Roadmap I11 (board 15; in v0.1 since D88). Decided by the lead under the owner's
   earlier. Cash-flow rows are year to date and are never read. The ingest refuses a response
   whose `thstrm_nm` names another quarter, and after the first quarter it leaves out a row
   without `thstrm_add_amount`, since such a row does not show whether its amount is the
-  quarter or the year to date. A 반기보고서 gives the second quarter. DART states no dates, so
+  quarter or the year to date. It also leaves out a row whose quarter equals its year to
+  date, and does not read a year-earlier quarter equal to that year's year to date
+  (`frmtrm_add_amount`): after the first quarter the two match only when one amount was
+  filed in both columns. A 반기보고서 gives the second quarter, titled as DART names it
+  (`2026년 반기보고서` / `H1 2026 report`). DART states no dates, so
   the export derives them from the title's month (`분기보고서 (2026.09)`: July to September),
   as it does for annual reports.
-- SEC: the latest 10-Q's companyfacts entries of 80 to 98 days with that accession number;
-  the prior quarter is the same tag ending 357 to 371 days earlier (13- and 14-week
-  quarters). Nine-month entries are left out; entries that disagree give no figure.
+- A quarter is 12 to 14 weeks long, counting both ends: 84 to 98 days. Calendar quarters
+  run 90 to 92 days, 52/53-week filers' quarters 13 or 14 weeks, and Costco's first three
+  quarters 12 weeks (84 days). The backend's `sec._QUARTER_DAYS` and FootnoteKit's
+  `QuarterComparison.quarterDays` use this one rule.
+- SEC: the latest 10-Q's companyfacts three-month entries with that accession number. The
+  own quarter must end on the 10-Q's latest date for that tag; otherwise the next tag for
+  the metric is tried. The prior quarter is the same tag ending 357 to 371 days earlier.
+  Nine-month entries are left out; entries that disagree give no figure.
 - `python -m app.ingest --quarter` ingests them, additively. The bundle's schema 3 adds
   `quarterly` filings, which carry no summary, and the `quarter_figures` table. Export and
   `app.build.verify` re-read every quarter figure from the pinned responses with the
