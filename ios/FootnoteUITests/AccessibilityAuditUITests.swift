@@ -166,10 +166,11 @@ final class AccessibilityAuditUITests: XCTestCase {
             // `FILTERED|unlocated|`. Element-less findings of every other type still fail.
             let types: [XCUIAccessibilityAuditType] = [.contrast, .dynamicType, .textClipped]
             if types.contains(issue.auditType) { return "unlocated" }
-            // "Potentially inaccessible text" with no element, in English only, on screens
-            // whose every visible text is an element in the accessibility tree (checked with
-            // the q1 audit screenshots and a tree snapshot). Recorded as open in
-            // docs/audits/2026-11-19-q1-accessibility.md; any other element detection fails.
+            // "Potentially inaccessible text" with no element (seen in the English passes), on
+            // screens whose every visible text is an element in the accessibility tree (checked
+            // with the q1 audit screenshots and a tree snapshot). Described under "Findings and
+            // fixes" in docs/audits/2026-11-19-q1-accessibility.md; any other element detection
+            // fails.
             if issue.auditType == .elementDetection,
                issue.compactDescription == "Potentially inaccessible text" { return "unlocated-text" }
             return nil
@@ -206,8 +207,8 @@ final class AccessibilityAuditUITests: XCTestCase {
                ["소식", "용어", "News", "Glossary"].contains(element.label) { return "sidebar-label" }
             // After a swipe, text near the end of a list (`금액은 줄여서 보여 줘요.`, `2 notices`,
             // `See every filing on DART`) is reported clipped at a frame that does not match
-            // where it is drawn; the pass's screenshot shows it in full. The first pass of
-            // every screen, and the accessibility-size passes, still check clipping.
+            // where it is drawn; the pass's screenshot shows it in full. Only the first pass of
+            // each screen checks text clipping, at every text size.
             if afterSwipe, element.elementType == .staticText { return "scrolled-text" }
         case .contrast:
             // List content scrolls under the translucent (Liquid Glass) navigation and tab
@@ -219,7 +220,8 @@ final class AccessibilityAuditUITests: XCTestCase {
             // audit measures text in or under it (`Korea`, `Glossary`, and the content
             // column's `Periodic reports`, whose frame starts under the sidebar) against the
             // blurred material. Sidebar text uses the palette tokens measured in the Q1 audit;
-            // the selected row's Pine fill was checked on the iPad screenshots (OnPine text).
+            // the selected row's Pine fill was checked on the iPad screenshots (system `.primary`
+            // text). The section headers' Muted on the glass itself is not measured (audit item 37).
             if let sidebar, sidebar.intersects(frame) { return "under-sidebar" }
             // Text the list has laid out below the screen (`Needs an internet connection`
             // at y 850 on the 812-point mini): there is nothing behind it to measure.

@@ -1395,7 +1395,11 @@ Roadmap Q1. Decided by the lead under the owner's delegation.
   Korean and English, at the default size, at Accessibility XL and in dark mode, at the top
   of each screen and after each swipe. A finding fails the test unless a filter in
   `AccessibilityAuditUITests.falsePositive` names its audit type and the elements it
-  applies to, with the reason in a comment. There is no global filter.
+  applies to, with the reason in a comment. Two filters are broad: Dynamic Type findings on
+  every static text and button, and contrast, Dynamic Type and clipping findings that name no
+  element. Dynamic Type is therefore checked only by `testTextGrowsAtAccessibilitySizes` (five
+  elements, Korean, two screens) and the AX5 screenshots, and text clipping only on the first
+  pass of each screen.
 - Filters, each checked against screenshots: contrast on text under the translucent
   navigation and tab bars (only real bars count; iOS 27 also reports a toolbar element the
   size of the window), on text laid out below the screen, and on text after a swipe (every
@@ -1428,5 +1432,5 @@ Roadmap Q1. Decided by the lead under the owner's delegation.
   style, like the labels beside it: light on the Pine fill while the sidebar has focus, dark
   on the grey fill while another column has it. Before, they stayed Ink and Muted on Pine
   and were hard to read. The audit did not report it; the iPad screenshots did.
-- Not changed: approved copy (one no-break space joins `보여 줘요` in the amounts note) and
-  the release gates.
+- Not changed: the release gates and the wording of approved copy. One no-break space now
+  joins `보여 줘요` in D83's amounts note; the owner confirms or reverts it.

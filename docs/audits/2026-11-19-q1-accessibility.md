@@ -32,7 +32,7 @@ Mac display was checked; see the last section.
 Screenshots are in `docs/screenshots/footnote/` (`q1-mini-…` on the iPhone mini,
 `q1-ipad-…` on the iPad). "AX" is Accessibility XL; "AX5" is the largest size.
 
-Counts: 36 items. 19 pass, 8 fixed, 8 open with a reason (3 of them minor), 1 partly run
+Counts: 37 items. 19 pass, 8 fixed, 9 open with a reason (3 of them minor), 1 partly run
 (the iPad suite, item 34). Six Mac and VoiceOver items are not verified (last section).
 
 | # | Item | Result | Screenshot |
@@ -73,6 +73,7 @@ Counts: 36 items. 19 pass, 8 fixed, 8 open with a reason (3 of them minor), 1 pa
 | 34 | Full UI test suite on the iPad Pro 11 | Partly run, narrowed for time. Passed: filing pages (annual, approved summary); News by day, tags, empty state, no glossary; filing to glossary link. Failed, each also failing or untestable before this pass: the detail-column comparison (33, figure compare); the test helpers' `swipeUp` scrolls the window centre, which on the iPad is the content column (event filing's original button, figure link to the glossary); the glossary test taps the iPhone tab bar. Audits: see 3 and 5. Not run on the iPad: Korean and English default, Korean AX and English dark audits, the labels suite, text growth | q1-ipad-company-samsung-ko-light |
 | 35 | Unit tests, iOS and macOS | Pass: iOS 38 tests in 9 suites; macOS 38 tests in 9 suites | — |
 | 36 | `scripts/check.sh` | Pass: `GATE: PASS` (backend tests, FootnoteKit 129 tests in 21 suites, project.yml match, no currency conversion) | — |
+| 37 | iPad sidebar section headers (Muted) on the sidebar's glass | Open: the headers now use `SectionTitle`'s Muted instead of the system header style; Muted's 5.51:1 is measured on Background, not on the glass, and the audit's contrast findings in the sidebar are filtered (`under-sidebar`). Check by eye on an iPad | — |
 
 
 ## Findings and fixes
@@ -82,7 +83,7 @@ Counts: 36 items. 19 pass, 8 fixed, 8 open with a reason (3 of them minor), 1 pa
   the window, so every element matched. Only strips at the top or bottom count now, and the
   audits were rerun.
 - **Contrast after a swipe.** After a swipe the audit reports text that is plainly legible
-  in that pass's screenshot (`Oct 29, 2026` in Ink on white, 13.8:1), at frames that do not
+  in that pass's screenshot (`Oct 29, 2026` in Ink on white, 14.92:1), at frames that do not
   match where the text is drawn. Every text colour was measured instead (item 14); text after
   a swipe is filtered for contrast, and the first pass of each screen is checked as it
   stands.
