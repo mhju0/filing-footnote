@@ -10,7 +10,7 @@ Filing Footnote v0.1 is in development. Nothing is released. The backend package
 
 - Built: ingest, the bundle export and its release gates, and the app, including the quarter report. They are checked by the backend offline tests and the FootnoteKit tests, which `scripts/check.sh` runs, and by the app and UI tests, which `xcodebuild` runs.
 - On 2026-11-19 the owner accepted decisions D78 to D86 and approved the glossary wording and the drafted screen copy (D88). D87 (accessibility audit) and D89 (quarter report) are still PROPOSED in [docs/DECISIONS.md](docs/DECISIONS.md).
-- Summaries: the owner approved 38 filing sections. A development export ships 24 filings with an approved summary. Five more approved filings are no longer among their company's ten newest. The export refused nine approved sections as stale, because they were written under an earlier prompt version; they are written again and go back to the owner. About 170 filings still need a summary written on Groq's free tier and approved.
+- Summaries: the owner approved 38 filing sections. A development export ships 24 filings with an approved summary. Five more approved filings are no longer among their company's ten newest. The export skipped nine approved sections as stale, because they were written under an earlier version of the word lists, and a release export refuses them; the summary run writes them again for the owner. Of the 171 exported filings without an approved summary, some are written and wait for the owner, and the rest are still being written on Groq's free tier.
 - The release data bundle is not built yet. A release export refuses while any exported filing lacks an approved summary, and a release build of the app refuses a development bundle.
 - The walkthrough video is not recorded yet.
 
@@ -19,7 +19,7 @@ Filing Footnote v0.1 is in development. Nothing is released. The backend package
 A language model (Groq's `qwen/qwen3.8-27b`) does two jobs:
 
 - It writes three short lines per event filing, and the one-line, business, changes and risks sections of an annual report, in Korean and English.
-- It reviews each line it wrote. The review is advisory: it never approves or blocks.
+- It reviews the lines that passed the guard. The review is advisory: it never approves or blocks.
 
 Everything else is code that can be read and tested:
 

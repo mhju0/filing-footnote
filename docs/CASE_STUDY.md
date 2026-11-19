@@ -2,8 +2,8 @@
 
 Status on 2026-11-20: v0.1 in development. The pipeline, the app, the quarter report and the
 release gates are built. The owner has approved the glossary, the screen copy and 38 summary
-sections. The release bundle is not built, because about 170 filings still need an approved
-summary, and the walkthrough is not recorded.
+sections. The release bundle is not built, because 171 exported filings still lack an
+approved summary, and the walkthrough is not recorded.
 
 ## The problem
 
@@ -173,10 +173,11 @@ the six refusal reasons is reached in the FootnoteKit and app tests.
 
 The owner approved 38 sections on the review page. The first development export after that
 shipped 24 of them and left out 5 whose filings are no longer among their company's ten
-newest. It refused the other 9: they had been written under an earlier prompt version, so
-their stored hash no longer matched the current prompt, source text, model and word lists.
-A release export would have stopped on them. The export does not trust an approval made for
-a different input; those sections are written again and go back to the owner.
+newest. It skipped the other 9: they had been written under the first version of the word
+lists (three also under an earlier prompt), so their stored hash no longer matched the
+current source text, prompt, model and word lists. A release export refuses them. The
+export does not trust an approval made for a different input; the summary run writes those
+sections again and they go back to the owner.
 
 ### Data that silently went missing
 
@@ -196,49 +197,53 @@ run is still going, so these counts grow.
 
 | Filing sections | Count |
 |---|---|
-| In the summary files | 83 |
-| Written by the model | 60 |
-| Written by a template (no model call) | 23 |
+| In the summary files | 86 |
+| Written by the model | 62 |
+| Written by a template (no model call) | 24 |
 | Approved by the owner | 38 |
+| Approved, with a newer version staged or withheld | 0 |
 | Approved with an owner edit | 0 |
-| Passed the guard, awaiting the owner | 32 |
-| Withheld by the guard | 13 |
-| Withheld, by rule (a section can fail more than one) | N1 2, N3 1, N4 7, N6 3, json 1 |
+| Passed the guard, awaiting the owner | 34 |
+| Withheld by the guard | 14 |
+| Withheld, by rule (a section can fail more than one) | N1 3, N3 1, N4 8, N6 3, json 1 |
 | With a soft-intensity warning (N9, never blocks) | 3 |
 
 | Model reviewer (advisory; model-written sections that passed the guard) | Count |
 |---|---|
-| No flags | 47 |
+| No flags | 48 |
 | Flagged something | 0 |
 | Did not run | 0 |
 
 | Calls | Count |
 |---|---|
-| First calls | 84 |
-| Retries (first answer failed the guard) | 38 |
-| Sections retried that now pass | 20 |
-| Sections retried that stayed withheld | 13 |
-| Reviewer calls | 62 |
+| First calls | 85 |
+| Retries (first answer failed the guard) | 39 |
+| Retries that ended in an API error | 8 |
+| Sections the retry fixed (last writing call, now passing) | 18 |
+| Sections whose last writing call was a failed retry (withheld) | 14 |
+| Reviewer calls | 63 |
 | Cache hits (no call made) | 217 |
-| Template runs (no call made) | 23 |
-| API errors | LLMApiError 400 ×1, LLMApiError 404 ×1, LLMApiError 413 ×1, LLMApiError 429 ×17, LLMApiError 503 ×1 |
-| Median tokens in / out per writing call | 2312 / 153 |
-| Total tokens in / out | 312018 / 18541 |
+| Template runs (no call made) | 24 |
+| API errors | LLMApiError 400 ×1, LLMApiError 404 ×1, LLMApiError 413 ×1, LLMApiError 429 ×19, LLMApiError 503 ×1 |
+| Median tokens in / out per writing call | 2311 / 154 |
+| Total tokens in / out | 315745 / 18942 |
 
 What the counts say:
 
-- The guard rejected the model's first answer on 38 of 84 first calls. One retry, with the
-  guard's findings, fixed 20 of the 33 sections retried. The other 13 stayed withheld and
-  their pages show the figures alone.
-- The most common reason a section stayed withheld was attribution (N4, 7 sections): a line
+- The guard rejected the model's first answer on at least 39 of 85 first calls; eight more
+  retries ended in an API error before an answer came back. A retry with the guard's findings
+  produced the final text of 18 sections. Fourteen sections stayed withheld, and their pages
+  show the figures alone.
+- The most common reason a section stayed withheld was attribution (N4, 8 sections): a line
   that states something without saying it is the company's statement. No template section was
   withheld.
-- The model reviewer flagged nothing on 47 sections that passed the guard. The owner then
-  read and approved 38 sections without editing a line. The reviewer added no signal in this
-  run, so the owner's read remains the check that matters.
-- A writing call takes a median of about 2,300 tokens in and 150 out. Groq's free tier allows
-  200,000 tokens a day, and the run hit that limit (HTTP 429) repeatedly, which is why the
-  remaining filings take weeks rather than hours.
+- The model reviewer flagged nothing on the 48 sections that passed the guard. The owner
+  then read and approved 38 sections without editing a line. The reviewer added no signal in
+  this run, so the owner's read remains the check that matters.
+- A writing call takes a median of about 2,300 tokens in and 150 out. Groq's HTTP 429
+  responses during the run named a daily limit of 200,000 tokens. At the pace the run logged
+  on 2026-11-19, about 45 sections a day, the remaining sections take several days, and then
+  the owner's review.
 
 ## How it was built
 
@@ -249,15 +254,15 @@ Footnote merges two earlier projects of the same owner, Filing Digest and Filing
 | Measure | Count | Source |
 |---|---|---|
 | Pull requests merged | 40 | `gh pr list --state merged` |
-| Commits, not counting merges | 79 | `git log --since=2026-11-17 --no-merges` |
+| Commits, not counting merges, by 2026-11-20 | about 80 | `git log --since=2026-11-17 --no-merges` |
 | Decision entries | D59 to D89 | [DECISIONS.md](DECISIONS.md) |
 
 The code was written by an AI coding agent (Claude Code; each commit carries an `Agent:`
 trailer) working to the owner's product decisions, design picks and approvals. A pull
-request merged only after `scripts/check.sh` ended `GATE: PASS` and the CI backend job
-passed. Larger pull requests also had a separate review pass, and its fixes are recorded in
-the decision log (for example D85 for the comparison screens and D89 for the quarter
-report). The owner kept three things: product scope, visual picks, and approval of every
+request merged only after its checks passed; 38 of the 40 pull request bodies include a
+`scripts/check.sh` run ending `GATE: PASS`. Larger pull requests also had a separate review
+pass, and its fixes are recorded (for example D85 for the comparison screens, and commit
+`90146f2` for the quarter report). The owner kept three things: product scope, visual picks, and approval of every
 summary, glossary entry and piece of screen copy.
 
 ## Measured results
@@ -291,4 +296,5 @@ Development bundle (data date 2026-11-19, `allow_unapproved = 1`, counted with `
 | Glossary rows | 94 (47 entries in two languages; 46 approved, `category_quarterly` waits for the owner) |
 
 Release readiness: the export lists 195 filings that need summaries, and 24 have approved
-ones. A release export refuses until all of them do. Pilot summary text is not quoted here.
+ones. Of the rest, some are written and wait for the owner (34 sections on 2026-11-20), and
+the summary run is still writing the others. A release export refuses until all of them do. Pilot summary text is not quoted here.

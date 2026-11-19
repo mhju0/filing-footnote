@@ -9,8 +9,16 @@ section), with Korean and English counted together: a section is withheld when e
 was withheld, and a guard rule counts once per section however many lines it caught.
 
 The call log records each call's purpose. A ``retry`` call happens only after the first answer
-failed the guard, so retries count first answers the guard rejected. The log does not record
-which rule failed a first answer; the rules listed are the ones on rows that stayed withheld.
+failed the guard, so retries count first answers the guard rejected; a retry that ended in an
+API error is counted apart. A retry counts as having fixed a section only when it was the
+section's last completed writing call and the section now passes; a later run that wrote the
+section again from a first call does not count. The log does not record which rule failed a
+first answer; the rules listed are the ones on rows that stayed withheld.
+
+An approved section counts as approved even when a newer staged or withheld version exists;
+that case is counted apart. Whether an approval still matches its source text, prompt, model
+and word lists is checked by the export (``stale_approved_rows_skipped`` in its report), not
+here.
 """
 
 from __future__ import annotations
@@ -35,6 +43,7 @@ class Report:
     by_model: int = 0
     by_template: int = 0
     approved: int = 0
+    approved_with_newer_version: int = 0
     awaiting_owner: int = 0
     withheld: int = 0
     withheld_rules: Counter[str] = field(default_factory=Counter)
@@ -45,6 +54,7 @@ class Report:
     reviewer_not_run: int = 0
     first_calls: int = 0
     retries: int = 0
+    retry_errors: int = 0
     retried_then_passed: int = 0
     retried_then_withheld: int = 0
     review_calls: int = 0
@@ -76,6 +86,8 @@ def _sections(staged: Iterable[Row], approved: Iterable[Row]) -> dict[tuple[str,
 def build(staged: Sequence[Row], approved: Sequence[Row], calls: Sequence[Row]) -> Report:
     report = Report()
     sections = _sections(staged, approved)
+    approved_keys = {_key(r) for r in approved}
+    report.approved_with_newer_version = len(approved_keys & {_key(r) for r in staged})
     states: dict[tuple[str, str], str] = {}
     for key, rows in sections.items():
         report.sections += 1
@@ -109,7 +121,7 @@ def build(staged: Sequence[Row], approved: Sequence[Row], calls: Sequence[Row]) 
             else:
                 report.reviewer_clean += 1
 
-    retried: set[tuple[str, str]] = set()
+    last_writer: dict[tuple[str, str], str] = {}
     for call in calls:
         purpose, cache = call.get("purpose"), call.get("cache")
         at = call.get("at")
@@ -118,6 +130,7 @@ def build(staged: Sequence[Row], approved: Sequence[Row], calls: Sequence[Row]) 
             report.last_call_at = max(filter(None, [report.last_call_at, at]))
         if call.get("error"):
             report.api_errors[str(call["error"])] += 1
+            report.retry_errors += purpose == "retry"
             continue
         if cache == "hit":
             report.cache_hits += 1
@@ -129,15 +142,17 @@ def build(staged: Sequence[Row], approved: Sequence[Row], calls: Sequence[Row]) 
             report.first_calls += 1
         elif purpose == "retry":
             report.retries += 1
-            retried.add(_key(call))
         elif purpose == "review":
             report.review_calls += 1
         if purpose in ("generate", "retry"):
+            last_writer[_key(call)] = str(purpose)
             if call.get("tokens_in") is not None:
                 report.tokens_in.append(int(call["tokens_in"]))
             if call.get("tokens_out") is not None:
                 report.tokens_out.append(int(call["tokens_out"]))
-    for key in retried:
+    for key, purpose in last_writer.items():
+        if purpose != "retry":
+            continue
         state = states.get(key)
         if state in ("approved", "staged"):
             report.retried_then_passed += 1
@@ -162,6 +177,7 @@ def render(report: Report) -> str:
         f"| Written by the model | {r.by_model} |",
         f"| Written by a template (no model call) | {r.by_template} |",
         f"| Approved by the owner | {r.approved} |",
+        f"| Approved, with a newer version staged or withheld | {r.approved_with_newer_version} |",
         f"| Approved with an owner edit | {r.owner_edited} |",
         f"| Passed the guard, awaiting the owner | {r.awaiting_owner} |",
         f"| Withheld by the guard | {r.withheld} |",
@@ -178,8 +194,10 @@ def render(report: Report) -> str:
         "|---|---|",
         f"| First calls | {r.first_calls} |",
         f"| Retries (first answer failed the guard) | {r.retries} |",
-        f"| Sections retried that now pass | {r.retried_then_passed} |",
-        f"| Sections retried that stayed withheld | {r.retried_then_withheld} |",
+        f"| Retries that ended in an API error | {r.retry_errors} |",
+        f"| Sections the retry fixed (last writing call, now passing) | {r.retried_then_passed} |",
+        f"| Sections whose last writing call was a failed retry (withheld) | "
+        f"{r.retried_then_withheld} |",
         f"| Reviewer calls | {r.review_calls} |",
         f"| Cache hits (no call made) | {r.cache_hits} |",
         f"| Template runs (no call made) | {r.template_runs} |",
