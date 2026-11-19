@@ -36,9 +36,59 @@ def data() -> BuildInput:
     return fixture_build_input()
 
 
-def test_every_entry_is_unapproved_until_the_owner_approves() -> None:
-    # Only the owner flips this. When approval starts, replace this with a per-key list.
-    assert [k for k, e in load_glossary().items() if e["approved"]] == []
+# The owner approved these entries' wording on 2026-11-19 (D88). Only the owner adds a key here.
+OWNER_APPROVED = {
+    "metric_revenue",
+    "metric_operating_income",
+    "metric_net_income",
+    "metric_net_income_attributable",
+    "metric_eps",
+    "metric_eps_diluted",
+    "metric_operating_margin",
+    "basis_consolidated",
+    "basis_separate",
+    "restated",
+    "k_ifrs",
+    "us_gaap",
+    "fiscal_year_end",
+    "category_annual",
+    "category_earnings",
+    "category_unit_sales",
+    "category_buyback",
+    "category_dividend",
+    "category_capital",
+    "category_deal",
+    "category_leadership",
+    "category_legal",
+    "category_outlook",
+    "category_shareholder_value",
+    "category_meeting",
+    "category_operations",
+    "category_lending",
+    "category_management",
+    "category_clarification",
+    "notices",
+    "category_ir_event",
+    "category_record_date",
+    "category_meeting_notice",
+    "category_earnings_notice",
+    "category_audit_report",
+    "category_governance_report",
+    "category_sustainability_report",
+    "category_compliance_program",
+    "category_notice_only",
+    "category_market_action",
+    "refusal_ambiguous_request",
+    "refusal_unsupported_basis",
+    "refusal_metric_out_of_scope",
+    "refusal_missing_period",
+    "refusal_incompatible_currency",
+    "refusal_incompatible_comparison",
+}
+
+
+def test_only_owner_approved_entries_are_approved() -> None:
+    assert {k for k, e in load_glossary().items() if e["approved"]} == OWNER_APPROVED
 
 
 def test_every_entry_has_both_languages_and_passes_the_neutrality_guard() -> None:
@@ -99,6 +149,8 @@ def test_the_glossary_has_no_research_and_development_entry() -> None:
 
 def test_rows_are_approved_entries_only_unless_unapproved_are_allowed() -> None:
     entries = copy.deepcopy(load_glossary())
+    for entry in entries.values():
+        entry["approved"] = False
     assert glossary_rows(entries, allow_unapproved=False) == []
     assert len(glossary_rows(entries, allow_unapproved=True)) == 2 * len(entries)
     entries["restated"]["approved"] = True
@@ -124,12 +176,24 @@ def test_development_export_writes_unapproved_entries(data, tmp_path) -> None:
 
 
 def test_release_refuses_while_any_glossary_entry_is_unapproved(data, monkeypatch) -> None:
-    monkeypatch.setattr(export, "load_glossary", load_glossary)  # the contract as committed
+    unapproved = {k: {**e, "approved": False} for k, e in load_glossary().items()}
+    monkeypatch.setattr(export, "load_glossary", lambda: unapproved)
     release = dataclasses.replace(
         BuildOptions(AS_OF, "test"), prompt_version="v1", event_prompt_version="v1"
     )
     with pytest.raises(BuildError) as raised:
         build_bundle(data, release, PINNED_DIRS)
     problems = [p for p in raised.value.problems if "glossary" in p]
-    assert len(problems) == len(load_glossary())
+    assert len(problems) == len(unapproved)
     assert all("not approved" in p for p in problems)
+
+
+def test_release_has_no_glossary_problem_with_the_committed_contract(data, monkeypatch) -> None:
+    monkeypatch.setattr(export, "load_glossary", load_glossary)  # the contract as committed
+    release = dataclasses.replace(
+        BuildOptions(AS_OF, "test"), prompt_version="v1", event_prompt_version="v1"
+    )
+    try:
+        build_bundle(data, release, PINNED_DIRS)
+    except BuildError as raised:
+        assert [p for p in raised.problems if "glossary" in p] == []

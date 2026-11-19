@@ -1434,3 +1434,28 @@ Roadmap Q1. Decided by the lead under the owner's delegation.
   and were hard to read. The audit did not report it; the iPad screenshots did.
 - Not changed: the release gates and the wording of approved copy. One no-break space now
   joins `보여 줘요` in D83's amounts note; the owner confirms or reverts it.
+
+## D88 · The owner's final check: glossary, drafted copy, D78–D86, and v0.1 scope · 2026-11-19 (`ACCEPTED`)
+
+The owner reviewed the final-check page and returned their picks on 2026-11-19.
+
+- Accepted: D78, D79, D80, D81, D82, D83, D84, D85 and D86, as written. Their status lines
+  are not edited; this entry records the acceptance.
+- Glossary: the owner approved the wording of all 46 entries in `contracts/glossary.json`,
+  which now carry `"approved": true`. `test_glossary_contract.OWNER_APPROVED` lists the keys;
+  only the owner adds one.
+- Drafted copy: the owner approved the 27 drafted items listed on the page (PRs #33–#35:
+  filing page, annual page, figure, compare, refusal, news and glossary wording). Their
+  `Draft:` markers in `PageCopy.swift` and `Copy.swift` now read `D88`.
+- Still for the owner: the no-break space D87 added inside the approved `보여 줘요` in D83's
+  amounts note (wording unchanged).
+- Summaries: the owner approved 38 staged sections; approval itself goes through
+  `app.build.approve`, run by the owner. Seven sections the guard withheld are not approved
+  and get rewritten in a later run.
+- Scope: the quarter report screen (board 15) is in v0.1. PRODUCT.md now says so. It needs
+  same-quarter-last-year figures for DART (`frmtrm_q_amount`) and quarterly SEC figures.
+- Other calls: summaries keep running on the free tier only; the news feed shows thirty
+  filings; the walkthrough is recorded on the iPhone mini simulator and hosted as a GitHub
+  release asset; the README keeps its one Filing Digest line; the case study stays English
+  and quotes no pilot summary; the repository goes public only after the walkthrough is in
+  the README, and the owner flips it.

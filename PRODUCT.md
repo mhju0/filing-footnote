@@ -54,6 +54,9 @@ guessing. It explains; it does not advise or trade.
   similar) are listed together on one row and are not summarised. Metrics: revenue,
   operating income, net income, net income attributable to owners, EPS, diluted EPS, and
   derived operating margin.
+- Quarter report: each company's latest quarterly report shows the quarter's figures next to
+  the same quarter a year earlier, with the change, as on design board 15. (2026-11-19,
+  owner: quarter report in v0.1; D88)
 - Company outlook ("회사 전망 / Company outlook") shows what the company forecast, always
   attributed to the company and never used in a comparison; the app does not compute a
   gap against a forecast. (2026-11-19, owner)
