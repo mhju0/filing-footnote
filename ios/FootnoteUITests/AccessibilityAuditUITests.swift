@@ -196,10 +196,10 @@ final class AccessibilityAuditUITests: XCTestCase {
             // turns into a list under this header, which shows in full on one line (q1 audit
             // screenshot of company-compare, English, Accessibility XL).
             if element.label == "비교 방식" || element.label == "Compare by" { return "compare-by-header" }
-            // The same picker's rows on the iPad (`Amount` in the detail column), after a
-            // swipe: each row shows in full on one line in the pass's screenshot (q1 iPad
-            // audit screenshot of company-compare, English, Accessibility XL).
-            if afterSwipe, element.identifier == "measure-picker" { return "compare-by-row" }
+            // The same picker's rows on the iPad (`Amount` in the detail column): each row
+            // shows in full on one line at the top and after each swipe (q1 iPad audit
+            // screenshots of company-compare, English, Accessibility XL).
+            if element.identifier == "measure-picker" { return "compare-by-row" }
             // The iPad sidebar's two system labels (`News`, `Glossary`) at the accessibility
             // sizes: each shows in full on one line in every iPad audit screenshot.
             if let sidebar, sidebar.contains(frame),

@@ -1404,7 +1404,7 @@ Roadmap Q1. Decided by the lead under the owner's delegation.
   test measures them growing at Accessibility XL) and on the language button (a bar item,
   which shows the large content viewer instead); clipped text on a number that shrinks to
   fit, on the navigation bar's inline title, on the notices sheet's introduction, on the
-  comparison's "Compare by" header and its rows after a swipe on iPad, on the iPad sidebar's
+  comparison's "Compare by" header and its rows on iPad, on the iPad sidebar's
   `News` and `Glossary` labels, and on text after a swipe; contrast on the `원문` header and
   on text in or under the iPad's floating sidebar glass; contrast, Dynamic Type and
   clipped-text findings that
@@ -1424,8 +1424,9 @@ Roadmap Q1. Decided by the lead under the owner's delegation.
 - A filing tag keeps its own width unless that is wider than the row; then it wraps inside
   the row. Before, `Management matters` at the accessibility sizes pushed the whole row past
   both edges of its card on the company page and in News.
-- The iPad sidebar's selected company row draws its name and ticker in OnPine on the Pine
-  selection fill, like the system labels beside it. Before, they stayed Ink and Muted on
-  Pine and were hard to read. The audit did not report it; the iPad screenshots did.
+- The iPad sidebar's selected company row draws its name and ticker in the system's primary
+  style, like the labels beside it: light on the Pine fill while the sidebar has focus, dark
+  on the grey fill while another column has it. Before, they stayed Ink and Muted on Pine
+  and were hard to read. The audit did not report it; the iPad screenshots did.
 - Not changed: approved copy (one no-break space joins `보여 줘요` in the amounts note) and
   the release gates.

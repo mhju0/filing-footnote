@@ -124,7 +124,7 @@ final class CoreFlowUITests: XCTestCase {
     @MainActor private func reveal(_ element: XCUIElement, in app: XCUIApplication) {
         var tries = 0
         while !(element.exists && element.isHittable) && tries < 8 {
-            app.swipeUp()
+            swipe(up: true, toward: element, in: app)
             tries += 1
         }
     }
@@ -132,9 +132,24 @@ final class CoreFlowUITests: XCTestCase {
     @MainActor private func revealUpward(_ element: XCUIElement, in app: XCUIApplication) {
         var tries = 0
         while !(element.exists && element.isHittable) && tries < 8 {
-            app.swipeDown()
+            swipe(up: false, toward: element, in: app)
             tries += 1
         }
+    }
+
+    /// On iPhone a swipe anywhere scrolls the one screen. On the iPad's split view the
+    /// window's centre lies in the content column, so the swipe goes to the column the
+    /// element is in: the content column for a filing row, the detail column otherwise.
+    @MainActor private func swipe(up: Bool, toward element: XCUIElement, in app: XCUIApplication) {
+        guard UIDevice.current.userInterfaceIdiom == .pad else {
+            if up { app.swipeUp() } else { app.swipeDown() }
+            return
+        }
+        let window = app.windows.firstMatch.frame
+        let x = element.exists ? element.frame.midX / window.width : 0.8
+        let from = app.coordinate(withNormalizedOffset: CGVector(dx: x, dy: up ? 0.7 : 0.3))
+        let to = app.coordinate(withNormalizedOffset: CGVector(dx: x, dy: up ? 0.3 : 0.7))
+        from.press(forDuration: 0.05, thenDragTo: to)
     }
 
     @MainActor private func tapRevealed(_ element: XCUIElement, in app: XCUIApplication) {

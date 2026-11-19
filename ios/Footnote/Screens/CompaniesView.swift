@@ -32,9 +32,10 @@ struct CompanyRow: View {
     @Environment(\.language) private var language
     let company: Company
     let isNew: Bool
-    /// True when the iPad sidebar has this row selected and fills it with Pine: the name and
-    /// ticker turn OnPine, as the system labels beside them do, instead of Ink and Muted on
-    /// Pine. The Mac draws its own highlight, so it keeps Ink and Muted.
+    /// True when the iPad sidebar has this row selected. The selection fill is Pine while the
+    /// sidebar has focus and light grey while another column has it, so the name and ticker
+    /// take the system's primary style, as the labels beside them do: light on Pine, dark on
+    /// grey. Ink and Muted stayed dark on Pine. The Mac draws its own highlight and keeps them.
     var isSelected = false
 
     var body: some View {
@@ -59,7 +60,7 @@ struct CompanyRow: View {
     private var name: some View {
         Text(words: Titles.name(of: company, language: language))
             .font(.body)
-            .foregroundStyle(onFill ? Theme.onPine : Theme.ink)
+            .foregroundStyle(onFill ? AnyShapeStyle(.primary) : AnyShapeStyle(Theme.ink))
     }
 
     @ViewBuilder private var trailing: some View {
@@ -69,7 +70,7 @@ struct CompanyRow: View {
         Text(words: company.ticker)
             .font(.body)
             .monospacedDigit()
-            .foregroundStyle(onFill ? Theme.onPine : Theme.muted)
+            .foregroundStyle(onFill ? AnyShapeStyle(.primary) : AnyShapeStyle(Theme.muted))
             .fixedSize()
     }
 
