@@ -32,6 +32,7 @@ staged.jsonl ── owner: app.build.approve ──► approved.jsonl
 | `llm/neutrality_guard.py` | Rules N1 to N8 that block a line (digits, judgement words, predictions, attribution, links, shape, advice, language) and N9 warnings, with word lists in `contracts/neutrality-lexicon.json` (ADR 0005) |
 | `build/summaries.py`, `build/templates.py` | Summary generation on Groq (D68) with the guard and one retry; template lines for DART table filings (D78); an advisory reviewer call |
 | `build/review.py`, `build/approve.py` | The owner's proofreading page and the approval command |
+| `build/quality.py` | Read-only counts from the summary files: guard results, retries, reviewer flags, approvals, calls and tokens |
 | `build/model.py`, `build/source.py` | Regulator-neutral rows read from the build database, the canonical decimal form, the scope rules (`ANNUAL_SCOPE`, `annual_sections`) and summary cache keys |
 | `build/export.py`, `build/bundle.py`, `build/glossary.py` | Writes the bundle and its report; owns the schema and the content fingerprint |
 | `build/verify.py` | Checks every figure and fact against the pinned responses; checks a finished file with `--release` |

@@ -8,12 +8,34 @@ Footnote는 한국과 미국의 잘 알려진 기업 18곳이 공식 제출한 �
 
 Filing Footnote v0.1 is in development. Nothing is released. The backend package and the app still carry the predecessor's version, written here as **Status:** v0.5.2 because `backend/tests/test_release_version.py` checks for that text; it changes with the v0.1 release.
 
-- Built: ingest, the bundle export and its release gates, and the app. They are checked by the backend offline tests and the FootnoteKit tests, which `scripts/check.sh` runs, and by the app and UI tests, which `xcodebuild` runs.
-- Decisions D81 and D83 to D86 (glossary export, filing and annual pages, comparison screens and their review fixes, news feed and glossary screens) are still PROPOSED in [docs/DECISIONS.md](docs/DECISIONS.md).
-- Summaries are awaiting owner approval. The summary build stages them; none is approved yet, and only approved summaries can ship. Until then every filing page shows its figures and a "summary in review" note, as in the screenshots below.
-- The glossary wording is drafted and awaiting the same approval.
-- The release data bundle is not built yet. A release build refuses a development bundle, so it waits for the approvals.
-- The walkthrough video is not recorded yet.
+- Built: ingest, the bundle export and its release gates, and the app, including the quarter report. They are checked by the backend offline tests and the FootnoteKit tests, which `scripts/check.sh` runs, and by the app and UI tests, which `xcodebuild` runs.
+- On 2026-11-19 the owner accepted decisions D78 to D86 and approved the glossary wording and the drafted screen copy (D88). D87 (accessibility audit) and D89 (quarter report) are still PROPOSED in [docs/DECISIONS.md](docs/DECISIONS.md).
+- Summaries: the owner approved 38 filing sections. A development export ships 24 filings with an approved summary. Five more approved filings are no longer among their company's ten newest. The export skipped nine approved sections as stale, because they were written under an earlier version of the word lists, and a release export refuses them; the summary run writes them again for the owner. Of the 171 exported filings without an approved summary, some are written and wait for the owner, and the rest are still being written on Groq's free tier.
+- The release data bundle is not built yet. A release export refuses while any exported filing lacks an approved summary, and a release build of the app refuses a development bundle.
+- The [walkthrough video](https://github.com/mhju0/filing-footnote/releases/tag/walkthrough-2026-11-20) (2 min 23 s) was recorded on 2026-11-20 from a development bundle, in which 24 filings have approved summaries.
+
+## Where the model is used, and where it is not
+
+A language model (Groq's `qwen/qwen3.8-27b`) does two jobs:
+
+- It writes three short lines per event filing, and the one-line, business, changes and risks sections of an annual report, in Korean and English.
+- It reviews the lines that passed the guard. The review is advisory: it never approves or blocks.
+
+Everything else is code that can be read and tested:
+
+- Which filings are in scope, and each filing's category, come from fixed rules.
+- Every figure comes from the regulator's structured data as an exact decimal. The export re-reads it from the saved regulator response and fails on any difference.
+- Filings that are tables (preliminary results, unit sales, dividends, outlooks) get template lines with no model call.
+- Comparisons, their calculations and their refusals are code, checked by 112 shared contract cases.
+- A guard checks every generated line for digits, judgement words, predictions, advice, missing attribution, shape and language.
+
+A person approves every summary before it can ship. The guard checks words, not facts. In a pilot, a summary replaced a region named in the filing with a different place, and neither the guard nor the model reviewer caught it. In the current run the reviewer flagged none of the model-written sections that passed the guard.
+
+`python -m app.build.quality` prints the counts behind this: what the guard withheld and why, how often a retry fixed a first answer, what the owner approved, and the calls and tokens it took. The [case study](docs/CASE_STUDY.md#summary-quality) has the current numbers.
+
+## Walkthrough
+
+[Watch the walkthrough](https://github.com/mhju0/filing-footnote/releases/download/walkthrough-2026-11-20/footnote-walkthrough.mp4) (MP4, 2 min 23 s, iPhone 13 mini simulator). It goes from Samsung Electronics to a buyback filing and its approved summary, the annual report, revenue compared with last year and its calculation, a comparison with Apple in which an amount comparison across currencies is refused, the latest quarter report, and one tap to English. It was recorded from a development bundle, not a release bundle. `ios/scripts/walkthrough.sh` records it again.
 
 ## Screenshots
 
@@ -45,7 +67,7 @@ Everything below runs on the owner's Mac before a build. The app itself makes no
 
 ## Run the checks
 
-Requires Python 3.11. On macOS it also needs Xcode for `swift test`; on other systems the FootnoteKit tests are skipped. XcodeGen 2.46.0 is optional; without it the project check is skipped.
+Requires Python 3.11. On macOS it also needs Xcode for `swift test`; on other systems the FootnoteKit tests are skipped. XcodeGen 2.47.0 is optional; without it the project check is skipped.
 
 ```bash
 python3.11 -m venv .venv
@@ -57,10 +79,10 @@ The last line must be `GATE: PASS`. `scripts/check.sh` runs Ruff, the offline ba
 
 ## Run the app and its tests
 
-The Xcode project is generated from `ios/project.yml` with XcodeGen 2.46.0 and committed, so a fresh checkout opens in Xcode as is. After editing `ios/project.yml`:
+The Xcode project is generated from `ios/project.yml` with XcodeGen 2.47.0 and committed, so a fresh checkout opens in Xcode as is. After editing `ios/project.yml`:
 
 ```bash
-brew install xcodegen   # check.sh expects version 2.46.0
+brew install xcodegen   # check.sh expects version 2.47.0
 xcodegen generate --spec ios/project.yml
 ```
 
@@ -89,7 +111,7 @@ Without a data bundle at `ios/Footnote/Resources/footnote.sqlite` (git-ignored),
 | [PRODUCT.md](PRODUCT.md) | What the product is, who it is for, and its rules |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Modules, data flow, bundle contract, release gates |
 | [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) | Setup, data build, tests |
-| [docs/CASE_STUDY.md](docs/CASE_STUDY.md) | Problem, constraints, decisions and what went wrong |
+| [docs/CASE_STUDY.md](docs/CASE_STUDY.md) | Problem, constraints, decisions, what went wrong with real filings, measured summary quality, and how it was built |
 | [docs/design/DESIGN.md](docs/design/DESIGN.md) | Visual system and screens |
 | [docs/DECISIONS.md](docs/DECISIONS.md) and [docs/adr/](docs/adr/) | Decision ledger and architecture decisions |
 | [CHANGELOG.md](CHANGELOG.md) | Changes |
