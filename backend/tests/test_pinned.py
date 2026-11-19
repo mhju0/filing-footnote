@@ -525,11 +525,11 @@ def test_a_new_file_appears_complete_or_not_at_all(tmp_path, monkeypatch) -> Non
 def test_every_ingest_command_takes_save_pinned(tmp_path, monkeypatch) -> None:
     given: dict[str, PinnedStore | None] = {}
 
-    async def fake_dart(ticker, pinned=None, *, prior=False):
-        given["annual-dart"] = pinned
+    async def fake_dart(ticker, pinned=None, *, prior=False, quarter=False):
+        given["quarter-dart" if quarter else "annual-dart"] = pinned
 
-    async def fake_sec(ticker, pinned=None, *, prior=False):
-        given["annual-sec"] = pinned
+    async def fake_sec(ticker, pinned=None, *, prior=False, quarter=False):
+        given["quarter-sec" if quarter else "annual-sec"] = pinned
 
     async def fake_events_dart(ticker, pinned=None):
         given["events-dart"] = pinned
@@ -550,8 +550,14 @@ def test_every_ingest_command_takes_save_pinned(tmp_path, monkeypatch) -> None:
     for source in ("dart", "sec"):
         monkeypatch.setattr(sys, "argv", ["x", "--source", source, "--ticker", "T", "--save-pinned", out])
         annual_cli.main()
+        monkeypatch.setattr(
+            sys, "argv", ["x", "--source", source, "--ticker", "T", "--quarter", "--save-pinned", out]
+        )
+        annual_cli.main()
         events_cli.main(["--source", source, "--ticker", "T", "--save-pinned", out])
-    assert set(given) == {"annual-dart", "annual-sec", "events-dart", "events-sec"}
+    assert set(given) == {
+        "annual-dart", "annual-sec", "quarter-dart", "quarter-sec", "events-dart", "events-sec",
+    }  # fmt: skip
     assert all(isinstance(s, PinnedStore) and s.root == Path(out) for s in given.values())
 
     given.clear()

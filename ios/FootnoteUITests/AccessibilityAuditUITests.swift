@@ -19,6 +19,8 @@ final class AccessibilityAuditUITests: XCTestCase {
     private static let outlook = "dart:20261029800102"
     private static let results = "dart:20261029800087"
     private static let corrected = "dart:20261029800099"
+    private static let samsungQuarter = "dart:20261116000111"
+    private static let appleQuarter = "sec:0000320193-26-000020"
 
     /// A screen: its name in failure messages, the launch route (nil: the companies list),
     /// and how many times to swipe up and audit again.
@@ -37,6 +39,8 @@ final class AccessibilityAuditUITests: XCTestCase {
         Screen(name: "filing-results", route: "filing=\(samsung)|\(results)"),
         Screen(name: "filing-corrected", route: "filing=\(samsung)|\(corrected)"),
         Screen(name: "annual", route: "filing=\(samsung)|\(annual)", swipes: 3),
+        Screen(name: "quarter", route: "filing=\(samsung)|\(samsungQuarter)"),
+        Screen(name: "quarter-sec", route: "filing=\(apple)|\(appleQuarter)"),
         Screen(name: "figure", route: "figure=\(samsung)|revenue|2025"),
         Screen(name: "year-compare", route: "yearcompare=\(samsung)|revenue|2025"),
         Screen(name: "year-calculation", route: "yearcalc=\(samsung)|revenue|2025", swipes: 3),
@@ -134,12 +138,16 @@ final class AccessibilityAuditUITests: XCTestCase {
         // leading edge and is narrower than a third of the window).
         let sidebar = bars.first { $0.minX == 0 && $0.width < window.width / 3 }
             .map { CGRect(x: 0, y: 0, width: $0.width, height: window.height) }
+        // The quarter report's investor event row (I11), for the `bottom-edge` filter.
+        let investorRow = app.descendants(matching: .any)["investor-event"].firstMatch
+        let investorEvent = investorRow.exists ? investorRow.frame : nil
         if recording { print("BARS|\(config) #\(pass): \(bars.map(\.integral)) window=\(window.integral)") }
         try app.performAccessibilityAudit(for: .all) { issue in
             let element = issue.element
             let where_ = "\(config) #\(pass): \(issue.auditType.name) · \(issue.compactDescription) · "
                 + "id=\(element?.identifier ?? "-") label=\(element?.label ?? "-") type=\(element?.elementType.rawValue ?? 0)"
-            if let reason = Self.falsePositive(issue, bars: bars, sidebar: sidebar, window: window, afterSwipe: pass > 0) {
+            if let reason = Self.falsePositive(issue, bars: bars, sidebar: sidebar, window: window,
+                                                 investorEvent: investorEvent, afterSwipe: pass > 0) {
                 // Issues without an element are always printed, so a log shows them.
                 if self.recording || element == nil { print("FILTERED|\(reason)|" + where_) }
                 return true
@@ -157,7 +165,8 @@ final class AccessibilityAuditUITests: XCTestCase {
     /// Findings checked by hand and judged false positives. Each names one audit type and
     /// the elements it applies to; anything else fails the test.
     @MainActor private static func falsePositive(_ issue: XCUIAccessibilityAuditIssue, bars: [CGRect],
-                                                 sidebar: CGRect?, window: CGRect, afterSwipe: Bool) -> String? {
+                                                 sidebar: CGRect?, window: CGRect, investorEvent: CGRect?,
+                                                 afterSwipe: Bool) -> String? {
         guard let element = issue.element else {
             // Some contrast, Dynamic Type and clipped-text findings name no element and no
             // frame (SwiftUI nodes the audit cannot hand back). Q1 checked each such pass
@@ -197,6 +206,11 @@ final class AccessibilityAuditUITests: XCTestCase {
             // turns into a list under this header, which shows in full on one line (q1 audit
             // screenshot of company-compare, English, Accessibility XL).
             if element.label == "비교 방식" || element.label == "Compare by" { return "compare-by-header" }
+            // The quarter report's figures header in English (`July–September · Consolidated`,
+            // `Mar 29–Jun 27 · Consolidated`): it shows in full on one line at the default size
+            // and wraps between words at Accessibility XL (I11 audit screenshots of quarter and
+            // quarter-sec, English, and i11-quarter-hyundai-en-ax). The Korean header passes.
+            if element.identifier == "quarter-figures-header" { return "quarter-header" }
             // The same picker's rows on the iPad (`Amount` in the detail column): each row
             // shows in full on one line at the top and after each swipe (q1 iPad audit
             // screenshots of company-compare, English, Accessibility XL).
@@ -216,6 +230,16 @@ final class AccessibilityAuditUITests: XCTestCase {
             // text measures above the threshold once it is clear of the bars, which the other
             // passes of the same screen audit.
             if bars.contains(where: { $0.intersects(frame) }) { return "under-bar" }
+            // The quarter report's investor event row when the list lays it out just above the
+            // bottom tab bar, where iOS fades list content into the bar (the scroll edge
+            // effect). I11 audit screenshots: `Investor event notice` at y 706–727 over a tab
+            // bar from about y 732 is drawn faded by the system; its colours are the Ink and
+            // Muted tokens measured in Q1 ("Contrast"). Only text inside that row, ending
+            // within 48 points above a bar in the lower half of the window.
+            if element.elementType == .staticText, let investorEvent, investorEvent.contains(frame),
+               bars.contains(where: { $0.minY > window.midY && frame.maxY <= $0.minY && $0.minY - frame.maxY < 48 }) {
+                return "bottom-edge"
+            }
             // The iPad sidebar floats over the content column as translucent glass, and the
             // audit measures text in or under it (`Korea`, `Glossary`, and the content
             // column's `Periodic reports`, whose frame starts under the sidebar) against the

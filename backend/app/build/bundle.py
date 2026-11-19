@@ -13,7 +13,7 @@ import hashlib
 import json
 import sqlite3
 
-SCHEMA_VERSION = 2  # 2: the notices table (D76)
+SCHEMA_VERSION = 3  # 2: the notices table (D76); 3: quarterly filings and quarter_figures (I11)
 
 SCHEMA = """
 CREATE TABLE build_meta (
@@ -41,7 +41,7 @@ CREATE TABLE companies (
 CREATE TABLE filings (
   id            TEXT PRIMARY KEY,
   company_id    TEXT NOT NULL REFERENCES companies(id),
-  kind          TEXT NOT NULL CHECK (kind IN ('annual','event')),
+  kind          TEXT NOT NULL CHECK (kind IN ('annual','quarterly','event')),
   category      TEXT NOT NULL,
   form          TEXT NOT NULL,
   sec_items     TEXT,
@@ -108,6 +108,25 @@ CREATE TABLE figures (
 ) STRICT;
 CREATE UNIQUE INDEX figures_key ON figures(company_id, metric, period_end, basis);
 
+-- The latest quarterly report's three-month figures and the same three months a year
+-- earlier (I11), from a 'quarterly' filing. Kept apart from the annual figures table.
+CREATE TABLE quarter_figures (
+  id            TEXT PRIMARY KEY,
+  company_id    TEXT NOT NULL REFERENCES companies(id),
+  filing_id     TEXT NOT NULL REFERENCES filings(id),
+  metric        TEXT NOT NULL,
+  fiscal_year   INTEGER NOT NULL,
+  fiscal_quarter INTEGER NOT NULL CHECK (fiscal_quarter BETWEEN 1 AND 3),
+  period_start  TEXT NOT NULL,
+  period_end    TEXT NOT NULL,
+  value         TEXT NOT NULL,
+  unit          TEXT NOT NULL,
+  currency      TEXT,
+  basis         TEXT NOT NULL,
+  regulator_tag TEXT NOT NULL
+) STRICT;
+CREATE UNIQUE INDEX quarter_figures_key ON quarter_figures(company_id, metric, period_end, basis);
+
 CREATE TABLE glossary (
   term_key TEXT NOT NULL, lang TEXT NOT NULL CHECK (lang IN ('ko','en')),
   term TEXT NOT NULL, plain TEXT NOT NULL, formal TEXT,
@@ -145,7 +164,8 @@ TABLES = {name: spec for name, spec in _ALL_TABLES.items() if name != "build_met
 
 # Tables in insert order, so every foreign key points at a row already written.
 INSERT_ORDER = (
-    "companies", "filings", "notices", "filing_summaries", "filing_facts", "figures", "glossary",
+    "companies", "filings", "notices", "filing_summaries", "filing_facts", "figures",
+    "quarter_figures", "glossary",
 )  # fmt: skip
 
 BUILD_META_COLUMNS = _ALL_TABLES["build_meta"][0]

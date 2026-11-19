@@ -41,11 +41,12 @@ extension Text {
 /// usual. The caller sets the font and the accessibility label.
 struct PhraseLines: View {
     let phrases: [String]
+    var alignment: HorizontalAlignment = .leading
 
     var body: some View {
         ViewThatFits(in: .horizontal) {
             Text(words: joined).fixedSize()
-            VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: alignment, spacing: 0) {
                 ForEach(Array(phrases.enumerated()), id: \.offset) { _, phrase in
                     Text(words: phrase).fixedSize()
                 }

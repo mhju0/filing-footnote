@@ -26,6 +26,7 @@ Design source mirrors ``app.clients.dart``: pure parse functions (network-free,
 unit-tested directly) are split from the thin async I/O methods.
 """
 
+import dataclasses
 import datetime
 import logging
 import re
@@ -522,6 +523,95 @@ def parse_companyfacts_payload(
     return deduped
 
 
+QUARTERLY_FORM = "10-Q"
+# One fiscal quarter: 12 to 14 weeks, counting both ends (84 to 98 days). Calendar quarters
+# run 90 to 92 days; Costco's 12-week quarters 84. FootnoteKit's `QuarterComparison` uses the
+# same rule.
+_QUARTER_DAYS = range(84, 99)
+# The same quarter a year earlier ends 52 or 53 weeks (or a calendar year) before it.
+_YEAR_APART_DAYS = range(357, 372)
+_QUARTER_PERIODS = frozenset({"Q1", "Q2", "Q3"})
+
+
+def parse_quarter_facts(payload: Any, accession_number: str) -> list[SecFinancialItem]:
+    """One 10-Q's three-month figures and the same three months a year earlier (I11).
+
+    Per metric, the first tag in :data:`_US_GAAP_TO_METRIC` order that has one three-month
+    fact (12 to 14 weeks, counting both ends) in the 10-Q (``accn``) ending on the 10-Q's
+    latest date for that tag gives the own quarter; otherwise the next tag is tried. The
+    prior quarter is the same tag and ``accn``, three months, ending 357 to 371 days earlier.
+    ``fiscal_year`` is the 10-Q's ``fy`` for the own quarter and one less for the prior one;
+    ``fiscal_period`` is its ``fp``. Per-share tags are left out. A metric whose entries
+    disagree on a value, or a 10-Q whose ``fp`` is not Q1 to Q3, gives no fact. Pure.
+    """
+    if not isinstance(payload, dict):
+        raise SecApiError("companyfacts: unexpected response (not a JSON object)")
+    facts = payload.get("facts")
+    us_gaap = facts.get("us-gaap") if isinstance(facts, dict) else None
+    if not isinstance(us_gaap, dict):
+        return []
+
+    def quarter_entries(tag: str) -> tuple[list[SecFinancialItem], datetime.date | None]:
+        """The 10-Q's three-month entries for ``tag``, and the latest end of any of its
+        entries for ``tag`` (the 10-Q's own period end, which its year-to-date entry shares)."""
+        fact = us_gaap.get(tag)
+        units = fact.get("units") if isinstance(fact, dict) else None
+        entries = units.get("USD") if isinstance(units, dict) else None
+        found = []
+        latest: datetime.date | None = None
+        for entry in entries if isinstance(entries, list) else []:
+            if not isinstance(entry, dict) or entry.get("form") != QUARTERLY_FORM:
+                continue
+            if str(entry.get("accn") or "").strip() != accession_number:
+                continue
+            start = _parse_sec_date(str(entry.get("start") or ""))
+            end = _parse_sec_date(str(entry.get("end") or ""))
+            value = parse_sec_amount(entry.get("val"))
+            fy, fp = entry.get("fy"), str(entry.get("fp") or "").strip()
+            if end is not None and (latest is None or end > latest):
+                latest = end
+            if start is None or end is None or value is None or not isinstance(fy, int):
+                continue
+            if (end - start).days + 1 not in _QUARTER_DAYS or fp not in _QUARTER_PERIODS:
+                continue
+            found.append(
+                SecFinancialItem(
+                    tag=tag, metric=_US_GAAP_TO_METRIC[tag], accession_number=accession_number,
+                    fiscal_year=fy, filed_fiscal_year=fy, fiscal_period=fp, period_start=start,
+                    period_end=end, value=value, unit="USD", form=QUARTERLY_FORM,
+                    filed=_parse_sec_date(str(entry.get("filed") or "")),
+                )
+            )  # fmt: skip
+        return found, latest
+
+    def single(candidates: list[SecFinancialItem]) -> SecFinancialItem | None:
+        if len({(c.period_start, c.period_end, c.value) for c in candidates}) != 1:
+            if candidates:
+                logger.warning(
+                    "companyfacts: %s %s states two values near %s; no quarter fact kept",
+                    accession_number, candidates[0].tag, candidates[0].period_end,
+                )  # fmt: skip
+            return None
+        return candidates[0]
+
+    result: list[SecFinancialItem] = []
+    done: set[str] = set()
+    for tag, metric in _US_GAAP_TO_METRIC.items():
+        if tag in _EPS_TAGS or metric in done:
+            continue
+        entries, latest = quarter_entries(tag)
+        # The own quarter ends on the 10-Q's latest date; without it the next tag is tried.
+        own = single([e for e in entries if e.period_end == latest])
+        if own is None:
+            continue
+        done.add(metric)
+        result.append(own)
+        prior = single([e for e in entries if (latest - e.period_end).days in _YEAR_APART_DAYS])
+        if prior is not None:
+            result.append(dataclasses.replace(prior, fiscal_year=own.fiscal_year - 1))
+    return result
+
+
 # -- EDGAR archive document fetch ---------------------------------------------
 
 
@@ -923,6 +1013,26 @@ class SecClient:
         items = parse_companyfacts_payload(resp.json(parse_float=str), with_prior=with_prior)
         if on_body is not None and items:
             on_body(resp.content)  # the body as received, after it parsed to rows
+        return items
+
+    async def fetch_quarter_facts(
+        self,
+        cik: str | int,
+        accession_number: str,
+        on_body: Callable[[bytes], None] | None = None,
+    ) -> list[SecFinancialItem]:
+        """One 10-Q's three-month figures from company facts (:func:`parse_quarter_facts`).
+
+        ``on_body`` gets the body only when it parsed to at least one fact."""
+        cik10 = format_cik(cik)
+        client = self._get_client()
+        url = f"{self._base_url}{_COMPANYFACTS_PATH.format(cik10=cik10)}"
+        logger.info("fetching %s", url)
+        resp = await client.get(url, headers=self._headers())
+        resp.raise_for_status()
+        items = parse_quarter_facts(resp.json(parse_float=str), accession_number)
+        if on_body is not None and items:
+            on_body(resp.content)
         return items
 
     async def fetch_document(

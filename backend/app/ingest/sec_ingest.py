@@ -28,10 +28,12 @@ import logging
 from dataclasses import dataclass
 
 from app.clients.sec import (
+    QUARTERLY_FORM,
     SecClient,
     SecCompanyMatch,
     SecFilingItem,
     SecFinancialItem,
+    _archive_url,
     format_cik,
 )
 from app.clients.sec_document import extract_10k_prose
@@ -254,7 +256,90 @@ def _filing_fiscal_year(filing: SecFilingItem, own_facts: list[SecFinancialItem]
     )
 
 
+def build_sec_quarter_filing(
+    *,
+    company_match: SecCompanyMatch | None,
+    cik10: str,
+    filing: SecFilingItem,
+    financial_items: list[SecFinancialItem],
+) -> NormalizedFiling:
+    """Adapt one 10-Q and its three-month figures (:func:`parse_quarter_facts`) to the
+    Normalized Filing seam (I11). The 10-Q's text is not stored: it has no chunks.
+
+    The fiscal year and quarter are the 10-Q's own (``fy``, ``fp``); a 10-Q with no
+    three-month figure has none, and :class:`SecIngestError` is raised. Pure."""
+    own = [i for i in financial_items if i.fiscal_year == i.filed_fiscal_year]
+    if not own:
+        raise SecIngestError(f"10-Q {filing.accession_number} states no three-month figure")
+    fiscal_year, quarter = own[0].fiscal_year, own[0].fiscal_period
+    facts = tuple(
+        FinancialFact(
+            metric=ReportedMetric(item.metric),
+            period=ReportingPeriod(
+                label=f"{item.fiscal_year}-{quarter}",
+                kind=PeriodKind.duration,
+                start_date=item.period_start,
+                end_date=item.period_end,
+            ),
+            value=item.value,
+            unit=sec_unit_for(item.metric),
+            currency=CURRENCY_USD,
+        )
+        for item in financial_items
+    )
+    name = company_match.title if company_match and company_match.title else f"CIK {cik10}"
+    return NormalizedFiling(
+        company=RegulatedCompany(
+            identity=CompanyIdentity(RegulatorySource.sec, cik10),
+            name=name,
+            name_en=name,
+            ticker=(company_match.ticker or None) if company_match else None,
+        ),
+        identity=FilingIdentity(RegulatorySource.sec, filing.accession_number),
+        filing_type=QUARTERLY_FORM,
+        title=f"Form {QUARTERLY_FORM} (FY{fiscal_year} {quarter})",
+        reporting_period=ReportingPeriod(f"{fiscal_year}-{quarter}", PeriodKind.duration),
+        financial_facts=facts,
+        filing_chunks=(),
+        filed_at=filing.filing_date,
+        url=_archive_url(cik10, filing.accession_number, filing.primary_document),
+    )
+
+
 # -- impure adapter fetch -----------------------------------------------------
+
+
+@dataclass(frozen=True)
+class SecQuarterAdapter:
+    """Fetch and normalize a company's latest 10-Q, figures only (I11)."""
+
+    client: SecClient
+    cik: str | int
+    pinned: PinnedStore | None = None
+
+    async def fetch(self) -> NormalizedFiling:
+        cik10 = format_cik(self.cik)
+        company_match = await self.client.resolve_company_by_cik(self.cik)
+        filings = await self.client.list_filings(self.cik, filing_types=[QUARTERLY_FORM])
+        if not filings:
+            raise SecIngestError(f"no 10-Q filings for CIK {cik10}")
+        target = select_target_filing(filings, None)
+        save: dict = {}
+        if self.pinned is not None:
+            save["on_body"] = self.pinned.sink(sec_companyfacts_path(cik10))
+        items = await self.client.fetch_quarter_facts(
+            self.cik, target.accession_number, **save
+        )
+        normalized = build_sec_quarter_filing(
+            company_match=company_match, cik10=cik10, filing=target, financial_items=items
+        )
+        logger.info(
+            "normalized SEC 10-Q filing=%s financials=%d period=%s",
+            target.accession_number,
+            len(normalized.financial_facts),
+            normalized.reporting_period.label,
+        )
+        return normalized
 
 
 @dataclass(frozen=True)

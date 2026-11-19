@@ -21,8 +21,13 @@ struct CompanyPageView: View {
     var body: some View {
         SelectionList(selection: selection) {
             header
-            if !page.periodicReports.isEmpty {
+            if page.quarterReport != nil || !page.periodicReports.isEmpty {
                 Section {
+                    if let report = page.quarterReport {
+                        FilingRowLink(filingID: report.filing.id) {
+                            QuarterRow(report: report, company: page.company, dataAsOf: page.dataAsOf)
+                        }
+                    }
                     ForEach(page.periodicReports, id: \.filing.id) { report in
                         FilingRowLink(filingID: report.filing.id) {
                             PeriodicRow(report: report, company: page.company, dataAsOf: page.dataAsOf)

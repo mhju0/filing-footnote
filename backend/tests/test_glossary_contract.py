@@ -87,8 +87,16 @@ OWNER_APPROVED = {
 }
 
 
+# Entries drafted after D88 that wait for the owner's approval. A release build refuses them.
+PENDING_OWNER = {"category_quarterly"}
+
+
 def test_only_owner_approved_entries_are_approved() -> None:
     assert {k for k, e in load_glossary().items() if e["approved"]} == OWNER_APPROVED
+
+
+def test_every_unapproved_entry_is_listed_as_pending() -> None:
+    assert {k for k, e in load_glossary().items() if not e["approved"]} == PENDING_OWNER
 
 
 def test_every_entry_has_both_languages_and_passes_the_neutrality_guard() -> None:
@@ -188,12 +196,15 @@ def test_release_refuses_while_any_glossary_entry_is_unapproved(data, monkeypatc
     assert all("not approved" in p for p in problems)
 
 
-def test_release_has_no_glossary_problem_with_the_committed_contract(data, monkeypatch) -> None:
+def test_release_refuses_only_the_pending_glossary_entries(data, monkeypatch) -> None:
     monkeypatch.setattr(export, "load_glossary", load_glossary)  # the contract as committed
     release = dataclasses.replace(
         BuildOptions(AS_OF, "test"), prompt_version="v1", event_prompt_version="v1"
     )
+    problems: list[str] = []
     try:
         build_bundle(data, release, PINNED_DIRS)
     except BuildError as raised:
-        assert [p for p in raised.problems if "glossary" in p] == []
+        problems = [p for p in raised.problems if "glossary" in p]
+    assert len(problems) == len(PENDING_OWNER)
+    assert all(any(k in p for k in PENDING_OWNER) for p in problems)

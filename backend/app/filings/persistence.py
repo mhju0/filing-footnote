@@ -120,7 +120,7 @@ async def _upsert_filing(
 
 def _legacy_fiscal_fields(period: ReportingPeriod) -> tuple[int, int | None]:
     """Derive presentation-only legacy columns from a source-provided label."""
-    match = re.fullmatch(r"(\d{4})-(annual|Q1|H1|Q3)", period.label)
+    match = re.fullmatch(r"(\d{4})-(annual|Q1|H1|Q2|Q3)", period.label)
     if match is None:
         if period.end_date is None:
             raise ValueError(
@@ -128,7 +128,7 @@ def _legacy_fiscal_fields(period: ReportingPeriod) -> tuple[int, int | None]:
             )
         return period.end_date.year, None
     suffix = match.group(2)
-    quarter = {"annual": None, "Q1": 1, "H1": 2, "Q3": 3}[suffix]
+    quarter = {"annual": None, "Q1": 1, "H1": 2, "Q2": 2, "Q3": 3}[suffix]
     return int(match.group(1)), quarter
 
 

@@ -4,6 +4,7 @@ Usage (run from ``backend/`` with the repo venv):
 
     python -m app.ingest --source dart --ticker 005930
     python -m app.ingest --source sec --ticker MSFT
+    python -m app.ingest --source dart --ticker 005930 --quarter   # latest quarter's figures
     python -m app.ingest events --source dart --ticker 005930   # 12 months of event filings
 
 DART and SEC resolve their source-specific identities and build a Normalized
@@ -30,7 +31,7 @@ from app.ingest import ingest_filing
 from app.ingest.dart import DartFilingAdapter
 from app.ingest.events import main as events_main
 from app.ingest.pinned import SAVE_PINNED_HELP, PinnedStore, format_pinned, open_pinned_store
-from app.ingest.sec_ingest import SecFilingAdapter, SecPriorYearSkipped
+from app.ingest.sec_ingest import SecFilingAdapter, SecPriorYearSkipped, SecQuarterAdapter
 from app.logging_config import configure_logging
 
 logger = logging.getLogger(__name__)
@@ -82,6 +83,42 @@ def select_latest_annual(
     return item, year
 
 
+# A quarterly or half-year report's title month -> (report-name word, reprt_code). The
+# month is the end of the quarter the report's statements close with, for a company whose
+# fiscal year ends in December; any other month is refused.
+_QUARTER_TITLE_MONTHS: dict[str, tuple[str, str]] = {
+    "03": ("분기보고서", "11013"),
+    "06": ("반기보고서", "11012"),
+    "09": ("분기보고서", "11014"),
+}
+_REPORT_YEAR_MONTH_RE = re.compile(r"\((\d{4})\.(\d{2})\)")
+
+
+def select_latest_quarter(filings: list[FilingItem]) -> tuple[FilingItem, str, str]:
+    """Pick the newest 분기보고서 or 반기보고서 from a list.json page (I11).
+
+    Pure. Returns the item, its business year and its reprt_code, from the "(YYYY.MM)"
+    suffix (:data:`_QUARTER_TITLE_MONTHS`); a correction prefix is ignored as in
+    :func:`select_latest_annual`. Raises ``ValueError`` when the page has none.
+    """
+    prefix_re = re.compile(load_contract()["dart"]["correction_prefix_pattern"])
+    candidates: list[tuple[str, str, datetime.date, FilingItem, str]] = []
+    for item in filings:
+        name = prefix_re.sub("", item.report_nm).lstrip()
+        match = _REPORT_YEAR_MONTH_RE.search(name)
+        if match is None or item.rcept_dt is None:
+            continue
+        year, month = match.groups()
+        kind = _QUARTER_TITLE_MONTHS.get(month)
+        if kind is None or not name.startswith(kind[0]):
+            continue
+        candidates.append((year, month, item.rcept_dt, item, kind[1]))
+    if not candidates:
+        raise ValueError("no quarterly report (분기보고서 / 반기보고서) in the listing window")
+    year, _month, _dt, item, reprt_code = max(candidates, key=lambda c: (c[0], c[1], c[2]))
+    return item, year, reprt_code
+
+
 def match_ticker(matches: list[SecCompanyMatch], ticker: str) -> SecCompanyMatch:
     """Exact (case-insensitive) ticker match from SEC company search results.
 
@@ -96,7 +133,11 @@ def match_ticker(matches: list[SecCompanyMatch], ticker: str) -> SecCompanyMatch
 
 
 async def _run_dart(
-    ticker: str, pinned: PinnedStore | None = None, *, prior: bool = False
+    ticker: str,
+    pinned: PinnedStore | None = None,
+    *,
+    prior: bool = False,
+    quarter: bool = False,
 ) -> None:
     client = DartClient(get_settings())
     try:
@@ -113,7 +154,11 @@ async def _run_dart(
             end_de=today.strftime("%Y%m%d"),
             pblntf_ty="A",  # 정기공시
         )
-        item, bsns_year = select_latest_annual(filings, prior=prior)
+        if quarter:
+            item, bsns_year, reprt_code = select_latest_quarter(filings)
+        else:
+            item, bsns_year = select_latest_annual(filings, prior=prior)
+            reprt_code = _ANNUAL_REPRT_CODE
         logger.info(
             "selected %s (rcept_no=%s, bsns_year=%s)",
             item.report_nm,
@@ -127,9 +172,10 @@ async def _run_dart(
                 corp_code=corp_code,
                 filing_item=item,
                 bsns_year=bsns_year,
-                reprt_code=_ANNUAL_REPRT_CODE,
+                reprt_code=reprt_code,
                 pinned=pinned,
                 figures_only=prior,
+                without_document=quarter,
             ),
             get_async_session,
         )
@@ -148,7 +194,11 @@ async def _run_dart(
 
 
 async def _run_sec(
-    ticker: str, pinned: PinnedStore | None = None, *, prior: bool = False
+    ticker: str,
+    pinned: PinnedStore | None = None,
+    *,
+    prior: bool = False,
+    quarter: bool = False,
 ) -> None:
     client = SecClient(get_settings())
     try:
@@ -156,11 +206,13 @@ async def _run_sec(
         match = match_ticker(matches, ticker)
         logger.info("selected %s (CIK %s)", match.title, match.cik)
 
+        adapter = (
+            SecQuarterAdapter(client=client, cik=match.cik, pinned=pinned)
+            if quarter
+            else SecFilingAdapter(client=client, cik=match.cik, pinned=pinned, prior=prior)
+        )
         try:
-            result = await ingest_filing(
-                SecFilingAdapter(client=client, cik=match.cik, pinned=pinned, prior=prior),
-                get_async_session,
-            )
+            result = await ingest_filing(adapter, get_async_session)
         except SecPriorYearSkipped as exc:
             print(f"skipped: {exc}")
             return
@@ -210,7 +262,15 @@ def main() -> None:
         help="ingest the annual report before the latest one (the original values that "
         "the latest report's comparatives may restate)",
     )
+    parser.add_argument(
+        "--quarter",
+        action="store_true",
+        help="ingest the figures of the latest quarterly or half-year report (DART "
+        "분기/반기보고서, SEC 10-Q) for the quarter report screen; its text is not stored",
+    )
     args = parser.parse_args()
+    if args.quarter and args.prior:
+        parser.error("--quarter and --prior cannot be combined")
 
     # configure_logging (not bare basicConfig): installs the crtfc_key masking
     # filters so httpx URL logs never leak the DART API key from the CLI path.
@@ -218,9 +278,9 @@ def main() -> None:
 
     pinned = open_pinned_store(args.save_pinned)
     if args.source == "dart":
-        asyncio.run(_run_dart(args.ticker, pinned, prior=args.prior))
+        asyncio.run(_run_dart(args.ticker, pinned, prior=args.prior, quarter=args.quarter))
     else:
-        asyncio.run(_run_sec(args.ticker, pinned, prior=args.prior))
+        asyncio.run(_run_sec(args.ticker, pinned, prior=args.prior, quarter=args.quarter))
     if pinned is not None:
         print(format_pinned(pinned))
 

@@ -134,10 +134,92 @@ def unit_for(metric: str) -> str:
     return UNIT_KRW_PER_SHARE if metric in _EPS_METRICS else UNIT_KRW
 
 
+# The period a quarterly or half-year report's statements end with, as its thstrm_nm states it
+# ("제 59 기 3분기"). A company whose fiscal year does not end in December names another
+# period for the same report code, so a mismatch is refused rather than guessed.
+_QUARTER_PERIOD_NAMES: dict[int, str] = {1: "1분기", 2: "반기", 3: "3분기"}
+# Income-statement rows. A cash-flow row of the same report states the year to date in
+# thstrm_amount, so it is never read as the quarter.
+_QUARTER_SJ_DIVS = frozenset({"IS", "CIS"})
+
+
+def quarter_label(fiscal_year: int, fiscal_quarter: int) -> str:
+    """The Reporting Period label of one fiscal quarter's three months: ``2026-Q3``."""
+    return f"{fiscal_year}-Q{fiscal_quarter}"
+
+
+def dart_quarter_rows(
+    items: list[FinancialItem], descriptor: PeriodDescriptor
+) -> list[tuple[FinancialItem, FinancialFact]]:
+    """The quarter's three months and the same three months a year earlier, from the
+    income-statement rows of a quarterly or half-year report (I11), each with the row it was
+    read from.
+
+    ``thstrm_amount`` is the quarter and ``frmtrm_q_amount`` the same quarter a year earlier.
+    After the first quarter a row must also state the year to date (``thstrm_add_amount``),
+    or it does not show which of the two ``thstrm_amount`` is, and the row is left out. A row
+    whose quarter equals its year to date is left out too, and a year-earlier quarter equal
+    to that year's year to date (``frmtrm_add_amount``) is not read: after the first quarter
+    the two can match only when one amount was filed in both columns. Per metric and period
+    the first row read wins. Raises ``ValueError`` when a row names a period other than the
+    report code's.
+    """
+    quarter = descriptor.fiscal_quarter
+    if quarter is None:
+        raise ValueError(f"{descriptor.period} is not a quarterly period")
+    expected = _QUARTER_PERIOD_NAMES[quarter]
+    current_period = ReportingPeriod(
+        quarter_label(descriptor.fiscal_year, quarter), PeriodKind.duration
+    )
+    prior_period = ReportingPeriod(
+        quarter_label(descriptor.fiscal_year - 1, quarter), PeriodKind.duration
+    )
+    rows: list[tuple[FinancialItem, FinancialFact]] = []
+    seen: set[tuple[ReportedMetric, str]] = set()
+    for item in items:
+        if item.metric is None or item.sj_div not in _QUARTER_SJ_DIVS:
+            continue
+        if not item.thstrm_nm.replace(" ", "").endswith(expected):
+            raise ValueError(
+                f"{item.rcept_no}: thstrm_nm {item.thstrm_nm!r} is not the {expected} period "
+                f"of reprt_code for {descriptor.period}"
+            )
+        if quarter > 1 and (item.thstrm_add_amount is None
+                            or item.thstrm_amount == item.thstrm_add_amount):  # fmt: skip
+            continue
+        prior_value = item.frmtrm_q_amount
+        if quarter > 1 and prior_value is not None and prior_value == item.frmtrm_add_amount:
+            prior_value = None
+        metric = ReportedMetric(item.metric)
+        for period, value in ((current_period, item.thstrm_amount),
+                              (prior_period, prior_value)):  # fmt: skip
+            if value is None or (metric, period.label) in seen:
+                continue
+            seen.add((metric, period.label))
+            fact = FinancialFact(
+                metric=metric,
+                period=period,
+                value=value,
+                unit=unit_for(metric.value),
+                currency=item.currency or DEFAULT_CURRENCY,
+            )
+            rows.append((item, fact))
+    return rows
+
+
+def dart_quarter_facts(
+    items: list[FinancialItem], descriptor: PeriodDescriptor
+) -> tuple[FinancialFact, ...]:
+    """The facts of :func:`dart_quarter_rows`, without their rows."""
+    return tuple(fact for _, fact in dart_quarter_rows(items, descriptor))
+
+
 def _dart_financial_facts(
     items: list[FinancialItem], descriptor: PeriodDescriptor
 ) -> tuple[FinancialFact, ...]:
     """Translate DART taxonomy rows into canonical reported Financial Facts."""
+    if descriptor.fiscal_quarter is not None:
+        return dart_quarter_facts(items, descriptor)
     current_period = ReportingPeriod(descriptor.period, PeriodKind.duration)
     prior_period = ReportingPeriod(f"{descriptor.fiscal_year - 1}-annual", PeriodKind.duration)
     facts: list[FinancialFact] = []
@@ -250,6 +332,9 @@ class DartFilingAdapter:
     # A prior annual report (``--prior``) is only a figures source and is never
     # summarised, so a document whose text cannot be parsed keeps zero chunks.
     figures_only: bool = False
+    # A quarterly or half-year report (``--quarter``) is only a figures source for the
+    # quarter report screen (I11): its document is not fetched and it has no chunks.
+    without_document: bool = False
 
     async def fetch(self) -> NormalizedFiling:
         """Return a complete snapshot without opening a database session."""
@@ -263,29 +348,11 @@ class DartFilingAdapter:
             self.corp_code, self.bsns_year, self.reprt_code, self.fs_div, **save
         )
         name_en = await _fetch_company_eng_name(self.client, self.corp_code)
-        document = await self.client.fetch_document(self.filing_item.rcept_no)
-
-        text = decode_dart_bytes(document.content)
-        document_format = detect_document_format(text)
         chunks: list[Chunk] = []
-        if document_format == "dsd":
-            try:
-                chunks = chunk_document(extract_dsd_prose(text))
-            except ParseError as exc:
-                if not self.figures_only:
-                    raise
-                logger.warning(
-                    "DART filing %s text is not parseable (%s); figures only, zero chunks",
-                    self.filing_item.rcept_no,
-                    exc,
-                )
+        if self.without_document:
+            document_format = "not fetched"
         else:
-            logger.warning(
-                "DART filing %s format=%s is not parseable; using zero chunks",
-                self.filing_item.rcept_no,
-                document_format,
-            )
-            chunks = []
+            document_format = await self._document_chunks(chunks)
 
         normalized = build_dart_normalized_filing(
             filing_item=self.filing_item,
@@ -304,3 +371,27 @@ class DartFilingAdapter:
             document_format,
         )
         return normalized
+
+    async def _document_chunks(self, chunks: list[Chunk]) -> str:
+        """Fetch the filing's document and append its chunks; return its format."""
+        document = await self.client.fetch_document(self.filing_item.rcept_no)
+        text = decode_dart_bytes(document.content)
+        document_format = detect_document_format(text)
+        if document_format == "dsd":
+            try:
+                chunks.extend(chunk_document(extract_dsd_prose(text)))
+            except ParseError as exc:
+                if not self.figures_only:
+                    raise
+                logger.warning(
+                    "DART filing %s text is not parseable (%s); figures only, zero chunks",
+                    self.filing_item.rcept_no,
+                    exc,
+                )
+        else:
+            logger.warning(
+                "DART filing %s format=%s is not parseable; using zero chunks",
+                self.filing_item.rcept_no,
+                document_format,
+            )
+        return document_format

@@ -4,6 +4,8 @@ Pinned responses are the regulator's JSON bodies saved on disk, looked up under 
 directory in order:
 
 - ``dart/fnlttSinglAcntAll/<corp_code>_<bsns_year>_11011_CFS.json`` (annual, consolidated)
+- ``dart/fnlttSinglAcntAll/<corp_code>_<bsns_year>_<11013|11012|11014>_CFS.json`` (a
+  quarterly or half-year report, for the quarter figures of I11)
 - ``sec/companyfacts/CIK<10-digit cik>.json``
 - ``dart/structured/<endpoint>_<stock_code>.json`` (event facts, M3 layout)
 - ``sec/submissions/CIK<10-digit cik>.json`` (8-K facts: items and event date)
@@ -56,9 +58,14 @@ from app.clients.dart_events import (
     read_event_document,
 )
 from app.clients.dart_tables import parse_table_facts
-from app.clients.sec import SecApiError, parse_companyfacts_payload, parse_submissions_payload
+from app.clients.sec import (
+    SecApiError,
+    parse_companyfacts_payload,
+    parse_quarter_facts,
+    parse_submissions_payload,
+)
 from app.filings.categories import load_contract as load_categories_contract
-from app.ingest.dart import _dart_financial_facts, period_descriptor
+from app.ingest.dart import _dart_financial_facts, dart_quarter_rows, period_descriptor
 from app.ingest.sec_events import sec_facts
 from app.llm.neutrality_guard import check_line, check_source_url, check_summary
 
@@ -123,6 +130,44 @@ def dart_fiscal_period(
         return datetime.date(year, month, calendar.monthrange(year, month)[1])
 
     return month_end(fiscal_year - 1) + datetime.timedelta(days=1), month_end(fiscal_year)
+
+
+# Fiscal quarter -> the DART report code of the report that closes with it.
+DART_QUARTER_REPORT_CODES = {1: "11013", 2: "11012", 3: "11014"}
+_FISCAL_QUARTER_LABEL_RE = re.compile(r"FY([0-9]{4})-Q([1-3])")
+
+
+def dart_quarter_period(
+    title: str, filing_year: int, fiscal_quarter: int, fiscal_year: int
+) -> tuple[datetime.date, datetime.date]:
+    """The three calendar months ending on the last day of the month a 분기보고서 or
+    반기보고서 title states, e.g. '(2026.09)', in ``fiscal_year`` (the filing's year or the year
+    before). The title must state the filing's year and the month that closes
+    ``fiscal_quarter`` of a fiscal year ending in December; anything else is refused."""
+    match = _DART_TITLE_PERIOD_RE.search(title)
+    if match is None or int(match.group(1)) != filing_year:
+        raise VerifyError(f"title {title!r} does not state a quarter end in {filing_year}")
+    month = int(match.group(2))
+    if month != fiscal_quarter * 3:
+        raise VerifyError(f"title {title!r} does not close fiscal quarter {fiscal_quarter}")
+    end = datetime.date(fiscal_year, month, calendar.monthrange(fiscal_year, month)[1])
+    return datetime.date(fiscal_year, month - 2, 1), end
+
+
+@dataclass(frozen=True)
+class QuarterRef:
+    """One quarter figure as both the export and a finished bundle hold it (I11)."""
+
+    company_id: str
+    filing_id: str
+    filing_title: str
+    filing_year: int  # the quarterly report's own fiscal year
+    fiscal_quarter: int  # 1 to 3
+    metric: str
+    fiscal_year: int  # the filing's year or the year before
+    period_start: str
+    period_end: str
+    value: str
 
 
 @dataclass(frozen=True)
@@ -226,6 +271,73 @@ class PinnedResponses:
             and (not comparative or i.frmtrm_amount is not None)
         )
         return FigureCheck(tag, relative)
+
+    def dart_quarter(
+        self,
+        *,
+        corp_code: str,
+        rcept_no: str,
+        bsns_year: int,
+        fiscal_quarter: int,
+        metric: str,
+        fiscal_year: int,
+        expected: Decimal,
+    ) -> FigureCheck:
+        reprt_code = DART_QUARTER_REPORT_CODES[fiscal_quarter]
+        relative = (
+            f"dart/fnlttSinglAcntAll/{corp_code}_{bsns_year}_{reprt_code}_{DART_CONSOLIDATED}.json"
+        )
+        try:
+            items = DartClient._parse_financials_payload(self.load(relative))
+        except DartApiError as exc:
+            raise VerifyError(f"{relative}: {exc}") from exc
+        others = sorted({i.rcept_no for i in items if i.rcept_no != rcept_no})
+        if others:
+            raise VerifyError(f"{relative}: rows belong to {others}, not {rcept_no}")
+        try:
+            rows = dart_quarter_rows(items, period_descriptor(str(bsns_year), reprt_code))
+        except ValueError as exc:
+            raise VerifyError(f"{relative}: {exc}") from exc
+        label = f"{fiscal_year}-Q{fiscal_quarter}"
+        found = next(
+            ((item, fact) for item, fact in rows
+             if fact.metric.value == metric and fact.period.label == label),
+            None,
+        )  # fmt: skip
+        if found is None:
+            raise VerifyError(f"{relative}: no {metric} {label} row")
+        item, fact = found
+        _require_equal(relative, metric, fact.value, expected)
+        return FigureCheck(item.account_id, relative)
+
+    def sec_quarter(
+        self,
+        *,
+        cik10: str,
+        accession: str,
+        metric: str,
+        fiscal_year: int,
+        period_start: datetime.date,
+        period_end: datetime.date,
+        expected: Decimal,
+    ) -> FigureCheck:
+        relative = f"sec/companyfacts/CIK{cik10}.json"
+        try:
+            items = parse_quarter_facts(self.load(relative), accession)
+        except SecApiError as exc:
+            raise VerifyError(f"{relative}: {exc}") from exc
+        item = next(
+            (i for i in items if i.metric == metric and i.fiscal_year == fiscal_year), None
+        )
+        if item is None:
+            raise VerifyError(f"{relative}: no {metric} quarter fact for {accession} {fiscal_year}")
+        if (item.period_start, item.period_end) != (period_start, period_end):
+            raise VerifyError(
+                f"{relative}: {metric} {accession} covers "
+                f"{item.period_start}..{item.period_end}, not {period_start}..{period_end}"
+            )
+        _require_equal(relative, metric, Decimal(item.value), expected)
+        return FigureCheck(item.tag, relative)
 
     def dart_combined_diluted_eps(
         self, *, corp_code: str, rcept_no: str, bsns_year: int
@@ -417,6 +529,52 @@ def check_figure(pinned: PinnedResponses, ref: FigureRef) -> FigureCheck:
     )
 
 
+def check_quarter_figure(pinned: PinnedResponses, ref: QuarterRef) -> FigureCheck:
+    """Re-read one quarter figure (I11) from its pinned response; raise
+    :class:`VerifyError` on any gap."""
+    regulator, company_key = _split_id(ref.company_id)
+    filing_regulator, filing_key = _split_id(ref.filing_id)
+    if regulator != filing_regulator:
+        raise VerifyError(f"company {ref.company_id} and filing {ref.filing_id} differ")
+    try:
+        expected = Decimal(require_canonical(ref.value))
+    except ValueError as exc:
+        raise VerifyError(str(exc)) from exc
+    if ref.fiscal_quarter not in DART_QUARTER_REPORT_CODES:
+        raise VerifyError(f"fiscal quarter {ref.fiscal_quarter} is not 1 to 3")
+    if ref.fiscal_year not in (ref.filing_year, ref.filing_year - 1):
+        raise VerifyError(f"fiscal year {ref.fiscal_year} is not in filing year {ref.filing_year}")
+    try:
+        start = datetime.date.fromisoformat(ref.period_start)
+        end = datetime.date.fromisoformat(ref.period_end)
+    except ValueError as exc:
+        raise VerifyError(f"period dates: {exc}") from exc
+    if regulator == "dart":
+        period = dart_quarter_period(
+            ref.filing_title, ref.filing_year, ref.fiscal_quarter, ref.fiscal_year
+        )
+        if period != (start, end):
+            raise VerifyError(f"period {start}..{end} is not the title's {period[0]}..{period[1]}")
+        return pinned.dart_quarter(
+            corp_code=company_key,
+            rcept_no=filing_key,
+            bsns_year=ref.filing_year,
+            fiscal_quarter=ref.fiscal_quarter,
+            metric=ref.metric,
+            fiscal_year=ref.fiscal_year,
+            expected=expected,
+        )
+    return pinned.sec_quarter(
+        cik10=company_key,
+        accession=filing_key,
+        metric=ref.metric,
+        fiscal_year=ref.fiscal_year,
+        period_start=start,
+        period_end=end,
+        expected=expected,
+    )
+
+
 def check_fact(
     pinned: PinnedResponses,
     *,
@@ -517,6 +675,7 @@ def check_bundle(path: Path, *, release: bool, pinned_dirs: Sequence[Path]) -> l
         filings = {row["id"]: row for row in _select(connection, "filings")}
         notices = _select(connection, "notices")
         figures = _select(connection, "figures")
+        quarter_figures = _select(connection, "quarter_figures")
         facts = _select(connection, "filing_facts")
         summaries = _select(connection, "filing_summaries")
     finally:
@@ -532,6 +691,7 @@ def check_bundle(path: Path, *, release: bool, pinned_dirs: Sequence[Path]) -> l
 
     pinned = PinnedResponses(pinned_dirs)
     problems += _figure_problems(pinned, figures, filings)
+    problems += _quarter_problems(pinned, quarter_figures, filings)
     problems += _fact_problems(pinned, facts, filings, companies)
 
     for summary in summaries:
@@ -603,6 +763,56 @@ def _figure_problems(
                     filing_id=figure["filing_id"],
                     filing_title=filing["title_original"],
                     filing_year=int(label.group(1)),
+                    metric=figure["metric"],
+                    fiscal_year=figure["fiscal_year"],
+                    period_start=figure["period_start"],
+                    period_end=figure["period_end"],
+                    value=figure["value"],
+                ),
+            )
+        except VerifyError as exc:
+            problems.append(f"{fid}: {exc}")
+            continue
+        if check.regulator_tag != figure["regulator_tag"]:
+            problems.append(
+                f"{fid}: regulator_tag {figure['regulator_tag']!r}, pinned {check.regulator_tag!r}"
+            )
+    return problems
+
+
+def _quarter_problems(
+    pinned: PinnedResponses, figures: list[dict[str, Any]], filings: dict[str, dict[str, Any]]
+) -> list[str]:
+    """Each quarter figure (I11) comes from an exported quarterly filing of its company, is
+    that filing's quarter or the same quarter a year earlier, and matches its pinned value."""
+    problems = []
+    for figure in figures:
+        fid = figure["id"]
+        expected_id = "|".join(
+            (figure["company_id"], figure["metric"], figure["period_end"], figure["basis"])
+        )
+        if fid != expected_id or figure["basis"] != BASIS:
+            problems.append(f"{fid}: id or basis does not match its columns")
+        filing = filings.get(figure["filing_id"])
+        label = _FISCAL_QUARTER_LABEL_RE.fullmatch((filing or {}).get("period_label") or "")
+        if filing is None or filing["kind"] != "quarterly" or label is None:
+            problems.append(f"{fid}: source {figure['filing_id']} is not a quarterly filing")
+            continue
+        if filing["company_id"] != figure["company_id"]:
+            problems.append(f"{fid}: source filing belongs to {filing['company_id']}")
+            continue
+        if int(label.group(2)) != figure["fiscal_quarter"]:
+            problems.append(f"{fid}: fiscal quarter is not the filing's {label.group(0)}")
+            continue
+        try:
+            check = check_quarter_figure(
+                pinned,
+                QuarterRef(
+                    company_id=figure["company_id"],
+                    filing_id=figure["filing_id"],
+                    filing_title=filing["title_original"],
+                    filing_year=int(label.group(1)),
+                    fiscal_quarter=figure["fiscal_quarter"],
                     metric=figure["metric"],
                     fiscal_year=figure["fiscal_year"],
                     period_start=figure["period_start"],

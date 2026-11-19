@@ -209,6 +209,49 @@ struct FilingRow: View {
     }
 }
 
+/// The newest quarterly report pinned above the annual reports (board 14), with its revenue
+/// against the same quarter a year earlier.
+struct QuarterRow: View {
+    @Environment(\.language) private var language
+    let report: QuarterReport
+    let company: Company
+    let dataAsOf: CivilDate
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            if isNew || report.filing.isCorrected {
+                FilingMeta(filing: report.filing, dataAsOf: dataAsOf, showsCategory: false)
+            }
+            Text(words: Titles.title(for: report.filing, language: language))
+                .font(.body)
+                .foregroundStyle(Theme.ink)
+                .fixedSize(horizontal: false, vertical: true)
+            if let line = Copy.quarterRevenueLine(report, currency: company.currency, language) {
+                Text(words: line)
+                    .font(.footnote)
+                    .monospacedDigit()
+                    .foregroundStyle(Theme.muted)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(.vertical, 6)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(spoken)
+    }
+
+    private var isNew: Bool { Freshness.isNew(report.filing.filedOn, dataAsOf: dataAsOf) }
+
+    private var spoken: String {
+        var parts = [Titles.title(for: report.filing, language: language)]
+        if isNew { parts.append(language("새 공시", "New")) }
+        if report.filing.isCorrected { parts.append(language("정정됨", "Corrected")) }
+        if let figure = Copy.quarterRevenueSpoken(report, currency: company.currency, language) {
+            parts.append(figure)
+        }
+        return parts.joined(separator: ", ")
+    }
+}
+
 /// An annual report pinned above the filings, with its one figure.
 struct PeriodicRow: View {
     @Environment(\.language) private var language
