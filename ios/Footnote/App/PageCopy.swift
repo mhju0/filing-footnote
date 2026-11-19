@@ -2,8 +2,8 @@ import FootnoteKit
 import Foundation
 
 /// Copy for the filing page (board 12A), the annual page (board 4) and the figure screen.
-/// Approved wording is marked with its board. `Draft:` marks wording no board covers; the
-/// pull request lists each one for the owner.
+/// Approved wording is marked with its board, or with D88 for wording no board covers that
+/// the owner approved on 2026-11-19.
 enum PageCopy {
     // MARK: - Sections
 
@@ -36,7 +36,7 @@ enum PageCopy {
         language("작년 숫자가 0 이하라 증가율을 계산하지 않아요", "Last year was zero or below, so there is no growth rate")
     }
 
-    /// Draft: how the sentences were written. The bundle does not say whether a sentence came
+    /// D88: how the sentences were written. The bundle does not say whether a sentence came
     /// from a template or a model, so the note covers both.
     static func howWritten(_ language: Language) -> String {
         language(
@@ -62,7 +62,7 @@ enum PageCopy {
             "This is the company’s own outlook, not a result. The app never uses these numbers in comparisons.")
     }
 
-    /// Draft: the heading of one outlook column.
+    /// D88: the heading of one outlook column.
     static func outlookHeading(year: String?, salesTargets: Bool, _ language: Language) -> String {
         let year = year ?? ""
         if salesTargets {
@@ -78,14 +78,14 @@ enum PageCopy {
         language("정확한 값 \(value)", "Exact: \(value)")
     }
 
-    /// Draft: the value a corrected outlook item had before this filing.
+    /// D88: the value a corrected outlook item had before this filing.
     static func beforeCorrection(_ value: String, _ language: Language) -> String {
         language("정정 전 \(value)", "Before the correction: \(value)")
     }
 
     // MARK: - Compared figures
 
-    /// Draft: what a results, change or unit-sales block compares with.
+    /// D88: what a results, change or unit-sales block compares with.
     static func comparisonHeading(_ block: ComparisonBlock, _ language: Language) -> String {
         var parts: [String] = []
         if let period = block.period {
@@ -102,7 +102,7 @@ enum PageCopy {
         return parts.joined(separator: Copy.dot)
     }
 
-    /// Draft: the note under a compared block, naming the base period.
+    /// D88: the note under a compared block, naming the base period.
     static func comparisonNote(_ block: ComparisonBlock, _ language: Language) -> String {
         switch block.kind {
         case .results:
@@ -137,7 +137,7 @@ enum PageCopy {
         return Formatting.period(start, end, language: language)
     }
 
-    /// Draft: the base value beside a compared figure.
+    /// D88: the base value beside a compared figure.
     static func baseValue(_ value: String, kind: ComparisonBlock.Kind, _ language: Language) -> String {
         switch kind {
         case .results, .units: language("작년 \(value)", "A year earlier: \(value)")
@@ -215,12 +215,12 @@ enum PageCopy {
 
     static func restatedTag(_ language: Language) -> String { language("정정됨", "Restated") }
 
-    /// Draft: a year with no figure in the bundle.
+    /// D88: a year with no figure in the bundle.
     static func noFigure(_ language: Language) -> String {
         language("이 해의 숫자가 없어요", "No figure for this year")
     }
 
-    /// Draft: the reported metrics that have no figure for either year.
+    /// D88: the reported metrics that have no figure for either year.
     static func notStated(_ metrics: [ReportedMetric], _ language: Language) -> String? {
         guard !metrics.isEmpty else { return nil }
         let names = metrics.map { $0.name(language) }.joined(separator: language(", ", ", "))
@@ -243,7 +243,7 @@ enum PageCopy {
         language("다른 회사와 비교", "Compare with another company")
     }
 
-    /// Draft: the formal term under the plain meaning.
+    /// D88: the formal term under the plain meaning.
     static func formalTerm(_ term: String, _ language: Language) -> String {
         language("공식 용어: \(term)", "Formal term: \(term)")
     }
@@ -331,19 +331,19 @@ enum PageCopy {
 
     static func formula(_ language: Language) -> String { language("식", "Formula") }
 
-    /// Draft: the growth formula, written out.
+    /// D88: the growth formula, written out.
     static func growthFormula(_ language: Language) -> String {
         language("(올해 − 작년) ÷ 작년 × 100", "(this year − last year) ÷ last year × 100")
     }
 
-    /// Draft: the margin formula, written out for the calculation.
+    /// D88: the margin formula, written out for the calculation.
     static func marginFormulaWritten(_ language: Language) -> String {
         language("영업이익 ÷ 매출 × 100", "operating income ÷ revenue × 100")
     }
 
-    /// Draft.
+    /// D88.
     static func inputs(_ language: Language) -> String { language("두 숫자", "The two figures") }
-    /// Draft.
+    /// D88.
     static func difference(_ language: Language) -> String { language("차이", "Difference") }
     static func checks(_ language: Language) -> String { language("확인한 조건", "Checks passed") }
 
@@ -363,7 +363,7 @@ enum PageCopy {
         }
     }
 
-    /// Draft: where an input comes from: `사업보고서 (2025.12) · 2026년 3월 10일 공시`.
+    /// D88: where an input comes from: `사업보고서 (2025.12) · 2026년 3월 10일 공시`.
     static func inputSource(_ filing: Filing, _ language: Language) -> String {
         Titles.title(for: filing, language: language) + Copy.dot + Copy.filedOn(filing.filedOn, language)
     }
@@ -374,7 +374,7 @@ enum PageCopy {
         return language("두 숫자 모두 \(title)에서 가져왔어요.", "Both figures come from the \(title.lowercasedFirst).")
     }
 
-    /// Draft for two years of different lengths (a 52- and a 53-week year): `이어지는 두 해`.
+    /// D88, for two years of different lengths (a 52- and a 53-week year): `이어지는 두 해`.
     static func checkLabel(_ check: CalculationCheck, _ language: Language) -> String {
         switch check {
         case .consecutiveYears(let prior, let current) where !sameLength(prior, current):
@@ -388,7 +388,7 @@ enum PageCopy {
         }
     }
 
-    /// Draft: the margin's own checks.
+    /// D88: the margin's own checks.
     static func samePeriod(_ language: Language) -> String { language("같은 기간", "Same period") }
     static func revenueAboveZero(_ language: Language) -> String {
         language("매출이 0보다 커요", "Revenue is above zero")
@@ -487,7 +487,7 @@ enum PageCopy {
         }
     }
 
-    /// Draft: what the rates are, above them: `매출 증가율` / `Revenue growth`.
+    /// D88: what the rates are, above them: `매출 증가율` / `Revenue growth`.
     static func ratesHeading(_ measure: CrossCompanyMeasure?, metric: ReportedMetric?, _ language: Language) -> String {
         switch measure {
         case .growthRate?:
@@ -515,7 +515,7 @@ enum PageCopy {
         return parts.joined(separator: Copy.dot)
     }
 
-    /// Draft: the label of the measure picker.
+    /// D88: the label of the measure picker.
     static func compareBy(_ language: Language) -> String { language("비교 방식", "Compare by") }
 
     /// `21.09%p` / `21.09 pp` beside 차이 / Difference (board 7): how far apart the two
@@ -540,7 +540,7 @@ enum PageCopy {
         return (periods + standardsAndYearEnds(caveat, language)).replacingOccurrences(of: "두 회사", with: "두\u{00A0}회사")
     }
 
-    /// Draft: `삼성전자의 2025 회계연도와 애플의 2026 회계연도는 같은 기간이 아니에요.`, or
+    /// D88: `삼성전자의 2025 회계연도와 애플의 2026 회계연도는 같은 기간이 아니에요.`, or
     /// `두 회사의 2025 회계연도는 같은 기간이 아니에요.` when the labels match.
     static func periodsSentence(_ caveat: CrossCompanyCaveat, _ language: Language) -> String? {
         let years = caveat.fiscalYears.compactMap { $0 }
@@ -595,7 +595,7 @@ enum PageCopy {
     // MARK: - Refusal screen (boards 8, 9, 10)
 
     /// The title on the refusal screen. An operating margin whose revenue is zero or below
-    /// gets its own line (Draft), not the growth rate's.
+    /// gets its own line (D88), not the growth rate's.
     static func refusalTitle(_ explanation: RefusalExplanation, _ language: Language) -> String {
         if explanation.refusal.detail == .nonpositiveBaseline,
            case .company(.operatingMargin?) = explanation.context {
@@ -624,7 +624,7 @@ enum PageCopy {
     }
 
     /// Board 10's body for each reason; nil under board 9's zero-or-below title, which says it.
-    /// Draft for an amount request between two companies: rates are compared, amounts are not.
+    /// D88, for an amount request between two companies: rates are compared, amounts are not.
     static func refusalBody(_ refusal: Refusal, _ language: Language) -> String? {
         if refusal.detail == .nonpositiveBaseline { return nil }
         if refusal.detail == .absoluteAmountAcrossCompanies {
@@ -654,7 +654,7 @@ enum PageCopy {
         }
     }
 
-    /// Draft except the currency line (board 8): the short reason under the explanation.
+    /// D88 except the currency line (board 8): the short reason under the explanation.
     static func refusalCode(_ refusal: Refusal, _ language: Language) -> String {
         if refusal.detail == .absoluteAmountAcrossCompanies {
             return language("사유: ", "Reason: ") + language("금액은 비교 대상이 아니에요", "amounts not compared")
@@ -670,7 +670,7 @@ enum PageCopy {
         return language("사유: ", "Reason: ") + text
     }
 
-    /// Draft: the one sentence filled from data (board 10: company names, currencies, years).
+    /// D88: the one sentence filled from data (board 10: company names, currencies, years).
     static func refusalReason(_ explanation: RefusalExplanation, _ language: Language) -> String {
         let names = explanation.companies.map { Titles.name(of: $0, language: language) }
         let first = explanation.companies.first
@@ -752,7 +752,7 @@ enum PageCopy {
     }
 
     /// Board 10's action for each reason, board 8's rows for another measure.
-    /// Draft for a base of zero or below: the years themselves are what is left to see.
+    /// D88, for a base of zero or below: the years themselves are what is left to see.
     static func actionLabel(_ action: RefusalAction, reason: RefusalReason, detail: RefusalDetail? = nil,
                             metric: ReportedMetric?, _ language: Language) -> String {
         switch action {

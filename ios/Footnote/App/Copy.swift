@@ -74,7 +74,7 @@ enum Copy {
             "These are all \(listed) filings from the last 12 months.")
     }
 
-    /// Draft: the note under the 소식 feed (D86). The empty feed uses board 19's
+    /// D88: the note under the 소식 feed (D86). The empty feed uses board 19's
     /// "no filings in the last 12 months" line (`endNote(listed: 0, …)`).
     static func newsEndNote(listed: Int, capped: Bool, _ language: Language) -> String {
         if capped {
@@ -87,12 +87,12 @@ enum Copy {
             "These are all \(listed) recent filings across the companies.")
     }
 
-    /// Draft: the link from a filing or annual page to the glossary entry for its category.
+    /// D88: the link from a filing or annual page to the glossary entry for its category.
     static func glossaryLink(_ term: String, _ language: Language) -> String {
         language("용어 풀이: \(term)", "Glossary: \(term)")
     }
 
-    /// Draft: the split view's detail column before a term is chosen.
+    /// D88: the split view's detail column before a term is chosen.
     static func chooseTerm(_ language: Language) -> String {
         language("용어를 고르면 여기에 보여 줘요", "Choose a term to see it here")
     }
