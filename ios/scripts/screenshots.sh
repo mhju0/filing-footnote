@@ -45,6 +45,10 @@ lgchem_annual="dart:20260313001195"
 apple_annual="sec:0000320193-26-000026"
 costco="sec:0000909832"
 hynix="dart:00164779"
+sdi="dart:00126362"
+hyundai_quarter="dart:20261116001437"
+sdi_quarter="dart:20261116002248"
+apple_quarter="sec:0000320193-26-000020"
 
 separate_dir="$(mktemp -d)"
 trap 'rm -rf "$separate_dir"' EXIT
@@ -127,6 +131,15 @@ shots=(
   "refusal-currency-en-dark;compare=$samsung|$apple|revenue|absolute_amount|2025;en;dark;large;top"
   "refusal-missing-period-en-light;compare=$samsung|$costco|net_income|growth_rate|2025;en;light;large;top"
   "refusal-currency-ko-ax;compare=$samsung|$apple|revenue|absolute_amount|2025;ko;light;accessibility-extra-large;top"
+  "i11-company-hyundai-ko-light;company=$hyundai;ko;light;large;top"
+  "i11-quarter-hyundai-ko-light;filing=$hyundai|$hyundai_quarter;ko;light;large;top"
+  "i11-quarter-hyundai-en-light;filing=$hyundai|$hyundai_quarter;en;light;large;top"
+  "i11-quarter-hyundai-ko-dark;filing=$hyundai|$hyundai_quarter;ko;dark;large;top"
+  "i11-quarter-hyundai-ko-ax;filing=$hyundai|$hyundai_quarter;ko;light;accessibility-extra-large;center"
+  "i11-quarter-sdi-ko-light;filing=$sdi|$sdi_quarter;ko;light;large;top"
+  "i11-quarter-apple-ko-light;filing=$apple|$apple_quarter;ko;light;large;top"
+  "i11-quarter-apple-en-light;filing=$apple|$apple_quarter;en;light;large;top"
+  "i11-quarter-apple-en-dark;filing=$apple|$apple_quarter;en;dark;large;top"
 )
 
 for shot in "${shots[@]}"; do

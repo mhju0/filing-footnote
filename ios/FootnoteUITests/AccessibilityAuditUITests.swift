@@ -19,6 +19,8 @@ final class AccessibilityAuditUITests: XCTestCase {
     private static let outlook = "dart:20261029800102"
     private static let results = "dart:20261029800087"
     private static let corrected = "dart:20261029800099"
+    private static let samsungQuarter = "dart:20261116000111"
+    private static let appleQuarter = "sec:0000320193-26-000020"
 
     /// A screen: its name in failure messages, the launch route (nil: the companies list),
     /// and how many times to swipe up and audit again.
@@ -37,6 +39,8 @@ final class AccessibilityAuditUITests: XCTestCase {
         Screen(name: "filing-results", route: "filing=\(samsung)|\(results)"),
         Screen(name: "filing-corrected", route: "filing=\(samsung)|\(corrected)"),
         Screen(name: "annual", route: "filing=\(samsung)|\(annual)", swipes: 3),
+        Screen(name: "quarter", route: "filing=\(samsung)|\(samsungQuarter)"),
+        Screen(name: "quarter-sec", route: "filing=\(apple)|\(appleQuarter)"),
         Screen(name: "figure", route: "figure=\(samsung)|revenue|2025"),
         Screen(name: "year-compare", route: "yearcompare=\(samsung)|revenue|2025"),
         Screen(name: "year-calculation", route: "yearcalc=\(samsung)|revenue|2025", swipes: 3),
@@ -197,6 +201,11 @@ final class AccessibilityAuditUITests: XCTestCase {
             // turns into a list under this header, which shows in full on one line (q1 audit
             // screenshot of company-compare, English, Accessibility XL).
             if element.label == "비교 방식" || element.label == "Compare by" { return "compare-by-header" }
+            // The quarter report's figures header in English (`July–September · Consolidated`,
+            // `Mar 29–Jun 27 · Consolidated`): it shows in full on one line at the default size
+            // and wraps between words at Accessibility XL (I11 audit screenshots of quarter and
+            // quarter-sec, English). The Korean header, the same view, passes.
+            if element.label.hasSuffix(", Consolidated") { return "quarter-header" }
             // The same picker's rows on the iPad (`Amount` in the detail column): each row
             // shows in full on one line at the top and after each swipe (q1 iPad audit
             // screenshots of company-compare, English, Accessibility XL).
@@ -216,6 +225,14 @@ final class AccessibilityAuditUITests: XCTestCase {
             // text measures above the threshold once it is clear of the bars, which the other
             // passes of the same screen audit.
             if bars.contains(where: { $0.intersects(frame) }) { return "under-bar" }
+            // The band just above the bottom tab bar, where iOS fades list content into the
+            // bar (the scroll edge effect). I11 audit screenshots: `Investor event notice` at
+            // y 706–727 over a tab bar from about y 732 is drawn faded by the system, and the
+            // same colours pass higher on the screen (Ink and Muted tokens, Q1 "Contrast").
+            // Only text ending within 48 points above a bar in the lower half of the window.
+            if bars.contains(where: { $0.minY > window.midY && frame.maxY <= $0.minY && $0.minY - frame.maxY < 48 }) {
+                return "bottom-edge"
+            }
             // The iPad sidebar floats over the content column as translucent glass, and the
             // audit measures text in or under it (`Korea`, `Glossary`, and the content
             // column's `Periodic reports`, whose frame starts under the sidebar) against the

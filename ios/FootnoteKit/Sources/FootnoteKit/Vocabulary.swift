@@ -27,6 +27,8 @@ public enum Regulator: String, CaseIterable, Sendable, Hashable {
 
 public enum FilingKind: String, CaseIterable, Sendable, Hashable {
     case annual
+    /// A quarterly or half-year report (DART 분기·반기보고서, SEC 10-Q): figures only (I11).
+    case quarterly
     case event
 }
 
@@ -54,7 +56,8 @@ public enum FactValueKind: String, CaseIterable, Sendable, Hashable {
     case text
 }
 
-/// A filing's category: the event categories in contract priority order, then `annual`.
+/// A filing's category: the event categories in contract priority order, then `annual` and
+/// `quarterly`.
 public enum FilingCategory: String, CaseIterable, Sendable, Hashable {
     case earnings
     case unitSales = "unit_sales"
@@ -72,6 +75,7 @@ public enum FilingCategory: String, CaseIterable, Sendable, Hashable {
     case management
     case clarification
     case annual
+    case quarterly
 
     public func label(_ language: Language) -> String {
         let (ko, en): (String, String) = switch self {
@@ -91,6 +95,7 @@ public enum FilingCategory: String, CaseIterable, Sendable, Hashable {
         case .management: ("경영사항", "Management matters")
         case .clarification: ("해명", "Clarification")
         case .annual: ("사업보고서", "Annual report")
+        case .quarterly: ("분기 보고서", "Quarterly report")
         }
         return language == .ko ? ko : en
     }

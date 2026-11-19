@@ -19,7 +19,7 @@ public enum BundleError: Error, Equatable, Sendable {
 /// The file is opened read-only, checked for a known `schema_version` before any other table
 /// is read, and closed before `init` returns. The schema is `backend/app/build/bundle.py`.
 public struct BundleStore: Sendable {
-    public static let supportedSchemaVersion = 2
+    public static let supportedSchemaVersion = 3
 
     public let meta: BuildMeta
     /// By `sort_order`.
@@ -34,6 +34,8 @@ public struct BundleStore: Sendable {
     public let facts: [FilingFact]
     /// By company, metric, then `period_end` descending.
     public let figures: [Figure]
+    /// Quarter figures (I11): by company, metric, then `period_end` descending.
+    public let quarterFigures: [QuarterFigure]
     /// By term key, then language.
     public let glossary: [GlossaryEntry]
     /// The 소식 feed, built once when the bundle is opened.
@@ -152,6 +154,23 @@ public struct BundleStore: Sendable {
                 basis: try row.text(10), isRestated: try row.bool(11),
                 regulatorTag: try row.text(12))
         }
+        quarterFigures = try db.rows(
+            "quarter_figures",
+            "SELECT id, company_id, filing_id, metric, fiscal_year, fiscal_quarter, period_start, "
+                + "period_end, value, unit, currency, basis, regulator_tag FROM quarter_figures "
+                + "ORDER BY company_id, metric, period_end DESC, id"
+        ) { row throws(BundleError) in
+            let start = try row.date(6), end = try row.date(7)
+            guard start <= end else {
+                throw .invalidValue(table: "quarter_figures", column: "period_start", value: start.iso)
+            }
+            return QuarterFigure(
+                id: try row.text(0), companyID: try row.text(1), filingID: try row.text(2),
+                metric: try row.choice(3), fiscalYear: try row.int(4), fiscalQuarter: try row.int(5),
+                periodStart: start, periodEnd: end, value: try row.decimal(8), unit: try row.text(9),
+                currency: try row.optionalText(10), basis: try row.text(11),
+                regulatorTag: try row.text(12))
+        }
         glossary = try db.rows(
             "glossary",
             "SELECT term_key, lang, term, plain, formal FROM glossary ORDER BY term_key, lang"
@@ -203,6 +222,11 @@ public struct BundleStore: Sendable {
 
     public func annualFilings(forCompany companyID: String) -> [Filing] {
         filings.filter { $0.companyID == companyID && $0.kind == .annual }
+    }
+
+    /// Quarterly reports, newest first.
+    public func quarterlyFilings(forCompany companyID: String) -> [Filing] {
+        filings.filter { $0.companyID == companyID && $0.kind == .quarterly }
     }
 
     public func eventFilings(forCompany companyID: String) -> [Filing] {

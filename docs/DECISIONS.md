@@ -1459,3 +1459,50 @@ The owner reviewed the final-check page and returned their picks on 2026-11-19.
   release asset; the README keeps its one Filing Digest line; the case study stays English
   and quotes no pilot summary; the repository goes public only after the walkthrough is in
   the README, and the owner flips it.
+
+## D89 · Quarter report: quarter figures, the bundle's schema 3, and the screen · 2026-11-19 (`PROPOSED`)
+
+Roadmap I11 (board 15; in v0.1 since D88). Decided by the lead under the owner's delegation.
+
+- Figures: revenue, operating income, and net income attributable to owners, or net income
+  when the report states no attributable figure. Each is the quarter's own three months
+  next to the same quarter a year earlier; consolidated only; exact decimals end to end.
+- DART: `fnlttSinglAcntAll` for the latest 분기·반기보고서. Only income statement rows (IS,
+  CIS) are read: `thstrm_amount` is the quarter and `frmtrm_q_amount` the same quarter a year
+  earlier. Cash-flow rows are year to date and are never read. The ingest refuses a response
+  whose `thstrm_nm` names another quarter, and after the first quarter it leaves out a row
+  without `thstrm_add_amount`, since such a row does not show whether its amount is the
+  quarter or the year to date. A 반기보고서 gives the second quarter. DART states no dates, so
+  the export derives them from the title's month (`분기보고서 (2026.09)`: July to September),
+  as it does for annual reports.
+- SEC: the latest 10-Q's companyfacts entries of 80 to 98 days with that accession number;
+  the prior quarter is the same tag ending 357 to 371 days earlier (13- and 14-week
+  quarters). Nine-month entries are left out; entries that disagree give no figure.
+- `python -m app.ingest --quarter` ingests them, additively. The bundle's schema 3 adds
+  `quarterly` filings, which carry no summary, and the `quarter_figures` table. Export and
+  `app.build.verify` re-read every quarter figure from the pinned responses with the
+  ingest's own selection. A missing metric is listed in the report's `quarter_gaps`.
+- Comparison: `QuarterComparison` in FootnoteKit checks company, metric, basis, currency,
+  unit, two quarter-long periods and ends a year apart, then takes the rate from
+  `Calculator.percentage`. A base of zero or below shows board 9's line and no rate. The
+  shared calculator is unchanged: its year-over-year check accepts only full fiscal years
+  when the period ends differ, which 13-week quarters do. The change from the quarter before
+  is never computed.
+- Screen and company page: the company page shows the newest quarterly report above one
+  annual report (still two periodic reports at most). The related section shows the newest
+  earnings filing made after the quarter ended and on or before the report, and the newest
+  investor event notice in the same span. The notice opens on DART or SEC; the bundle holds
+  no IR site links, so board 15's "opens the company's IR site" row is drafted as a notice
+  row instead. A figure opens the Figure screen, which shows annual years. An earnings
+  filing made on the report's own day is described as filed the same day, not before it:
+  DART's exchange and FSS receipt numbers are separate sequences, so the order within a day
+  is unknown.
+- Not built: the year-to-date figures DESIGN.md puts one tap away, and a quarter
+  calculation screen. The bundle does not hold year-to-date figures yet.
+- The FootnoteKit fixture keeps every row it had and gains only the quarterly filings and
+  quarter figures. Regenerating it whole also changes rows from earlier generator changes
+  (an Apple prior-year revenue figure, results facts, summaries), which other Swift tests
+  rely on; that refresh is separate work.
+- For the owner: the drafted wording listed in the I11 pull request, and the glossary entry
+  `category_quarterly`, which is `"approved": false` until the owner approves it; a release
+  export refuses it until then.

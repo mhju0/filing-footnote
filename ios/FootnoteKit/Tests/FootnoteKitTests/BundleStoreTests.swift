@@ -10,6 +10,8 @@ struct BundleStoreTests {
     static let samsung = "dart:00126380"
     static let apple = "sec:0000320193"
     static let samsungAnnual = "dart:20260310000123"
+    static let samsungQuarter = "dart:20261116000111"
+    static let appleQuarter = "sec:0000320193-26-000020"
     static let buyback = "dart:20260821000616"
 
     let store: BundleStore
@@ -28,11 +30,12 @@ struct BundleStoreTests {
 
     @Test func everyTableHasRows() {
         #expect(store.companies.count == 2)
-        #expect(store.filings.count == 17)
+        #expect(store.filings.count == 19)
         #expect(store.notices.count == 9)
         #expect(store.summaries.count == 6)
         #expect(store.facts.count == 25)
         #expect(store.figures.count == 17)
+        #expect(store.quarterFigures.count == 14)
         #expect(store.glossary.count == 4)
     }
 
@@ -50,14 +53,16 @@ struct BundleStoreTests {
 
     @Test func filingsNewestFirstThenIDDescending() {
         let filings = store.filings(forCompany: Self.samsung)
-        #expect(filings.count == 11)
-        #expect(Array(filings.prefix(3)).map(\.id)
-            == ["dart:20261029800752", "dart:20261029800748", "dart:20261029800102"])
+        #expect(filings.count == 12)
+        // The 3분기보고서 filed on 16 November is the newest.
+        #expect(Array(filings.prefix(4)).map(\.id)
+            == [Self.samsungQuarter, "dart:20261029800752", "dart:20261029800748", "dart:20261029800102"])
         for (earlier, later) in zip(filings, filings.dropFirst()) {
             #expect(earlier.filedOn > later.filedOn
                 || (earlier.filedOn == later.filedOn && earlier.id > later.id))
         }
         #expect(store.annualFilings(forCompany: Self.samsung).map(\.id) == [Self.samsungAnnual])
+        #expect(store.quarterlyFilings(forCompany: Self.samsung).map(\.id) == [Self.samsungQuarter])
         #expect(store.eventFilings(forCompany: Self.samsung).count == 10)
         #expect(store.eventFilings(forCompany: Self.apple).count == 5)
         let annual = store.filing(id: Self.samsungAnnual)
@@ -172,8 +177,8 @@ struct BundleStoreTests {
     }
 
     @Test func rejectsAnUnknownSchemaVersion() throws {
-        let url = try Self.editedCopy("UPDATE build_meta SET schema_version = 3")
-        #expect(throws: BundleError.unsupportedSchemaVersion(found: 3, supported: 2)) {
+        let url = try Self.editedCopy("UPDATE build_meta SET schema_version = 2")
+        #expect(throws: BundleError.unsupportedSchemaVersion(found: 2, supported: 3)) {
             try BundleStore(contentsOf: url)
         }
     }
@@ -181,7 +186,7 @@ struct BundleStoreTests {
     @Test func rejectsAFutureSchemaBeforeReadingItsColumns() throws {
         let url = try Self.editedCopy(
             "UPDATE build_meta SET schema_version = 9; ALTER TABLE build_meta DROP COLUMN llm_model")
-        #expect(throws: BundleError.unsupportedSchemaVersion(found: 9, supported: 2)) {
+        #expect(throws: BundleError.unsupportedSchemaVersion(found: 9, supported: 3)) {
             try BundleStore(contentsOf: url)
         }
     }

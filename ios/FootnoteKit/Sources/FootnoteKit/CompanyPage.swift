@@ -8,7 +8,9 @@ public struct CompanyPage: Sendable {
 
     public let company: Company
     public let dataAsOf: CivilDate
-    /// Annual reports, newest first, at most two.
+    /// The newest quarterly report (I11), shown above the annual reports.
+    public let quarterReport: QuarterReport?
+    /// Annual reports, newest first: at most two, less one when there is a quarterly report.
     public let periodicReports: [PeriodicReport]
     /// Event filings, newest first, at most ten, grouped by the month they were filed in.
     public let months: [FilingMonth]
@@ -25,8 +27,10 @@ public struct CompanyPage: Sendable {
         self.company = company
         let dataAsOf = store.meta.dataAsOf
         self.dataAsOf = dataAsOf
+        let quarterReport = QuarterReport(store: store, companyID: companyID)
+        self.quarterReport = quarterReport
         periodicReports = store.annualFilings(forCompany: companyID)
-            .prefix(Self.maxPeriodicReports)
+            .prefix(Self.maxPeriodicReports - (quarterReport == nil ? 0 : 1))
             .map { PeriodicReport(filing: $0, store: store) }
         let windowStart = Self.windowStart(endingOn: dataAsOf)
         let inWindow = store.eventFilings(forCompany: companyID)
@@ -153,7 +157,7 @@ extension BundleStore {
     /// True when a filing the company page lists is new.
     public func hasNewFiling(companyID: String) -> Bool {
         guard let page = CompanyPage(store: self, companyID: companyID) else { return false }
-        return (page.periodicReports.map(\.filing) + page.filings)
+        return ([page.quarterReport?.filing].compactMap { $0 } + page.periodicReports.map(\.filing) + page.filings)
             .contains { Freshness.isNew($0.filedOn, dataAsOf: meta.dataAsOf) }
     }
 }

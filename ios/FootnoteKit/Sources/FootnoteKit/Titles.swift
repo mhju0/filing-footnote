@@ -14,6 +14,8 @@ public enum Titles {
         switch (filing.kind, regulator(of: filing)) {
         case (.annual, .dart): dartAnnual(filing, language)
         case (.annual, .sec): secAnnual(filing, language)
+        case (.quarterly, .dart): dartQuarter(filing, language)
+        case (.quarterly, .sec): secQuarter(filing, language)
         case (.event, .dart): dartEvent(filing, language)
         case (.event, .sec): secEvent(filing, language)
         }
@@ -44,6 +46,35 @@ public enum Titles {
         }
         return language == .ko
             ? "\(year) 회계연도 연차보고서 (\(form))" : "Annual report, FY\(year) (\(form))"
+    }
+
+    /// `FY2026-Q3` -> (`2026`, 3); nil when the label has another shape.
+    static func fiscalQuarter(_ filing: Filing) -> (year: String, quarter: Int)? {
+        guard let label = filing.periodLabel, label.hasPrefix("FY"), label.count == 9 else { return nil }
+        let year = label.dropFirst(2).prefix(4), rest = label.suffix(3)
+        guard year.allSatisfy(\.isNumber), rest.hasPrefix("-Q"), let quarter = Int(rest.dropFirst(2)),
+              (1...3).contains(quarter)
+        else { return nil }
+        return (String(year), quarter)
+    }
+
+    /// Board 15: `2026년 3분기 보고서` / `Q3 2026 report`.
+    private static func dartQuarter(_ filing: Filing, _ language: Language) -> String {
+        guard let (year, quarter) = fiscalQuarter(filing) else {
+            return language == .ko ? "분기 보고서" : "Quarterly report"
+        }
+        return language == .ko ? "\(year)년 \(quarter)분기 보고서" : "Q\(quarter) \(year) report"
+    }
+
+    /// Draft: an SEC fiscal quarter, named as `secAnnual` names a fiscal year (I11):
+    /// `2026 회계연도 3분기 보고서 (10-Q)` / `Q3 FY2026 report (10-Q)`.
+    private static func secQuarter(_ filing: Filing, _ language: Language) -> String {
+        let form = filing.form
+        guard let (year, quarter) = fiscalQuarter(filing) else {
+            return language == .ko ? "분기 보고서 (\(form))" : "Quarterly report (\(form))"
+        }
+        return language == .ko
+            ? "\(year) 회계연도 \(quarter)분기 보고서 (\(form))" : "Q\(quarter) FY\(year) report (\(form))"
     }
 
     // MARK: DART events

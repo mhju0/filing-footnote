@@ -105,6 +105,8 @@ struct FilingDestination: View {
     var body: some View {
         if let annual = AnnualPage(store: store, filingID: filingID) {
             AnnualReportView(store: store, page: annual)
+        } else if let quarter = QuarterPage(store: store, filingID: filingID) {
+            QuarterReportView(store: store, page: quarter)
         } else if let page = FilingPage(store: store, filingID: filingID) {
             FilingPageView(store: store, page: page, labels: labels)
         }
