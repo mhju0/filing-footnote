@@ -52,6 +52,7 @@ def _fin_item(
     sj_div="IS",
     account_id="x",
     currency="KRW",
+    **quarter,
 ) -> FinancialItem:
     return FinancialItem(
         rcept_no="20240312000736",
@@ -66,6 +67,7 @@ def _fin_item(
         ord=1,
         currency=currency,
         metric=metric,
+        **quarter,
     )
 
 
@@ -327,7 +329,9 @@ def test_dart_adapter_maps_deduplicated_current_and_prior_facts() -> None:
 def test_dart_adapter_does_not_emit_prior_fact_for_interim_report() -> None:
     filing = _normalized(
         descriptor=period_descriptor("2023", "11013"),
-        financial_items=[_fin_item("revenue", 71_000, prior_amount=63_000)],
+        financial_items=[
+            _fin_item("revenue", 71_000, prior_amount=63_000, thstrm_nm="제 55 기 1분기")
+        ],
     )
 
     assert [(fact.metric, fact.period.label) for fact in filing.financial_facts] == [

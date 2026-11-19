@@ -36,7 +36,12 @@ from app.build.model import (
 )
 from app.build.source import event_rows
 from app.clients.dart import DartClient, _filing_item_from_row
-from app.clients.sec import SecCompanyMatch, SecFilingItem, parse_companyfacts_payload
+from app.clients.sec import (
+    SecCompanyMatch,
+    SecFilingItem,
+    parse_companyfacts_payload,
+    parse_quarter_facts,
+)
 from app.db.models import Base
 from app.filings.model import NormalizedFiling
 from app.filings.persistence import persist_normalized_filing
@@ -44,7 +49,7 @@ from app.ingest.chunking import Chunk
 from app.ingest.dart import build_dart_normalized_filing, filing_type_for, period_descriptor
 from app.ingest.events import collect_dart_events, persist_events, window_bounds
 from app.ingest.sec_events import collect_sec_events
-from app.ingest.sec_ingest import build_sec_normalized_filing
+from app.ingest.sec_ingest import build_sec_normalized_filing, build_sec_quarter_filing
 from tests.event_fakes import DART, FakeDartClient
 from tests.sec_fakes import FakeSecClient
 
@@ -62,6 +67,8 @@ _SEC_FACTS = PINNED_BUILD / "sec" / "companyfacts" / "CIK0000320193.json"
 _SEC_ACCESSION = "0000320193-25-000079"
 SAMSUNG_PRIOR = "20250310000456"
 APPLE_PRIOR = "0000320193-24-000123"
+SAMSUNG_QUARTER = "20261116000111"
+APPLE_QUARTER = "0000320193-26-000020"
 
 
 def _chunk(content: str) -> Chunk:
@@ -127,6 +134,41 @@ def annual_filings() -> list[NormalizedFiling]:
     ]
 
 
+def quarterly_filings() -> list[NormalizedFiling]:
+    """Each company's latest quarterly report (I11): Samsung's 3분기보고서, whose operating
+    income a year earlier is a loss, and Apple's 10-Q, through the real quarter parsers."""
+    item = _filing_item_from_row(
+        {
+            "corp_code": "00126380", "corp_name": "삼성전자", "stock_code": "005930",
+            "corp_cls": "Y", "report_nm": "분기보고서 (2026.09)", "rcept_no": SAMSUNG_QUARTER,
+            "flr_nm": "삼성전자", "rcept_dt": "20261116", "rm": "",
+        }
+    )  # fmt: skip
+    payload = PINNED_BUILD / "dart" / "fnlttSinglAcntAll" / "00126380_2026_11014_CFS.json"
+    samsung = build_dart_normalized_filing(
+        filing_item=item,
+        corp_code="00126380",
+        name_en="SAMSUNG ELECTRONICS CO,.LTD",
+        descriptor=period_descriptor("2026", "11014"),
+        filing_type=filing_type_for("11014"),
+        financial_items=DartClient._parse_financials_payload(json.loads(payload.read_text())),
+        chunks=[],
+    )
+    apple = build_sec_quarter_filing(
+        company_match=SecCompanyMatch(cik="0000320193", ticker="AAPL", title="Apple Inc."),
+        cik10="0000320193",
+        filing=SecFilingItem(
+            accession_number=APPLE_QUARTER,
+            form="10-Q",
+            filing_date=datetime.date(2026, 7, 31),
+            report_date=datetime.date(2026, 6, 27),
+            primary_document="aapl-20260627.htm",
+        ),
+        financial_items=parse_quarter_facts(json.loads(_SEC_FACTS.read_text()), APPLE_QUARTER),
+    )
+    return [samsung, apple]
+
+
 def _event_client() -> FakeDartClient:
     # The one saved Samsung correction body: it names the 2026-10-08 filing, so that pair links.
     return FakeDartClient(EVENT_TICKER, documents={CORRECTION: CORRECTION_BODY})
@@ -152,7 +194,7 @@ def fixture_build_input() -> BuildInput:
     companies: dict[tuple[str, str], CompanyRow] = {}
     filings: list[AnnualFilingRow] = []
     financials: list[FinancialRow] = []
-    for filing in annual_filings():
+    for filing in [*annual_filings(), *quarterly_filings()]:
         regulator = filing.identity.source.value.upper()
         company_key = filing.company.identity.source_company_id
         companies[(regulator, company_key)] = CompanyRow(
@@ -218,7 +260,7 @@ async def seed(database_url: str) -> None:
             await connection.run_sync(Base.metadata.drop_all)
             await connection.execute(text((BACKEND / "db/init.sql").read_text()))
         factory = async_sessionmaker(engine, expire_on_commit=False)
-        for filing in annual_filings():
+        for filing in [*annual_filings(), *quarterly_filings()]:
             async with factory() as session:
                 await persist_normalized_filing(session, filing)
         for batch in await _event_batches():

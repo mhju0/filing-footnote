@@ -36,7 +36,12 @@ PROMPT_VERSION = "m6-2026-11-18-b"
 EVENT_PROMPT_VERSION = "m6-2026-11-19-a"
 
 LANGS = ("ko", "en")
-SUMMARY_SECTIONS = {"event": ("summary",), "annual": ("one_line", "business", "changes", "risks")}
+# A quarterly report (I11) is a figures source only and is never summarised.
+SUMMARY_SECTIONS = {
+    "event": ("summary",),
+    "annual": ("one_line", "business", "changes", "risks"),
+    "quarterly": (),
+}
 # Sections written as three lines, checked as one summary by the neutrality guard.
 THREE_LINE_SECTIONS = frozenset({"summary"})
 

@@ -100,10 +100,13 @@ from app.build.verify import (
     NO_PROMPT_VERSION,
     FigureRef,
     PinnedResponses,
+    QuarterRef,
     VerifyError,
     check_fact,
     check_figure,
+    check_quarter_figure,
     dart_fiscal_period,
+    dart_quarter_period,
     link_problems,
     summary_problems,
 )
@@ -122,6 +125,20 @@ ANNUAL_FORMS: dict[tuple[str, str], str] = {
     ("SEC", "10-K"): "10-K",
 }
 ANNUAL_CATEGORY = "annual"
+# (regulator, stored filing_type) -> form for a quarterly or half-year report (I11).
+QUARTERLY_FORMS: dict[tuple[str, str], str] = {
+    ("DART", "quarterly_report"): "분기보고서",
+    ("DART", "half_year_report"): "반기보고서",
+    ("SEC", "10-Q"): "10-Q",
+}
+QUARTERLY_CATEGORY = "quarterly"
+# The quarter report's figures (I11, board 15): revenue, operating income, and net income
+# attributable to owners where reported, else net income. The app picks between the last two.
+QUARTER_METRICS = ("revenue", "operating_income", "net_income_attributable", "net_income")
+# A filing's period label -> fiscal quarter: DART 'YYYY-Q1' / 'YYYY-H1' / 'YYYY-Q3', SEC
+# 'YYYY-Q1' to 'YYYY-Q3'.
+_QUARTER_PERIOD_RE = re.compile(r"([0-9]{4})-(Q1|H1|Q2|Q3)")
+_QUARTER_OF = {"Q1": 1, "H1": 2, "Q2": 2, "Q3": 3}
 CURRENCY = {"DART": "KRW", "SEC": "USD"}
 REGULATOR_ORDER = {"DART": 0, "SEC": 1}
 DEFAULT_LLM_MODEL = "qwen/qwen3.8-27b"  # D68
@@ -183,6 +200,7 @@ class _Build:
     notice_company: dict[str, str] = field(default_factory=dict)
     facts: list[tuple] = field(default_factory=list)
     figures: list[tuple] = field(default_factory=list)
+    quarter_figures: list[tuple] = field(default_factory=list)
     report: dict[str, Any] = field(default_factory=dict)
 
 
@@ -202,6 +220,7 @@ def build_bundle(data: BuildInput, options: BuildOptions, pinned_dirs: Sequence[
     _event_filings(build, companies)
     _figures(build)
     _annual_filings(build)
+    _quarters(build, companies)
     company_rows = _companies(build, companies)
     summary_rows = _summaries(build, company_rows)
     if not options.allow_unapproved and options.prompt_version == NO_PROMPT_VERSION:
@@ -224,6 +243,7 @@ def build_bundle(data: BuildInput, options: BuildOptions, pinned_dirs: Sequence[
         "filing_summaries": summary_rows,
         "filing_facts": build.facts,
         "figures": build.figures,
+        "quarter_figures": build.quarter_figures,
         "glossary": glossary_rows(glossary, allow_unapproved=options.allow_unapproved),
     }
     # Insert order is primary-key order; the loops above build rows in other orders.
@@ -254,7 +274,8 @@ def _annual_versions(build: _Build, companies: dict[tuple[str, str], CompanyRow]
     for filing in sorted(build.data.annual_filings, key=lambda f: (f.regulator, f.filing_key)):
         fid = _filing_id(filing.regulator, filing.filing_key)
         if (filing.regulator, filing.filing_type) not in ANNUAL_FORMS:
-            skipped[f"filing_type:{filing.filing_type}"] += 1
+            if (filing.regulator, filing.filing_type) not in QUARTERLY_FORMS:
+                skipped[f"filing_type:{filing.filing_type}"] += 1
             continue
         match = _ANNUAL_PERIOD_RE.fullmatch(filing.period or "")
         if match is None:
@@ -304,6 +325,127 @@ def _annual_filings(build: _Build) -> None:
         build.filing_kinds[fid] = "annual"
         build.filing_company[fid] = annual.company_id
     build.report["annual_filings_without_figures"] = {"count": len(unused), "ids": unused}
+
+
+# -- quarterly filings (I11) ---------------------------------------------------------------------
+
+
+def _quarters(build: _Build, companies: dict[tuple[str, str], CompanyRow]) -> None:
+    """Each company's latest quarterly report filed on or before --as-of, with its
+    three-month figures and the same three months a year earlier, each checked against the
+    pinned response. Only a company with an exported annual filing gets one. A metric the
+    report does not state is left out and listed in the report's ``quarter_gaps``."""
+    contract = load_categories_contract()
+    if QUARTERLY_CATEGORY not in {c["key"] for c in contract.get("non_event_categories", [])}:
+        build.problems.append(f"category {QUARTERLY_CATEGORY!r} is not in the categories contract")
+    prefix_re = re.compile(contract["dart"]["correction_prefix_pattern"])
+    exported_companies = {build.filing_company[fid] for fid in build.filings}
+    latest: dict[str, tuple[tuple, AnnualFilingRow, str, int, int]] = {}
+    versions: Counter[tuple[str, int, int]] = Counter()
+    for filing in sorted(build.data.annual_filings, key=lambda f: (f.regulator, f.filing_key)):
+        if (filing.regulator, filing.filing_type) not in QUARTERLY_FORMS:
+            continue
+        fid = _filing_id(filing.regulator, filing.filing_key)
+        match = _QUARTER_PERIOD_RE.fullmatch(filing.period or "")
+        if match is None:
+            build.problems.append(f"{fid}: quarterly period {filing.period!r} is not 'YYYY-Qn'")
+            continue
+        if filing.filed_on is None or filing.filed_on > build.options.as_of:
+            continue
+        company_id = _company_id(filing.regulator, filing.company_key)
+        if company_id not in exported_companies:
+            continue
+        year, quarter = int(match.group(1)), _QUARTER_OF[match.group(2)]
+        versions[(company_id, year, quarter)] += 1
+        rank = (year, quarter, filing.filed_on, fid)
+        if company_id not in latest or rank > latest[company_id][0]:
+            latest[company_id] = (rank, filing, fid, year, quarter)
+
+    rows = defaultdict(list)
+    for row in build.data.financials:
+        rows[_filing_id(row.regulator, row.filing_key)].append(row)
+    gaps: list[str] = []
+    checks = 0
+    without_figures: list[str] = []
+    for company_id, (_, filing, fid, year, quarter) in sorted(latest.items()):
+        figures = []
+        for metric in QUARTER_METRICS:
+            for fiscal_year in (year, year - 1):
+                label = f"{fiscal_year}-Q{quarter}"
+                found = [r for r in rows[fid] if r.metric == metric and r.period == label]
+                if not found:
+                    gaps.append(f"{fid} {metric} {label}")
+                    continue
+                figure = _quarter_figure(build, filing, fid, company_id, quarter, year, found[0])
+                if figure is not None:
+                    figures.append(figure)
+                    checks += 1
+        if not any(f[4] == year for f in figures):
+            without_figures.append(fid)
+            continue
+        build.problems.extend(f"{fid}: {p}" for p in link_problems(filing.url))
+        corrected = versions[(company_id, year, quarter)] > 1 or bool(prefix_re.match(filing.title))
+        build.filings[fid] = (
+            fid, company_id, "quarterly", QUARTERLY_CATEGORY,
+            QUARTERLY_FORMS[(filing.regulator, filing.filing_type)], None, filing.title,
+            filing.filed_on.isoformat(), f"FY{year}-Q{quarter}", filing.url or "",
+            int(corrected), filing.source_text_sha256,
+        )  # fmt: skip
+        build.filing_kinds[fid] = "quarterly"
+        build.filing_company[fid] = company_id
+        build.quarter_figures.extend(figures)
+    build.report["quarter_checks"] = checks
+    exported = sorted(fid for fid, kind in build.filing_kinds.items() if kind == "quarterly")
+    build.report["quarter_gaps"] = {"count": len(gaps), "ids": sorted(gaps)}
+    build.report["quarterly_filings_without_figures"] = {
+        "count": len(without_figures), "ids": without_figures,
+    }
+    build.report["quarterly_filings"] = {"count": len(exported), "ids": exported}
+
+
+def _quarter_figure(
+    build: _Build,
+    filing: AnnualFilingRow,
+    fid: str,
+    company_id: str,
+    quarter: int,
+    year: int,
+    row: FinancialRow,
+) -> tuple | None:
+    label = f"{fid} {row.metric} {row.period}"
+    if row.period_kind != "duration":
+        build.problems.append(f"{label}: not a duration figure")
+        return None
+    if row.regulator == "DART":
+        try:
+            start, end = dart_quarter_period(filing.title, year, quarter, row.fiscal_year)
+        except VerifyError as exc:
+            build.problems.append(f"{label}: {exc}")
+            return None
+    else:
+        if row.period_start is None or row.period_end is None:
+            build.problems.append(f"{label}: SEC figure without its own period dates")
+            return None
+        start, end = row.period_start, row.period_end
+    value = canonical_decimal(row.value)
+    try:
+        check = check_quarter_figure(
+            build.pinned,
+            QuarterRef(
+                company_id=company_id, filing_id=fid, filing_title=filing.title,
+                filing_year=year, fiscal_quarter=quarter, metric=row.metric,
+                fiscal_year=row.fiscal_year, period_start=start.isoformat(),
+                period_end=end.isoformat(), value=value,
+            ),
+        )  # fmt: skip
+    except VerifyError as exc:
+        build.problems.append(f"{label}: {exc}")
+        return None
+    return (
+        f"{company_id}|{row.metric}|{end.isoformat()}|{BASIS}", company_id, fid, row.metric,
+        row.fiscal_year, quarter, start.isoformat(), end.isoformat(), value, row.unit,
+        row.currency, BASIS, check.regulator_tag,
+    )  # fmt: skip
 
 
 # -- event filings -------------------------------------------------------------------------------
@@ -1031,12 +1173,13 @@ def report_path_for(out: Path) -> Path:
 def _check_decimals(rows: dict[str, list[tuple]]) -> None:
     """Every stored decimal is canonical; anything else stops the write."""
     problems = []
-    value = TABLES["figures"][0].index("value")
-    for row in rows["figures"]:
-        try:
-            require_canonical(row[value])
-        except ValueError as exc:
-            problems.append(f"{row[0]}: {exc}")
+    for table in ("figures", "quarter_figures"):
+        value = TABLES[table][0].index("value")
+        for row in rows[table]:
+            try:
+                require_canonical(row[value])
+            except ValueError as exc:
+                problems.append(f"{row[0]}: {exc}")
     columns = TABLES["filing_facts"][0]
     kind, text = columns.index("value_kind"), columns.index("value_text")
     for row in rows["filing_facts"]:

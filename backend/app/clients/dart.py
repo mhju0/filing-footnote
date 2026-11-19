@@ -386,6 +386,13 @@ class FinancialItem:
     ord: int | None  # DART sort order
     currency: str
     metric: str | None  # standard MetricCard.key, or None if unmapped
+    # Quarterly and half-year reports only. On an income-statement row thstrm_amount is the
+    # quarter's three months, thstrm_add_amount the year to date and frmtrm_q_amount the same
+    # three months a year earlier (checked against Hyundai Motor's 2026 반기 and 3분기
+    # responses). thstrm_nm names the period, e.g. "제 59 기 3분기".
+    thstrm_nm: str = ""
+    thstrm_add_amount: int | Decimal | None = None
+    frmtrm_q_amount: int | Decimal | None = None
 
 
 def _parse_ord(raw: str) -> int | None:
@@ -440,6 +447,9 @@ def _financial_item_from_row(row: dict[str, Any]) -> FinancialItem:
         ord=_parse_ord(_s("ord")),
         currency=_s("currency"),
         metric=account_id_to_metric(account_id),
+        thstrm_nm=_s("thstrm_nm"),
+        thstrm_add_amount=_amount("thstrm_add_amount"),
+        frmtrm_q_amount=_amount("frmtrm_q_amount"),
     )
 
 
