@@ -17,7 +17,7 @@ The gate passes only when the last line is `GATE: PASS`. It runs, in order:
 2. `make test`: the offline pytest suite, with `DART_API_KEY` and `TEST_DATABASE_URL` unset
    and `EMBEDDING_WARMUP_ENABLED=false`, so no network, key or model is used.
 3. `swift test --package-path ios/FootnoteKit` (macOS only).
-4. Regenerates `ios/Footnote.xcodeproj` with XcodeGen 2.46.0 and fails if it differs from the
+4. Regenerates `ios/Footnote.xcodeproj` with XcodeGen 2.47.0 and fails if it differs from the
    committed copy (skipped when XcodeGen is not installed; fails on another version).
 5. A grep that fails if app code names an exchange rate or a currency conversion (D84).
 
@@ -76,7 +76,7 @@ real bundle.
 `ios/project.yml` is the source of the Xcode project. After editing it:
 
 ```bash
-xcodegen generate --spec ios/project.yml   # XcodeGen 2.46.0
+xcodegen generate --spec ios/project.yml   # XcodeGen 2.47.0
 ```
 
 and commit the regenerated `ios/Footnote.xcodeproj`. Tests:

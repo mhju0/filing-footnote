@@ -334,7 +334,7 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
-				LastUpgradeCheck = 1430;
+				LastUpgradeCheck = 1600;
 				TargetAttributes = {
 					692882A2B3E8382634045991 = {
 						TestTargetID = 90DD80BB07D8CE762826605A;
