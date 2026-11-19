@@ -3,7 +3,8 @@
 Status on 2026-11-20: v0.1 in development. The pipeline, the app, the quarter report and the
 release gates are built. The owner has approved the glossary, the screen copy and 38 summary
 sections. The release bundle is not built, because 171 exported filings still lack an
-approved summary, and the walkthrough is not recorded.
+approved summary. The [walkthrough video](https://github.com/mhju0/filing-footnote/releases/tag/walkthrough-2026-11-20) was recorded on 2026-11-20 from a
+development bundle.
 
 ## The problem
 

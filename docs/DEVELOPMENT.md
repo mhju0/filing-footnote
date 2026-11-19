@@ -96,6 +96,9 @@ xcodebuild test -project ios/Footnote.xcodeproj -scheme FootnoteUITests \
 Run one simulator job at a time. The UI tests open the FootnoteKit fixture through the debug
 launch argument `-FootnoteBundle`. `ios/scripts/screenshots.sh` captures the screens in
 [screenshots/footnote/](screenshots/footnote/) from a built app on a booted simulator.
+`ios/scripts/walkthrough.sh <udid> <out.mp4>` records the walkthrough video: it reinstalls the
+app with the development bundle and runs `WalkthroughUITests`, which is skipped unless
+`TEST_RUNNER_FOOTNOTE_WALKTHROUGH=1` is set.
 
 ## Changing a shared contract
 

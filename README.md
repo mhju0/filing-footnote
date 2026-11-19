@@ -12,7 +12,7 @@ Filing Footnote v0.1 is in development. Nothing is released. The backend package
 - On 2026-11-19 the owner accepted decisions D78 to D86 and approved the glossary wording and the drafted screen copy (D88). D87 (accessibility audit) and D89 (quarter report) are still PROPOSED in [docs/DECISIONS.md](docs/DECISIONS.md).
 - Summaries: the owner approved 38 filing sections. A development export ships 24 filings with an approved summary. Five more approved filings are no longer among their company's ten newest. The export skipped nine approved sections as stale, because they were written under an earlier version of the word lists, and a release export refuses them; the summary run writes them again for the owner. Of the 171 exported filings without an approved summary, some are written and wait for the owner, and the rest are still being written on Groq's free tier.
 - The release data bundle is not built yet. A release export refuses while any exported filing lacks an approved summary, and a release build of the app refuses a development bundle.
-- The walkthrough video is not recorded yet.
+- The [walkthrough video](https://github.com/mhju0/filing-footnote/releases/tag/walkthrough-2026-11-20) (2 min 23 s) was recorded on 2026-11-20 from a development bundle, in which 24 filings have approved summaries.
 
 ## Where the model is used, and where it is not
 
@@ -32,6 +32,10 @@ Everything else is code that can be read and tested:
 A person approves every summary before it can ship. The guard checks words, not facts. In a pilot, a summary replaced a region named in the filing with a different place, and neither the guard nor the model reviewer caught it. In the current run the reviewer flagged none of the model-written sections that passed the guard.
 
 `python -m app.build.quality` prints the counts behind this: what the guard withheld and why, how often a retry fixed a first answer, what the owner approved, and the calls and tokens it took. The [case study](docs/CASE_STUDY.md#summary-quality) has the current numbers.
+
+## Walkthrough
+
+[Watch the walkthrough](https://github.com/mhju0/filing-footnote/releases/download/walkthrough-2026-11-20/footnote-walkthrough.mp4) (MP4, 2 min 23 s, iPhone 13 mini simulator). It goes from Samsung Electronics to a buyback filing and its approved summary, the annual report, revenue compared with last year and its calculation, a comparison with Apple in which an amount comparison across currencies is refused, the latest quarter report, and one tap to English. It was recorded from a development bundle, not a release bundle. `ios/scripts/walkthrough.sh` records it again.
 
 ## Screenshots
 
