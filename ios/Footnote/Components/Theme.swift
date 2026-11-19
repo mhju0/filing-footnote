@@ -34,7 +34,11 @@ struct TagView: View {
             .padding(.horizontal, 6)
             .padding(.vertical, 2)
             .background(background, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
-            .fixedSize()
+            // Its own width unless that is wider than the row (`Management matters` at the
+            // accessibility sizes): then it wraps inside the row instead of pushing the whole
+            // row past both edges of its card. Text beside it gives way first.
+            .fixedSize(horizontal: false, vertical: true)
+            .layoutPriority(1)
     }
 
     private var foreground: Color {
@@ -144,6 +148,12 @@ struct LanguageButton: View {
             .padding(.horizontal, 6)
             .frame(minWidth: Theme.minTarget, minHeight: Theme.minTarget)
             .contentShape(Rectangle())
+        }
+        // The navigation bar caps its items' text size; at accessibility sizes a long press
+        // shows the label in the large content viewer, as system bar buttons do.
+        .accessibilityShowsLargeContentViewer {
+            Image(systemName: "globe")
+            Text(verbatim: language == .ko ? "EN" : "한국어")
         }
         .accessibilityLabel(language("Switch to English", "한국어로 보기"))
         .accessibilityHint(language("화면 전체를 영어로 바꿔요", "Shows the whole app in Korean"))

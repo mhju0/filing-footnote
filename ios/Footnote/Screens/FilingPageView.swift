@@ -34,12 +34,14 @@ struct FilingPageView: View {
                 }
             }
             if page.outlookHasNoFigures {
-                Section(PageCopy.numbers(language)) {
+                Section {
                     Text(words: PageCopy.outlookWithoutFigures(language))
                         .font(.body)
                         .foregroundStyle(Theme.muted)
                         .fixedSize(horizontal: false, vertical: true)
                         .listRowBackground(Theme.surface)
+                } header: {
+                    SectionTitle(PageCopy.numbers(language))
                 }
             }
             ForEach(Array(page.blocks.enumerated()), id: \.offset) { index, block in
@@ -84,7 +86,7 @@ struct FilingPageView: View {
                 SentenceRows(lines: lines)
             }
         } header: {
-            Text(words: PageCopy.sentences(language))
+            SectionTitle(PageCopy.sentences(language))
         } footer: {
             if !lines.isEmpty { SectionNote(text: PageCopy.howWritten(language)) }
         }
@@ -120,7 +122,7 @@ private struct FactBlockSection: View {
             Section {
                 ForEach(rows, id: \.self) { row in factRow(row) }
             } header: {
-                if isFirst { Text(words: PageCopy.numbers(language)) }
+                if isFirst { SectionTitle(PageCopy.numbers(language)) }
             }
         }
     }
@@ -133,6 +135,7 @@ private struct FactBlockSection: View {
                 .font(.footnote.weight(isFirst ? .regular : .semibold))
                 .textCase(nil)
         }
+        .foregroundStyle(Theme.muted)
     }
 
     /// A value in its stated unit; money in the company page's compact form unless `exact`.

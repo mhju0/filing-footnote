@@ -139,11 +139,10 @@ struct FactRow: View {
             }
             if showsExact {
                 ForEach(Array(exact.enumerated()), id: \.offset) { _, line in
-                    Text(words: line)
+                    UnbrokenNumbers(text: line)
                         .font(.footnote)
                         .monospacedDigit()
                         .foregroundStyle(Theme.ink)
-                        .fixedSize(horizontal: false, vertical: true)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
@@ -200,13 +199,26 @@ struct FactRow: View {
 
     private var valueLine: some View {
         HStack(alignment: .firstTextBaseline, spacing: 6) {
-            Text(words: value)
+            // Amounts and receipt numbers wrap at spaces only, never inside a number.
+            UnbrokenNumbers(text: value)
                 .font(.body.weight(.semibold))
                 .monospacedDigit()
                 .foregroundStyle(Theme.ink)
-                .fixedSize(horizontal: false, vertical: true)
             if let tag { TagView(text: tag, kind: .corrected) }
         }
+    }
+}
+
+/// A section header: Muted, which the accessibility audit measures above the contrast
+/// threshold on Background, where the system's header grey only nearly passed; Korean wraps
+/// between words.
+struct SectionTitle: View {
+    let text: String
+
+    init(_ text: String) { self.text = text }
+
+    var body: some View {
+        Text(words: text).foregroundStyle(Theme.muted)
     }
 }
 
@@ -236,7 +248,7 @@ struct SourceSection: View {
             FactRow(label: PageCopy.receiptNumber(source.regulator, language), value: source.receiptNumber,
                     spellsOutValue: true)
         } header: {
-            Text(words: PageCopy.original(language))
+            SectionTitle(PageCopy.original(language))
         }
         if let url = source.url {
             Section {

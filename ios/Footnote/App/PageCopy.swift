@@ -45,10 +45,11 @@ enum PageCopy {
     }
 
     /// Lead decision (D83): pages show money amounts in the company page's compact form, and
-    /// the exact value on tap. One sentence per line, so neither wraps a lone word.
+    /// the exact value on tap. One sentence per line, so neither wraps a lone word; a
+    /// no-break space keeps `보여 줘요` together at the accessibility sizes.
     static func amountsShortened(_ language: Language) -> String {
         language(
-            "금액은 줄여서 보여 줘요.\n숫자를 누르면 정확한 값을 볼 수 있어요.",
+            "금액은 줄여서 보여\u{00A0}줘요.\n숫자를 누르면 정확한 값을 볼 수 있어요.",
             "Amounts are shortened.\nTap a figure to see the exact value.")
     }
 
@@ -269,6 +270,15 @@ enum PageCopy {
     static func changeFromLastYear(_ percent: Decimal, _ language: Language) -> String {
         let change = Formatting.percentChange(percent, language: language)
         return language(change + Copy.dot + "작년보다", change + " from last year")
+    }
+
+    /// `changeFromLastYear` in the two phrases a line may break between at large text
+    /// sizes: the rate, then its words (`+16.20%` / `늘었어요 · 작년보다`). Joined with a
+    /// space they are `changeFromLastYear` exactly.
+    static func changeFromLastYearPhrases(_ percent: Decimal, _ language: Language) -> [String] {
+        let whole = changeFromLastYear(percent, language)
+        guard let space = whole.firstIndex(of: " ") else { return [whole] }
+        return [String(whole[..<space]), String(whole[whole.index(after: space)...])]
     }
 
     /// `출처: 사업보고서 (2025.12) · 2026년 3월 10일 공시` (board 5A).
