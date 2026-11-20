@@ -21,7 +21,7 @@ def test_product_release_version_is_consistent() -> None:
         == f"filing-footnote/{release_version} your-contact@example.com"
     )
     assert (
-        f"SEC_USER_AGENT=filing-digest/{release_version} your-contact@example.com"
+        f"SEC_USER_AGENT=filing-footnote/{release_version} your-contact@example.com"
         in (BACKEND_ROOT / ".env.example").read_text()
     )
     assert (
