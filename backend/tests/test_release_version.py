@@ -39,3 +39,11 @@ def test_product_release_version_is_consistent() -> None:
         re.findall(r"MARKETING_VERSION = ([^;]+);", project)
     )
     assert marketing_versions == {release_version}
+
+
+
+def test_example_uses_the_default_summary_provider() -> None:
+    example = (BACKEND_ROOT / ".env.example").read_text().splitlines()
+
+    assert f"LLM_BASE_URL={Settings.model_fields['llm_base_url'].default}" in example
+    assert f"LLM_MODEL={Settings.model_fields['llm_model'].default}" in example
