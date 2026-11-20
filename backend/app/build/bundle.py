@@ -13,7 +13,9 @@ import hashlib
 import json
 import sqlite3
 
-SCHEMA_VERSION = 3  # 2: the notices table (D76); 3: quarterly filings and quarter_figures (I11)
+# 2: the notices table (D76); 3: quarterly filings and quarter_figures (I11);
+# 4: build_meta.preview (D90)
+SCHEMA_VERSION = 4
 
 SCHEMA = """
 CREATE TABLE build_meta (
@@ -23,7 +25,8 @@ CREATE TABLE build_meta (
   llm_model        TEXT NOT NULL,
   prompt_version   TEXT NOT NULL,
   content_sha256   TEXT NOT NULL,
-  allow_unapproved INTEGER NOT NULL CHECK (allow_unapproved IN (0, 1))
+  allow_unapproved INTEGER NOT NULL CHECK (allow_unapproved IN (0, 1)),
+  preview          INTEGER NOT NULL CHECK (preview IN (0, 1))
 ) STRICT;
 
 CREATE TABLE companies (

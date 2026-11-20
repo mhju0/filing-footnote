@@ -16,14 +16,16 @@ figure must equal the stored value exactly, as a ``Decimal`` and as its canonica
 missing response or difference is a failure. The export and :func:`check_bundle` call the
 same :func:`check_figure` and :func:`check_fact`.
 
-    python -m app.build.verify dist/footnote.sqlite --pinned data/pinned [--release]
+    python -m app.build.verify dist/footnote.sqlite --pinned data/pinned [--release | --preview]
 
 checks a finished file on its own contents, trusting nothing in ``build_meta`` but the
 fingerprint it recomputes: every figure and fact against the pinned responses, links (N5),
 canonical decimals, column types and the neutrality guard on every summary line. With
 ``--release`` it also refuses a development build or ``prompt_version`` ``none``, and requires
 approved summaries in both languages and every section for each filing that needs them
-(:data:`app.build.model.ANNUAL_SCOPE`).
+(:data:`app.build.model.ANNUAL_SCOPE`), and refuses a preview bundle (``build_meta.preview``).
+``--preview`` runs every release check except that summary coverage, and refuses a development
+build.
 """
 
 from __future__ import annotations
@@ -655,7 +657,9 @@ def _select(connection: sqlite3.Connection, table: str) -> list[dict[str, Any]]:
     return [dict(zip(columns, row, strict=True)) for row in connection.execute(query)]
 
 
-def check_bundle(path: Path, *, release: bool, pinned_dirs: Sequence[Path]) -> list[str]:
+def check_bundle(
+    path: Path, *, release: bool, pinned_dirs: Sequence[Path], preview: bool = False
+) -> list[str]:
     """Problems with a finished bundle; an empty list means it passes."""
     connection = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
     try:
@@ -681,9 +685,13 @@ def check_bundle(path: Path, *, release: bool, pinned_dirs: Sequence[Path]) -> l
     finally:
         connection.close()
 
-    if release and meta["allow_unapproved"] != 0:
-        problems.append("built with --allow-unapproved; a release refuses it")
-    if release and meta["prompt_version"] == NO_PROMPT_VERSION:
+    if (release or preview) and meta["allow_unapproved"] != 0:
+        problems.append(
+            f"built with --allow-unapproved; a {'release' if release else 'preview'} refuses it"
+        )
+    if release and meta["preview"] != 0:
+        problems.append("a preview bundle; a release refuses it")
+    if (release or preview) and meta["prompt_version"] == NO_PROMPT_VERSION:
         problems.append(f"prompt_version is {NO_PROMPT_VERSION!r}; a release refuses it")
     for filing in filings.values():
         problems.extend(f"{filing['id']}: {p}" for p in link_problems(filing["source_url"]))
@@ -888,10 +896,21 @@ def main(argv: list[str] | None = None) -> int:
         action="append",
         help=f"directory of pinned regulator responses, repeatable (default {DEFAULT_PINNED_DIR})",
     )
-    parser.add_argument("--release", action="store_true", help="refuse a development build")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument(
+        "--release", action="store_true", help="refuse a development or preview build"
+    )
+    mode.add_argument(
+        "--preview",
+        action="store_true",
+        help="every release check except summary coverage; refuse a development build",
+    )
     args = parser.parse_args(argv)
     problems = check_bundle(
-        args.bundle, release=args.release, pinned_dirs=args.pinned or [DEFAULT_PINNED_DIR]
+        args.bundle,
+        release=args.release,
+        preview=args.preview,
+        pinned_dirs=args.pinned or [DEFAULT_PINNED_DIR],
     )
     for problem in problems:
         print(f"FAIL {problem}", file=sys.stderr)

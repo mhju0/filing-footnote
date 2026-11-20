@@ -191,8 +191,8 @@ def test_export_writes_section_four_file_and_report(data, tmp_path, capsys) -> N
     assert report["file"]["size_bytes"] == out.stat().st_size
     assert f"size_bytes={out.stat().st_size}" in printed
     assert report["build_meta"]["allow_unapproved"] == 1 and report["mode"] == "development"
-    assert _rows(out, "SELECT schema_version, data_as_of, source_revision, allow_unapproved "
-                      "FROM build_meta") == [(3, "2026-11-17", "test", 1)]  # fmt: skip
+    assert _rows(out, "SELECT schema_version, data_as_of, source_revision, allow_unapproved, preview "
+                      "FROM build_meta") == [(4, "2026-11-17", "test", 1, 0)]  # fmt: skip
     for table, count in report["row_counts"].items():
         assert _rows(out, f"SELECT count(*) FROM {table}") == [(count,)]
     assert report["row_counts"]["figures"] == len(report["figure_checks"]) > 0
