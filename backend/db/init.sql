@@ -1,4 +1,4 @@
--- DB SCHEMA v0.3 for filing-digest backend.
+-- DB SCHEMA v0.3 for filing-footnote backend.
 -- Intended for docker-entrypoint-initdb.d (Postgres 16 + pgvector image).
 -- Must stay in exact sync with backend/app/db/models.py.
 -- Note: pg16 has gen_random_uuid() built in; only the vector extension is needed.

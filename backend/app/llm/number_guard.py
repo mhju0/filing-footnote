@@ -1,7 +1,7 @@
 """Deterministic guard against inline financial numbers in narrative prose.
 
 Mirror of :mod:`app.llm.citation_guard`: pure validation, no repair, no network,
-no DB. In filing-digest, numbers come only from the structured filing API; the
+no DB. In Filing Footnote, numbers come only from the structured filing API; the
 LLM narrates and must never emit figures of its own. This module scans each
 answer segment's narrated ``text`` for recognized financial
 number tokens -- currency amounts, percentages, and multiples -- and reports
