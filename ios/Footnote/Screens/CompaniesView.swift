@@ -21,10 +21,32 @@ struct CompaniesView: View {
                     SectionTitle(Copy.market(group.companies[0].regulator, language))
                 }
             }
+            Section {} footer: { DataFooter(meta: store.meta) }
         }
         .groupedScreen()
         .navigationTitle(language("기업", "Companies"))
         .languageToolbar()
+    }
+}
+
+/// The data date and, for a preview bundle, a second line saying summaries are left out.
+struct DataFooter: View {
+    @Environment(\.language) private var language
+    let meta: BuildMeta
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(words: Copy.dataFooter(meta.dataAsOf, language))
+                .accessibilityIdentifier("data-footer")
+            if meta.preview {
+                Text(words: Copy.previewNote(language))
+                    .accessibilityIdentifier("preview-note")
+            }
+        }
+        .font(.footnote)
+        .foregroundStyle(Theme.muted)
+        .fixedSize(horizontal: false, vertical: true)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 

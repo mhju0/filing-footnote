@@ -1,7 +1,7 @@
 PYTHON ?= $(CURDIR)/.venv/bin/python
 RUFF ?= $(CURDIR)/.venv/bin/ruff
 
-.PHONY: check lint test test-db compose data
+.PHONY: check lint test test-db compose data data-preview
 
 check: lint test compose
 
@@ -26,3 +26,13 @@ data:
 	$(if $(PINNED),,$(error set PINNED=<directory of pinned regulator responses>))
 	cd backend && "$(PYTHON)" -m app.build.export --as-of "$(AS_OF)" \
 		--out "$(CURDIR)/dist/footnote.sqlite" --pinned "$(abspath $(PINNED))" $(DATA_FLAGS)
+
+# The same bundle as a preview for internal TestFlight (D90): filings without approved
+# summaries are left out and listed in the report; every other release check stays on.
+data-preview:
+	$(if $(AS_OF),,$(error set AS_OF=YYYY-MM-DD))
+	$(if $(PINNED),,$(error set PINNED=<directory of pinned regulator responses>))
+	cd backend && "$(PYTHON)" -m app.build.export --as-of "$(AS_OF)" --preview \
+		--out "$(CURDIR)/dist/footnote.sqlite" --pinned "$(abspath $(PINNED))"
+	cd backend && "$(PYTHON)" -m app.build.verify "$(CURDIR)/dist/footnote.sqlite" --preview \
+		--pinned "$(abspath $(PINNED))"

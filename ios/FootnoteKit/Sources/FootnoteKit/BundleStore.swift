@@ -19,7 +19,7 @@ public enum BundleError: Error, Equatable, Sendable {
 /// The file is opened read-only, checked for a known `schema_version` before any other table
 /// is read, and closed before `init` returns. The schema is `backend/app/build/bundle.py`.
 public struct BundleStore: Sendable {
-    public static let supportedSchemaVersion = 3
+    public static let supportedSchemaVersion = 4
 
     public let meta: BuildMeta
     /// By `sort_order`.
@@ -54,13 +54,13 @@ public struct BundleStore: Sendable {
         let metaRows = try db.rows(
             "build_meta",
             "SELECT schema_version, data_as_of, source_revision, llm_model, prompt_version, "
-                + "content_sha256, allow_unapproved FROM build_meta"
+                + "content_sha256, allow_unapproved, preview FROM build_meta"
         ) { row throws(BundleError) in
             BuildMeta(
                 schemaVersion: try row.int(0), dataAsOf: try row.date(1),
                 sourceRevision: try row.text(2), llmModel: try row.text(3),
                 promptVersion: try row.text(4), contentSHA256: try row.text(5),
-                allowUnapproved: try row.bool(6))
+                allowUnapproved: try row.bool(6), preview: try row.bool(7))
         }
         meta = metaRows[0]
 

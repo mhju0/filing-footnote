@@ -10,6 +10,9 @@ public struct BuildMeta: Sendable, Hashable {
     public let contentSHA256: String
     /// True for a development bundle; a release bundle never has it.
     public let allowUnapproved: Bool
+    /// True for a preview bundle (D90): it holds only approved summaries, but filings without
+    /// approved summaries are left out. Fit for internal TestFlight, never for a release.
+    public let preview: Bool
 }
 
 public struct Company: Sendable, Hashable, Identifiable {

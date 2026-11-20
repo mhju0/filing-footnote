@@ -48,8 +48,9 @@ version 0.5.2; the v0.5.2 portfolio architecture of Filing Digest is kept in
 
 `backend/app/build/bundle.py` is the schema. Its tables:
 
-- `build_meta`: `schema_version` (2), `data_as_of`, `source_revision`, `llm_model`,
-  `prompt_version`, `content_sha256` and `allow_unapproved` (1 for a development build).
+- `build_meta`: `schema_version` (4), `data_as_of`, `source_revision`, `llm_model`,
+  `prompt_version`, `content_sha256`, `allow_unapproved` (1 for a development build) and
+  `preview` (1 for a preview build, D90).
 - `companies`, `filings` (annual or event, with category and source link), `notices`
   (listed as a count, never summarised), `filing_summaries` (only rows whose
   `review_state` is `approved` can be written), `filing_facts`, `figures` and `glossary`.

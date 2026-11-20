@@ -1,7 +1,7 @@
 """Export the build database to the bundled SQLite file (build plan section 4, ADR 0006).
 
     python -m app.build.export --as-of 2026-11-17 --out dist/footnote.sqlite \\
-        --pinned data/pinned [--allow-unapproved]
+        --pinned data/pinned [--allow-unapproved | --preview]
 
 The build either writes a file whose every figure and fact matched a pinned regulator
 response, or exits 1 and leaves no bundle and no report at the output paths. Both files are
@@ -20,6 +20,14 @@ Summaries not yet approved are never written, because ``review_state`` must be `
 Glossary entries (``contracts/glossary.json``, D81) follow the same split: a release build
 refuses while any entry is unapproved and every build runs the neutrality guard on them; a
 development build writes the unapproved entries too, since ``allow_unapproved`` marks the file.
+
+``--preview`` (D90) is for internal TestFlight builds made before every summary is approved. It
+relaxes only two release refusals: a filing without approved summaries and a stale approved row
+are left out and listed in the report. Everything else stays on: the neutrality guard,
+``prompt_version`` ``none``, ``restatement_unchecked`` and the figure checks. Unapproved glossary
+entries are omitted, never written, and do not refuse the build. A preview records
+``allow_unapproved = 0`` and ``preview = 1`` in ``build_meta``; ``python -m app.build.verify
+--release`` refuses it. Only approved summaries are ever written, in every mode.
 
 Event filings: the version of each correction chain shown is the newest one filed on or
 before ``--as-of``; ingest's ``is_latest`` is not used. At most ten events per company are
@@ -154,6 +162,8 @@ class BuildOptions:
     as_of: datetime.date
     source_revision: str
     allow_unapproved: bool = False
+    # A preview leaves out filings without approved summaries instead of refusing (D90).
+    preview: bool = False
     llm_model: str = DEFAULT_LLM_MODEL
     prompt_version: str = DEFAULT_PROMPT_VERSION
     # Keys event summaries; prompt_version keys annual ones (D78).
@@ -231,7 +241,7 @@ def build_bundle(data: BuildInput, options: BuildOptions, pinned_dirs: Sequence[
         )
     glossary = load_glossary()
     build.problems.extend(glossary_problems(glossary))
-    if not options.allow_unapproved:
+    if not options.allow_unapproved and not options.preview:
         build.problems.extend(release_problems(glossary))
     if build.problems:
         raise BuildError(build.problems)
@@ -258,6 +268,7 @@ def build_bundle(data: BuildInput, options: BuildOptions, pinned_dirs: Sequence[
         "llm_model": options.llm_model,
         "prompt_version": options.prompt_version,
         "allow_unapproved": int(options.allow_unapproved),
+        "preview": int(options.preview),
     }
     build.report["row_counts"] = {table: len(rows[table]) for table in sorted(rows)}
     return Bundle(rows, meta, build.report)
@@ -1139,7 +1150,8 @@ def _summaries(build: _Build, company_rows: list[tuple]) -> list[tuple]:
             for fid, annual in build.annual.items()
         },
     )
-    if stale and not build.options.allow_unapproved:
+    relaxed = build.options.allow_unapproved or build.options.preview
+    if stale and not relaxed:
         build.problems.append(
             f"release build refused: {len(stale)} approved summaries do not match the current "
             f"source text, prompt version, model or word lists ({', '.join(stale)})"
@@ -1149,7 +1161,7 @@ def _summaries(build: _Build, company_rows: list[tuple]) -> list[tuple]:
         for fid, pairs in required.items()
         if any((fid, lang, section) not in approved for lang, section in pairs)
     )
-    if missing and not build.options.allow_unapproved:
+    if missing and not relaxed:
         shown = ", ".join(missing[:10]) + (" ..." if len(missing) > 10 else "")
         build.problems.append(
             f"release build refused: {len(missing)} exported filings lack approved summaries "
@@ -1243,7 +1255,11 @@ def write_bundle(bundle: Bundle, out: Path, report_path: Path | None = None) -> 
             report = {
                 **bundle.report,
                 "build_meta": meta,
-                "mode": "development" if meta["allow_unapproved"] else "release",
+                "mode": (
+                    "development"
+                    if meta["allow_unapproved"]
+                    else "preview" if meta["preview"] else "release"
+                ),
                 "file": {
                     "name": out.name,
                     "sha256": hashlib.sha256(data).hexdigest(),
@@ -1313,6 +1329,11 @@ def _parser() -> argparse.ArgumentParser:
         action="store_true",
         help="development build: export filings without approved summaries",
     )
+    mode.add_argument(
+        "--preview",
+        action="store_true",
+        help="preview build: leave out filings without approved summaries, keep every other check",
+    )
     mode.add_argument("--release", action="store_true", help="release build (the default)")
     return parser
 
@@ -1341,6 +1362,7 @@ def run(
             as_of=args.as_of,
             source_revision=revision,
             allow_unapproved=args.allow_unapproved,
+            preview=args.preview,
             llm_model=args.llm_model,
             prompt_version=args.prompt_version,
             event_prompt_version=args.event_prompt_version,
