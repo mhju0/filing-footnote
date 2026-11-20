@@ -47,10 +47,10 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
 
 
 app = FastAPI(
-    title="filing-digest backend",
+    title="filing-footnote backend",
     version=__version__,
     description=(
-        "DART/SEC filing digest API. Numbers come only from "
+        "DART/SEC filing API. Numbers come only from "
         "structured DART/SEC data; the LLM generates narrative. "
         "Checks validate citation integrity and recognized financial "
         "expressions, not sentence-level semantic support."
@@ -93,4 +93,4 @@ async def browser_boundary(request: Request, call_next):
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=get_settings().allowed_hosts)
 app.include_router(router)
 
-logger.info("filing-digest backend app initialized (version %s)", __version__)
+logger.info("filing-footnote backend app initialized (version %s)", __version__)

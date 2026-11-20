@@ -1,4 +1,4 @@
-"""Live eval harness for filing-digest. Calls the HTTP API (httpx), never
+"""Live eval harness for Filing Footnote. Calls the HTTP API (httpx), never
 service functions directly. See README.md for usage.
 """
 
@@ -364,7 +364,7 @@ def print_summary_table(results: list[dict]) -> None:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="filing-digest live eval harness")
+    parser = argparse.ArgumentParser(description="Filing Footnote live eval harness")
     parser.add_argument("--tier", choices=["retrieval", "full", "all"], default="all")
     parser.add_argument("--base-url", default=DEFAULT_BASE_URL)
     parser.add_argument("--only", default=None, help="run a single case id")

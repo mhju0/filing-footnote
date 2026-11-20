@@ -18,7 +18,7 @@ def test_product_release_version_is_consistent() -> None:
     assert __version__ == release_version
     assert (
         Settings.model_fields["sec_user_agent"].default
-        == f"filing-digest/{release_version} your-contact@example.com"
+        == f"filing-footnote/{release_version} your-contact@example.com"
     )
     assert (
         f"SEC_USER_AGENT=filing-digest/{release_version} your-contact@example.com"

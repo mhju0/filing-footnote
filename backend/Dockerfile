@@ -1,4 +1,4 @@
-# Python 3.11 slim image for the filing-digest backend.
+# Python 3.11 slim image for the filing-footnote backend.
 FROM python:3.11-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \

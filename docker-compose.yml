@@ -1,4 +1,4 @@
-# filing-digest 로컬 개발 스택 (Compose Spec v2 스타일 - 최상위 `version:` 키는 사용하지 않음)
+# filing-footnote 로컬 개발 스택 (Compose Spec v2 스타일 - 최상위 `version:` 키는 사용하지 않음)
 #
 # 개발 정본: `docker compose up -d db` (DB만) + host uvicorn `--reload --port 8001`.
 #   backend 서비스는 profile "container"에 격리되어 bare `up`으로는 뜨지 않는다 (아래 backend.profiles 참고).
