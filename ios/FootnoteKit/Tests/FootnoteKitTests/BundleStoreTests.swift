@@ -25,6 +25,7 @@ struct BundleStoreTests {
         #expect(store.meta.dataAsOf == Support.date("2026-11-17"))
         #expect(store.meta.sourceRevision == "footnotekit-fixture")
         #expect(store.meta.allowUnapproved)
+        #expect(!store.meta.preview)
         #expect(store.meta.contentSHA256.count == 64)
     }
 
@@ -133,6 +134,23 @@ struct BundleStoreTests {
         #expect(throws: Never.self) { try release.requireRelease() }
     }
 
+    /// D90: a preview has allow_unapproved = 0 and preview = 1, so a release app build opens it.
+    @Test func aPreviewBundleIsReadAndPassesTheReleaseGate() throws {
+        let url = try Self.editedCopy("UPDATE build_meta SET allow_unapproved = 0, preview = 1")
+        let preview = try BundleStore(contentsOf: url)
+        #expect(preview.meta.preview)
+        #expect(!preview.meta.allowUnapproved)
+        #expect(throws: Never.self) { try preview.requireRelease() }
+    }
+
+    /// A preview leaves unapproved glossary entries out; every glossary lookup is optional.
+    @Test func anAbsentGlossaryEntryIsNilNotAnError() throws {
+        let url = try Self.editedCopy("DELETE FROM glossary WHERE term_key = 'revenue'")
+        let preview = try BundleStore(contentsOf: url)
+        #expect(preview.glossaryEntry(termKey: "revenue", language: .ko) == nil)
+        #expect(preview.glossary(language: .ko).map(\.termKey) == ["operating_margin"])
+    }
+
     @Test func rejectsAFigurePeriodThatStartsAfterItEnds() throws {
         let url = try Self.editedCopy(
             "UPDATE figures SET period_start = '2026-01-01' WHERE metric = 'eps' AND company_id = '\(Self.apple)'")
@@ -178,7 +196,7 @@ struct BundleStoreTests {
 
     @Test func rejectsAnUnknownSchemaVersion() throws {
         let url = try Self.editedCopy("UPDATE build_meta SET schema_version = 2")
-        #expect(throws: BundleError.unsupportedSchemaVersion(found: 2, supported: 3)) {
+        #expect(throws: BundleError.unsupportedSchemaVersion(found: 2, supported: 4)) {
             try BundleStore(contentsOf: url)
         }
     }
@@ -186,7 +204,7 @@ struct BundleStoreTests {
     @Test func rejectsAFutureSchemaBeforeReadingItsColumns() throws {
         let url = try Self.editedCopy(
             "UPDATE build_meta SET schema_version = 9; ALTER TABLE build_meta DROP COLUMN llm_model")
-        #expect(throws: BundleError.unsupportedSchemaVersion(found: 9, supported: 3)) {
+        #expect(throws: BundleError.unsupportedSchemaVersion(found: 9, supported: 4)) {
             try BundleStore(contentsOf: url)
         }
     }

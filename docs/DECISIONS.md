@@ -1515,3 +1515,33 @@ Roadmap I11 (board 15; in v0.1 since D88). Decided by the lead under the owner's
 - For the owner: the drafted wording listed in the I11 pull request, and the glossary entry
   `category_quarterly`, which is `"approved": false` until the owner approves it; a release
   export refuses it until then.
+
+## D90 · Preview bundle for internal TestFlight, and the bundle's schema 4 · 2026-11-20 (`PROPOSED`)
+
+Decided by the lead under the owner's delegation. The owner on 2026-11-20: "add preview bundle".
+
+- A preview is a data bundle the owner can put on TestFlight (internal testing only) before
+  every summary is approved. Only owner-approved summaries ever ship, in every mode; the
+  exporter still writes no other summary.
+- `export --preview` (and `make data-preview`) relaxes two release refusals only: a filing
+  without approved summaries and a stale approved row are left out and listed in the report
+  (`filings_without_approved_summaries`, `stale_approved_rows_skipped`). The neutrality guard,
+  `prompt_version` `none`, `restatement_unchecked` and every figure and fact check stay on.
+- Unapproved glossary entries are omitted from a preview, not written, and do not refuse the
+  build. A development build still writes them; a release still refuses them.
+- Schema 4 adds `build_meta.preview` (0 or 1). A preview records `allow_unapproved = 0` and
+  `preview = 1`, a development build 1 and 0, a release 0 and 0. The report's `mode` is
+  `development`, `preview` or `release`. `verify --release` refuses `preview = 1`;
+  `verify --preview` runs every release check except required-summary coverage and refuses
+  `allow_unapproved = 1`. `BundleStore.requireRelease()` is unchanged, so a Release app build
+  opens a preview.
+- The companies list ends with a quiet line, `자료 기준 <date> · DART·SEC 공시` /
+  `Data as of <date> · DART and SEC filings`, and for a preview a second line, `미리보기: 아직
+  승인되지 않은 요약은 빠져 있어요.` / `Preview: summaries not yet approved are left out.`
+- Glossary links: every place that links to an entry already hides the link when the entry is
+  absent (`GlossaryLinkSection`, the figure screen's meaning section), so a preview without
+  `category_quarterly` shows no dead link. A FootnoteKit test covers the absent lookup.
+- The FootnoteKit fixture is migrated as in D89: its rows are kept and only the schema 4
+  column is added (`preview = 0`); regenerating it whole would change rows other Swift tests
+  rely on.
+- For the owner: the two drafted copy lines above (`Copy.dataFooter`, `Copy.previewNote`).

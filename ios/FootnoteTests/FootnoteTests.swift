@@ -85,6 +85,15 @@ struct CopyTests {
         #expect(Copy.dataDate(date, .en) == "Filings up to Nov\u{00A0}18")
     }
 
+    /// Draft copy (D90): the data line and the preview note.
+    @Test func dataFooterAndPreviewNote() throws {
+        let date = try #require(CivilDate(iso: "2026-11-20"))
+        #expect(Copy.dataFooter(date, .ko) == "자료 기준 2026년\u{00A0}11월\u{00A0}20일\u{00A0}· DART·SEC 공시")
+        #expect(Copy.dataFooter(date, .en) == "Data as of Nov\u{00A0}20,\u{00A0}2026\u{00A0}· DART and SEC filings")
+        #expect(Copy.previewNote(.ko) == "미리보기: 아직 승인되지 않은 요약은 빠져 있어요.")
+        #expect(Copy.previewNote(.en) == "Preview: summaries not yet approved are left out.")
+    }
+
     @Test func links() {
         #expect(Copy.allFilingsLink(.dart, .ko) == "DART에서 전체 공시 보기")
         #expect(Copy.allFilingsLink(.sec, .en) == "See every filing on SEC")
