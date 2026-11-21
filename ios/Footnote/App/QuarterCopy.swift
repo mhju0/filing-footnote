@@ -1,9 +1,8 @@
 import FootnoteKit
 import Foundation
 
-/// Copy for the quarter report (I11). Approved wording is marked with board 15 (the screen)
-/// or board 14 (its company page row); `Draft:` marks wording no board covers, for the
-/// owner to approve.
+/// Copy for the quarter report (I11). Boards 14 and 15 show the company row and report screen.
+/// D91 records the owner's approval of wording added during implementation.
 extension PageCopy {
     private static let monthNames = [
         "January", "February", "March", "April", "May", "June", "July", "August", "September", "October",
@@ -16,7 +15,7 @@ extension PageCopy {
     }
 
     /// Board 15: `7–9월 실적 · 연결` / `July–September · Consolidated`.
-    /// Draft: a quarter that is not whole calendar months (a 13-week SEC quarter):
+    /// For a quarter spanning partial months (D91):
     /// `3월 29일–6월 27일 실적 · 연결` / `Mar 29–Jun 27 · Consolidated`.
     static func quarterFigures(start: CivilDate, end: CivilDate, _ language: Language) -> String {
         let consolidated = language("연결", "Consolidated")
@@ -29,8 +28,7 @@ extension PageCopy {
             "\(monthNames[start.month - 1])–\(monthNames[end.month - 1])") + Copy.dot + consolidated
     }
 
-    /// Board 15: `2025년 7–9월` / `July–September 2025`. Draft for other spans: the two full
-    /// dates (`Formatting.period`).
+    /// Board 15: `2025년 7–9월` / `July–September 2025`. Other spans use both full dates (D91).
     private static func quarterPeriod(start: CivilDate, end: CivilDate, _ language: Language) -> String {
         guard isWholeMonths(start, end) else { return Formatting.period(start, end, language: language) }
         return language(
@@ -38,9 +36,8 @@ extension PageCopy {
             "\(monthNames[start.month - 1])–\(monthNames[end.month - 1]) \(start.year)")
     }
 
-    /// Board 15: the note under the figures, naming the quarter a year earlier. Draft: the
-    /// second sentence says what a tap opens, the figure's meaning and its yearly figures
-    /// (the Figure screen), instead of board 15's "뜻과 계산".
+    /// Board 15 names the quarter a year earlier. The second sentence describes the
+    /// figure screen that opens on tap (D91).
     static func quarterNote(prior: (start: CivilDate, end: CivilDate)?, _ language: Language) -> String {
         let tap = language("숫자를 누르면 뜻과 연도별 숫자를 볼 수 있어요.",
                            "Tap a figure for its meaning and its figures by year.")
@@ -53,7 +50,7 @@ extension PageCopy {
     static func related(_ language: Language) -> String { language("관련 자료", "Related") }
 
     /// Board 15: under the preliminary results: `10월 29일 공시 · 이 보고서보다 먼저 냈어요`.
-    /// Draft: filed on the report's own day, when the order within the day is unknown (DART's
+    /// For same-day filings, the order is unknown (DART's
     /// exchange and FSS receipt numbers are separate sequences).
     static func preliminaryDetail(_ filedOn: CivilDate, report: CivilDate, _ language: Language) -> String {
         let day = Copy.unbroken(Formatting.monthDay(filedOn, language: language))
@@ -63,8 +60,7 @@ extension PageCopy {
         return language("\(day) 공시" + Copy.dot + "이 보고서보다 먼저 냈어요", "Filed \(day), before this report")
     }
 
-    /// Draft: under the investor event notice, which opens on DART or SEC rather than the
-    /// company's IR site board 15 shows (the bundle has no IR site links).
+    /// Investor event notices link to the regulator. The bundle has no IR site links.
     static func investorEventDetail(_ filedOn: CivilDate, _ regulator: Regulator, _ language: Language) -> String {
         let day = Copy.unbroken(Formatting.monthDay(filedOn, language: language))
         let site = regulator == .dart ? "DART" : "SEC"

@@ -85,7 +85,7 @@ struct CopyTests {
         #expect(Copy.dataDate(date, .en) == "Filings up to Nov\u{00A0}18")
     }
 
-    /// Draft copy (D90): the data line and the preview note.
+    /// Data date and preview copy approved in D91.
     @Test func dataFooterAndPreviewNote() throws {
         let date = try #require(CivilDate(iso: "2026-11-20"))
         #expect(Copy.dataFooter(date, .ko) == "자료 기준 2026년\u{00A0}11월\u{00A0}20일\u{00A0}· DART·SEC 공시")

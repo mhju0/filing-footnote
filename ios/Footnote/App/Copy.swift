@@ -32,7 +32,7 @@ enum Copy {
         return language("\(day)까지 낸\(noBreak)공시", "Filings up to \(day)")
     }
 
-    /// Draft: the quiet line at the foot of the companies list, for the owner to approve (D90).
+    /// The data date and sources in the companies list footer (D91).
     /// `자료 기준 2026년 11월 20일 · DART·SEC 공시` / `Data as of Nov 20, 2026 · DART and SEC filings`.
     static func dataFooter(_ date: CivilDate, _ language: Language) -> String {
         let day = unbroken(Formatting.fullDate(date, language: language))
@@ -40,7 +40,7 @@ enum Copy {
             + language("DART·SEC 공시", "DART and SEC filings")
     }
 
-    /// Draft: shown under `dataFooter` when the bundle is a preview, for the owner to approve (D90).
+    /// Shown under `dataFooter` for preview bundles (D91).
     static func previewNote(_ language: Language) -> String {
         language(
             "미리보기: 아직 승인되지 않은 요약은 빠져 있어요.",
