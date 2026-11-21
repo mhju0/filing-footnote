@@ -1545,3 +1545,12 @@ Decided by the lead under the owner's delegation. The owner on 2026-11-20: "add 
   column is added (`preview = 0`); regenerating it whole would change rows other Swift tests
   rely on.
 - For the owner: the two drafted copy lines above (`Copy.dataFooter`, `Copy.previewNote`).
+
+## D91 · Owner approval of quarterly glossary, screen copy, and amounts-note spacing · 2026-11-21 (`ACCEPTED`)
+
+The owner replied “I approve all” after opening the review snapshot on 2026-11-21.
+
+- The `category_quarterly` glossary wording is approved.
+- The eight quarter-report copy items in PR #39 and the two companies-list footer lines from
+  D90 are approved as written.
+- The owner approved the nonbreaking space in `보여 줘요` in the amounts note (D87).

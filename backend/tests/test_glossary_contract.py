@@ -36,7 +36,7 @@ def data() -> BuildInput:
     return fixture_build_input()
 
 
-# The owner approved these entries' wording on 2026-11-19 (D88). Only the owner adds a key here.
+# Entries approved by the owner in D88 and D91.
 OWNER_APPROVED = {
     "metric_revenue",
     "metric_operating_income",
@@ -52,6 +52,7 @@ OWNER_APPROVED = {
     "us_gaap",
     "fiscal_year_end",
     "category_annual",
+    "category_quarterly",
     "category_earnings",
     "category_unit_sales",
     "category_buyback",
@@ -87,8 +88,7 @@ OWNER_APPROVED = {
 }
 
 
-# Entries drafted after D88 that wait for the owner's approval. A release build refuses them.
-PENDING_OWNER = {"category_quarterly"}
+PENDING_OWNER: set[str] = set()
 
 
 def test_only_owner_approved_entries_are_approved() -> None:
