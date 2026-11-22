@@ -14,6 +14,31 @@ final class CoreFlowUITests: XCTestCase {
     @MainActor func testCoreFlowKorean() throws { try coreFlow(.ko) }
     @MainActor func testCoreFlowEnglish() throws { try coreFlow(.en) }
 
+    @MainActor func testCompanyMarketAndSortControls() throws {
+        let fixture = try XCTUnwrap(Bundle(for: Self.self).path(forResource: "footnote", ofType: "sqlite"))
+        let app = AuditFixture.launch(nil, language: "en", bundle: fixture)
+        let samsung = identified("company-\(Self.samsung)", in: app)
+        let apple = identified("company-\(Self.apple)", in: app)
+        XCTAssertTrue(samsung.waitForExistence(timeout: 10))
+        XCTAssertTrue(samsung.label.hasPrefix("Samsung Electronics"), samsung.label)
+        XCTAssertFalse(samsung.label.contains("005930"))
+        XCTAssertFalse(apple.exists)
+
+        app.buttons["US"].tap()
+        XCTAssertTrue(apple.waitForExistence(timeout: 5))
+        XCTAssertFalse(samsung.exists)
+        XCTAssertFalse(apple.label.contains("AAPL"))
+
+        let sort = app.buttons["company-sort"]
+        sort.tap()
+        app.buttons["Market cap"].tap()
+        XCTAssertTrue(element("Market cap ranking as of", in: app).waitForExistence(timeout: 5))
+        sort.tap()
+        app.buttons["Company name"].tap()
+        XCTAssertFalse(element("Market cap ranking as of", in: app).exists)
+        XCTAssertTrue(apple.exists)
+    }
+
     enum Lang { case ko, en }
 
     @MainActor private func coreFlow(_ lang: Lang) throws {
@@ -24,7 +49,7 @@ final class CoreFlowUITests: XCTestCase {
 
         // Company: the companies list on iPhone, the sidebar on iPad.
         let company = app.descendants(matching: .any)
-            .matching(NSPredicate(format: "label BEGINSWITH %@", ko ? "삼성전자, 005930" : "Samsung Electronics, 005930"))
+            .matching(NSPredicate(format: "label BEGINSWITH %@", ko ? "삼성전자" : "Samsung Electronics"))
             .firstMatch
         XCTAssertTrue(company.waitForExistence(timeout: 10))
         company.tap()

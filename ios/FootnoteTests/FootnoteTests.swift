@@ -64,6 +64,50 @@ struct AppBundleTests {
     }
 }
 
+@Suite("Company directory")
+struct CompanyDirectoryTests {
+    @Test func sortsWithinMarkets() throws {
+        let url = try FilingPageTests.edited("""
+            INSERT INTO companies VALUES
+              ('kia', 'DART', '000270', '기아', 'Kia', 'KOSPI', 'KRW', '12-31', 3),
+              ('hyundai', 'DART', '005380', '현대자동차', 'Hyundai Motor', 'KOSPI', 'KRW', '12-31', 4),
+              ('amzn', 'SEC', 'AMZN', '아마존', 'Amazon', NULL, 'USD', '12-31', 5),
+              ('msft', 'SEC', 'MSFT', '마이크로소프트', 'Microsoft', NULL, 'USD', '06-30', 6);
+            INSERT INTO notices
+              SELECT 'kia-notice', 'kia', category, title_original, '2026-11-16', source_url, 0
+              FROM notices LIMIT 1;
+            INSERT INTO notices
+              SELECT 'hyundai-notice', 'hyundai', category, title_original, '2026-11-17', source_url, 0
+              FROM notices LIMIT 1;
+            """)
+        defer { try? FileManager.default.removeItem(at: url) }
+        let store = try BundleStore(contentsOf: url)
+        #expect(CompanySort.latest.companies(in: .dart, store: store, language: .ko).map(\.ticker)
+                == ["005380", "000270", "005930"])
+        #expect(CompanySort.name.companies(in: .dart, store: store, language: .ko).map(\.ticker)
+                == ["000270", "005930", "005380"])
+        #expect(CompanySort.marketCap.companies(in: .dart, store: store, language: .ko).map(\.ticker)
+                == ["005930", "005380", "000270"])
+        #expect(CompanySort.latest.companies(in: .sec, store: store, language: .en).map(\.ticker)
+                == ["AAPL", "AMZN", "MSFT"])
+        #expect(CompanySort.name.companies(in: .sec, store: store, language: .en).map(\.ticker)
+                == ["AMZN", "AAPL", "MSFT"])
+        #expect(CompanySort.marketCap.companies(in: .sec, store: store, language: .en).map(\.ticker)
+                == ["AAPL", "MSFT", "AMZN"])
+    }
+}
+
+@Suite("Glossary index")
+struct GlossaryIndexTests {
+    @Test(arguments: [
+        ("Revenue", "R"), ("éarnings", "E"), ("감사보고서", "ㄱ"), ("매출액", "ㅁ"),
+        ("따로", "ㄸ"), ("영업이익", "ㅇ"), ("IR 행사", "I"), ("52주", "#"),
+    ])
+    func sectionInitial(term: String, expected: String) {
+        #expect(GlossaryView.initial(of: term) == expected)
+    }
+}
+
 @Suite("Copy")
 struct CopyTests {
     @Test func noticesRow() {
@@ -105,7 +149,7 @@ struct CopyTests {
         let page = try #require(CompanyPage(store: store, companyID: "dart:00126380"))
         let report = try #require(page.periodicReports.first)
         #expect(Copy.revenueLine(report, currency: "KRW", .ko) == "매출 300조 8,709억원\u{00A0}· +16.20% 늘었어요")
-        #expect(Copy.revenueLine(report, currency: "KRW", .en) == "Revenue ₩300.87 trillion\u{00A0}· +16.20%, up")
+        #expect(Copy.revenueLine(report, currency: "KRW", .en) == "Revenue ₩300.87 trillion\u{00A0}· +16.20% up")
         #expect(Copy.revenueSpoken(report, currency: "KRW", .en)
             == "Revenue for fiscal 2025, ₩300.87 trillion, up 16.20 percent from the year before")
     }

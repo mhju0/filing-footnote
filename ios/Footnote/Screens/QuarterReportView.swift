@@ -31,17 +31,11 @@ struct QuarterReportView: View {
         if let period = page.period {
             Section {
                 ForEach(page.rows) { row in
-                    if let route = Routes.figure(store, companyID: page.company.id, metric: row.metric) {
-                        NavigationLink(value: route) {
-                            QuarterFigureRowView(row: row, currency: page.currency)
-                        }
-                        .listRowBackground(Theme.surface)
-                        .accessibilityIdentifier("quarter-\(row.metric.rawValue)")
-                    } else {
+                    NavigationLink(value: Route.quarterFigure(page.filing.id, row.metric)) {
                         QuarterFigureRowView(row: row, currency: page.currency)
-                            .listRowBackground(Theme.surface)
-                            .accessibilityIdentifier("quarter-\(row.metric.rawValue)")
                     }
+                    .listRowBackground(Theme.surface)
+                    .accessibilityIdentifier("quarter-\(row.metric.rawValue)")
                 }
             } header: {
                 SectionTitle(PageCopy.quarterFigures(start: period.start, end: period.end, language))
@@ -124,7 +118,7 @@ private struct QuarterFigureRowView: View {
                 .foregroundStyle(Theme.ink)
                 .multilineTextAlignment(text)
                 .fixedSize(horizontal: false, vertical: true)
-            PhraseLines(phrases: Self.halves(changeLine), alignment: alignment)
+            PhraseLines(phrases: isResult ? [changeLine] : Self.halves(changeLine), alignment: alignment)
                 .font(.footnote)
                 .monospacedDigit()
                 .foregroundStyle(isResult ? Theme.ink : Theme.muted)
@@ -170,6 +164,63 @@ private struct QuarterFigureRowView: View {
             parts.append(PageCopy.refusal(refusal, language))
         }
         return parts.joined(separator: ", ")
+    }
+}
+
+struct QuarterFigureView: View {
+    @Environment(\.language) private var language
+    @Environment(\.navigate) private var navigate
+    let store: BundleStore
+    let page: QuarterPage
+    let row: QuarterFigureRow
+
+    var body: some View {
+        List {
+            ScreenHeader(context: Titles.name(of: page.company, language: language),
+                         title: row.metric.name(language))
+            Section {
+                QuarterFigureRowView(row: row, currency: page.currency)
+                    .listRowBackground(Theme.surface)
+                    .accessibilityIdentifier("quarter-figure-change")
+            } header: {
+                SectionTitle(language("작년 같은 분기와 비교", "Same quarter a year earlier"))
+            }
+            Section {
+                periodRow(row.current)
+                if let prior = row.prior {
+                    periodRow(prior)
+                }
+            } header: {
+                SectionTitle(language("비교 기간과 금액", "Periods and amounts"))
+            }
+            if let entry = store.glossaryEntry(termKey: Glossary.key(for: row.metric), language: language) {
+                Section {
+                    Text(words: entry.plain)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .listRowBackground(Theme.surface)
+                } header: {
+                    SectionTitle(language("용어 뜻", "What it means"))
+                }
+            }
+            if let route = Routes.figure(store, companyID: page.company.id, metric: row.metric) {
+                Section {
+                    LinkRow(title: language("연간 수치 보기", "See annual figures")) { navigate(route) }
+                }
+            }
+            SourceSection(source: page.source)
+        }
+        .groupedScreen()
+        .screenTitle(row.metric.name(language))
+        .languageToolbar()
+        .accessibilityIdentifier("quarter-figure-page")
+    }
+
+    private func periodRow(_ figure: QuarterFigure) -> some View {
+        FactRow(
+            label: language("\(figure.fiscalYear) 회계연도 \(figure.fiscalQuarter)분기",
+                            "Q\(figure.fiscalQuarter) FY \(figure.fiscalYear)"),
+            value: PageCopy.exact(figure.value, unit: figure.unit, currency: figure.currency ?? page.currency, language),
+            details: [Formatting.period(figure.periodStart, figure.periodEnd, language: language)])
     }
 }
 

@@ -266,7 +266,7 @@ enum PageCopy {
     }
 
     /// The direction line under the figure (board 5A): `+16.20% 늘었어요 · 작년보다`,
-    /// `+16.20%, up from last year`.
+    /// `+16.20% up from last year`.
     static func changeFromLastYear(_ percent: Decimal, _ language: Language) -> String {
         let change = Formatting.percentChange(percent, language: language)
         return language(change + Copy.dot + "작년보다", change + " from last year")

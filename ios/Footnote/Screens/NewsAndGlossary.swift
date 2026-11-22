@@ -81,38 +81,101 @@ struct GlossaryView: View {
     let store: BundleStore
     var focus: String?
 
+    private var sections: [(initial: String, entries: [GlossaryEntry])] {
+        var initials = [String]()
+        var seen = Set<String>()
+        let groups = Dictionary(grouping: store.sortedGlossary(language: language)) { entry in
+            let initial = Self.initial(of: entry.term)
+            if seen.insert(initial).inserted { initials.append(initial) }
+            return initial
+        }
+        return initials.compactMap { initial in
+            groups[initial].map { (initial, $0) }
+        }
+    }
+
     var body: some View {
         ScrollViewReader { proxy in
+            let sections = sections
             SelectionList(selection: selection) {
-                ForEach(store.sortedGlossary(language: language)) { entry in
-                    if let selection {
-                        SelectableRow(
-                            value: entry.termKey, selection: selection, route: .glossary(entry.termKey),
-                            identifier: "glossary-\(entry.termKey)"
-                        ) {
-                            GlossaryTermRow(entry: entry)
+                ForEach(sections, id: \.initial) { group in
+                    let section = Section {
+                        ForEach(group.entries) { entry in
+                            if let selection {
+                                SelectableRow(
+                                    value: entry.termKey, selection: selection, route: .glossary(entry.termKey),
+                                    identifier: "glossary-\(entry.termKey)"
+                                ) {
+                                    GlossaryTermRow(entry: entry)
+                                }
+                            } else {
+                                GlossaryEntryRow(entry: entry, isFocused: entry.termKey == focus)
+                                    .id(entry.termKey)
+                                    .accessibilityIdentifier("glossary-\(entry.termKey)")
+                            }
                         }
+                    } header: {
+                        SectionTitle(group.initial)
+                            .accessibilityAddTraits(.isHeader)
+                    }
+                    #if os(iOS)
+                    if #available(iOS 26.0, *) {
+                        section.sectionIndexLabel(group.initial)
                     } else {
-                        GlossaryEntryRow(entry: entry, isFocused: entry.termKey == focus)
-                            .id(entry.termKey)
-                            .accessibilityIdentifier("glossary-\(entry.termKey)")
+                        section
+                    }
+                    #else
+                    section
+                    #endif
+                }
+            }
+            .toolbar {
+                if usesJumpMenu, sections.count > 1 {
+                    ToolbarItem {
+                        Menu {
+                            ForEach(sections, id: \.initial) { group in
+                                if let first = group.entries.first {
+                                    Button(group.initial) { proxy.scrollTo(first.termKey, anchor: .top) }
+                                }
+                            }
+                        } label: {
+                            Label(language("초성으로 이동", "Jump to letter"), systemImage: "textformat.abc")
+                        }
+                        .accessibilityIdentifier("glossary-index")
                     }
                 }
             }
             .task(id: focus) {
                 guard let focus else { return }
-                // Let the list lay out first, then bring the entry to the top.
                 try? await Task.sleep(for: .milliseconds(300))
                 proxy.scrollTo(focus, anchor: .top)
             }
-            // The split view can open with a term already chosen (a launch route); bring it
-            // into view once. Later choices are rows the reader can already see.
             .task { if focus == nil { await scrollToSelection(selection?.wrappedValue, proxy) } }
         }
         .groupedScreen()
         .navigationTitle(language("용어", "Glossary"))
         .languageToolbar()
         .accessibilityIdentifier("glossary-page")
+    }
+
+    private var usesJumpMenu: Bool {
+        #if os(iOS)
+        if #available(iOS 26.0, *) { return false }
+        #endif
+        return true
+    }
+
+    static func initial(of term: String) -> String {
+        guard let first = term.first else { return "#" }
+        let consonants = Array("ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ")
+        if let scalar = String(first).precomposedStringWithCanonicalMapping.unicodeScalars.first,
+           (0xAC00...0xD7A3).contains(scalar.value) {
+            return String(consonants[Int((scalar.value - 0xAC00) / 588)])
+        }
+        if consonants.contains(first) { return String(first) }
+        let latin = String(first).folding(options: [.diacriticInsensitive, .widthInsensitive], locale: nil)
+            .uppercased()
+        return latin.count == 1 && "ABCDEFGHIJKLMNOPQRSTUVWXYZ".contains(latin) ? latin : "#"
     }
 }
 

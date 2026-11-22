@@ -235,9 +235,8 @@ struct SectionNote: View {
 }
 
 /// The original document: what the bundle knows offline (form, filed date, receipt number),
-/// then the Pine button that opens it (board 12A), with the network note under it.
+/// followed by the grouped link and its network note.
 struct SourceSection: View {
-    @Environment(\.openURL) private var openURL
     @Environment(\.language) private var language
     let source: SourceDetails
 
@@ -252,36 +251,9 @@ struct SourceSection: View {
         }
         if let url = source.url {
             Section {
-                VStack(spacing: 8) {
-                    Button {
-                        openURL(url)
-                    } label: {
-                        HStack(spacing: 8) {
-                            Text(words: Copy.openOriginal(source.regulator, language))
-                                .multilineTextAlignment(.center)
-                                .fixedSize(horizontal: false, vertical: true)
-                            Image(systemName: "arrow.up.right")
-                                .accessibilityHidden(true)
-                        }
-                        .font(.body.weight(.semibold))
-                        .foregroundStyle(Theme.onPine)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 12)
-                        .frame(maxWidth: .infinity, minHeight: 50)
-                        .background(Theme.pine, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
-                        .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityAddTraits(.isLink)
-                    .accessibilityHint(language("인터넷 연결이 필요해요", "Needs an internet connection"))
+                ExternalLinkRow(title: Copy.openOriginal(source.regulator, language), url: url, showsNetworkNote: true)
+                    .listRowBackground(Theme.surface)
                     .accessibilityIdentifier("open-original")
-                    Text(words: language("인터넷 연결이 필요해요", "Needs an internet connection"))
-                        .font(.footnote)
-                        .foregroundStyle(Theme.muted)
-                        .accessibilityHidden(true)
-                }
-                .listRowBackground(Color.clear)
-                .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
             }
         }
     }

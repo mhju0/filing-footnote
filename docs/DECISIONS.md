@@ -1554,3 +1554,23 @@ The owner replied “I approve all” after opening the review snapshot on 2026-
 - The eight quarter-report copy items in PR #39 and the two companies-list footer lines from
   D90 are approved as written.
 - The owner approved the nonbreaking space in `보여 줘요` in the amounts note (D87).
+
+## D92 · Company discovery and comparison continuity · 2026-11-23
+
+The owner requested quick glossary navigation in both languages, clearer news
+rows, consistent original-filing controls, a market selector, and company
+sorting by recency, name or market cap.
+
+- The directory shows company names and the New filing tag. The market selector
+  applies to all three sorts. Filing recency uses the newest available filing
+  or notice for each company. Ties use the localized company name.
+- Market cap uses a dated, within-market snapshot as described in ADR 0009.
+- The glossary groups English by letter and Korean by initial consonant, with
+  Latin-letter sections for Latin headwords. Current iOS uses a native list
+  index. Older iOS and macOS use a jump menu.
+- The quarter tap opens the same filing's figure and comparison. Its two
+  quarter periods and exact amounts are visible, and an explicitly labelled
+  link opens the annual figures where available. This supersedes the figure route
+  in D89.
+- News rows lead with the company. The original-filing link uses the same
+  grouped row surface as the other filing sections.

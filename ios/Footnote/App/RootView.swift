@@ -59,6 +59,11 @@ struct RouteDestination: View {
             }
         case .filing(let id):
             FilingDestination(store: store, labels: labels, filingID: id)
+        case .quarterFigure(let filingID, let metric):
+            if let page = QuarterPage(store: store, filingID: filingID),
+               let row = page.rows.first(where: { $0.metric == metric }) {
+                QuarterFigureView(store: store, page: page, row: row)
+            }
         case .figure(let companyID, let metric, let fiscalYear):
             if let metric = ReportedMetric(rawValue: metric),
                let page = FigurePage(store: store, companyID: companyID, metric: metric, fiscalYear: fiscalYear)

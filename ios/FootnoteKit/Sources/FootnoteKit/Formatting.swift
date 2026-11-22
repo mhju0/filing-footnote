@@ -88,14 +88,14 @@ public enum Formatting {
 
     /// A change in percent with its sign and a direction word, never colour alone:
     /// Korean `+6.29% 늘었어요`, `−3.45% 줄었어요`, `0.00% 변동 없어요`;
-    /// English `+6.29%, up`, `−3.45%, down`, `0.00%, no change`.
+    /// English `+6.29% up`, `−3.45% down`, `0.00% no change`.
     /// The value is rounded half-up to two places first.
     public static func percentChange(_ percent: Decimal, language: Language) -> String {
         let (sign, digits) = roundedChange(percent)
         switch sign {
-        case 1: return language == .ko ? "+\(digits)% 늘었어요" : "+\(digits)%, up"
-        case -1: return language == .ko ? "\(minus)\(digits)% 줄었어요" : "\(minus)\(digits)%, down"
-        default: return language == .ko ? "\(digits)% 변동 없어요" : "\(digits)%, no change"
+        case 1: return language == .ko ? "+\(digits)% 늘었어요" : "+\(digits)% up"
+        case -1: return language == .ko ? "\(minus)\(digits)% 줄었어요" : "\(minus)\(digits)% down"
+        default: return language == .ko ? "\(digits)% 변동 없어요" : "\(digits)% no change"
         }
     }
 

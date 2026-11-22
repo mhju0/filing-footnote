@@ -77,6 +77,6 @@ final class FilingPagesUITests: XCTestCase {
         XCTAssertTrue(revenue.label.contains("up 16.20 percent from the year before"), revenue.label)
         revenue.tap()
         XCTAssertTrue(app.descendants(matching: .any)["figure-page"].waitForExistence(timeout: 5))
-        XCTAssertTrue(element("+16.20%, up", in: app).exists)
+        XCTAssertTrue(element("+16.20% up", in: app).exists)
     }
 }
