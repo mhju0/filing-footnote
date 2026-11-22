@@ -56,11 +56,24 @@ final class QuarterReportUITests: XCTestCase {
         XCTAssertTrue(preliminary.label.contains("이 보고서보다 먼저 냈어요"), preliminary.label)
         XCTAssertTrue(identified("investor-event", in: app).exists)
 
-        // A figure opens its screen: meaning, earlier years, calculation.
+        // The detail keeps the quarter’s figure and comparison.
         let figure = identified("quarter-revenue", in: app)
         if !figure.isHittable { app.swipeDown() }
+        let revenueLabel = figure.label
         figure.tap()
-        XCTAssertTrue(identified("figure-page", in: app).waitForExistence(timeout: 5))
+        XCTAssertTrue(identified("quarter-figure-page", in: app).waitForExistence(timeout: 5))
+        XCTAssertEqual(identified("quarter-figure-change", in: app).label, revenueLabel)
+    }
+
+    @MainActor func testQuarterDetailRetainsRefusalForLossBaseline() throws {
+        let app = try launch("filing=\(Self.samsung)|\(Self.samsungQuarter)", language: "ko")
+        let operating = identified("quarter-operating_income", in: app)
+        XCTAssertTrue(operating.waitForExistence(timeout: 10))
+        let comparison = operating.label
+        XCTAssertTrue(comparison.contains("작년 숫자가 0 이하라 증가율을 계산하지 않아요"))
+        operating.tap()
+        XCTAssertTrue(identified("quarter-figure-page", in: app).waitForExistence(timeout: 5))
+        XCTAssertEqual(identified("quarter-figure-change", in: app).label, comparison)
     }
 
     @MainActor func testUSQuarterInEnglish() throws {
@@ -71,5 +84,9 @@ final class QuarterReportUITests: XCTestCase {
         XCTAssertTrue(revenue.label.contains("up 11.76 percent from the year before"), revenue.label)
         // No preliminary results or investor event in the fixture: the section is removed.
         XCTAssertFalse(identified("investor-event", in: app).exists)
+        let comparison = revenue.label
+        revenue.tap()
+        XCTAssertTrue(identified("quarter-figure-page", in: app).waitForExistence(timeout: 5))
+        XCTAssertEqual(identified("quarter-figure-change", in: app).label, comparison)
     }
 }

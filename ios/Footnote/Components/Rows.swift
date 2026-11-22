@@ -6,6 +6,7 @@ import SwiftUI
 enum Route: Hashable {
     case company(String)
     case filing(String)
+    case quarterFigure(String, ReportedMetric)
     /// A company id, a reported metric (`revenue`) and the fiscal year of the report it was
     /// opened from: the figure screen.
     case figure(String, String, Int)
@@ -138,8 +139,7 @@ struct FilingMeta: View {
     let filing: Filing
     let dataAsOf: CivilDate
     var showsCategory = true
-    var companyName: String?
-    /// False under a day heading (소식), where the row names only the company.
+    /// False under a day heading that already supplies the date.
     var showsDate = true
 
     var body: some View {
@@ -153,25 +153,14 @@ struct FilingMeta: View {
             if Freshness.isNew(filing.filedOn, dataAsOf: dataAsOf) {
                 TagView(text: language("새 공시", "New"), kind: .new)
             }
-            if let companyName, !showsDate {
-                Text(words: companyName)
-                    .font(.footnote.weight(.semibold))
-                    .foregroundStyle(Theme.ink)
-                    .fixedSize(horizontal: false, vertical: true)
-            } else {
-                Text(words: dateLine)
+            if showsDate {
+                Text(words: Copy.unbroken(Formatting.monthDay(filing.filedOn, language: language)))
                     .font(.footnote)
                     .monospacedDigit()
                     .foregroundStyle(Theme.muted)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
-    }
-
-    private var dateLine: String {
-        let day = Copy.unbroken(Formatting.monthDay(filing.filedOn, language: language))
-        guard let companyName else { return day }
-        return companyName + Copy.dot + day
     }
 }
 
@@ -185,7 +174,13 @@ struct FilingRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            FilingMeta(filing: filing, dataAsOf: dataAsOf, companyName: companyName, showsDate: showsDate)
+            if let companyName {
+                Text(words: companyName)
+                    .font(.headline)
+                    .foregroundStyle(Theme.ink)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            FilingMeta(filing: filing, dataAsOf: dataAsOf, showsDate: showsDate)
             Text(words: Titles.title(for: filing, language: language))
                 .font(.body)
                 .foregroundStyle(Theme.ink)

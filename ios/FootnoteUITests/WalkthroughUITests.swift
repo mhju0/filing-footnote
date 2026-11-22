@@ -26,7 +26,7 @@ final class WalkthroughUITests: XCTestCase {
         hold(3)
 
         let company = app.descendants(matching: .any)
-            .matching(NSPredicate(format: "label BEGINSWITH %@", "삼성전자, 005930")).firstMatch
+            .matching(NSPredicate(format: "label BEGINSWITH %@", "삼성전자")).firstMatch
         XCTAssertTrue(company.waitForExistence(timeout: 10))
         company.tap()
         hold(3)
