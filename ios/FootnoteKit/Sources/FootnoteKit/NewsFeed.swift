@@ -11,11 +11,12 @@ public struct NewsFeed: Sendable {
     public let dataAsOf: CivilDate
     /// Newest day first; each day's filings newest first.
     public let days: [FilingDay]
-    /// True when more filings were listed on the company pages than the feed shows.
+    /// True when more eligible filings matched than the feed shows.
     public let isCapped: Bool
 
+    private let eligible: [Filing]
+
     public init(store: BundleStore) {
-        dataAsOf = store.meta.dataAsOf
         let order = Dictionary(uniqueKeysWithValues: store.companies.map { ($0.id, $0.sortOrder) })
         let listed = store.companies
             .compactMap { CompanyPage(store: store, companyID: $0.id) }
@@ -27,8 +28,25 @@ public struct NewsFeed: Sendable {
                 if left != right { return left < right }
                 return $0.id > $1.id
             }
-        isCapped = listed.count > Self.maxFilings
-        days = FilingDay.group(Array(listed.prefix(Self.maxFilings)))
+        self.init(dataAsOf: store.meta.dataAsOf, eligible: listed)
+    }
+
+    private init(dataAsOf: CivilDate, eligible: [Filing]) {
+        self.dataAsOf = dataAsOf
+        self.eligible = eligible
+        isCapped = eligible.count > Self.maxFilings
+        days = FilingDay.group(Array(eligible.prefix(Self.maxFilings)))
+    }
+
+    /// Types available across the company pages, including filings beyond the feed's first page.
+    public var availableCategories: [FilingCategory] {
+        let present = Set(eligible.map(\.category))
+        return FilingCategory.allCases.filter { present.contains($0) }
+    }
+
+    /// Applies the type before the overall cap so an older match can still appear.
+    public func filtered(to category: FilingCategory) -> NewsFeed {
+        NewsFeed(dataAsOf: dataAsOf, eligible: eligible.filter { $0.category == category })
     }
 
     public var filings: [Filing] { days.flatMap(\.filings) }
@@ -71,14 +89,28 @@ public enum Glossary {
 
 extension BundleStore {
     /// The glossary in one language, ordered like a dictionary by the term the reader sees.
-    public func sortedGlossary(language: Language) -> [GlossaryEntry] {
+    public func sortedGlossary(language: Language, matching query: String = "") -> [GlossaryEntry] {
         let locale = Locale(identifier: language == .ko ? "ko_KR" : "en_US")
-        return glossary(language: language).sorted {
+        let entries = glossary(language: language)
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        let matching = trimmed.isEmpty ? entries : glossaryMatches(entries, query: trimmed)
+        return matching.sorted {
             switch $0.term.compare($1.term, options: [.caseInsensitive], range: nil, locale: locale) {
             case .orderedAscending: true
             case .orderedDescending: false
             case .orderedSame: $0.termKey < $1.termKey
             }
         }
+    }
+
+    /// Terms and formal names in either language match the same dictionary entry.
+    private func glossaryMatches(_ entries: [GlossaryEntry], query: String) -> [GlossaryEntry] {
+        let keys = Set(glossary.compactMap { entry -> String? in
+            let names = [entry.term, entry.formal].compactMap { $0 }
+            return names.contains {
+                $0.range(of: query, options: [.caseInsensitive, .diacriticInsensitive, .widthInsensitive]) != nil
+            } ? entry.termKey : nil
+        })
+        return entries.filter { keys.contains($0.termKey) }
     }
 }

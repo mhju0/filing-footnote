@@ -99,7 +99,7 @@ private struct QuarterFigureRowView: View {
         .padding(.vertical, 4)
         .frame(maxWidth: .infinity, minHeight: Theme.minTarget, alignment: .leading)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(spoken)
+        .accessibilityLabel(PageCopy.quarterSpoken(row, currency: currency, language))
     }
 
     private var name: some View {
@@ -150,21 +150,6 @@ private struct QuarterFigureRowView: View {
         case .refusal(let refusal): PageCopy.refusal(refusal, language)
         }
     }
-
-    private func exact(_ figure: QuarterFigure) -> String {
-        PageCopy.exact(figure.value, unit: figure.unit, currency: figure.currency ?? currency, language)
-    }
-
-    private var spoken: String {
-        var parts = [row.metric.name(language), exact(row.current)]
-        switch row.comparison {
-        case .result(let change):
-            parts.append(Formatting.percentChangeSpoken(change.percentChange, language: language))
-        case .refusal(let refusal):
-            parts.append(PageCopy.refusal(refusal, language))
-        }
-        return parts.joined(separator: ", ")
-    }
 }
 
 struct QuarterFigureView: View {
@@ -176,30 +161,49 @@ struct QuarterFigureView: View {
 
     var body: some View {
         List {
-            ScreenHeader(context: Titles.name(of: page.company, language: language),
-                         title: row.metric.name(language))
-            Section {
-                QuarterFigureRowView(row: row, currency: page.currency)
-                    .listRowBackground(Theme.surface)
-                    .accessibilityIdentifier("quarter-figure-change")
-            } header: {
-                SectionTitle(language("작년 같은 분기와 비교", "Same quarter a year earlier"))
-            }
-            Section {
-                periodRow(row.current)
-                if let prior = row.prior {
-                    periodRow(prior)
-                }
-            } header: {
-                SectionTitle(language("비교 기간과 금액", "Periods and amounts"))
-            }
-            if let entry = store.glossaryEntry(termKey: Glossary.key(for: row.metric), language: language) {
+            ScreenHeader(
+                context: Titles.name(of: page.company, language: language) + Copy.dot + PageCopy.quarterLabel(row.current, language),
+                title: row.metric.name(language))
+            headline
+            if let prior = row.prior {
                 Section {
-                    Text(words: entry.plain)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .listRowBackground(Theme.surface)
+                    compactRow(row.current)
+                    compactRow(prior)
                 } header: {
-                    SectionTitle(language("용어 뜻", "What it means"))
+                    SectionTitle(change == nil ? language("분기별 금액", "Quarter figures")
+                                 : language("같은 분기 비교", "Compare the same quarter"))
+                } footer: {
+                    if let basis = PageCopy.basisName(row.current.basis, language) {
+                        SectionNote(text: basis + Copy.dot + PageCopy.unitName(row.current.unit, language))
+                    }
+                }
+            }
+            SourceSection(source: page.source, linkTitle: sourceTitle)
+            Section {
+                DisclosureGroup {
+                    exactRow(row.current)
+                    if let prior = row.prior { exactRow(prior) }
+                    if let change { calculation(change) }
+                } label: {
+                    Text(words: change == nil ? language("정확한 금액", "Exact figures")
+                         : language("정확한 금액과 계산식", "Exact figures and calculation"))
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(minHeight: Theme.minTarget, alignment: .leading)
+                }
+                .tint(Theme.pine)
+                .listRowBackground(Theme.surface)
+                .accessibilityIdentifier("quarter-calculation-details")
+                if let entry = store.glossaryEntry(termKey: Glossary.key(for: row.metric), language: language) {
+                    DisclosureGroup {
+                        Text(words: entry.plain)
+                            .fixedSize(horizontal: false, vertical: true)
+                    } label: {
+                        Text(words: language("용어 뜻", "What it means"))
+                            .fixedSize(horizontal: false, vertical: true)
+                            .frame(minHeight: Theme.minTarget, alignment: .leading)
+                    }
+                    .tint(Theme.pine)
+                    .listRowBackground(Theme.surface)
                 }
             }
             if let route = Routes.figure(store, companyID: page.company.id, metric: row.metric) {
@@ -207,7 +211,6 @@ struct QuarterFigureView: View {
                     LinkRow(title: language("연간 수치 보기", "See annual figures")) { navigate(route) }
                 }
             }
-            SourceSection(source: page.source)
         }
         .groupedScreen()
         .screenTitle(row.metric.name(language))
@@ -215,12 +218,73 @@ struct QuarterFigureView: View {
         .accessibilityIdentifier("quarter-figure-page")
     }
 
-    private func periodRow(_ figure: QuarterFigure) -> some View {
+    private var headline: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(words: PageCopy.shortened(row.current, currency: page.currency, language))
+                .font(.largeTitle.bold())
+                .monospacedDigit()
+                .foregroundStyle(Theme.ink)
+                .fixedSize(horizontal: false, vertical: true)
+            switch row.comparison {
+            case .result(let change):
+                if let prior = row.prior {
+                    let rate = Formatting.percentChange(change.percentChange, language: language)
+                    PhraseLines(phrases: [rate, language("작년 같은 분기 대비", "vs. \(PageCopy.quarterLabel(prior, language))")])
+                        .font(.subheadline.weight(.semibold))
+                        .monospacedDigit()
+                        .foregroundStyle(Theme.ink)
+                }
+            case .refusal(let refusal):
+                Text(words: PageCopy.refusal(refusal, language))
+                    .font(.subheadline)
+                    .foregroundStyle(Theme.ink)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(.vertical, 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .listRowBackground(Theme.tint)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(PageCopy.quarterSpoken(row, currency: page.currency, language))
+        .accessibilityIdentifier("quarter-figure-change")
+    }
+
+    private var change: QuarterChange? {
+        guard case .result(let change) = row.comparison else { return nil }
+        return change
+    }
+
+    private var sourceTitle: String {
+        let site = page.company.regulator.rawValue
+        return language("\(site)에서 분기 보고서 원문 보기", "Open the quarterly report on \(site)")
+    }
+
+    private func compactRow(_ figure: QuarterFigure) -> some View {
+        let period = PageCopy.quarterLabel(figure, language)
+        return FactRow(
+            label: period,
+            value: PageCopy.shortened(figure, currency: page.currency, language),
+            spoken: period + ", " + exactValue(figure))
+    }
+
+    private func exactRow(_ figure: QuarterFigure) -> some View {
         FactRow(
-            label: language("\(figure.fiscalYear) 회계연도 \(figure.fiscalQuarter)분기",
-                            "Q\(figure.fiscalQuarter) FY \(figure.fiscalYear)"),
-            value: PageCopy.exact(figure.value, unit: figure.unit, currency: figure.currency ?? page.currency, language),
+            label: PageCopy.quarterLabel(figure, language),
+            value: exactValue(figure),
             details: [Formatting.period(figure.periodStart, figure.periodEnd, language: language)])
+    }
+
+    private func exactValue(_ figure: QuarterFigure) -> String {
+        PageCopy.exact(figure.value, unit: figure.unit, currency: figure.currency ?? page.currency, language)
+    }
+
+    private func calculation(_ change: QuarterChange) -> some View {
+        FactRow(
+            label: PageCopy.formula(language),
+            value: Formatting.percent(change.percentChange),
+            details: [language("(이번 분기 − 작년 같은 분기) ÷ 작년 같은 분기 × 100",
+                               "(This quarter − same quarter last year) ÷ same quarter last year × 100"),
+                      language("소수 셋째 자리에서 반올림했어요.", "Rounded to two decimal places.")])
     }
 }
 

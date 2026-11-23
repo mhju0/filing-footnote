@@ -87,9 +87,32 @@ final class NewsGlossaryUITests: XCTestCase {
         let app = try launch("news", bundle: try editedFixture("UPDATE build_meta SET data_as_of = '2030-01-01'"))
         XCTAssertTrue(identified("news-empty", in: app).waitForExistence(timeout: 10))
         XCTAssertTrue(element("최근 1년 동안 낸 공시가 없어요.", in: app).exists)
+        XCTAssertFalse(app.buttons["news-type"].exists)
     }
 
-    /// The tab lists every entry: the plain word, the meaning, then the formal term.
+    @MainActor func testNewsFiltersByFilingTypeAndRestoresAll() throws {
+        let app = try launch("news", language: "en")
+        let filter = app.buttons["news-type"]
+        let earnings = element("Apple, Earnings", in: app)
+        let dividend = element("Samsung Electronics, Dividend", in: app)
+        XCTAssertTrue(filter.waitForExistence(timeout: 10))
+        XCTAssertEqual(filter.value as? String, "All filings")
+        XCTAssertGreaterThanOrEqual(filter.frame.height, 44)
+        XCTAssertTrue(earnings.exists)
+
+        filter.tap()
+        app.buttons["Dividend"].tap()
+        XCTAssertTrue(dividend.waitForExistence(timeout: 5))
+        XCTAssertFalse(earnings.exists)
+        XCTAssertEqual(filter.value as? String, "Dividend")
+
+        filter.tap()
+        app.buttons["All filings"].tap()
+        XCTAssertTrue(earnings.waitForExistence(timeout: 5))
+        XCTAssertEqual(filter.value as? String, "All filings")
+    }
+
+    /// The tab shows terms alphabetically. A tap discloses the meaning and formal term.
     @MainActor func testGlossaryTabShowsPlainWordAndFormalTerm() throws {
         let app = try launch("news", language: "en", bundle: try glossaryFixture())
         XCTAssertTrue(identified("news-page", in: app).waitForExistence(timeout: 10))
@@ -98,12 +121,41 @@ final class NewsGlossaryUITests: XCTestCase {
         let margin = identified("glossary-metric_operating_margin", in: app)
         XCTAssertTrue(margin.exists)
         XCTAssertTrue(margin.label.hasPrefix("Operating margin"), margin.label)
-        XCTAssertTrue(margin.label.contains("Formal term: Operating income divided by revenue"), margin.label)
         // Dictionary order: Dividend, Operating margin, Revenue.
         let dividend = identified("glossary-category_dividend", in: app)
         let revenue = identified("glossary-metric_revenue", in: app)
         XCTAssertLessThan(dividend.frame.minY, margin.frame.minY)
         XCTAssertLessThan(margin.frame.minY, revenue.frame.minY)
+
+        let definition = identified("glossary-definition-metric_operating_margin", in: app)
+        XCTAssertFalse(definition.exists)
+        XCTAssertGreaterThanOrEqual(margin.frame.height, 44)
+        margin.tap()
+        XCTAssertTrue(definition.waitForExistence(timeout: 5))
+        XCTAssertTrue(definition.label.contains("Formal term: Operating income divided by revenue"), definition.label)
+        margin.tap()
+        XCTAssertTrue(definition.waitForNonExistence(timeout: 5))
+    }
+
+    @MainActor func testGlossarySearchMatchesOtherLanguageAndClears() throws {
+        let app = try launch("glossary", bundle: try glossaryFixture())
+        let search = app.textFields["glossary-search"]
+        XCTAssertTrue(search.waitForExistence(timeout: 10))
+        search.tap()
+        search.typeText("unmatched")
+        XCTAssertTrue(identified("glossary-empty", in: app).waitForExistence(timeout: 5))
+        let clear = app.buttons["glossary-search-clear"]
+        clear.tap()
+        XCTAssertTrue(identified("glossary-metric_revenue", in: app).waitForExistence(timeout: 5))
+
+        search.tap()
+        search.typeText("Dividend\n")
+        let dividend = identified("glossary-category_dividend", in: app)
+        XCTAssertTrue(dividend.waitForExistence(timeout: 5))
+        XCTAssertEqual(dividend.label, "배당")
+        XCTAssertFalse(identified("glossary-metric_revenue", in: app).exists)
+        dividend.tap()
+        XCTAssertTrue(identified("glossary-definition-category_dividend", in: app).waitForExistence(timeout: 5))
     }
 
     /// The figure screen's "용어 풀이 더 보기" opens the glossary at the metric's entry.
@@ -117,6 +169,7 @@ final class NewsGlossaryUITests: XCTestCase {
         let entry = identified("glossary-metric_revenue", in: app)
         XCTAssertTrue(entry.waitForExistence(timeout: 2))
         XCTAssertTrue(entry.isSelected)
+        XCTAssertTrue(identified("glossary-definition-metric_revenue", in: app).exists)
         XCTAssertFalse(identified("glossary-metric_operating_margin", in: app).isSelected)
     }
 

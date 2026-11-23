@@ -65,10 +65,11 @@ owner), boards 11A, 12A, 13 and 14–20 (2026-11-19, owner).
 
 | Screen | Shows | One tap away | Never shown |
 |---|---|---|---|
-| Companies list | Korea / US; sort by filing recency, name or dated market-cap rank; company name and 새 공시 tag | Search (later) | Prices, charts, daily change |
+| Companies list | Bilingual company or ticker search; Korea / US browsing with visible sort; company name and 새 공시 tag | News | Newest event filings by date, with a filing-type filter | Filing page | Market commentary |
+| Glossary | Term search and letter or initial jump; definitions expand on iPhone | Definition on iPad and Mac | |
 | Company page | Up to 2 periodic reports with one figure each; up to 10 filings grouped by month (tag, date, title); notices row; insider row; data date | Notices sheet, insider screen, all filings on DART | Price, news, analyst views, scores, a preview line per filing row |
 | Filing page | Tag and status, title, date; outlook banner (outlook only); up to 3 sentences; how they were written; up to 6 numbers; up to 2 related filings; original | Glossary, other versions | Model confidence, judgement words, a gap against a forecast |
-| Quarter report | 3 figures, each against the same quarter last year; related preliminary filing; IR materials link | Quarter figure detail with both periods and amounts; annual figures via a labelled link | Quarter-on-quarter change, charts |
+| Quarter report | 3 figures, each against the same quarter last year; related preliminary filing; IR materials link | Quarter figure detail leads with its amount and comparison period; exact amounts, dates and calculation are expandable | Quarter-on-quarter change, charts |
 | Annual at a glance | One line, then 무슨 사업, 무엇이 바뀌었나, 회사가 꼽은 위험, 핵심 숫자 | Figure, compare | |
 | Notices sheet | Medium-detent sheet: date, title, related filing, original link | | Summaries |
 | Insider and ownership (later) | 12-month counts, then a dated list: person, role, shares | Each report on DART | Net buying or selling words, commentary |
@@ -83,7 +84,7 @@ Details:
 - 새 공시 / New: only on filings made within 7 days of the data date.
 - Notices row: "안내 공시 N건 / N notices", counting notices filed in the same span as
   the listed filings; hidden when there are none.
-- Filing page order is fixed for every type: sentences, then numbers, then the original.
+- Filing page order is fixed for every type: sentences, then numbers, then the original. The Original section shows the filed date and regulator link first. Form and receipt number expand in Filing details.
 - Company outlook: banner saying it is the company's forecast; a corrected forecast shows
   old and new values side by side; the filing's own prior-year target and result may be
   shown, but the app computes no gap.
@@ -94,6 +95,7 @@ Details:
 - G1 picks: language switch is a globe "EN" button in the nav bar; earlier years are a
   list; the compare-company picker is one list by market; direction is sign plus word with no
   colour; a restated figure has a 정정됨 / Restated tag beside the value and a note below.
+- The quarter figure shows the original quarterly report before exact figures and calculation. The annual figure link stays labelled separately. Refusals have no calculation.
 - State copy (board 19, approved): data date; "the 10 newest filings from the last 12
   months"; fewer than ten ("these are all N filings"); summary in review; numbers section
   hidden when empty; outlook without figures; corrected filing; notices row hidden.

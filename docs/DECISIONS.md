@@ -1574,3 +1574,22 @@ sorting by recency, name or market cap.
   in D89.
 - News rows lead with the company. The original-filing link uses the same
   grouped row surface as the other filing sections.
+
+## D93 · Adopt the five design-review proposals · 2026-11-23 (`ACCEPTED`)
+
+The owner marked all five comparisons “Adopt proposal” in the local HTML review
+based on the unofficial [Toss Design Skill v2](https://github.com/Ilbie/Toss-Design-Skill/tree/af3d3dd54eab795b300967d98d64a2a94deeec86).
+
+- Companies searches both markets by bilingual name or ticker. Browsing keeps
+  its market and shows the selected sort. Clearing the query restores browsing.
+- Quarterly figure detail puts the amount and comparison period together.
+  Its original report remains directly available. Exact dates, amounts and
+  the calculation expand on demand. The calculation uses the existing Decimal
+  comparison; a refusal exposes the figures that exist and omits the formula.
+- News adds a filing-type filter to the existing event feed. The selected type
+  applies before the feed cap. Rows stay newest-first and grouped by filing date.
+- The original-filing section places the regulator action beside the filing date.
+  Form and receipt number expand in Filing details.
+- Glossary search matches both languages and formal terms. The native jump
+  index remains. Definitions expand on the phone; larger layouts keep a
+  separate detail pane.

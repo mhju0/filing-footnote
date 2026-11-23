@@ -30,6 +30,7 @@ final class CoreFlowUITests: XCTestCase {
         XCTAssertFalse(apple.label.contains("AAPL"))
 
         let sort = app.buttons["company-sort"]
+        XCTAssertEqual(sort.value as? String, "Latest filing")
         sort.tap()
         app.buttons["Market cap"].tap()
         XCTAssertTrue(element("Market cap ranking as of", in: app).waitForExistence(timeout: 5))
@@ -37,6 +38,25 @@ final class CoreFlowUITests: XCTestCase {
         app.buttons["Company name"].tap()
         XCTAssertFalse(element("Market cap ranking as of", in: app).exists)
         XCTAssertTrue(apple.exists)
+        XCTAssertEqual(sort.value as? String, "Company name")
+
+        let field = app.textFields["company-search"]
+        let clear = app.buttons["company-search-clear"]
+        field.tap()
+        field.typeText("no match")
+        XCTAssertTrue(identified("company-search-empty", in: app).waitForExistence(timeout: 5))
+        clear.tap()
+        XCTAssertTrue(apple.waitForExistence(timeout: 5))
+        XCTAssertEqual(sort.value as? String, "Company name")
+
+        field.tap()
+        field.typeText("005930")
+        XCTAssertTrue(samsung.waitForExistence(timeout: 5))
+        XCTAssertTrue(element("Across both markets", in: app).exists)
+        XCTAssertFalse(sort.exists)
+        XCTAssertFalse(samsung.label.contains("005930"))
+        samsung.tap()
+        XCTAssertTrue(app.navigationBars["Samsung Electronics"].waitForExistence(timeout: 5))
     }
 
     enum Lang { case ko, en }

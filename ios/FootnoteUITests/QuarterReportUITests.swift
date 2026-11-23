@@ -23,6 +23,12 @@ final class QuarterReportUITests: XCTestCase {
         app.descendants(matching: .any)[id].firstMatch
     }
 
+    @MainActor private func formula(_ label: String, in app: XCUIApplication) -> XCUIElement {
+        app.descendants(matching: .other)
+            .matching(NSPredicate(format: "label BEGINSWITH %@", label + ", "))
+            .firstMatch
+    }
+
     @MainActor private func reveal(_ element: XCUIElement, in app: XCUIApplication) {
         var tries = 0
         while !(element.exists && element.isHittable) && tries < 8 {
@@ -74,6 +80,11 @@ final class QuarterReportUITests: XCTestCase {
         operating.tap()
         XCTAssertTrue(identified("quarter-figure-page", in: app).waitForExistence(timeout: 5))
         XCTAssertEqual(identified("quarter-figure-change", in: app).label, comparison)
+        let details = identified("quarter-calculation-details", in: app)
+        reveal(details, in: app)
+        XCTAssertTrue(details.isHittable)
+        details.tap()
+        XCTAssertFalse(formula("식", in: app).exists)
     }
 
     @MainActor func testUSQuarterInEnglish() throws {
@@ -87,6 +98,18 @@ final class QuarterReportUITests: XCTestCase {
         let comparison = revenue.label
         revenue.tap()
         XCTAssertTrue(identified("quarter-figure-page", in: app).waitForExistence(timeout: 5))
-        XCTAssertEqual(identified("quarter-figure-change", in: app).label, comparison)
+        let headline = identified("quarter-figure-change", in: app)
+        XCTAssertEqual(headline.label, comparison)
+        XCTAssertTrue(headline.label.contains("Comparison period Q3 FY 2025"), headline.label)
+        let details = identified("quarter-calculation-details", in: app)
+        reveal(details, in: app)
+        XCTAssertTrue(details.isHittable)
+        let result = formula("Formula", in: app)
+        XCTAssertFalse(result.exists)
+        details.tap()
+        reveal(result, in: app)
+        XCTAssertTrue(result.exists)
+        XCTAssertTrue(result.label.contains("11.76%"), result.label)
+        XCTAssertTrue(result.label.contains("same quarter last year"), result.label)
     }
 }
