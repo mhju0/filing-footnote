@@ -72,9 +72,10 @@ struct ExternalLinkRow: View {
                             .font(.body)
                             .foregroundStyle(Theme.pine)
                         if showsNetworkNote {
-                            Text(words: language("인터넷 연결이 필요해요", "Needs an internet connection"))
+                            Text(words: networkNote(for: url))
                                 .font(.footnote)
                                 .foregroundStyle(Theme.muted)
+                                .fixedSize(horizontal: false, vertical: true)
                         }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -89,5 +90,11 @@ struct ExternalLinkRow: View {
             .accessibilityAddTraits(.isLink)
             .accessibilityHint(language("인터넷 연결이 필요해요", "Needs an internet connection"))
         }
+    }
+
+    private func networkNote(for url: URL) -> String {
+        let connection = language("인터넷 연결이 필요해요", "Needs an internet connection")
+        guard let host = url.host else { return connection }
+        return host + Copy.dot + connection
     }
 }

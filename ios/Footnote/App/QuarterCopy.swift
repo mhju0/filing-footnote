@@ -71,6 +71,28 @@ extension PageCopy {
     static func shortened(_ figure: QuarterFigure, currency: String, _ language: Language) -> String {
         Formatting.amount(figure.value, currency: figure.currency ?? currency, language: language)
     }
+
+    static func quarterLabel(_ figure: QuarterFigure, _ language: Language) -> String {
+        language("\(figure.fiscalYear) 회계연도 \(figure.fiscalQuarter)분기",
+                 "Q\(figure.fiscalQuarter) FY \(figure.fiscalYear)")
+    }
+
+    static func quarterSpoken(_ row: QuarterFigureRow, currency: String, _ language: Language) -> String {
+        let current = row.current
+        let exactValue = exact(current.value, unit: current.unit, currency: current.currency ?? currency, language)
+        var parts = [row.metric.name(language), exactValue]
+        switch row.comparison {
+        case .result(let change):
+            parts.append(Formatting.percentChangeSpoken(change.percentChange, language: language))
+            if let prior = row.prior {
+                let period = quarterLabel(prior, language)
+                parts.append(language("비교 기간 \(period)", "Comparison period \(period)"))
+            }
+        case .refusal(let reason):
+            parts.append(refusal(reason, language))
+        }
+        return parts.joined(separator: ", ")
+    }
 }
 
 extension Copy {

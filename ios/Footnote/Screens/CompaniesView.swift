@@ -9,25 +9,151 @@ struct CompaniesView: View {
 
     var body: some View {
         List {
-            CompanyMarketPicker(market: $market)
-                .headerRow()
-            if sort == .marketCap { MarketCapNote().headerRow() }
-            Section {
-                ForEach(sort.companies(in: market, store: store, language: language)) { company in
-                    NavigationLink(value: Route.company(company.id)) {
-                        CompanyRow(company: company, isNew: store.hasNewFiling(companyID: company.id))
-                    }
-                    .listRowBackground(Theme.surface)
-                    .accessibilityIdentifier("company-\(company.id)")
+            CompanyDirectory(store: store, market: $market, sort: $sort, showsDataFooter: true) { company in
+                NavigationLink(value: Route.company(company.id)) {
+                    CompanyRow(company: company, isNew: store.hasNewFiling(companyID: company.id))
                 }
-            } footer: {
+                .listRowBackground(Theme.surface)
+                .accessibilityIdentifier("company-\(company.id)")
+            }
+        }
+        .scrollDismissesKeyboard(.interactively)
+        .groupedScreen()
+        .navigationTitle(language("기업", "Companies"))
+        .languageToolbar()
+    }
+}
+
+private struct CompanyDirectory<Row: View>: View {
+    @Environment(\.language) private var language
+    @State private var query = ""
+    let store: BundleStore
+    @Binding var market: Regulator
+    @Binding var sort: CompanySort
+    var showsDataFooter = false
+    @ViewBuilder let row: (Company) -> Row
+
+    var body: some View {
+        let search = CompanySearch(query)
+        let companies = search.isActive
+            ? search.companies(in: store, language: language)
+            : sort.companies(in: market, store: store, language: language)
+
+        DirectorySearchField(
+            title: language("기업 검색", "Search companies"),
+            prompt: language("기업명 또는 종목 코드", "Company name or ticker"),
+            identifier: "company-search",
+            query: $query
+        )
+        .headerRow()
+        .listRowSeparator(.hidden)
+
+        if !search.isActive {
+            CompanyMarketPicker(market: $market).headerRow()
+            CompanySortMenu(sort: $sort).headerRow()
+            if sort == .marketCap { MarketCapNote().headerRow() }
+        }
+
+        Section {
+            if search.isActive && companies.isEmpty {
+                Text(words: language("다른 기업명이나 종목 코드로 검색해 보세요.", "Try another company name or ticker."))
+                    .foregroundStyle(Theme.muted)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.vertical, 4)
+                    .listRowBackground(Theme.surface)
+                    .accessibilityIdentifier("company-search-empty")
+            }
+            ForEach(companies, content: row)
+        } header: {
+            if search.isActive {
+                SectionTitle(language("한국·미국 전체", "Across both markets"))
+            }
+        } footer: {
+            if showsDataFooter {
                 DataFooter(meta: store.meta)
             }
         }
-        .groupedScreen()
-        .navigationTitle(language("기업", "Companies"))
-        .toolbar { ToolbarItem { CompanySortMenu(sort: $sort) } }
-        .languageToolbar()
+    }
+}
+
+private struct CompanySearch {
+    private let query: String
+
+    init(_ query: String) {
+        self.query = Self.normalized(query)
+    }
+
+    var isActive: Bool { !query.isEmpty }
+
+    func companies(in store: BundleStore, language: Language) -> [Company] {
+        store.companies.filter { company in
+            [company.nameKo, Titles.name(of: company, language: .en), company.nameEn, company.ticker]
+                .contains { Self.normalized($0).contains(query) }
+        }
+        .sorted { CompanySort.namePrecedes($0, $1, language: language) }
+    }
+
+    private static func normalized(_ text: String) -> String {
+        text.folding(options: [.caseInsensitive, .diacriticInsensitive, .widthInsensitive], locale: nil)
+            .filter { !$0.isWhitespace && $0 != "." && $0 != "-" }
+    }
+}
+
+struct DirectorySearchField: View {
+    @Environment(\.language) private var language
+    @FocusState private var focused: Bool
+    let title: String
+    let prompt: String
+    let identifier: String
+    @Binding var query: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(words: title)
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(Theme.ink)
+                .accessibilityHidden(true)
+            HStack(spacing: 8) {
+                Image(systemName: "magnifyingglass")
+                    .foregroundStyle(Theme.muted)
+                    .accessibilityHidden(true)
+                TextField(title, text: $query, prompt: Text(words: prompt).foregroundStyle(Theme.muted))
+                    .textFieldStyle(.plain)
+                    .foregroundStyle(Theme.ink)
+                    .autocorrectionDisabled()
+                    #if os(iOS)
+                    .textInputAutocapitalization(.never)
+                    #endif
+                    .focused($focused)
+                    .submitLabel(.search)
+                    .onSubmit { focused = false }
+                    .accessibilityIdentifier(identifier)
+                    .padding(.vertical, 8)
+                    .frame(minHeight: Theme.minTarget)
+                if !query.isEmpty {
+                    Button {
+                        query = ""
+                        focused = false
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundStyle(Theme.muted)
+                            .frame(minWidth: Theme.minTarget, minHeight: Theme.minTarget)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(language("검색어 지우기", "Clear search"))
+                    .accessibilityIdentifier("\(identifier)-clear")
+                }
+            }
+            .padding(.leading, 12)
+            .padding(.trailing, query.isEmpty ? 12 : 0)
+            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
+            .overlay {
+                RoundedRectangle(cornerRadius: 10)
+                    .strokeBorder(focused ? Theme.pine : Theme.line, lineWidth: focused ? 2 : 1)
+                    .allowsHitTesting(false)
+            }
+        }
     }
 }
 
@@ -64,13 +190,17 @@ enum CompanySort: CaseIterable {
             case .name:
                 break
             }
-            let a = Titles.name(of: lhs, language: language)
-            let b = Titles.name(of: rhs, language: language)
-            switch a.compare(b, options: [.caseInsensitive], locale: language.locale) {
-            case .orderedAscending: return true
-            case .orderedDescending: return false
-            case .orderedSame: return lhs.id < rhs.id
-            }
+            return Self.namePrecedes(lhs, rhs, language: language)
+        }
+    }
+
+    fileprivate static func namePrecedes(_ lhs: Company, _ rhs: Company, language: Language) -> Bool {
+        let a = Titles.name(of: lhs, language: language)
+        let b = Titles.name(of: rhs, language: language)
+        return switch a.compare(b, options: [.caseInsensitive], locale: language.locale) {
+        case .orderedAscending: true
+        case .orderedDescending: false
+        case .orderedSame: lhs.id < rhs.id
         }
     }
 }
@@ -101,9 +231,38 @@ private struct CompanySortMenu: View {
                     Text(option.title(language)).tag(option)
                 }
             }
+            .pickerStyle(.inline)
         } label: {
-            Label(language("정렬", "Sort"), systemImage: "arrow.up.arrow.down")
+            #if os(macOS)
+            Text(words: language("정렬", "Sort by") + Copy.dot + sort.title(language))
+                .fixedSize(horizontal: false, vertical: true)
+            #else
+            HStack(spacing: 8) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(words: language("정렬", "Sort by"))
+                        .font(.footnote)
+                        .foregroundStyle(Theme.muted)
+                    Text(words: sort.title(language))
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(Theme.ink)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 8)
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(Theme.pine)
+                    .accessibilityHidden(true)
+            }
+            .frame(minHeight: Theme.minTarget)
+            .padding(.horizontal, 12)
+            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
+            #endif
         }
+        .menuStyle(.borderlessButton)
+        #if os(iOS)
+        .menuIndicator(.hidden)
+        #endif
+        .accessibilityLabel(language("정렬", "Sort by"))
         .accessibilityValue(sort.title(language))
         .accessibilityIdentifier("company-sort")
     }
@@ -234,24 +393,20 @@ struct SidebarView: View {
                         .tag(Item.glossary)
                 }
             }
-            CompanyMarketPicker(market: $market)
-            if sort == .marketCap { MarketCapNote() }
-            Section {
-                ForEach(sort.companies(in: market, store: store, language: language)) { company in
-                    CompanyRow(company: company, isNew: store.hasNewFiling(companyID: company.id),
-                               isSelected: selection == .company(company.id))
-                        .accessibilityIdentifier("company-\(company.id)")
-                        .tag(Item.company(company.id))
-                }
+            CompanyDirectory(store: store, market: $market, sort: $sort) { company in
+                CompanyRow(company: company, isNew: store.hasNewFiling(companyID: company.id),
+                           isSelected: selection == .company(company.id))
+                    .accessibilityIdentifier("company-\(company.id)")
+                    .tag(Item.company(company.id))
             }
         }
+        .scrollDismissesKeyboard(.interactively)
         .onChange(of: market) {
             if case .company(let id) = selection, store.company(id: id)?.regulator != market {
                 selection = nil
             }
         }
         .navigationTitle(language("기업", "Companies"))
-        .toolbar { ToolbarItem { CompanySortMenu(sort: $sort) } }
         #if os(macOS)
         .navigationSplitViewColumnWidth(min: 280, ideal: 300)
         #endif

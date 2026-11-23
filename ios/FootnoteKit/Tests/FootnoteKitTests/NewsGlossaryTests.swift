@@ -52,6 +52,14 @@ struct NewsFeedTests {
         #expect(feed.isCapped)
         // The newest thirty: the cut falls inside August 21.
         #expect(feed.filings.last?.filedOn == Support.date("2026-08-21"))
+        // A type can match eligible filings beyond the all-filings cap.
+        #expect(!feed.filings.contains { $0.category == .meeting })
+        #expect(feed.availableCategories.contains(.meeting))
+        let leadership = feed.filtered(to: .leadership)
+        #expect(leadership.days.map(\.id) == ["2026-09-01", "2026-01-02", "2025-12-05"])
+        #expect(leadership.filings.allSatisfy { $0.category == .leadership })
+        #expect(!leadership.isCapped)
+        #expect(feed.filtered(to: .annual).isEmpty)
     }
 
     @Test func emptyWhenNoFilingIsInTheWindow() throws {
@@ -100,5 +108,18 @@ struct GlossaryTests {
         #expect(store.sortedGlossary(language: .ko).map(\.term) == ["매출액", "배당", "영업이익률"])
         #expect(store.sortedGlossary(language: .en).map(\.term) == ["Dividend", "Operating margin", "Revenue"])
         #expect(store.sortedGlossary(language: .ko).count == store.glossary(language: .ko).count)
+    }
+
+    @Test func searchMatchesTheTermAndFormalNameAcrossLanguages() throws {
+        let store = try Support.editedFixture("""
+            INSERT INTO glossary (term_key, lang, term, plain, formal) VALUES
+              ('metric_eps', 'ko', '주당순이익', '주당순이익 설명', NULL),
+              ('metric_eps', 'en', 'EPS', 'About EPS.', 'Earnings per share');
+            """)
+        #expect(store.sortedGlossary(language: .ko, matching: "  ｅｐｓ  ").map(\.term) == ["주당순이익"])
+        #expect(store.sortedGlossary(language: .ko, matching: "earnings per share").map(\.term) == ["주당순이익"])
+        #expect(store.sortedGlossary(language: .en, matching: "수익(매출액)").map(\.term) == ["Revenue"])
+        #expect(store.sortedGlossary(language: .en, matching: "not a term").isEmpty)
+        #expect(store.sortedGlossary(language: .en, matching: " \n ") == store.sortedGlossary(language: .en))
     }
 }

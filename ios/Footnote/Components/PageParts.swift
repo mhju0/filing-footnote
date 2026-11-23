@@ -234,27 +234,36 @@ struct SectionNote: View {
     }
 }
 
-/// The original document: what the bundle knows offline (form, filed date, receipt number),
-/// followed by the grouped link and its network note.
 struct SourceSection: View {
     @Environment(\.language) private var language
     let source: SourceDetails
+    var linkTitle: String?
 
     var body: some View {
         Section {
-            FactRow(label: PageCopy.form(language), value: source.form)
             FactRow(label: PageCopy.filed(language), value: Formatting.fullDate(source.filedOn, language: language))
-            FactRow(label: PageCopy.receiptNumber(source.regulator, language), value: source.receiptNumber,
-                    spellsOutValue: true)
-        } header: {
-            SectionTitle(PageCopy.original(language))
-        }
-        if let url = source.url {
-            Section {
-                ExternalLinkRow(title: Copy.openOriginal(source.regulator, language), url: url, showsNetworkNote: true)
+            if let url = source.url {
+                ExternalLinkRow(
+                    title: linkTitle ?? Copy.openOriginal(source.regulator, language),
+                    url: url,
+                    showsNetworkNote: true)
                     .listRowBackground(Theme.surface)
                     .accessibilityIdentifier("open-original")
             }
+            DisclosureGroup {
+                FactRow(label: PageCopy.form(language), value: source.form)
+                FactRow(label: PageCopy.receiptNumber(source.regulator, language), value: source.receiptNumber,
+                        spellsOutValue: true)
+            } label: {
+                Text(words: language("공시 정보", "Filing details"))
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(minHeight: Theme.minTarget, alignment: .leading)
+            }
+            .tint(Theme.pine)
+            .listRowBackground(Theme.surface)
+            .accessibilityIdentifier("source-details")
+        } header: {
+            SectionTitle(PageCopy.original(language))
         }
     }
 }

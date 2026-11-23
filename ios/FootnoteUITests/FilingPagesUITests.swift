@@ -52,6 +52,18 @@ final class FilingPagesUITests: XCTestCase {
         reveal(original, in: app)
         XCTAssertTrue(original.isHittable)
         XCTAssertGreaterThanOrEqual(original.frame.height, 44)
+
+        let details = app.descendants(matching: .any)["source-details"].firstMatch
+        XCTAssertTrue(details.exists)
+        XCTAssertLessThan(original.frame.minY, details.frame.minY)
+        let receipt = element("접수번호, 20261029000539", in: app)
+        XCTAssertFalse(receipt.exists)
+        reveal(details, in: app)
+        details.tap()
+        reveal(receipt, in: app)
+        XCTAssertTrue(receipt.exists)
+        if !original.isHittable { app.swipeDown() }
+        XCTAssertTrue(original.isHittable)
         original.tap()
         // The in-app Safari view (SFSafariViewController) covers the page.
         let safari = app.otherElements["TopBrowserBar"].firstMatch
