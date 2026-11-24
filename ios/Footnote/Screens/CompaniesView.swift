@@ -257,11 +257,13 @@ private struct CompanySortMenu: View {
                     .foregroundStyle(Theme.muted)
                     .fixedSize(horizontal: false, vertical: true)
                 HStack(spacing: 8) {
-                    Spacer(minLength: 0)
+                    if !typeSize.isAccessibilitySize { Spacer(minLength: 0) }
                     Text(words: sort.title(language))
-                        .font(.body.weight(.semibold))
+                        .font((typeSize.isAccessibilitySize ? Font.subheadline : .body).weight(.semibold))
                         .foregroundStyle(Theme.ink)
+                        .multilineTextAlignment(.leading)
                         .fixedSize(horizontal: false, vertical: true)
+                    if typeSize.isAccessibilitySize { Spacer(minLength: 0) }
                     Image(systemName: "chevron.up.chevron.down")
                         .font(.footnote.weight(.semibold))
                         .foregroundStyle(Theme.pine)
