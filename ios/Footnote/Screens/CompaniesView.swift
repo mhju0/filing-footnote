@@ -45,13 +45,23 @@ private struct CompanyDirectory<Row: View>: View {
             identifier: "company-search",
             query: $query
         )
+        .padding(.bottom, search.isActive ? 0 : 10)
         .headerRow()
         .listRowSeparator(.hidden)
 
         if !search.isActive {
-            CompanyMarketPicker(market: $market).headerRow()
-            CompanySortMenu(sort: $sort).headerRow()
-            if sort == .marketCap { MarketCapNote().headerRow() }
+            CompanyMarketPicker(market: $market)
+                .padding(.bottom, 8)
+                .headerRow()
+                .listRowSeparator(.hidden)
+            CompanySortMenu(sort: $sort)
+                .headerRow()
+                .listRowSeparator(.hidden)
+            if sort == .marketCap {
+                MarketCapNote()
+                    .headerRow()
+                    .listRowSeparator(.hidden)
+            }
         }
 
         Section {
@@ -222,6 +232,7 @@ private struct CompanyMarketPicker: View {
 
 private struct CompanySortMenu: View {
     @Environment(\.language) private var language
+    @Environment(\.dynamicTypeSize) private var typeSize
     @Binding var sort: CompanySort
 
     var body: some View {
@@ -237,24 +248,31 @@ private struct CompanySortMenu: View {
             Text(words: language("정렬", "Sort by") + Copy.dot + sort.title(language))
                 .fixedSize(horizontal: false, vertical: true)
             #else
-            HStack(spacing: 8) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(words: language("정렬", "Sort by"))
-                        .font(.footnote)
-                        .foregroundStyle(Theme.muted)
+            let layout = typeSize.isAccessibilitySize
+                ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8))
+                : AnyLayout(HStackLayout(spacing: 16))
+            layout {
+                Text(words: language("정렬", "Sort by"))
+                    .font(.subheadline)
+                    .foregroundStyle(Theme.muted)
+                    .fixedSize(horizontal: false, vertical: true)
+                HStack(spacing: 8) {
+                    if !typeSize.isAccessibilitySize { Spacer(minLength: 0) }
                     Text(words: sort.title(language))
-                        .font(.subheadline.weight(.semibold))
+                        .font((typeSize.isAccessibilitySize ? Font.subheadline : .body).weight(.semibold))
                         .foregroundStyle(Theme.ink)
+                        .multilineTextAlignment(.leading)
                         .fixedSize(horizontal: false, vertical: true)
+                    if typeSize.isAccessibilitySize { Spacer(minLength: 0) }
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(Theme.pine)
+                        .accessibilityHidden(true)
                 }
-                Spacer(minLength: 8)
-                Image(systemName: "chevron.up.chevron.down")
-                    .font(.footnote.weight(.semibold))
-                    .foregroundStyle(Theme.pine)
-                    .accessibilityHidden(true)
             }
-            .frame(minHeight: Theme.minTarget)
-            .padding(.horizontal, 12)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .frame(minHeight: 60)
             .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
             #endif
         }
@@ -328,6 +346,9 @@ struct CompanyRow: View {
             }
         }
         .frame(maxWidth: .infinity, minHeight: Theme.minTarget, alignment: .leading)
+        #if os(iOS)
+        .padding(.vertical, 8)
+        #endif
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(spoken)
     }
