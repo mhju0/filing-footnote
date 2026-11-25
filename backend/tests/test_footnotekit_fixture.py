@@ -54,7 +54,12 @@ def test_committed_fixture_has_rows_in_every_table() -> None:
 
 
 PACKAGE_CONTRACTS = FIXTURE.parents[1] / "Contracts"
-COPIED_CONTRACTS = ("comparison-cases.json", "financial-vocabulary.json", "filing-categories.json")
+COPIED_CONTRACTS = (
+    "comparison-cases.json",
+    "financial-vocabulary.json",
+    "filing-categories.json",
+    "company-questions.json",
+)
 
 
 @pytest.mark.parametrize("name", COPIED_CONTRACTS)

@@ -1,0 +1,184 @@
+{
+  "about": "Fixed questions and answer sentences for \"Ask about this company\" (D95). FootnoteKit's QuestionIntent and AnswerSentence hold the same keys and text in this order; FootnoteKit's ContractTests fail when they drift. backend/tests/test_company_questions_contract.py runs the neutrality guard over every sentence. Sentences hold no digits: the app renders figures from exact decimals. Questions are the reader's own words, so only the digit and language rules apply to them.",
+  "version": 1,
+  "intents": [
+    {
+      "key": "should_buy",
+      "kind": "deflected",
+      "ko": "이 주식 사도 될까요?",
+      "en": "Should I buy this?"
+    },
+    {
+      "key": "fundamentals",
+      "kind": "answered",
+      "ko": "어떤 사업을 하고 실적은 어때요?",
+      "en": "What are the fundamentals?"
+    },
+    {
+      "key": "recent_trend",
+      "kind": "answered",
+      "ko": "최근 흐름은 어때요?",
+      "en": "What's the recent trend?"
+    },
+    {
+      "key": "profit_or_loss",
+      "kind": "answered",
+      "ko": "이익을 내나요, 손실을 내나요?",
+      "en": "Does it make or lose money?"
+    },
+    {
+      "key": "revenue",
+      "kind": "answered",
+      "ko": "매출은 어때요?",
+      "en": "How is revenue doing?"
+    },
+    {
+      "key": "next_quarter_revenue",
+      "kind": "deflected",
+      "ko": "다음 분기 매출은 얼마일까요?",
+      "en": "What's next quarter's revenue?"
+    }
+  ],
+  "sentences": [
+    {
+      "key": "no_advice",
+      "ko": "이 앱은 주식을 사라거나 팔라고 권하지 않아요.",
+      "en": "This app doesn't tell you to buy or sell shares."
+    },
+    {
+      "key": "reported_facts",
+      "ko": "대신 회사가 공시에서 밝힌 사업과 실적을 보여 드려요. 판단은 직접 해 주세요.",
+      "en": "Instead, it shows the business and results the company reported in its filings. The decision is yours."
+    },
+    {
+      "key": "no_estimates",
+      "ko": "이 앱은 이미 끝난 기간의 실적만 보여 줘요. 앞으로의 매출은 추정하지 않아요.",
+      "en": "This app shows results for periods that have ended. It doesn't estimate future revenue."
+    },
+    {
+      "key": "outlook_filed",
+      "ko": "회사가 직접 낸 전망 공시가 있어요. 확정된 실적이 아니라 회사가 스스로 밝힌 내용이에요.",
+      "en": "The company filed its own outlook. It is what the company said about the future, not a reported result."
+    },
+    {
+      "key": "no_outlook",
+      "ko": "이 회사가 낸 전망 공시는 앱에 없어요.",
+      "en": "The app has no outlook filing from this company."
+    },
+    {
+      "key": "business_missing",
+      "ko": "회사가 밝힌 사업 설명이 아직 앱에 없어요.",
+      "en": "The app doesn't have the company's own description of its business yet."
+    },
+    {
+      "key": "quarter_missing",
+      "ko": "이 회사의 분기 보고서가 앱에 없어요.",
+      "en": "The app has no quarterly report from this company."
+    },
+    {
+      "key": "year_missing",
+      "ko": "이 회사의 연간 실적이 앱에 없어요.",
+      "en": "The app has no annual figures from this company."
+    },
+    {
+      "key": "trend_scope",
+      "ko": "각 기간을 작년 같은 기간과 비교했어요. 더 긴 기간의 흐름은 다루지 않아요.",
+      "en": "Each period is compared with the same period a year earlier. The app doesn't cover a longer trend."
+    },
+    {
+      "key": "revenue_quarter_up",
+      "ko": "회사는 최근 분기 매출이 작년 같은 분기보다 늘었다고 보고했어요.",
+      "en": "The company reported higher revenue for its latest quarter than for the same quarter a year earlier."
+    },
+    {
+      "key": "revenue_quarter_down",
+      "ko": "회사는 최근 분기 매출이 작년 같은 분기보다 줄었다고 보고했어요.",
+      "en": "The company reported lower revenue for its latest quarter than for the same quarter a year earlier."
+    },
+    {
+      "key": "revenue_quarter_same",
+      "ko": "회사는 최근 분기 매출이 작년 같은 분기와 비슷했다고 보고했어요.",
+      "en": "The company reported about the same revenue for its latest quarter as for the same quarter a year earlier."
+    },
+    {
+      "key": "revenue_quarter_not_compared",
+      "ko": "최근 분기 매출은 작년 같은 분기와 비교할 수 없어요.",
+      "en": "The latest quarter's revenue can't be compared with the same quarter a year earlier."
+    },
+    {
+      "key": "revenue_quarter_missing",
+      "ko": "앱에 있는 최근 분기 보고서에는 매출이 없어요.",
+      "en": "The latest quarterly report in the app doesn't state revenue."
+    },
+    {
+      "key": "revenue_year_up",
+      "ko": "회사는 최근 회계연도 매출이 그 전 해보다 늘었다고 보고했어요.",
+      "en": "The company reported higher revenue for its latest fiscal year than for the year before."
+    },
+    {
+      "key": "revenue_year_down",
+      "ko": "회사는 최근 회계연도 매출이 그 전 해보다 줄었다고 보고했어요.",
+      "en": "The company reported lower revenue for its latest fiscal year than for the year before."
+    },
+    {
+      "key": "revenue_year_same",
+      "ko": "회사는 최근 회계연도 매출이 그 전 해와 비슷했다고 보고했어요.",
+      "en": "The company reported about the same revenue for its latest fiscal year as for the year before."
+    },
+    {
+      "key": "revenue_year_not_compared",
+      "ko": "최근 회계연도 매출은 그 전 해와 비교할 수 없어요.",
+      "en": "The latest fiscal year's revenue can't be compared with the year before."
+    },
+    {
+      "key": "revenue_year_missing",
+      "ko": "앱에 있는 최근 사업보고서에는 매출이 없어요.",
+      "en": "The latest annual report in the app doesn't state revenue."
+    },
+    {
+      "key": "profit_quarter",
+      "ko": "회사는 최근 분기에 순이익을 냈다고 보고했어요.",
+      "en": "The company reported a net profit for its latest quarter."
+    },
+    {
+      "key": "loss_quarter",
+      "ko": "회사는 최근 분기에 순손실을 냈다고 보고했어요.",
+      "en": "The company reported a net loss for its latest quarter."
+    },
+    {
+      "key": "break_even_quarter",
+      "ko": "회사는 최근 분기에 순이익도 순손실도 없었다고 보고했어요.",
+      "en": "The company reported neither a net profit nor a net loss for its latest quarter."
+    },
+    {
+      "key": "income_quarter_missing",
+      "ko": "앱에 있는 최근 분기 보고서에는 순이익이 없어요.",
+      "en": "The latest quarterly report in the app doesn't state net income."
+    },
+    {
+      "key": "profit_year",
+      "ko": "회사는 최근 회계연도에 순이익을 냈다고 보고했어요.",
+      "en": "The company reported a net profit for its latest fiscal year."
+    },
+    {
+      "key": "loss_year",
+      "ko": "회사는 최근 회계연도에 순손실을 냈다고 보고했어요.",
+      "en": "The company reported a net loss for its latest fiscal year."
+    },
+    {
+      "key": "break_even_year",
+      "ko": "회사는 최근 회계연도에 순이익도 순손실도 없었다고 보고했어요.",
+      "en": "The company reported neither a net profit nor a net loss for its latest fiscal year."
+    },
+    {
+      "key": "income_year_missing",
+      "ko": "앱에 있는 최근 사업보고서에는 순이익이 없어요.",
+      "en": "The latest annual report in the app doesn't state net income."
+    },
+    {
+      "key": "how_answered",
+      "ko": "답은 이 앱에 담긴 공시로 정해진 규칙에 따라 만들어요. 투자 조언이 아니에요.",
+      "en": "Answers are built by fixed rules from the filings in this app. They are not investment advice."
+    }
+  ]
+}

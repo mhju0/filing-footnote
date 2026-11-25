@@ -15,8 +15,10 @@
 		33649A6A85C0D9AA9E8BE128 /* FigureScreens.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03173DCF226C21F70DD7DD42 /* FigureScreens.swift */; };
 		37F2827282787709D791868D /* CoreFlowUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55A8364E87EA2A71CBA0B967 /* CoreFlowUITests.swift */; };
 		38E071F6C439E5A6631C71EF /* CompanyPageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1451043C5F97E78360D49B1A /* CompanyPageView.swift */; };
+		4B77967D09469D06F009CC4D /* AskCopy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6AA295088DFF0A242E4844C3 /* AskCopy.swift */; };
 		4C548BDC3D7CECFF30C6C5E4 /* PageParts.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF2549958E4E5B5E376705BC /* PageParts.swift */; };
 		560DD57B7A30749322B92205 /* OriginalLinks.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5763354F725A9825C8F45BA /* OriginalLinks.swift */; };
+		5703BA49F8A08ABBC03AA945 /* AskViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B5364F703B43065421232F9 /* AskViews.swift */; };
 		5962467C92C8AB4DEFA7BE43 /* FilingPagesUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A25183A23F01D3B2D30CA923 /* FilingPagesUITests.swift */; };
 		5CF728439C83D42D509D1871 /* WalkthroughUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25277992F37EB499CCB294CB /* WalkthroughUITests.swift */; };
 		65603A66B51C890443BF4D11 /* FootnoteTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CEB9F0F6A890E7BA9ADA8CB /* FootnoteTests.swift */; };
@@ -36,7 +38,9 @@
 		B6BF8068DCFD3F09DF889CCB /* NewsGlossaryUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 367AA918A969C6A3705E6AF5 /* NewsGlossaryUITests.swift */; };
 		B814FA6CDF2D69882E5FFA79 /* KeepAll.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B925AA3157EEF14E56E6451 /* KeepAll.swift */; };
 		BA171BC64635100AE33C7B0C /* AccessibilityLabelsUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2BE5D1D3401BA171B90ECB1 /* AccessibilityLabelsUITests.swift */; };
+		C171CB77B7B973B12D934D61 /* AskQuestionsUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAD96D98754904BAB3689C89 /* AskQuestionsUITests.swift */; };
 		C1E7DEDF64A4D622C28CCABE /* AccessibilityAuditUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0586064CD3DD81BAE04243EB /* AccessibilityAuditUITests.swift */; };
+		C3840CE6511B62B581D70BCC /* AskTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A5F3CAA747EE448DC1F86AF /* AskTests.swift */; };
 		D084464B24495E5CC5F57423 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FD17E58353EA488866917BB /* RootView.swift */; };
 		DDA675971087F266809D199A /* FactLabels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17DABD04C86B387AB9155CAA /* FactLabels.swift */; };
 		E4FDB3841AF5B3BFA18CA247 /* footnote.sqlite in Resources */ = {isa = PBXBuildFile; fileRef = D0E3DC947AE76FA1DBF99AFA /* footnote.sqlite */; };
@@ -79,7 +83,10 @@
 		4B556BB1B771BF080EF4BA9A /* FootnoteApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FootnoteApp.swift; sourceTree = "<group>"; };
 		54D2C9D9FA8B8C5FC1B1C2CE /* FigureCompareUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FigureCompareUITests.swift; sourceTree = "<group>"; };
 		55A8364E87EA2A71CBA0B967 /* CoreFlowUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreFlowUITests.swift; sourceTree = "<group>"; };
+		5A5F3CAA747EE448DC1F86AF /* AskTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AskTests.swift; sourceTree = "<group>"; };
+		6AA295088DFF0A242E4844C3 /* AskCopy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AskCopy.swift; sourceTree = "<group>"; };
 		6ADD23E58B0C1A1F660CFEA5 /* CompareTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompareTests.swift; sourceTree = "<group>"; };
+		6B5364F703B43065421232F9 /* AskViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AskViews.swift; sourceTree = "<group>"; };
 		6BCA2D816402190C3607EC91 /* QuarterReportUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuarterReportUITests.swift; sourceTree = "<group>"; };
 		77AE003C2DBDA88407F9D7A1 /* QuarterCopy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuarterCopy.swift; sourceTree = "<group>"; };
 		7C57CE2A69841013D54DA95C /* NewsAndGlossary.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewsAndGlossary.swift; sourceTree = "<group>"; };
@@ -91,6 +98,7 @@
 		A25183A23F01D3B2D30CA923 /* FilingPagesUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilingPagesUITests.swift; sourceTree = "<group>"; };
 		A3A9AF1B5B791CDDF55DC3F9 /* LaunchRoute.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchRoute.swift; sourceTree = "<group>"; };
 		A5158F1E7A83D45A03BF2540 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		BAD96D98754904BAB3689C89 /* AskQuestionsUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AskQuestionsUITests.swift; sourceTree = "<group>"; };
 		D0E3DC947AE76FA1DBF99AFA /* footnote.sqlite */ = {isa = PBXFileReference; lastKnownFileType = file; path = footnote.sqlite; sourceTree = "<group>"; };
 		DC289A12582A8B34DF6AD1CD /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		DD018E5AFB38AC963AC69264 /* QuarterReportView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuarterReportView.swift; sourceTree = "<group>"; };
@@ -194,6 +202,7 @@
 		990F4E0BD20FE68F9E4C9316 /* FootnoteTests */ = {
 			isa = PBXGroup;
 			children = (
+				5A5F3CAA747EE448DC1F86AF /* AskTests.swift */,
 				6ADD23E58B0C1A1F660CFEA5 /* CompareTests.swift */,
 				0CEB9F0F6A890E7BA9ADA8CB /* FootnoteTests.swift */,
 			);
@@ -212,6 +221,7 @@
 			isa = PBXGroup;
 			children = (
 				0EB3E62CC85B78BC602E97B3 /* AnnualReportView.swift */,
+				6B5364F703B43065421232F9 /* AskViews.swift */,
 				83D0E13ABF3BD2C1B509E51D /* CompaniesView.swift */,
 				F3BC53A364995EEBA70750C3 /* CompanyCompare.swift */,
 				1451043C5F97E78360D49B1A /* CompanyPageView.swift */,
@@ -236,6 +246,7 @@
 			children = (
 				0586064CD3DD81BAE04243EB /* AccessibilityAuditUITests.swift */,
 				F2BE5D1D3401BA171B90ECB1 /* AccessibilityLabelsUITests.swift */,
+				BAD96D98754904BAB3689C89 /* AskQuestionsUITests.swift */,
 				55A8364E87EA2A71CBA0B967 /* CoreFlowUITests.swift */,
 				54D2C9D9FA8B8C5FC1B1C2CE /* FigureCompareUITests.swift */,
 				A25183A23F01D3B2D30CA923 /* FilingPagesUITests.swift */,
@@ -249,6 +260,7 @@
 		FC5E2FB9B288632A9A250237 /* App */ = {
 			isa = PBXGroup;
 			children = (
+				6AA295088DFF0A242E4844C3 /* AskCopy.swift */,
 				49ED7013F79313CBCC67F084 /* Copy.swift */,
 				17DABD04C86B387AB9155CAA /* FactLabels.swift */,
 				4B556BB1B771BF080EF4BA9A /* FootnoteApp.swift */,
@@ -423,6 +435,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C3840CE6511B62B581D70BCC /* AskTests.swift in Sources */,
 				6F81BFCC91DCE5F89E6F3223 /* CompareTests.swift in Sources */,
 				65603A66B51C890443BF4D11 /* FootnoteTests.swift in Sources */,
 			);
@@ -434,6 +447,7 @@
 			files = (
 				C1E7DEDF64A4D622C28CCABE /* AccessibilityAuditUITests.swift in Sources */,
 				BA171BC64635100AE33C7B0C /* AccessibilityLabelsUITests.swift in Sources */,
+				C171CB77B7B973B12D934D61 /* AskQuestionsUITests.swift in Sources */,
 				37F2827282787709D791868D /* CoreFlowUITests.swift in Sources */,
 				81CAD0ED4CF207C78847AC4B /* FigureCompareUITests.swift in Sources */,
 				5962467C92C8AB4DEFA7BE43 /* FilingPagesUITests.swift in Sources */,
@@ -448,6 +462,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				249E9F02C56CAD3F001CD198 /* AnnualReportView.swift in Sources */,
+				4B77967D09469D06F009CC4D /* AskCopy.swift in Sources */,
+				5703BA49F8A08ABBC03AA945 /* AskViews.swift in Sources */,
 				7F5D19558056B19C0D92F257 /* CompaniesView.swift in Sources */,
 				7743B85CF8598A5146EDB016 /* CompanyCompare.swift in Sources */,
 				38E071F6C439E5A6631C71EF /* CompanyPageView.swift in Sources */,

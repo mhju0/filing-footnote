@@ -57,7 +57,8 @@ cp "$app/footnote.sqlite" "$separate"
 sqlite3 "$separate" "UPDATE figures SET basis = 'separate' WHERE company_id = '$samsung'"
 
 # name ; route ; language ; appearance ; content size ; scroll (top, center or bottom; filing
-# and annual pages, and bottom on figure, calculation and compare pages) ; bundle (`separate`, or
+# and annual pages, bottom on figure, calculation, compare and answer pages, and ask on a
+# company page) ; bundle (`separate`, or
 # empty for the app's own). A filing route is <company id>|<filing id>; figure and compare
 # routes are described in LaunchRoute.swift.
 shots=(
@@ -141,6 +142,25 @@ shots=(
   "i11-quarter-apple-ko-light;filing=$apple|$apple_quarter;ko;light;large;top"
   "i11-quarter-apple-en-light;filing=$apple|$apple_quarter;en;light;large;top"
   "i11-quarter-apple-en-dark;filing=$apple|$apple_quarter;en;dark;large;top"
+  "ask-company-hyundai-ko-light;company=$hyundai;ko;light;large;ask"
+  "ask-company-hyundai-ko-dark;company=$hyundai;ko;dark;large;ask"
+  "ask-company-hyundai-en-light;company=$hyundai;en;light;large;ask"
+  "ask-company-hyundai-en-dark;company=$hyundai;en;dark;large;ask"
+  "ask-company-hyundai-ko-ax;company=$hyundai;ko;light;accessibility-extra-large;ask"
+  "ask-trend-hyundai-ko-light;ask=$hyundai|recent_trend;ko;light;large;top"
+  "ask-trend-hyundai-ko-light-bottom;ask=$hyundai|recent_trend;ko;light;large;bottom"
+  "ask-trend-hyundai-en-dark;ask=$hyundai|recent_trend;en;dark;large;top"
+  "ask-fundamentals-samsung-ko-light;ask=$samsung|fundamentals;ko;light;large;top"
+  "ask-fundamentals-samsung-en-dark;ask=$samsung|fundamentals;en;dark;large;top"
+  "ask-profit-hyundai-ko-dark;ask=$hyundai|profit_or_loss;ko;dark;large;top"
+  "ask-profit-hyundai-en-light;ask=$hyundai|profit_or_loss;en;light;large;top"
+  "ask-revenue-apple-ko-light;ask=$apple|revenue;ko;light;large;top"
+  "ask-buy-hyundai-ko-light;ask=$hyundai|should_buy;ko;light;large;top"
+  "ask-buy-hyundai-en-dark;ask=$hyundai|should_buy;en;dark;large;top"
+  "ask-next-hyundai-ko-light;ask=$hyundai|next_quarter_revenue;ko;light;large;top"
+  "ask-next-apple-en-dark;ask=$apple|next_quarter_revenue;en;dark;large;top"
+  "ask-trend-hyundai-ko-ax;ask=$hyundai|recent_trend;ko;light;accessibility-extra-large;top"
+  "ask-buy-hyundai-en-ax;ask=$hyundai|should_buy;en;light;accessibility-extra-large;top"
 )
 
 for shot in "${shots[@]}"; do

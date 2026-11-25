@@ -5,7 +5,7 @@ set -euo pipefail
 
 PACKAGE="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ROOT="$(cd "$PACKAGE/../.." && pwd)"
-for name in comparison-cases.json financial-vocabulary.json filing-categories.json; do
+for name in comparison-cases.json financial-vocabulary.json filing-categories.json company-questions.json; do
   cp "$ROOT/contracts/$name" "$PACKAGE/Tests/FootnoteKitTests/Contracts/$name"
 done
 echo "copied contracts into $PACKAGE/Tests/FootnoteKitTests/Contracts"

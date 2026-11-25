@@ -1,8 +1,8 @@
 import FootnoteKit
 import SwiftUI
 
-/// Board 14: periodic reports pinned, up to ten filings by month, the notices row, then the
-/// end note and the link to every filing on DART or SEC.
+/// Board 14: periodic reports pinned, the questions to ask (D95), up to ten filings by
+/// month, the notices row, then the end note and the link to every filing on DART or SEC.
 struct CompanyPageView: View {
     @Environment(\.language) private var language
     let store: BundleStore
@@ -19,6 +19,23 @@ struct CompanyPageView: View {
     private var name: String { Titles.name(of: page.company, language: language) }
 
     var body: some View {
+        ScrollViewReader { proxy in
+            list.launchScroll(proxy)
+        }
+        .groupedScreen()
+        .navigationTitle(name)
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.large)
+        #else
+        .navigationSubtitle(Copy.companySubtitle(page.company, dataAsOf: page.dataAsOf, language))
+        #endif
+        .languageToolbar()
+        .sheet(isPresented: $showsNotices) {
+            NoticesSheet(page: page)
+        }
+    }
+
+    private var list: some View {
         SelectionList(selection: selection) {
             header
             if page.quarterReport != nil || !page.periodicReports.isEmpty {
@@ -37,6 +54,9 @@ struct CompanyPageView: View {
                     SectionTitle(language("정기 보고서", "Periodic reports"))
                 }
             }
+            // D95: below the quarterly results, above the filings by month.
+            AskSection(companyID: page.company.id)
+                .id(PageScroll.ask)
             ForEach(Array(page.months.enumerated()), id: \.element.id) { index, month in
                 Section {
                     ForEach(month.filings) { filing in
@@ -67,17 +87,6 @@ struct CompanyPageView: View {
                     .font(.footnote)
                     .foregroundStyle(Theme.muted)
             }
-        }
-        .groupedScreen()
-        .navigationTitle(name)
-        #if os(iOS)
-        .navigationBarTitleDisplayMode(.large)
-        #else
-        .navigationSubtitle(Copy.companySubtitle(page.company, dataAsOf: page.dataAsOf, language))
-        #endif
-        .languageToolbar()
-        .sheet(isPresented: $showsNotices) {
-            NoticesSheet(page: page)
         }
     }
 

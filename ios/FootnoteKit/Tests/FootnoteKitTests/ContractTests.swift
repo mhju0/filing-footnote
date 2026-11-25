@@ -6,7 +6,9 @@ import Testing
 struct ContractTests {
     /// The test bundle carries copies (`scripts/sync-contracts.sh`); they must equal the
     /// originals in `contracts/`, so a contract edit cannot pass here on a stale copy.
-    @Test(arguments: ["comparison-cases.json", "financial-vocabulary.json", "filing-categories.json"])
+    @Test(arguments: [
+        "comparison-cases.json", "financial-vocabulary.json", "filing-categories.json", "company-questions.json",
+    ])
     func copyMatchesTheRepositoryContract(_ name: String) throws {
         let copy = try Data(contentsOf: Support.resource("Contracts", name))
         let original = try Data(contentsOf: Support.repositoryRoot
@@ -39,6 +41,27 @@ struct ContractTests {
             let category = try #require(FilingCategory(rawValue: entry["key"]!.string!))
             #expect(category.label(.ko) == entry["ko"]!.string!)
             #expect(category.label(.en) == entry["en"]!.string!)
+        }
+    }
+
+    /// D95: the questions and answer sentences the backend's neutrality guard checks.
+    @Test func companyQuestions() throws {
+        let contract = try Support.contract("company-questions.json")
+        #expect(contract["version"] == .integer(1))
+        let intents = contract["intents"]!.array
+        #expect(intents.map { $0["key"]!.string! } == QuestionIntent.allCases.map(\.rawValue))
+        for entry in intents {
+            let intent = try #require(QuestionIntent(rawValue: entry["key"]!.string!))
+            #expect(intent.question(.ko) == entry["ko"]!.string!)
+            #expect(intent.question(.en) == entry["en"]!.string!)
+            #expect(intent.isDeflected == (entry["kind"]!.string! == "deflected"))
+        }
+        let sentences = contract["sentences"]!.array
+        #expect(sentences.map { $0["key"]!.string! } == AnswerSentence.allCases.map(\.rawValue))
+        for entry in sentences {
+            let sentence = try #require(AnswerSentence(rawValue: entry["key"]!.string!))
+            #expect(sentence.text(.ko) == entry["ko"]!.string!)
+            #expect(sentence.text(.en) == entry["en"]!.string!)
         }
     }
 
