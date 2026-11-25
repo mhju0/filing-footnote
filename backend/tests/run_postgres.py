@@ -24,7 +24,7 @@ def main() -> None:
     admin_url = make_url(
         os.environ.get("TEST_DATABASE_ADMIN_URL") or get_settings().database_url
     ).set(drivername="postgresql")
-    database = f"filing_digest_{uuid.uuid4().hex}_test"
+    database = f"filing_footnote_{uuid.uuid4().hex}_test"
     test_url = admin_url.set(database=database)
     with psycopg.connect(
         admin_url.render_as_string(hide_password=False), autocommit=True
@@ -42,8 +42,7 @@ def main() -> None:
             with psycopg.connect(
                 test_url.render_as_string(hide_password=False), autocommit=True
             ) as connection:
-                for path in ("db/init.sql", "tests/fixtures/ci_smoke_seed.sql"):
-                    connection.execute((BACKEND / path).read_text())
+                connection.execute((BACKEND / "db/init.sql").read_text())
 
             environment = os.environ.copy()
             environment.pop("DART_API_KEY", None)
@@ -51,13 +50,11 @@ def main() -> None:
                 DATABASE_URL=test_url.set(drivername="postgresql+psycopg").render_as_string(
                     hide_password=False
                 ),
-                EMBEDDING_WARMUP_ENABLED="false",
             )
             environment["TEST_DATABASE_URL"] = environment["DATABASE_URL"]
-            # Smoke tests consume the seed. Persistence tests then replace it
-            # per test using the actual SQL schema and real transactions.
+            # Each suite sets up its own rows on the actual SQL schema with
+            # real transactions.
             for suite in (
-                "test_smoke.py",
                 "test_normalized_filing_persistence.py",
                 "test_event_ingest_db.py",
                 "test_legacy_migration.py",

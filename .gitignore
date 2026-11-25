@@ -8,9 +8,6 @@ backend/data/pinned/
 backend/data/summaries/staged.jsonl
 backend/data/summaries/calls.jsonl
 
-# Offline eval harness run output (regenerable, not for the repo).
-backend/evals/reports/
-
 # Python
 __pycache__/
 *.pyc

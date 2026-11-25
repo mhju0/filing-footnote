@@ -75,7 +75,7 @@ python3.11 -m venv .venv
 scripts/check.sh
 ```
 
-The last line must be `GATE: PASS`. `scripts/check.sh` runs Ruff, the offline backend tests, the FootnoteKit tests (`swift test`), a check that `ios/Footnote.xcodeproj` matches `ios/project.yml`, and a check that no app code converts currencies. It needs no database, no API keys and no network; the embedding model is never loaded.
+The last line must be `GATE: PASS`. `scripts/check.sh` runs Ruff, the offline backend tests, the FootnoteKit tests (`swift test`), a check that `ios/Footnote.xcodeproj` matches `ios/project.yml`, and a check that no app code converts currencies. It needs no database, no API keys and no network.
 
 ## Run the app and its tests
 

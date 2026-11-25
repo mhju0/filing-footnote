@@ -14,7 +14,7 @@ Implements:
   (:func:`detect_document_format`), and extract *prose only* from the DSD format
   (:func:`extract_dsd_prose`). Numeric tables are excluded -- numbers come solely
   from the financials API (§3). This step stops at "raw bytes -> clean prose
-  sections"; the downstream ingest pipeline handles chunking, embedding, and DB writes.
+  sections"; the downstream ingest pipeline handles chunking and DB writes.
 
 SECURITY:
 - The API key lives in ``settings.dart_api_key`` as a SecretStr. Only call
@@ -496,10 +496,10 @@ def _dedup_profit_loss(items: list[FinancialItem]) -> list[FinancialItem]:
 # -- document.xml (원문 -> 산문 텍스트) ---------------------------------------
 #
 # document.xml is the source of filing_chunks.content.
-# ★ CORE RULE: only *prose* (narrative) text is embedded. Numbers live solely in
+# ★ CORE RULE: only *prose* (narrative) text is stored. Numbers live solely in
 # the financials API (§3), so numeric tables are excluded here -- we never mix a
 # figure into prose. This step stops at "raw bytes -> clean prose sections";
-# Chunking, embedding, and DB writes live in the downstream ingest modules.
+# Chunking and DB writes live in the downstream ingest modules.
 
 # How much of the document head to sniff for a format marker. The DSD root
 # (<DOCUMENT ... dart4.xsd>) or the xforms root (<html>) always appears well
@@ -788,7 +788,7 @@ def extract_dsd_prose(text: str) -> list[ProseSection]:
         title, content, dropped = _collect_section_prose(el)
         tables_skipped += dropped
         if title is None and not content:
-            continue  # empty section -> nothing to embed
+            continue  # empty section -> nothing to store
         top = el
         while (parent := parents.get(top)) is not None:
             if _is_section_tag(parent.tag):

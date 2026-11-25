@@ -13,19 +13,18 @@ jobs:
       postgres:
         image: pgvector/pgvector:pg16
         env:
-          POSTGRES_USER: filing_digest
-          POSTGRES_PASSWORD: filing_digest_dev
-          POSTGRES_DB: filing_digest
+          POSTGRES_USER: filing_footnote
+          POSTGRES_PASSWORD: filing_footnote_dev
+          POSTGRES_DB: filing_footnote
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U filing_digest -d filing_digest"
+          --health-cmd "pg_isready -U filing_footnote -d filing_footnote"
           --health-interval 5s
           --health-timeout 3s
           --health-retries 10
     env:
-      DATABASE_URL: postgresql+psycopg://filing_digest:filing_digest_dev@localhost:5432/filing_digest
-      EMBEDDING_WARMUP_ENABLED: "false"
+      DATABASE_URL: postgresql+psycopg://filing_footnote:filing_footnote_dev@localhost:5432/filing_footnote
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7
@@ -35,8 +34,6 @@ jobs:
           cache-dependency-path: backend/requirements.lock
       - name: Install dependencies
         run: |
-          # KURE runs on CPU; PyPI's Linux torch wheel pulls in unused CUDA libraries.
-          pip install torch==2.13.0 --index-url https://download.pytorch.org/whl/cpu
           pip install -r backend/requirements.lock
           pip install ruff==0.15.21
       - name: Lint, offline tests, and Compose validation

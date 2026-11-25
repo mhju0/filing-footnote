@@ -7,9 +7,9 @@
       "id": "N1",
       "title": "No digits",
       "severity": "fail",
-      "note": "Implemented in code by reuse: NFKC normalisation then any \\d (digest_narrative._ANY_DIGIT_RE), plus spelled financial numbers (number_guard._SPELLED_FINANCIAL_RE, _SPELLED_PREFIX_RE, _KOREAN_SPELLED_RE), plus the ko/en lists below. English counts spelled without a unit or currency ('three quarters') are not caught. Known limitation: a company or form name with a digit (3M, Form 8-K, 10-K) always fails; the pipeline must have the model write 회사/The company or the name without digits.",
+      "note": "Implemented in code by reuse: NFKC normalisation then any \\d (neutrality_guard._ANY_DIGIT_RE), plus spelled financial numbers (number_guard._SPELLED_FINANCIAL_RE, _SPELLED_PREFIX_RE, _KOREAN_SPELLED_RE), plus the ko/en lists below. English counts spelled without a unit or currency ('three quarters') are not caught. Known limitation: a company or form name with a digit (3M, Form 8-K, 10-K) always fails; the pipeline must have the model write 회사/The company or the name without digits.",
       "sources": [
-        "app.digest_narrative._ANY_DIGIT_RE",
+        "app.llm.neutrality_guard._ANY_DIGIT_RE",
         "app.llm.number_guard._SPELLED_FINANCIAL_RE",
         "app.llm.number_guard._SPELLED_PREFIX_RE",
         "app.llm.number_guard._KOREAN_SPELLED_RE"
