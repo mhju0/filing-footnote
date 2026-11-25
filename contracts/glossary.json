@@ -612,6 +612,19 @@
         "plain": "The two figures differ in basis or kind, so the app does not compare them.",
         "formal": null
       }
+    },
+    "percentage_point": {
+      "approved": false,
+      "ko": {
+        "term": "퍼센트포인트(%포인트)",
+        "plain": "두 비율의 차이를 나타내는 단위예요. 한 비율에서 다른 비율을 뺀 값이라, 몇 퍼센트 늘었는지와는 달라요.",
+        "formal": null
+      },
+      "en": {
+        "term": "Percentage points",
+        "plain": "The unit for the gap between two rates: one rate minus the other. It is not the same as a percent change.",
+        "formal": null
+      }
     }
   }
 }

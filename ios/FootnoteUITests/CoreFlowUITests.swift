@@ -40,8 +40,9 @@ final class CoreFlowUITests: XCTestCase {
         XCTAssertTrue(apple.exists)
         XCTAssertEqual(sort.value as? String, "Company name")
 
-        let field = app.textFields["company-search"]
-        let clear = app.buttons["company-search-clear"]
+        // The system search field (owner pick 2026-11-26); its clear button is the system's.
+        let field = app.searchFields.firstMatch
+        let clear = field.buttons.firstMatch
         field.tap()
         field.typeText("no match")
         XCTAssertTrue(identified("company-search-empty", in: app).waitForExistence(timeout: 5))

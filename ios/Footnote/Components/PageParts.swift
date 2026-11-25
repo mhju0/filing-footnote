@@ -15,7 +15,7 @@ struct PageHeader: View {
                 if filing.isCorrected {
                     TagView(text: language("정정됨", "Corrected"), kind: .corrected)
                 }
-                if Freshness.isNew(filing.filedOn, dataAsOf: dataAsOf) {
+                if Freshness.isNew(filing, dataAsOf: dataAsOf) {
                     TagView(text: language("새 공시", "New"), kind: .new)
                 }
                 Text(words: Copy.filedOn(filing.filedOn, language))
@@ -230,9 +230,65 @@ struct SectionNote: View {
         Text(words: text)
             .font(.footnote)
             .foregroundStyle(Theme.muted)
+            // A Mac list cuts a section footer to one line unless told otherwise (2026-11-26
+            // review, issue 6).
+            .lineLimit(nil)
             .fixedSize(horizontal: false, vertical: true)
     }
 }
+
+extension View {
+    /// A disclosure group whose chevron sits inside the row on the Mac, in line with the
+    /// rows around it rather than out in the margin (2026-11-26 review, issue 14). iPhone and
+    /// iPad keep the system style.
+    func rowDisclosure() -> some View {
+        #if os(macOS)
+        disclosureGroupStyle(InsetDisclosureStyle())
+        #else
+        self
+        #endif
+    }
+}
+
+#if os(macOS)
+private struct InsetDisclosureStyle: DisclosureGroupStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        InsetDisclosure(configuration: configuration)
+    }
+}
+
+private struct InsetDisclosure: View {
+    @Environment(\.language) private var language
+    let configuration: DisclosureGroupStyleConfiguration
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Button {
+                withAnimation(.snappy) { configuration.isExpanded.toggle() }
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "chevron.right")
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(Theme.muted)
+                        .rotationEffect(.degrees(configuration.isExpanded ? 90 : 0))
+                        .accessibilityHidden(true)
+                    configuration.label
+                    Spacer(minLength: 0)
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityValue(configuration.isExpanded ? language("펼침", "Expanded") : language("접힘", "Collapsed"))
+            if configuration.isExpanded {
+                VStack(alignment: .leading, spacing: 8) {
+                    configuration.content
+                }
+                .padding(.bottom, 4)
+            }
+        }
+    }
+}
+#endif
 
 struct SourceSection: View {
     @Environment(\.language) private var language
@@ -259,6 +315,7 @@ struct SourceSection: View {
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(minHeight: Theme.minTarget, alignment: .leading)
             }
+            .rowDisclosure()
             .tint(Theme.pine)
             .listRowBackground(Theme.surface)
             .accessibilityIdentifier("source-details")

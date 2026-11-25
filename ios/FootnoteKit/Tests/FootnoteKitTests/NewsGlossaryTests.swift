@@ -123,3 +123,88 @@ struct GlossaryTests {
         #expect(store.sortedGlossary(language: .en, matching: " \n ") == store.sortedGlossary(language: .en))
     }
 }
+
+/// 2026-11-26 review, issue 2: 새 공시 marks event filings only, and Companies shows each
+/// company's newest filing date and type instead of the tag.
+@Suite("Latest filing")
+struct LatestFilingTests {
+    @Test func newTagSkipsPeriodicReports() throws {
+        let store = try Support.editedFixture("UPDATE build_meta SET data_as_of = '2026-11-17'")
+        let quarterly = try #require(store.filing(id: "dart:20261116000111"))
+        #expect(Freshness.isNew(quarterly.filedOn, dataAsOf: store.meta.dataAsOf))
+        #expect(!Freshness.isNew(quarterly, dataAsOf: store.meta.dataAsOf))
+        let annual = try #require(store.filing(id: "dart:20260310000123"))
+        #expect(!Freshness.isNew(annual, dataAsOf: Support.date("2026-03-10")))
+        let earnings = try #require(store.filing(id: "sec:0000320193-26-000024"))
+        #expect(Freshness.isNew(earnings, dataAsOf: Support.date("2026-11-08")))
+        #expect(!Freshness.isNew(earnings, dataAsOf: Support.date("2026-11-09")))
+    }
+
+    @Test func newestFilingOrNotice() throws {
+        let store = try Support.editedFixture("SELECT 1")
+        let samsung = try #require(store.latestFiling(companyID: "dart:00126380"))
+        #expect(samsung.filedOn == Support.date("2026-11-16"))
+        #expect(samsung.kind == .filing(.quarterly, halfYear: false))
+        #expect(samsung.label(.ko) == "분기 보고서")
+        #expect(samsung.label(.en) == "Quarterly report")
+        let apple = try #require(store.latestFiling(companyID: "sec:0000320193"))
+        #expect(apple.filedOn == Support.date("2026-11-02"))
+        #expect(apple.kind == .filing(.earnings, halfYear: false))
+        #expect(store.latestFiling(companyID: "dart:missing") == nil)
+    }
+
+    @Test func aFilingWinsOverANoticeOnTheSameDay() throws {
+        let sameDay = try Support.editedFixture(
+            "UPDATE notices SET filed_on = '2026-11-16' WHERE id = 'dart:20261113801115'")
+        #expect(sameDay.latestFiling(companyID: "dart:00126380")?.kind == .filing(.quarterly, halfYear: false))
+        let later = try Support.editedFixture(
+            "UPDATE notices SET filed_on = '2026-11-17' WHERE id = 'dart:20261113801115'")
+        let notice = try #require(later.latestFiling(companyID: "dart:00126380"))
+        #expect(notice.kind == .notice(.irEvent))
+        #expect(notice.filedOn == Support.date("2026-11-17"))
+    }
+
+    @Test func aHalfYearReportIsNamedAsOne() throws {
+        let store = try Support.editedFixture(
+            "UPDATE filings SET form = '반기보고서' WHERE id = 'dart:20261116000111'")
+        let latest = try #require(store.latestFiling(companyID: "dart:00126380"))
+        #expect(latest.label(.ko) == "반기보고서")
+        #expect(latest.label(.en) == "Half-year report")
+    }
+}
+
+/// 2026-11-26 review, issue 12: key terms first, then the dictionary, then the refusal reasons.
+@Suite("Glossary groups")
+struct GlossaryGroupTests {
+    private static let rows = """
+        INSERT INTO glossary (term_key, lang, term, plain, formal) VALUES
+          ('metric_revenue', 'ko', '매출액', '매출 설명', NULL),
+          ('metric_revenue', 'en', 'Revenue', 'About revenue.', NULL),
+          ('metric_eps', 'ko', '주당순이익(EPS)', '주당순이익 설명', NULL),
+          ('metric_eps', 'en', 'EPS', 'About EPS.', NULL),
+          ('category_dividend', 'ko', '배당', '배당 설명', NULL),
+          ('category_dividend', 'en', 'Dividend', 'About dividends.', NULL),
+          ('basis_consolidated', 'ko', '연결 기준', '연결 설명', NULL),
+          ('basis_consolidated', 'en', 'Consolidated', 'About consolidated.', NULL),
+          ('refusal_missing_period', 'ko', '빠진 기간', '빠진 기간 설명', NULL),
+          ('refusal_missing_period', 'en', 'Period missing', 'About a missing period.', NULL);
+        """
+
+    @Test func keyTermsFirstRefusalsLast() throws {
+        let store = try Support.editedFixture(Self.rows)
+        let sections = store.glossarySections(language: .ko)
+        #expect(sections.map(\.kind) == [.keyTerms, .initial("ㅁ"), .initial("ㅂ"), .initial("ㅇ"), .refusals])
+        #expect(sections[0].entries.map(\.termKey) == ["metric_revenue", "metric_eps"])
+        #expect(sections.last?.entries.map(\.termKey) == ["refusal_missing_period"])
+        let keys = sections.flatMap(\.entries).map(\.termKey)
+        #expect(keys.count == Set(keys).count)
+        #expect(keys.count == store.glossary(language: .ko).count)
+    }
+
+    @Test func searchKeepsTheGroupsThatMatch() throws {
+        let store = try Support.editedFixture(Self.rows)
+        #expect(store.glossarySections(language: .en, matching: "eps").map(\.kind) == [.keyTerms])
+        #expect(store.glossarySections(language: .en, matching: "period").map(\.kind) == [.refusals])
+        #expect(store.glossarySections(language: .en, matching: "not a term").isEmpty)
+    }
+}

@@ -83,3 +83,26 @@ struct UnbrokenNumbers: View {
         .accessibilityAddTraits(.isStaticText)
     }
 }
+
+/// Text that wraps only between words. A word wider than the whole line (`삼성바이오로직스` at
+/// the accessibility sizes) shrinks to fit on its line instead of breaking inside the word
+/// (2026-11-26 review, issue 4). VoiceOver reads it as one text. The caller sets the font and
+/// colour.
+struct UnbrokenWords: View {
+    let text: String
+
+    var body: some View {
+        let words = text.split(separator: " ").map(String.init)
+        // Each word but the last carries its space, so the gap is the font's own.
+        FlowLayout(spacing: 0, lineSpacing: 0) {
+            ForEach(Array(words.enumerated()), id: \.offset) { index, word in
+                Text(verbatim: index < words.count - 1 ? word + " " : word)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(verbatim: text))
+        .accessibilityAddTraits(.isStaticText)
+    }
+}

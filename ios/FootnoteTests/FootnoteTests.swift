@@ -104,7 +104,7 @@ struct GlossaryIndexTests {
         ("따로", "ㄸ"), ("영업이익", "ㅇ"), ("IR 행사", "I"), ("52주", "#"),
     ])
     func sectionInitial(term: String, expected: String) {
-        #expect(GlossaryView.initial(of: term) == expected)
+        #expect(Glossary.initial(of: term) == expected)
     }
 }
 
@@ -408,5 +408,43 @@ struct NewsGlossaryAppTests {
             == "The 30 newest filings across all companies. Each company’s page lists more.")
         #expect(Copy.newsEndNote(listed: 15, capped: false, .ko) == "모든 기업의 최근 공시 15건을 모두 보여 줘요.")
         #expect(Copy.glossaryLink("배당", .ko) == "용어 풀이: 배당")
+    }
+}
+
+/// The 2026-11-26 UX review fixes and the owner's design picks of the same day.
+@Suite("UX review copy")
+struct ReviewCopyTests {
+    @Test func companiesIntroAndLatestFiling() throws {
+        let date = try #require(CivilDate(iso: "2026-11-19"))
+        #expect(Copy.appIntro(date, .ko) == "회사가 낸 공시를 쉬운 말로 정리해요\u{00A0}· 11월\u{00A0}19일 기준")
+        #expect(Copy.appIntro(date, .en)
+                == "We sum up companies’ official filings in plain words\u{00A0}· as of Nov\u{00A0}19")
+        let store = try BundleStore(contentsOf: fixtureURL)
+        let latest = try #require(store.latestFiling(companyID: "dart:00126380"))
+        #expect(Copy.latestFiling(latest, .ko) == "11월\u{00A0}16일\u{00A0}· 분기 보고서")
+        #expect(Copy.latestFiling(latest, .en) == "Nov\u{00A0}16\u{00A0}· Quarterly report")
+    }
+
+    /// Direction 9 B: the headline rounded as on the company page, the exact amount labelled.
+    @Test func figureHeadlineIsRoundedAndTheExactAmountLabelled() throws {
+        let store = try BundleStore(contentsOf: fixtureURL)
+        let page = try #require(FigurePage(store: store, companyID: "dart:00126380", metric: .revenue, fiscalYear: 2025))
+        let current = try #require(page.current)
+        #expect(PageCopy.headline(current, .ko)
+                == Formatting.amount(current.value, currency: current.currency ?? "KRW", language: .ko))
+        #expect(PageCopy.headline(current, .ko) != PageCopy.exact(current, .ko))
+        #expect(PageCopy.exactAmount("333조 6,059억 3,800만원", .ko) == "정확한 금액 333조 6,059억 3,800만원")
+        #expect(PageCopy.exactAmount("₩333,605,938,000,000", .en) == "Exact amount ₩333,605,938,000,000")
+    }
+
+    /// Issue 6: the Mac says 선택하면 / Select, a touch screen 누르면 / Tap.
+    @Test func captionsUseThePlatformVerb() {
+        #if os(macOS)
+        #expect(PageCopy.quarterNote(prior: nil, .ko) == "숫자를 선택하면 해당 기간과 금액을 볼 수 있어요.")
+        #expect(PageCopy.amountsShortened(.en).hasSuffix("Select a figure to see the exact value."))
+        #else
+        #expect(PageCopy.quarterNote(prior: nil, .ko) == "숫자를 누르면 해당 기간과 금액을 볼 수 있어요.")
+        #expect(PageCopy.amountsShortened(.en).hasSuffix("Tap a figure to see the exact value."))
+        #endif
     }
 }
