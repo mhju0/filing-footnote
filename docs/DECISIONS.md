@@ -1637,3 +1637,72 @@ build, export or verify path imported Filing Digest's FastAPI service; an import
 - Not changed: `backend/.env.example` still names the old database URL and the `EMBEDDING_*`
   variables (settings ignore unknown variables). ADR 0006 mentions a small read-only API that
   serves the bundle; none exists, and this entry neither builds nor drops it.
+
+## D97 · Every summary line is checked against its source text before release · 2026-11-26
+
+The guard (ADR 0005) checks how a line is written, not whether the filing says it. A pilot
+line swapped the filing's region for another place, and neither the guard nor the model
+reviewer flagged it. `app.build.faithfulness` finds the source sentences behind
+each Korean and English line and gives one verdict per line: `supported`, `partly` or
+`unsupported`. It is deterministic and local: no model call and no Groq tokens, and the same
+rows and source text give the same report.
+
+- **Method.** The source text (the same text the summary step sent to the model) is cut into
+  sentences with their offsets: at line breaks, sentence ends and DART list markers. Korean
+  words match by stem after particles and endings are stripped (이천시에 → 이천시). English
+  words match on a six-letter prefix. Places, products, currencies, numbers and acronyms are
+  strict entities. Places, products and currencies come from
+  `contracts/faithfulness-lexicon.json`, one id per entry with its Korean and English forms
+  (파운드리 and Foundry are the same id). A line's support is the best span of up to two
+  sentences, scored by weighted overlap (entities count twice). From 0.7 the line is
+  supported, from 0.4 partly, below that unsupported. A strict entity the source never names
+  makes a line unsupported, and so does a rival action (acquire, dispose or cancel; appoint
+  or resign; quarterly or special). A flipped negation or direction caps the line at partly.
+  An English line over a Korean source, or a Korean line over an English one, takes the
+  verdict and span of its other-language twin, and its own strict entities are still checked
+  against the source.
+- **Report.** `make faithfulness AS_OF=<the summary run's --as-of>` checks `approved.jsonl`
+  and `staged.jsonl`. It writes `backend/data/summaries/faithfulness.jsonl` (git-ignored,
+  regenerable), one record per line. Each record holds the verdict, the overlap, the reasons,
+  the span offsets and text, the line and approval hashes, and the aligner and lexicon
+  versions.
+- **Gate.** `verify --release` reads the report. Every summary line in the bundle needs a
+  record from the current aligner version for its exact text and approval hash. An edited
+  line, a new approval or a new aligner version therefore needs a fresh check.
+  `--faithfulness-policy` is `off`, `warn`, `unsupported` or `partly`. **The default is
+  `unsupported`:** unsupported lines and lines without source text block; partly lines are
+  shown on the review page but do not block. In the eval, unsupported had no false flags,
+  while partly flagged 6 of 45 faithful lines. Blocking partly would also hold back 62 lines
+  the owner has already approved.
+- **Owner override.** `python -m app.build.faithfulness accept --filing … --section … --lang …
+  --line … --note …` records that the owner read a flagged line and keeps it. It writes
+  `backend/data/summaries/faithfulness_accepted.jsonl`, which is tracked. Each entry is bound
+  to the line and approval hashes, so an edit voids it. Agents never run it.
+- **Review page.** `app.build.review --database-url` shows each line's verdict, overlap and
+  support sentence, and puts flagged summaries first.
+- **Eval.** `make faithfulness-eval` scores 73 hand-labelled lines (22 cases, both
+  languages) in `backend/tests/fixtures/faithfulness/`. The cases are real approved lines and
+  synthetic edits of them (a swapped region, product, action, number or negation). Claude
+  labelled them; the owner has not reviewed the labels. All 73: unsupported precision 14/14,
+  recall 14/24. Flagged (partly or unsupported): precision 20/26, recall 20/28. The held-out
+  test split: unsupported precision 4/4, recall 4/9. The test split's real lines come from
+  the approved rows the lexicon was tuned on, so only its synthetic edits are unseen. A test
+  pins these numbers.
+- **What it misses.** A changed word that appears elsewhere in the same source (system
+  semiconductors in an SK hynix line whose filing names both), a media name the lexicon does
+  not hold, a Korean-only edit whose English twin is faithful, and a flipped negation that
+  lands on partly instead of unsupported. It flags faithful lines that paraphrase a list
+  ("multiple tranches with varying maturities").
+- **Tried and dropped.** A rule that marked a line partly when it held content words found
+  nowhere in the source added no catches on the dev split. It cost two false flags there and
+  would have moved about 150 approved lines to partly.
+- **Results on 2026-11-26** (as-of 2026-11-19, aligner `f1-2026-11-26`). Tracked
+  `approved.jsonl`: 376 rows, 1,068 lines: supported 792, partly 62, unsupported 4, template
+  180, no source 30. The 4 unsupported lines are line 3 of `sec:0001193125-26-216986` and
+  `sec:0001193125-26-234488` in both languages, the tranche paraphrase above; they read
+  as faithful and need the owner's `accept`. The 30 no-source lines are 5 approved filings
+  for which the build selects no summary target at that date. Staged (all withheld): 90 rows,
+  252 lines: one unsupported, an English line that names Gyeongnam where the filing and the
+  Korean line say 영남권. No approval was changed.
+- **Not changed.** The bundle schema and the app. Showing the support sentence in the app
+  needs a bundle table; the proposal is in the pull request, not built.

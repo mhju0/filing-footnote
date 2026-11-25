@@ -6,9 +6,11 @@
 Writes one self-contained static page (inline CSS, no script, no outside request) with every
 staged summary: the Korean and English lines side by side, the guard violations, the N9
 warnings, the reviewer's flags, the source link and the command that approves it. Filings with
-reviewer flags or warnings come first, then withheld ones, then the rest. With
-``--database-url`` the page also shows the company, the filing title and the facts the filing
-states; without it only the staged rows are shown. The same input gives the same bytes.
+reviewer flags, warnings or a faithfulness flag come first, then withheld ones, then the rest.
+With ``--database-url`` the page also shows the company, the filing title, the facts the filing
+states, the source text and, under each line, the faithfulness verdict and the source sentence
+that supports it (:mod:`app.build.faithfulness`, D97); without it only the staged rows are
+shown. The same input gives the same bytes.
 """
 
 from __future__ import annotations
@@ -25,6 +27,7 @@ from html import escape
 from pathlib import Path
 from typing import Any
 
+from app.build import faithfulness
 from app.build.export import _company_id, _filing_id
 from app.build.model import BuildInput
 from app.build.summaries import STAGED_PATH, company_names, read_jsonl, select_targets
@@ -143,11 +146,21 @@ summary { cursor: pointer; min-height: 44px; display: flex; align-items: center;
 dl { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 4px 16px; }
 dd { margin: 0; font-variant-numeric: tabular-nums; }
 .source { white-space: pre-wrap; margin: 8px 0 0; font: inherit; font-size: 14px; }
+.support { margin: 2px 0 8px; font-size: 14px; color: var(--muted); }
+.support q { color: var(--ink); }
+.verdict { font-weight: 600; }
+.verdict-partly { color: var(--warn); }
+.verdict-unsupported, .verdict-no_source { color: var(--bad); }
 """
 
 
-def _group(rows: Sequence[Mapping[str, Any]]) -> int:
-    if any(r.get("reviewer_flags") or r.get("warnings") for r in rows):
+FLAGGED = frozenset({faithfulness.PARTLY, faithfulness.UNSUPPORTED, faithfulness.NO_SOURCE})
+
+
+def _group(rows: Sequence[Mapping[str, Any]], checks: Sequence[Mapping[str, Any]] = ()) -> int:
+    if any(r.get("reviewer_flags") or r.get("warnings") for r in rows) or any(
+        c["verdict"] in FLAGGED for c in checks
+    ):
         return 0
     if any(r["review_state"] == "withheld" for r in rows):
         return 1
@@ -192,6 +205,26 @@ def _notes(rows: Sequence[Mapping[str, Any]]) -> str:
     return f'<ul class="notes">{"".join(out)}</ul>' if out else ""
 
 
+def _support(check: Mapping[str, Any] | None) -> str:
+    """The verdict under one line and the source sentences behind it."""
+    if check is None:
+        return ""
+    verdict = check["verdict"]
+    if verdict == faithfulness.TEMPLATE:
+        return '<div class="support">template line: fixed wording over the parsed table</div>'
+    css = escape(f"verdict verdict-{verdict}", quote=True)
+    parts = [f'<span class="{css}">{escape(verdict)}</span>']
+    if verdict != faithfulness.NO_SOURCE:
+        parts.append(f"overlap {escape(check['coverage'])}")
+    quotes = "".join(f"<q>{escape(span['text'])}</q> " for span in check["spans"])
+    text = " · ".join(parts)
+    if quotes:
+        text += f" · {quotes.strip()}"
+    if verdict in FLAGGED and check["reasons"]:
+        text += f" · {escape('; '.join(check['reasons']))}"
+    return f'<div class="support">{text}</div>'
+
+
 def _command(filing_id: str, section: str) -> str:
     return (
         "python -m app.build.approve --filing "
@@ -207,6 +240,7 @@ def _card(
     rows: Sequence[Mapping[str, Any]],
     info: FilingInfo | None,
     source: str | None = None,
+    checks: Sequence[Mapping[str, Any]] = (),
 ) -> str:
     anchor = escape(f"{filing_id}-{section}", quote=True)
     head = [f"<h2>{escape(info.company if info and info.company else filing_id)}</h2>"]
@@ -220,8 +254,12 @@ def _card(
             f'<a href="{escape(info.url, quote=True)}" rel="noopener noreferrer">Source filing</a>'
         )
     langs = []
+    by_line = {(c["lang"], c["line_no"]): c for c in checks}
     for row in rows:
-        items = "".join(f"<li>{escape(line)}</li>" for line in _lines(row))
+        items = "".join(
+            f"<li>{escape(line)}{_support(by_line.get((row['lang'], n)))}</li>"
+            for n, line in enumerate(_lines(row), start=1)
+        )
         langs.append(
             f'<div class="lang"><h3>{escape(LANG_LABEL.get(row["lang"], row["lang"]))}'
             f'</h3><ol lang="{escape(row["lang"], quote=True)}">{items}</ol></div>'
@@ -266,10 +304,15 @@ def render(
         rows, key=lambda r: (r["filing_id"], r["section"], r["lang"] != "ko", r["lang"])
     ):
         grouped.setdefault((row["filing_id"], row["section"]), []).append(row)
-    order = sorted(grouped, key=lambda k: (_group(grouped[k]), k))
+    checks = {
+        key: faithfulness.check_pair(members, faithfulness.Source(sources[key]))
+        for key, members in grouped.items()
+        if sources and key in sources
+    }
+    order = sorted(grouped, key=lambda k: (_group(grouped[k], checks.get(k, ())), k))
     cards = "\n".join(
         _card(fid, section, grouped[(fid, section)], info.get(fid),
-              (sources or {}).get((fid, section)))
+              (sources or {}).get((fid, section)), checks.get((fid, section), ()))
         for fid, section in order
     )
     counts = f"{len(order)} summaries, {len(rows)} rows"
@@ -288,7 +331,8 @@ def render(
         "<title>Summary review</title>\n"
         f"<style>\n{CSS}</style>\n</head>\n<body>\n<main>\n"
         f'<h1>Summary review</h1>\n<p class="muted">{escape(counts + when)}. Flagged or '
-        "warned summaries first, then withheld, then the rest. To change a line, add "
+        "warned summaries first, then withheld, then the rest. Under each line: whether the "
+        "source text supports it and the sentence that does. To change a line, add "
         "--lang, --edit-line and --text to the command.</p>\n"
         f"{note}\n{cards}\n</main>\n</body>\n</html>\n"
     )
