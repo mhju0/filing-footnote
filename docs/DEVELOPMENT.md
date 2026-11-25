@@ -14,8 +14,8 @@ scripts/check.sh
 The gate passes only when the last line is `GATE: PASS`. It runs, in order:
 
 1. `make lint`: Ruff over `backend/`.
-2. `make test`: the offline pytest suite, with `DART_API_KEY` and `TEST_DATABASE_URL` unset
-   and `EMBEDDING_WARMUP_ENABLED=false`, so no network, key or model is used.
+2. `make test`: the offline pytest suite, with `DART_API_KEY` and `TEST_DATABASE_URL` unset,
+   so no network or key is used.
 3. `swift test --package-path ios/FootnoteKit` (macOS only).
 4. Regenerates `ios/Footnote.xcodeproj` with XcodeGen 2.47.0 and fails if it differs from the
    committed copy (skipped when XcodeGen is not installed; fails on another version).

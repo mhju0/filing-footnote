@@ -1,9 +1,9 @@
-"""Chunk DSD prose sections into search/embedding units (docs §4, §6).
+"""Chunk DSD prose sections into the units stored in ``filing_chunks`` (docs §4, §6).
 
 Pure ``list[ProseSection] -> list[Chunk]`` transform. This is the step *after*
-:func:`app.clients.dart.extract_dsd_prose` and *before* embedding + DB load:
-embedding, ``filing_chunks`` writes, and the KURE-v1 vectors are all the NEXT
-step -- nothing here touches the network or the database.
+:func:`app.clients.dart.extract_dsd_prose` and *before* the DB load: the
+``filing_chunks`` writes are the NEXT step -- nothing here touches the network
+or the database.
 
 Core project rules honoured here:
 - **citation-grounded**: every :class:`Chunk` carries
@@ -34,9 +34,8 @@ logger = logging.getLogger(__name__)
 
 # Chunk-size budget, in *characters* (not tokens). We size by character count on
 # purpose [Inferred]: a token count would pull in a Korean tokenizer dependency,
-# and for a first cut the search/embedding unit only needs to be "roughly a
-# paragraph or two". These are initial values -- revisit once retrieval quality
-# is measured on real filings (kept as module constants, not config: promoting
+# and a stored chunk only needs to be "roughly a paragraph or two". These are
+# initial values (kept as module constants, not config: promoting
 # them to config.py now would be over-engineering for three numbers).
 TARGET_CHARS = 800  # accumulate paragraphs until a chunk reaches ~this size
 MAX_CHARS = 1200  # hard upper bound: no chunk may exceed this
@@ -45,7 +44,7 @@ OVERLAP_CHARS = 100  # context overlap, used ONLY when force-splitting one long 
 
 @dataclass(frozen=True)
 class Chunk:
-    """One search/embedding unit carved from a :class:`ProseSection` (docs §6).
+    """One stored unit carved from a :class:`ProseSection` (docs §6).
 
     The within-filing location travels with the text: ``section_title``/
     ``section_order`` identify the section and ``part_index`` identifies the slice
@@ -151,10 +150,10 @@ def chunk_document(sections: list[ProseSection]) -> list[Chunk]:
     ``chunk_index`` runs 0..N-1 across all sections, while ``part_index`` restarts
     at 0 within each section. Empty-content sections (e.g. a title-only TOC header,
     or a shell whose prose lives in nested sub-sections) are skipped and logged --
-    there is nothing to embed and we never invent content.
+    there is nothing to store and we never invent content.
 
-    Returns chunks ready for the NEXT step (embedding + ``filing_chunks`` load,
-    docs §6); no embedding, DB write, or network call happens here. Pure ->
+    Returns chunks ready for the NEXT step (the ``filing_chunks`` load, docs §6);
+    no DB write or network call happens here. Pure ->
     unit-tested.
     """
     chunks: list[Chunk] = []

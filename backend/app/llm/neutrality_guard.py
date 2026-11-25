@@ -19,7 +19,6 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any, Literal
 
-from app.digest_narrative import _ANY_DIGIT_RE
 from app.llm.number_guard import (
     _KOREAN_SPELLED_RE,
     _SPELLED_FINANCIAL_RE,
@@ -55,6 +54,7 @@ _KO_BARE_MAGNITUDE_RE = re.compile(
     r"(?=\s?(?:규모|어치|명|건|개|주|원|달러))"
 )
 _SPELLED_SYMBOL_RE = re.compile(rf"[$€£₩]\s*{_SPELLED_NUMBER}", re.IGNORECASE)
+_ANY_DIGIT_RE = re.compile(r"\d")
 _N1_RES = (
     _ANY_DIGIT_RE,
     _SPELLED_FINANCIAL_RE,

@@ -180,12 +180,11 @@ async def _run_dart(
             get_async_session,
         )
         logger.info(
-            "done: company=%s filing=%s financials=%d chunks=%d embeddings=%d",
+            "done: company=%s filing=%s financials=%d chunks=%d",
             result.company_id,
             result.filing_id,
             result.financials_written,
             result.chunks_written,
-            result.embeddings_backfilled,
         )
         _commit_pinned(pinned)
     finally:
@@ -217,12 +216,11 @@ async def _run_sec(
             print(f"skipped: {exc}")
             return
         logger.info(
-            "done: company=%s filing=%s financials=%d chunks=%d embeddings=%d",
+            "done: company=%s filing=%s financials=%d chunks=%d",
             result.company_id,
             result.filing_id,
             result.financials_written,
             result.chunks_written,
-            result.embeddings_backfilled,
         )
         _commit_pinned(pinned)
     finally:

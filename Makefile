@@ -8,15 +8,15 @@ check: lint test compose
 lint:
 	cd backend && "$(RUFF)" check .
 
-# Target individual tests with: make test TESTS='tests/test_search.py -k responsiveness'
+# Target individual tests with: make test TESTS='tests/test_comparison_cases.py -k margin'
 test:
-	cd backend && env -u DART_API_KEY -u TEST_DATABASE_URL EMBEDDING_WARMUP_ENABLED=false "$(PYTHON)" -m pytest -q --ignore=tests/test_smoke.py $(TESTS)
+	cd backend && env -u DART_API_KEY -u TEST_DATABASE_URL "$(PYTHON)" -m pytest -q $(TESTS)
 
 test-db:
 	cd backend && "$(PYTHON)" -m tests.run_postgres
 
 compose:
-	docker compose --profile container config -q
+	docker compose config -q
 
 # Bundled SQLite file and report in dist/ (git-ignored). Release build by default; add
 # DATA_FLAGS=--allow-unapproved for a development build. PINNED is the directory of pinned
