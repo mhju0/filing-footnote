@@ -246,6 +246,37 @@ What the counts say:
   on 2026-11-19, about 45 sections a day, the remaining sections take several days, and then
   the owner's review.
 
+## Faithfulness check
+
+The guard reads how a line is written; it cannot tell whether the filing says it. A pilot line
+that swapped the filing's region passed both the guard and the model reviewer. Since D95 a
+deterministic aligner looks for the source sentences behind every line, and a release blocks
+a line the source does not support unless the owner accepts it. It makes no model call.
+
+Measured on 2026-11-26 on 73 lines labelled by the agent (22 cases, both languages, real
+lines and synthetic edits of them), with `make faithfulness-eval`:
+
+| Measure | Result |
+|---|---|
+| Unsupported: precision | 14 of 14 |
+| Unsupported: recall | 14 of 24 |
+| Unsupported, held-out test split: precision, recall | 4 of 4, 4 of 9 |
+| Flagged as partly or unsupported: precision, recall | 20 of 26, 20 of 28 |
+| Faithful lines marked partly | 6 of 45 |
+
+The recall is the weak part. The check catches a place, product, number or action the filing
+never names. It misses a changed word that the same filing uses elsewhere, a media name the
+lexicon does not hold, and a Korean-only edit whose English twin is faithful. A flipped
+negation lands on partly, so it shows on the review page but does not block. The test split's
+real lines came from the approved rows the lexicon was tuned on, so only its synthetic edits
+are unseen. A rule that marked unfamiliar content words as partly found nothing new on the dev
+split and would have moved about 150 approved lines to partly. It was dropped.
+
+Over the 1,068 approved lines it found 4 unsupported, all faithful paraphrases of a list of
+note tranches, which the owner can accept. It also found 62 partly lines and 30 lines from 5
+filings that no longer have a summary target. In the staged rows it found one real error: an
+English line that named Gyeongnam where the filing says 영남권.
+
 ## How it was built
 
 Footnote merges two earlier projects of the same owner, Filing Digest and Filing Agent

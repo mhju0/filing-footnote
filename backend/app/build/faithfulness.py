@@ -23,8 +23,9 @@ to one id in both languages (파운드리 and Foundry, 중화권 and Greater Chi
 numbers must appear as written. The best sentence, plus a second one when it adds words, is the
 span; the share of the line's words it covers decides the verdict. A place, product, Latin word
 or number the line names that the source never names makes the line ``unsupported``, the
-region-swap case of the case study. A negation or a direction (rose, fell) that the span does
-not share lowers ``supported`` to ``partly``.
+region-swap case of the case study; so does a rival term the source does not use (cancel where
+the filing disposes, special where it says quarterly). A negation or a direction (rose, fell)
+that the span does not share lowers ``supported`` to ``partly``.
 
 A line in the other language (an English line on a DART filing, a Korean line on an SEC
 filing) is checked through its parallel line, which the prompt writes to say the same thing in

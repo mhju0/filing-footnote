@@ -32,6 +32,7 @@ staged.jsonl ── owner: app.build.approve ──► approved.jsonl
 | `llm/neutrality_guard.py` | Rules N1 to N8 that block a line (digits, judgement words, predictions, attribution, links, shape, advice, language) and N9 warnings, with word lists in `contracts/neutrality-lexicon.json` (ADR 0005) |
 | `build/summaries.py`, `build/templates.py` | Summary generation on Groq (D68) with the guard and one retry; template lines for DART table filings (D78); an advisory reviewer call |
 | `build/review.py`, `build/approve.py` | The owner's proofreading page and the approval command |
+| `build/faithfulness.py` | Finds the source sentences behind each summary line and marks it supported, partly or unsupported, with places, products and currencies from `contracts/faithfulness-lexicon.json`; writes the report `verify --release` reads, and runs the eval (D95) |
 | `build/quality.py` | Read-only counts from the summary files: guard results, retries, reviewer flags, approvals, calls and tokens |
 | `build/model.py`, `build/source.py` | Regulator-neutral rows read from the build database, the canonical decimal form, the scope rules (`ANNUAL_SCOPE`, `annual_sections`) and summary cache keys |
 | `build/export.py`, `build/bundle.py`, `build/glossary.py` | Writes the bundle and its report; owns the schema and the content fingerprint |
@@ -65,6 +66,7 @@ Both sides read shared files in [`contracts/`](../contracts/):
 | `filing-facts.json` | Fact names; the app bundles it for its labels |
 | `comparison-cases.json` | 112 cases that the Python and Swift calculators must both pass ([comparison-rules.md](comparison-rules.md)) |
 | `neutrality-lexicon.json` | The guard's word lists |
+| `faithfulness-lexicon.json` | Places, products, currencies and terms in both languages for the faithfulness check (D95) |
 | `glossary.json` | Glossary entries, each with an owner `approved` flag |
 
 FootnoteKit's tests keep copies of three of these files; a backend test byte-compares the
@@ -98,7 +100,9 @@ owner has approved what it contains. The gates, in order:
 2. `python -m app.build.verify <file> --pinned <dir> --release` checks a finished file on its
    own: it recomputes the fingerprint, re-reads every figure and fact, runs the guard on every
    summary line, checks summary coverage and refuses `allow_unapproved = 1`. It does not
-   re-check glossary rows (D81).
+   re-check glossary rows (D81). It also reads the faithfulness report: every summary line
+   needs a current record, and with the default policy an unsupported line blocks unless the
+   owner accepted it (D95).
 3. The Xcode build phase fails a Release build with no bundle or with a development bundle.
 4. At launch a release build calls `BundleStore.requireRelease()`, which throws for a
    development bundle; the app then shows an error screen instead of the data.

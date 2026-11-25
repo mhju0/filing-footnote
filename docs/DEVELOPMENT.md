@@ -66,8 +66,13 @@ Export and verify, from the repository root:
 make data AS_OF=2026-11-19 PINNED=backend/data/pinned                                   # release
 make data AS_OF=2026-11-19 PINNED=backend/data/pinned DATA_FLAGS=--allow-unapproved     # development
 make data-preview AS_OF=2026-11-19 PINNED=backend/data/pinned                            # preview, for internal TestFlight (D90)
+make faithfulness AS_OF=2026-11-19                                                        # faithfulness report (D95)
 cd backend && ../.venv/bin/python -m app.build.verify ../dist/footnote.sqlite --pinned data/pinned --release
 ```
+
+`verify --release` reads the faithfulness report, so run `make faithfulness` after approving
+or editing summaries. `make faithfulness-eval` scores the check on its labelled lines and
+needs no database.
 
 The bundle and its report land in `dist/` (git-ignored). A release export fails until every
 summary and glossary entry in scope is approved; see the release gates in
