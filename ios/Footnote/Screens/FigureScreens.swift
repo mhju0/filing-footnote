@@ -57,9 +57,20 @@ struct FigureView: View {
                 .foregroundStyle(Theme.ink)
                 .fixedSize(horizontal: false, vertical: true)
             if let current = page.current {
+                // The rounded amount on one line, the exact one under it (2026-11-26 review,
+                // issue 11; owner pick, design direction 9 B).
+                let headline = PageCopy.headline(current, language)
+                let exact = PageCopy.exact(current, language)
                 FlowLayout(spacing: 8, lineSpacing: 4) {
-                    BigValue(text: PageCopy.exact(current, language))
+                    BigValue(text: headline)
                     if current.isRestated { TagView(text: PageCopy.restatedTag(language), kind: .corrected) }
+                }
+                if exact != headline {
+                    UnbrokenNumbers(text: PageCopy.exactAmount(exact, language))
+                        .font(.subheadline)
+                        .monospacedDigit()
+                        .foregroundStyle(Theme.muted)
+                        .accessibilityIdentifier("figure-exact")
                 }
             } else {
                 Text(words: PageCopy.noFigure(language))
@@ -325,7 +336,8 @@ struct CalculationView: View {
             if let difference, calculations.count == 2 {
                 Section {
                     FactRow(
-                        label: PageCopy.difference(language), value: Self.differenceText(difference, calculations),
+                        label: PageCopy.difference(language),
+                        value: Self.differenceText(difference, calculations, language),
                         spoken: PageCopy.rateDifferenceSpoken(difference, language))
                 }
             }
@@ -333,8 +345,10 @@ struct CalculationView: View {
         }
     }
 
-    /// `|−14.33 − 15.67| = 30.00%p`.
-    nonisolated static func differenceText(_ difference: Decimal, _ calculations: [CompanyCalculation]) -> String {
+    /// `|−14.33 − 15.67| = 30.00%포인트` / `… = 30.00 percentage points`.
+    nonisolated static func differenceText(
+        _ difference: Decimal, _ calculations: [CompanyCalculation], _ language: Language
+    ) -> String {
         let rates = calculations.map { calculation -> String in
             switch calculation {
             case .growth(let growth): Formatting.percent(growth.result.percentChange).replacingOccurrences(of: "%", with: "")
@@ -342,7 +356,7 @@ struct CalculationView: View {
             }
         }
         let digits = DecimalText.twoPlaces(DecimalText.roundHalfUp(difference, scale: 2))
-        return "|\(rates[0]) \(Formatting.minus) \(rates[1])| = \(digits)%p"
+        return "|\(rates[0]) \(Formatting.minus) \(rates[1])| = \(digits)" + PageCopy.percentagePoints(language)
     }
 }
 
@@ -634,11 +648,13 @@ extension View {
             .listRowInsets(EdgeInsets(top: 4, leading: 4, bottom: 4, trailing: 4))
     }
 
-    /// A row of full-width buttons with no row background.
+    /// A row of full-width buttons with no row background, and no separator under it
+    /// (2026-11-26 review, issue 14).
     func buttonRow() -> some View {
         self
             .listRowBackground(Color.clear)
             .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
+            .listRowSeparator(.hidden)
     }
 
     /// The screen's own title stays in its content on iPhone and iPad (board 5A); the Mac

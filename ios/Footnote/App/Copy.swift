@@ -32,6 +32,25 @@ enum Copy {
         return language("\(day)까지 낸\(noBreak)공시", "Filings up to \(day)")
     }
 
+    /// The line under the Companies title (2026-11-26 review, issue 7): what the app does and
+    /// the data date. `회사가 낸 공시를 쉬운 말로 정리해요 · 11월 19일 기준`.
+    static func appIntro(_ date: CivilDate, _ language: Language) -> String {
+        let day = unbroken(Formatting.monthDay(date, language: language))
+        return language("회사가 낸 공시를 쉬운 말로 정리해요", "We sum up companies’ official filings in plain words")
+            + dot + language("\(day) 기준", "as of \(day)")
+    }
+
+    /// A Companies row's second line (2026-11-26 review, issue 2): the company's newest
+    /// filing date and type, `11월 16일 · 분기 보고서` / `Nov 16 · Quarterly report`.
+    static func latestFiling(_ latest: LatestFiling, _ language: Language) -> String {
+        unbroken(Formatting.monthDay(latest.filedOn, language: language)) + dot + latest.label(language)
+    }
+
+    static func latestFilingSpoken(_ latest: LatestFiling, _ language: Language) -> String {
+        language("최근 공시 ", "Latest filing ") + Formatting.fullDate(latest.filedOn, language: language)
+            + ", " + latest.label(language)
+    }
+
     /// The data date and sources in the companies list footer (D91).
     /// `자료 기준 2026년 11월 20일 · DART·SEC 공시` / `Data as of Nov 20, 2026 · DART and SEC filings`.
     static func dataFooter(_ date: CivilDate, _ language: Language) -> String {

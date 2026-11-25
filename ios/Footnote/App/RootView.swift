@@ -229,6 +229,7 @@ struct SplitShell: View {
                 }
                 .navigationDestination(for: Route.self) {
                     RouteDestination(store: store, labels: labels, route: $0)
+                        .environment(\.showsLanguageButton, false)
                 }
             }
             .id(detailID)
@@ -242,6 +243,14 @@ struct SplitShell: View {
             glossaryKey = nil
             detailPath = []
         }
+        #if os(macOS)
+        // One language button for the window, at the trailing end of its toolbar; the
+        // columns show none (2026-11-26 review, issue 8).
+        .environment(\.showsLanguageButton, false)
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) { LanguageButton() }
+        }
+        #endif
         .onChange(of: sidebar, initial: true) {
             if sidebar == .news { FootnoteTips.countNewsVisit(paused: tipsPaused) }
         }

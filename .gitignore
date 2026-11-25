@@ -82,3 +82,6 @@ docs/CLAUDE_ENV_INVENTORY.md
 # Private agent memory and write locks (shared by Claude and Codex)
 .memory/
 .locks/
+
+# Local review pages, mockups and screenshots
+.scratch/

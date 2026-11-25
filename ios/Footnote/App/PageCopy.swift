@@ -49,8 +49,18 @@ enum PageCopy {
     /// no-break space keeps `보여 줘요` together at the accessibility sizes.
     static func amountsShortened(_ language: Language) -> String {
         language(
-            "금액은 줄여서 보여\u{00A0}줘요.\n숫자를 누르면 정확한 값을 볼 수 있어요.",
-            "Amounts are shortened.\nTap a figure to see the exact value.")
+            "금액은 줄여서 보여\u{00A0}줘요.\n숫자를 \(choose.ko) 정확한 값을 볼 수 있어요.",
+            "Amounts are shortened.\n\(choose.en) a figure to see the exact value.")
+    }
+
+    /// How a reader picks a row: 누르면 / Tap on a touch screen, 선택하면 / Select on the Mac,
+    /// where a pointer or the keyboard does it (2026-11-26 review, issue 6).
+    static var choose: (ko: String, en: String) {
+        #if os(macOS)
+        ("선택하면", "Select")
+        #else
+        ("누르면", "Tap")
+        #endif
     }
 
     // MARK: - Outlook (board 16)
@@ -429,6 +439,20 @@ enum PageCopy {
         exact(figure.value, unit: figure.unit, currency: figure.currency, language)
     }
 
+    /// The figure screen's headline (owner pick 2026-11-26, design direction 9 B): rounded
+    /// as on the company page, `333조 6,059억원` / `₩333.61 trillion`. Display only; the
+    /// figure stays exact and VoiceOver reads the exact amount.
+    static func headline(_ figure: Figure, _ language: Language) -> String {
+        Formatting.stated(
+            figure.value, unit: figure.unit, fallbackCurrency: figure.currency ?? "KRW", language: language,
+            precision: .compact) ?? Formatting.number(figure.value)
+    }
+
+    /// The exact amount under a rounded headline: `정확한 금액 333조 6,059억 3,800만원`.
+    static func exactAmount(_ value: String, _ language: Language) -> String {
+        language("정확한 금액 \(value)", "Exact amount \(value)")
+    }
+
     static func exact(_ value: Decimal, unit: String, currency: String?, _ language: Language) -> String {
         Formatting.stated(value, unit: unit, fallbackCurrency: currency ?? "KRW", language: language)
             ?? Formatting.number(value)
@@ -518,11 +542,18 @@ enum PageCopy {
     /// D88: the label of the measure picker.
     static func compareBy(_ language: Language) -> String { language("비교 방식", "Compare by") }
 
-    /// `21.09%p` / `21.09 pp` beside 차이 / Difference (board 7): how far apart the two
-    /// rates are, not which one is higher.
+    /// `21.09%포인트` / `21.09 percentage points` beside 차이 / Difference (board 7): how far
+    /// apart the two rates are, not which one is higher. Spelled out rather than `%p` / `pp`
+    /// (2026-11-26 review, issue 9).
     static func rateDifference(_ value: Decimal, _ language: Language) -> String {
         let digits = DecimalText.twoPlaces(DecimalText.roundHalfUp(value, scale: 2))
-        return language("\(digits)%p", "\(digits) pp")
+        return digits + percentagePoints(language)
+    }
+
+    /// The unit after a rate difference: `%포인트` / ` percentage points`. The English spaces
+    /// are no-break so the value and its unit stay on one line.
+    static func percentagePoints(_ language: Language) -> String {
+        language("%포인트", "\u{00A0}percentage\u{00A0}points")
     }
 
     static func rateDifferenceSpoken(_ value: Decimal, _ language: Language) -> String {

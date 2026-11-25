@@ -139,8 +139,12 @@ struct CompareCopyTests {
             + "The two companies use different accounting standards "
             + "(K-IFRS, US GAAP) and year-ends (December,\u{00A0}September). Figures with the same name can cover slightly different items.")
         let difference = try #require(page.difference)
-        #expect(PageCopy.rateDifference(difference, .ko) == "21.09%p")
-        #expect(CalculationView.differenceText(difference, page.calculations) == "|10.88 \u{2212} 31.97| = 21.09%p")
+        #expect(PageCopy.rateDifference(difference, .ko) == "21.09%포인트")
+        #expect(PageCopy.rateDifference(difference, .en) == "21.09\u{00A0}percentage\u{00A0}points")
+        #expect(CalculationView.differenceText(difference, page.calculations, .ko)
+                == "|10.88 \u{2212} 31.97| = 21.09%포인트")
+        #expect(CalculationView.differenceText(difference, page.calculations, .en)
+                == "|10.88 \u{2212} 31.97| = 21.09\u{00A0}percentage\u{00A0}points")
         for language in Language.allCases {
             #expect(!PageCopy.caveat(page.caveat, language).contains("\u{2014}"))
         }

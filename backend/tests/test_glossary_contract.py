@@ -88,7 +88,9 @@ OWNER_APPROVED = {
 }
 
 
-PENDING_OWNER: set[str] = set()
+# Added in the 2026-11-26 UX review (issue 9): the unit of a rate difference. Waits for the
+# owner's approval of its wording.
+PENDING_OWNER: set[str] = {"percentage_point"}
 
 
 def test_only_owner_approved_entries_are_approved() -> None:
@@ -132,7 +134,7 @@ def test_term_keys_cover_every_metric_category_and_refusal_reason() -> None:
     expected |= {f"refusal_{r}" for r in refusals}
     expected |= {
         "notices", "basis_consolidated", "basis_separate", "restated", "k_ifrs", "us_gaap",
-        "fiscal_year_end",
+        "fiscal_year_end", "percentage_point",
     }  # fmt: skip
     assert expected <= keys
     assert keys - expected == set()  # no entry without a source in the contracts
