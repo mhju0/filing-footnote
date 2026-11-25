@@ -112,7 +112,7 @@ final class NewsGlossaryUITests: XCTestCase {
         XCTAssertEqual(filter.value as? String, "All filings")
     }
 
-    /// The tab shows terms alphabetically. A tap discloses the meaning and formal term.
+    /// The tab shows key terms first, then the rest by initial. A tap discloses the meaning and formal term.
     @MainActor func testGlossaryTabShowsPlainWordAndFormalTerm() throws {
         let app = try launch("news", language: "en", bundle: try glossaryFixture())
         XCTAssertTrue(identified("news-page", in: app).waitForExistence(timeout: 10))
@@ -121,11 +121,12 @@ final class NewsGlossaryUITests: XCTestCase {
         let margin = identified("glossary-metric_operating_margin", in: app)
         XCTAssertTrue(margin.exists)
         XCTAssertTrue(margin.label.hasPrefix("Operating margin"), margin.label)
-        // Dictionary order: Dividend, Operating margin, Revenue.
+        // Key terms first in their fixed order (revenue before operating margin), then the
+        // other terms by initial, so Dividend comes after both (2026-11-26 review, issue 12).
         let dividend = identified("glossary-category_dividend", in: app)
         let revenue = identified("glossary-metric_revenue", in: app)
-        XCTAssertLessThan(dividend.frame.minY, margin.frame.minY)
-        XCTAssertLessThan(margin.frame.minY, revenue.frame.minY)
+        XCTAssertLessThan(revenue.frame.minY, margin.frame.minY)
+        XCTAssertLessThan(margin.frame.minY, dividend.frame.minY)
 
         let definition = identified("glossary-definition-metric_operating_margin", in: app)
         XCTAssertFalse(definition.exists)
