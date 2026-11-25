@@ -22,6 +22,8 @@ struct AskSection: View {
     @Environment(\.navigate) private var navigate
     @Environment(\.filingSelection) private var selection
     let companyID: String
+    /// t3, shown on the first question (D100).
+    var tip: AskTip?
 
     var body: some View {
         Section {
@@ -50,6 +52,7 @@ struct AskSection: View {
                     title: intent.question(language),
                     isSelected: AskSelection.intent(selection?.wrappedValue) == intent
                 ) {
+                    AskTip().invalidate(reason: .actionPerformed)
                     if let selection {
                         selection.wrappedValue = AskSelection.id(intent)
                     } else {
@@ -57,6 +60,7 @@ struct AskSection: View {
                     }
                 }
                 .accessibilityIdentifier("ask-\(intent.rawValue)")
+                .footnoteTip(intent == QuestionIntent.allCases.first ? tip : nil)
             }
         }
     }

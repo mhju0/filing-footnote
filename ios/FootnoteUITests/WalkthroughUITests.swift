@@ -22,6 +22,8 @@ final class WalkthroughUITests: XCTestCase {
         continueAfterFailure = false
         XCUIDevice.shared.appearance = .light
         let app = XCUIApplication()
+        // Without this argument the first-run guide opens first (D100).
+        app.launchArguments = ["-FootnoteSkipGuideAndTips"]
         app.launch()
         hold(3)
 

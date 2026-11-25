@@ -23,6 +23,7 @@ struct NewsView: View {
                     .id("news-top")
                 if !unfiltered.isEmpty {
                     typeFilter(unfiltered.availableCategories)
+                        .footnoteTip(NewsFilterTip())
                 }
                 if feed.isEmpty {
                     Section {
@@ -60,6 +61,7 @@ struct NewsView: View {
             }
             .task { await scrollToSelection(selection?.wrappedValue, proxy) }
             .onChange(of: category) {
+                if category != nil { NewsFilterTip().invalidate(reason: .actionPerformed) }
                 if let selection, let selected = selection.wrappedValue,
                    !feed.filings.contains(where: { $0.id == selected }) {
                     selection.wrappedValue = nil
@@ -149,6 +151,7 @@ struct NewsView: View {
 struct GlossaryView: View {
     @Environment(\.language) private var language
     @Environment(\.glossarySelection) private var selection
+    @Environment(GuideModel.self) private var guide: GuideModel?
     @State private var query = ""
     @State private var expanded: Set<String>
     let store: BundleStore
@@ -230,6 +233,14 @@ struct GlossaryView: View {
                     section
                     #endif
                 }
+                // Owner pick q1 reopen A: the guide reopens from the end of the glossary.
+                if let guide, !isSearching {
+                    Section {
+                        LinkRow(title: GuideCopy.reopenRow(language)) { guide.reopen() }
+                            .accessibilityIdentifier("guide-reopen")
+                            .id(PageScroll.end)
+                    }
+                }
             }
             .toolbar {
                 if usesJumpMenu, !isSearching, sections.count > 1 {
@@ -254,6 +265,7 @@ struct GlossaryView: View {
                 proxy.scrollTo(focus, anchor: .top)
             }
             .task { if focus == nil { await scrollToSelection(selection?.wrappedValue, proxy) } }
+            .launchScroll(proxy)
         }
         .groupedScreen()
         .navigationTitle(language("용어", "Glossary"))

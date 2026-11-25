@@ -312,7 +312,8 @@ enum AuditFixture {
         let app = XCUIApplication()
         // `-language` pins the stored language for the whole run (the argument domain wins
         // over what the app saves), so a launch that tests the switch passes nil.
-        var arguments = ["-FootnoteBundle", bundle]
+        // The guide and tips would cover the screen under test (D100).
+        var arguments = ["-FootnoteBundle", bundle, "-FootnoteSkipGuideAndTips"]
         if let language { arguments += ["-language", language] }
         if let route { arguments += ["-FootnoteOpen", route] }
         if let size { arguments += ["-UIPreferredContentSizeCategoryName", size] }

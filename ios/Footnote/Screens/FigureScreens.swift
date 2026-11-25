@@ -41,6 +41,8 @@ struct FigureView: View {
                     measure: CrossCompanyMeasure.growthRate.rawValue, fiscalYear: page.fiscalYear)))
             }
         }
+        .countsTipEvent(FootnoteTips.figureOpened)
+        .endsFigureSourceTip()
         .accessibilityIdentifier("figure-page")
     }
 
@@ -155,10 +157,13 @@ struct FigureView: View {
         Section {
             VStack(spacing: 10) {
                 ActionButton(title: PageCopy.compareLastYear(language), primary: true) {
+                    CompareTip().invalidate(reason: .actionPerformed)
                     navigate(.yearCompare(page.company.id, page.metric.rawValue, page.fiscalYear))
                 }
                 .accessibilityIdentifier("compare-last-year")
+                .footnoteTip(CompareTip(), arrowEdge: .bottom)
                 ActionButton(title: PageCopy.compareCompany(language), primary: false) {
+                    CompareTip().invalidate(reason: .actionPerformed)
                     picking = true
                 }
                 .accessibilityIdentifier("compare-company")

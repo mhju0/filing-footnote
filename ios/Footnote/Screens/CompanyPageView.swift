@@ -1,5 +1,6 @@
 import FootnoteKit
 import SwiftUI
+import TipKit
 
 /// Board 14: periodic reports pinned, the questions to ask (D99), up to ten filings by
 /// month, the notices row, then the end note and the link to every filing on DART or SEC.
@@ -9,6 +10,11 @@ struct CompanyPageView: View {
     let page: CompanyPage
     @Environment(\.filingSelection) private var selection
     @State private var showsNotices: Bool
+    /// t2 on the figure, then t3 on the questions once t2 has ended (D100).
+    @State private var tips = TipGroup(.ordered) {
+        FigureSourceTip()
+        AskTip()
+    }
 
     init(store: BundleStore, page: CompanyPage) {
         self.store = store
@@ -30,6 +36,7 @@ struct CompanyPageView: View {
         .navigationSubtitle(Copy.companySubtitle(page.company, dataAsOf: page.dataAsOf, language))
         #endif
         .languageToolbar()
+        .countsTipEvent(FootnoteTips.companyPageOpened)
         .sheet(isPresented: $showsNotices) {
             NoticesSheet(page: page)
         }
@@ -44,18 +51,22 @@ struct CompanyPageView: View {
                         FilingRowLink(filingID: report.filing.id) {
                             QuarterRow(report: report, company: page.company, dataAsOf: page.dataAsOf)
                         }
+                        .footnoteTip(tips.currentTip as? FigureSourceTip)
                     }
                     ForEach(page.periodicReports, id: \.filing.id) { report in
                         FilingRowLink(filingID: report.filing.id) {
                             PeriodicRow(report: report, company: page.company, dataAsOf: page.dataAsOf)
                         }
+                        .footnoteTip(
+                            page.quarterReport == nil && report.filing.id == page.periodicReports.first?.filing.id
+                                ? tips.currentTip as? FigureSourceTip : nil)
                     }
                 } header: {
                     SectionTitle(language("정기 보고서", "Periodic reports"))
                 }
             }
             // D99: below the quarterly results, above the filings by month.
-            AskSection(companyID: page.company.id)
+            AskSection(companyID: page.company.id, tip: tips.currentTip as? AskTip)
                 .id(PageScroll.ask)
             ForEach(Array(page.months.enumerated()), id: \.element.id) { index, month in
                 Section {

@@ -161,6 +161,26 @@ shots=(
   "ask-next-apple-en-dark;ask=$apple|next_quarter_revenue;en;dark;large;top"
   "ask-trend-hyundai-ko-ax;ask=$hyundai|recent_trend;ko;light;accessibility-extra-large;top"
   "ask-buy-hyundai-en-ax;ask=$hyundai|should_buy;en;light;accessibility-extra-large;top"
+  "guide-p1-ko-light;guide:1;ko;light;large;top"
+  "guide-p2-ko-light;guide:2;ko;light;large;top"
+  "guide-p3-ko-light;guide:3;ko;light;large;top"
+  "guide-p4-ko-light;guide:4;ko;light;large;top"
+  "guide-p1-en-dark;guide:1;en;dark;large;top"
+  "guide-p3-en-dark;guide:3;en;dark;large;top"
+  "guide-p4-en-dark;guide:4;en;dark;large;top"
+  "guide-p3-ko-dark;guide:3;ko;dark;large;top"
+  "guide-p3-en-light;guide:3;en;light;large;top"
+  "guide-p2-ko-ax;guide:2;ko;light;accessibility-extra-large;top"
+  "guide-p3-en-ax;guide:3;en;light;accessibility-extra-large;top"
+  "guide-reopen-ko-light;glossary;ko;light;large;bottom"
+  "guide-reopen-en-dark;glossary;en;dark;large;bottom"
+  "tip-figure-hyundai-ko-light;tips:company=$hyundai;ko;light;large;top"
+  "tip-figure-hyundai-en-dark;tips:company=$hyundai;en;dark;large;top"
+  "tip-news-ko-light;tips:news;ko;light;large;top"
+  "tip-news-en-dark;tips:news;en;dark;large;top"
+  "tip-compare-samsung-ko-light;tips:figure=$samsung|revenue|2025;ko;light;large;bottom"
+  "tip-compare-samsung-en-dark;tips:figure=$samsung|revenue|2025;en;dark;large;bottom"
+  "tip-news-ko-ax;tips:news;ko;light;accessibility-extra-large;top"
 )
 
 for shot in "${shots[@]}"; do
@@ -171,7 +191,14 @@ for shot in "${shots[@]}"; do
   sleep 1 # let the appearance and text size settle before the launch
   xcrun simctl terminate "$udid" "$bundle_id" 2>/dev/null || true
   args=(-language "$language" -FootnoteScroll "$scroll")
-  if [ "$route" != "-" ]; then args+=(-FootnoteOpen "$route"); fi
+  # `guide:<page>` opens the first-run guide on that page; `tips:<route>` opens the route
+  # with every tip shown (D100). Every other shot skips the guide and the tips.
+  case "$route" in
+    guide:*) args+=(-FootnoteResetGuide -FootnoteGuidePage "${route#guide:}") ;;
+    tips:*) args+=(-guideSeen YES -FootnoteResetTips -FootnoteShowAllTips -FootnoteOpen "${route#tips:}") ;;
+    -) args+=(-FootnoteSkipGuideAndTips) ;;
+    *) args+=(-FootnoteSkipGuideAndTips -FootnoteOpen "$route") ;;
+  esac
   if [ "${bundle:-}" = "separate" ]; then args+=(-FootnoteBundle "$separate"); fi
   xcrun simctl launch "$udid" "$bundle_id" "${args[@]}" >/dev/null
   sleep 6
