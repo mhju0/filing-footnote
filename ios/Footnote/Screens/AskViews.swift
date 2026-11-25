@@ -114,8 +114,9 @@ struct AnswerView: View {
                     }
                 }
                 Section {
-                } footer: {
                     SectionNote(text: AnswerSentence.howAnswered.text(language))
+                        .headerRow()
+                        .listRowSeparator(.hidden)
                 }
                 PageEndMarker()
             }
