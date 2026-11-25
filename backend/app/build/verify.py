@@ -26,6 +26,12 @@ approved summaries in both languages and every section for each filing that need
 (:data:`app.build.model.ANNUAL_SCOPE`), and refuses a preview bundle (``build_meta.preview``).
 ``--preview`` runs every release check except that summary coverage, and refuses a development
 build.
+
+A release also reads the faithfulness report of :mod:`app.build.faithfulness` (D95): every
+summary line needs a record from the current aligner for that exact line and approval, and
+``--faithfulness-policy`` decides which verdicts block. The default, ``unsupported``, blocks
+unsupported lines and lines without source text unless the owner accepted them; ``partly``
+also blocks partly supported lines, ``warn`` only reports the counts, ``off`` skips the check.
 """
 
 from __future__ import annotations
@@ -45,6 +51,7 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
 
+from app.build import faithfulness
 from app.build.bundle import BUILD_META_COLUMNS, TABLES, content_sha256
 from app.build.model import (
     DECIMAL_VALUE_KINDS,
@@ -658,9 +665,15 @@ def _select(connection: sqlite3.Connection, table: str) -> list[dict[str, Any]]:
 
 
 def check_bundle(
-    path: Path, *, release: bool, pinned_dirs: Sequence[Path], preview: bool = False
+    path: Path,
+    *,
+    release: bool,
+    pinned_dirs: Sequence[Path],
+    preview: bool = False,
+    faithfulness_gate: faithfulness.ReleaseGate | None = None,
 ) -> list[str]:
-    """Problems with a finished bundle; an empty list means it passes."""
+    """Problems with a finished bundle; an empty list means it passes. With ``release`` and a
+    ``faithfulness_gate``, every summary line is also held to that gate (D95)."""
     connection = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
     try:
         meta_rows = connection.execute(
@@ -721,6 +734,8 @@ def check_bundle(
                        if (filing_id, lang, section) not in present]  # fmt: skip
             if missing:
                 problems.append(f"{filing_id}: no approved summary {', '.join(missing)}")
+        if faithfulness_gate is not None:
+            problems += faithfulness_gate.problems(summaries)
     return problems
 
 
@@ -905,13 +920,31 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="every release check except summary coverage; refuse a development build",
     )
+    parser.add_argument(
+        "--faithfulness",
+        type=Path,
+        default=faithfulness.REPORT_PATH,
+        help="faithfulness report read by --release (default: data/summaries/faithfulness.jsonl)",
+    )
+    parser.add_argument(
+        "--faithfulness-policy",
+        choices=sorted(faithfulness.POLICIES),
+        default=faithfulness.DEFAULT_POLICY,
+        help=f"verdicts that block a release (default {faithfulness.DEFAULT_POLICY}, D95)",
+    )
     args = parser.parse_args(argv)
+    gate = None
+    if args.release:
+        gate = faithfulness.load_gate(args.faithfulness_policy, args.faithfulness)
     problems = check_bundle(
         args.bundle,
         release=args.release,
         preview=args.preview,
         pinned_dirs=args.pinned or [DEFAULT_PINNED_DIR],
+        faithfulness_gate=gate,
     )
+    for note in gate.notes if gate else ():
+        print(note)
     for problem in problems:
         print(f"FAIL {problem}", file=sys.stderr)
     if problems:
