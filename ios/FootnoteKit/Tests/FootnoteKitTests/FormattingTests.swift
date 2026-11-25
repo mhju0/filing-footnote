@@ -74,17 +74,23 @@ struct FormattingTests {
     }
 
     @Test(arguments: [
-        ("6.29", "+6.29% 늘었어요", "+6.29% up"),
-        ("-3.45", "−3.45% 줄었어요", "−3.45% down"),
+        ("6.29", "▲\u{00A0}6.29% 늘었어요", "▲\u{00A0}6.29% up"),
+        ("-3.45", "▼\u{00A0}3.45% 줄었어요", "▼\u{00A0}3.45% down"),
         ("0", "0.00% 변동 없어요", "0.00% no change"),
         ("-0.004", "0.00% 변동 없어요", "0.00% no change"),
-        ("6.295", "+6.30% 늘었어요", "+6.30% up"),
-        ("-14.33", "−14.33% 줄었어요", "−14.33% down"),
-        ("120", "+120.00% 늘었어요", "+120.00% up"),
+        ("6.295", "▲\u{00A0}6.30% 늘었어요", "▲\u{00A0}6.30% up"),
+        ("-14.33", "▼\u{00A0}14.33% 줄었어요", "▼\u{00A0}14.33% down"),
+        ("120", "▲\u{00A0}120.00% 늘었어요", "▲\u{00A0}120.00% up"),
     ])
     func percentChanges(_ value: String, _ korean: String, _ english: String) {
         #expect(Formatting.percentChange(Support.decimal(value), language: .ko) == korean)
         #expect(Formatting.percentChange(Support.decimal(value), language: .en) == english)
+    }
+
+    /// Design direction 3 C: the glyph carries the direction, so no plus or minus sign is shown.
+    @Test(arguments: [("16.2", "▲\u{00A0}16.20%"), ("-19.474", "▼\u{00A0}19.47%"), ("0.004", "0.00%")])
+    func percentWithGlyph(_ value: String, _ expected: String) {
+        #expect(Formatting.percentWithGlyph(Support.decimal(value)) == expected)
     }
 
     @Test func percentWithoutDirection() {

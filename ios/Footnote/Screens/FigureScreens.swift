@@ -275,7 +275,7 @@ private struct RateHeadline: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            BigValue(text: PageCopy.signedPercent(change.percentChange))
+            BigValue(text: Formatting.percentWithGlyph(change.percentChange))
             Text(words: PageCopy.direction(change.percentChange, language))
                 .font(.title3.weight(.semibold))
                 .foregroundStyle(Theme.ink)
@@ -554,6 +554,7 @@ struct BigValue: View {
             .lineLimit(language == .en ? 1 : nil)
             .minimumScaleFactor(language == .en ? 0.5 : 1)
             .fixedSize(horizontal: false, vertical: true)
+            .numberTransition(text)
     }
 }
 

@@ -65,12 +65,12 @@ final class AccessibilityLabelsUITests: XCTestCase {
         let bundle = try AuditFixture.glossaryBundle(for: self)
         let expectations: [(route: String, id: String, ko: [String], en: [String])] = [
             ("figure=\(Self.samsung)|revenue|2025", "figure-page",
-             ["300조 8,709억 300만원", "전년보다 16.20퍼센트 늘었어요"],
-             ["up 16.20 percent from the year before"]),
+             ["300조 8,709억 300만원", "전년보다 16.20퍼센트 증가"],
+             ["increased 16.20 percent from the year before"]),
             ("yearcompare=\(Self.samsung)|revenue|2025", "year-change",
-             ["전년보다 16.20퍼센트 늘었어요", "차이"], ["up 16.20 percent from the year before"]),
+             ["전년보다 16.20퍼센트 증가", "차이"], ["increased 16.20 percent from the year before"]),
             ("filing=\(Self.samsung)|dart:20260310000123", "figure-revenue",
-             ["전년보다 16.20퍼센트 늘었어요", "300조 8,709억 300만원"], ["up 16.20 percent"]),
+             ["전년보다 16.20퍼센트 증가", "300조 8,709억 300만원"], ["increased 16.20 percent"]),
             ("compare=\(Self.samsung)|\(Self.apple)|revenue|operating_margin|2025", "rate-\(Self.samsung)",
              ["삼성전자", "영업이익률"], ["Samsung Electronics", "Operating margin"]),
             ("compare=\(Self.samsung)|\(Self.apple)|revenue|operating_margin|2025", "rate-difference",

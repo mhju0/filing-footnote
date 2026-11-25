@@ -86,28 +86,46 @@ public enum Formatting {
 
     // MARK: - Percentages
 
-    /// A change in percent with its sign and a direction word, never colour alone:
-    /// Korean `+6.29% 늘었어요`, `−3.45% 줄었어요`, `0.00% 변동 없어요`;
-    /// English `+6.29% up`, `−3.45% down`, `0.00% no change`.
+    /// ▲ for a rise, ▼ for a fall (owner pick 2026-11-26, design direction 3 C). Drawn in the
+    /// text colour, never in a colour of its own; VoiceOver reads the words instead.
+    public static let upGlyph = "\u{25B2}"
+    public static let downGlyph = "\u{25BC}"
+    /// Between the glyph and its number: a no-break space, so a line never ends on the glyph.
+    private static let glyphSpace = "\u{00A0}"
+
+    /// A change in percent with a direction glyph and a direction word, never colour alone:
+    /// Korean `▲ 6.29% 늘었어요`, `▼ 3.45% 줄었어요`, `0.00% 변동 없어요` (the glyph held to the
+    /// number by a no-break space);
+    /// English `▲ 6.29% up`, `▼ 3.45% down`, `0.00% no change`.
     /// The value is rounded half-up to two places first.
     public static func percentChange(_ percent: Decimal, language: Language) -> String {
         let (sign, digits) = roundedChange(percent)
         switch sign {
-        case 1: return language == .ko ? "+\(digits)% 늘었어요" : "+\(digits)% up"
-        case -1: return language == .ko ? "\(minus)\(digits)% 줄었어요" : "\(minus)\(digits)% down"
+        case 1: return language == .ko ? "\(upGlyph)\(glyphSpace)\(digits)% 늘었어요" : "\(upGlyph)\(glyphSpace)\(digits)% up"
+        case -1: return language == .ko ? "\(downGlyph)\(glyphSpace)\(digits)% 줄었어요" : "\(downGlyph)\(glyphSpace)\(digits)% down"
         default: return language == .ko ? "\(digits)% 변동 없어요" : "\(digits)% no change"
         }
     }
 
-    /// The change from the year before as VoiceOver reads it, with the direction taken from
-    /// the same rounded value the visible line shows: Korean `전년보다 6.29퍼센트 늘었어요`,
-    /// English `up 6.29 percent from the year before`; `전년과 같아요` / `no change from the
-    /// year before` when it rounds to zero.
+    /// The rate alone with its direction glyph: `▲ 16.20%`, `▼ 19.47%`, `0.00%`.
+    public static func percentWithGlyph(_ percent: Decimal) -> String {
+        let (sign, digits) = roundedChange(percent)
+        switch sign {
+        case 1: return "\(upGlyph)\(glyphSpace)\(digits)%"
+        case -1: return "\(downGlyph)\(glyphSpace)\(digits)%"
+        default: return "\(digits)%"
+        }
+    }
+
+    /// The change from the year before as VoiceOver reads it, in words rather than the
+    /// glyph, with the direction taken from the same rounded value the visible line shows:
+    /// Korean `전년보다 6.29퍼센트 증가`, English `increased 6.29 percent from the year before`;
+    /// `전년과 같아요` / `no change from the year before` when it rounds to zero.
     public static func percentChangeSpoken(_ percent: Decimal, language: Language) -> String {
         let (sign, digits) = roundedChange(percent)
         switch sign {
-        case 1: return language == .ko ? "전년보다 \(digits)퍼센트 늘었어요" : "up \(digits) percent from the year before"
-        case -1: return language == .ko ? "전년보다 \(digits)퍼센트 줄었어요" : "down \(digits) percent from the year before"
+        case 1: return language == .ko ? "전년보다 \(digits)퍼센트 증가" : "increased \(digits) percent from the year before"
+        case -1: return language == .ko ? "전년보다 \(digits)퍼센트 감소" : "decreased \(digits) percent from the year before"
         default: return language == .ko ? "전년과 같아요" : "no change from the year before"
         }
     }

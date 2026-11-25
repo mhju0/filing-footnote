@@ -50,7 +50,7 @@ final class AskQuestionsUITests: XCTestCase {
         XCTAssertTrue(revenue.exists)
         // VoiceOver reads the exact amount and the change in words.
         XCTAssertTrue(revenue.label.hasPrefix("매출, 86조 617억 4,700만원"), revenue.label)
-        XCTAssertTrue(revenue.label.contains("8.80퍼센트 늘었어요"), revenue.label)
+        XCTAssertTrue(revenue.label.contains("8.80퍼센트 증가"), revenue.label)
         XCTAssertTrue(identified("answer-year-revenue", in: app).exists)
 
         let source = identified("answer-source-\(Self.samsungQuarter)", in: app)

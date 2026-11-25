@@ -43,7 +43,7 @@ final class QuarterReportUITests: XCTestCase {
         XCTAssertTrue(row.waitForExistence(timeout: 10))
         // Board 14: the title, then revenue against the same quarter a year earlier.
         XCTAssertTrue(row.label.hasPrefix("2026년 3분기 보고서"), row.label)
-        XCTAssertTrue(row.label.contains("전년보다 8.80퍼센트 늘었어요"), row.label)
+        XCTAssertTrue(row.label.contains("전년보다 8.80퍼센트 증가"), row.label)
         row.tap()
 
         XCTAssertTrue(identified("quarter-page", in: app).waitForExistence(timeout: 5))
@@ -51,7 +51,7 @@ final class QuarterReportUITests: XCTestCase {
         XCTAssertTrue(revenue.waitForExistence(timeout: 5))
         // VoiceOver reads the exact value and the change in words.
         XCTAssertTrue(revenue.label.hasPrefix("매출, 86조 617억 4,700만원"), revenue.label)
-        XCTAssertTrue(revenue.label.contains("8.80퍼센트 늘었어요"), revenue.label)
+        XCTAssertTrue(revenue.label.contains("8.80퍼센트 증가"), revenue.label)
         // A loss a year earlier: board 9's line instead of a percentage.
         let operating = identified("quarter-operating_income", in: app)
         XCTAssertTrue(operating.label.contains("작년 숫자가 0 이하라 증가율을 계산하지 않아요"), operating.label)
@@ -92,7 +92,7 @@ final class QuarterReportUITests: XCTestCase {
         XCTAssertTrue(identified("quarter-page", in: app).waitForExistence(timeout: 10))
         XCTAssertTrue(app.staticTexts["Q3 FY2026 report (10-Q)"].exists)
         let revenue = identified("quarter-revenue", in: app)
-        XCTAssertTrue(revenue.label.contains("up 11.76 percent from the year before"), revenue.label)
+        XCTAssertTrue(revenue.label.contains("increased 11.76 percent from the year before"), revenue.label)
         // No preliminary results or investor event in the fixture: the section is removed.
         XCTAssertFalse(identified("investor-event", in: app).exists)
         let comparison = revenue.label
@@ -100,7 +100,7 @@ final class QuarterReportUITests: XCTestCase {
         XCTAssertTrue(identified("quarter-figure-page", in: app).waitForExistence(timeout: 5))
         let headline = identified("quarter-figure-change", in: app)
         XCTAssertEqual(headline.label, comparison)
-        XCTAssertTrue(headline.label.contains("Comparison period Q3 FY 2025"), headline.label)
+        XCTAssertTrue(headline.label.contains("Comparison period Q3 FY2025"), headline.label)
         let details = identified("quarter-calculation-details", in: app)
         reveal(details, in: app)
         XCTAssertTrue(details.isHittable)

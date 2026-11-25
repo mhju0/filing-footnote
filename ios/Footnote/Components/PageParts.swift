@@ -11,7 +11,7 @@ struct PageHeader: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             FlowLayout(spacing: 6, lineSpacing: 4) {
-                TagView(text: filing.category.label(language), kind: .category)
+                TagView(text: filing.category.label(language), kind: .category, symbol: filing.category.symbol)
                 if filing.isCorrected {
                     TagView(text: language("정정됨", "Corrected"), kind: .corrected)
                 }
@@ -111,6 +111,7 @@ struct TintNote: View {
 /// `details` lines go under the value; any `exact` lines appear under the row on a tap.
 struct FactRow: View {
     @Environment(\.dynamicTypeSize) private var typeSize
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let label: String
     let value: String
     var details: [String] = []
@@ -150,7 +151,9 @@ struct FactRow: View {
         .padding(.vertical, 2)
         .frame(minHeight: Theme.minTarget)
         .contentShape(Rectangle())
-        .onTapGesture { if !exact.isEmpty { showsExact.toggle() } }
+        .onTapGesture {
+            if !exact.isEmpty { Motion.perform(reduceMotion: reduceMotion) { showsExact.toggle() } }
+        }
         .listRowBackground(Theme.surface)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityText)
@@ -259,12 +262,13 @@ private struct InsetDisclosureStyle: DisclosureGroupStyle {
 
 private struct InsetDisclosure: View {
     @Environment(\.language) private var language
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let configuration: DisclosureGroupStyleConfiguration
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Button {
-                withAnimation(.snappy) { configuration.isExpanded.toggle() }
+                Motion.perform(reduceMotion: reduceMotion) { configuration.isExpanded.toggle() }
             } label: {
                 HStack(spacing: 8) {
                     Image(systemName: "chevron.right")

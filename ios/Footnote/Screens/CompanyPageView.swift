@@ -1,8 +1,9 @@
 import FootnoteKit
 import SwiftUI
 
-/// Board 14: periodic reports pinned, the questions to ask (D99), up to ten filings by
-/// month, the notices row, then the end note and the link to every filing on DART or SEC.
+/// Board 14: the summary card and the questions to ask under it (D100), the periodic
+/// reports, up to ten filings by month, the notices row, then the end note and the link to
+/// every filing on DART or SEC.
 struct CompanyPageView: View {
     @Environment(\.language) private var language
     let store: BundleStore
@@ -17,6 +18,15 @@ struct CompanyPageView: View {
     }
 
     private var name: String { Titles.name(of: page.company, language: language) }
+
+    private var summary: CompanySummary? { CompanyAnswerer.summary(store: store, companyID: page.company.id) }
+
+    /// A title another filing on the page shares gets its approved summary's first line
+    /// under it, to tell the two apart (2026-11-26 review, issue 13; D100).
+    private func secondLine(_ filing: Filing) -> String? {
+        guard Titles.repeatedTitleIDs(page.filings, language: language).contains(filing.id) else { return nil }
+        return store.firstSummaryLine(filingID: filing.id, language: language)
+    }
 
     var body: some View {
         ScrollViewReader { proxy in
@@ -38,6 +48,12 @@ struct CompanyPageView: View {
     private var list: some View {
         SelectionList(selection: selection) {
             header
+            if let summary {
+                CompanySummaryCard(summary: summary, companyID: page.company.id)
+            }
+            // D100: directly under the summary card, above the reports and filings.
+            AskSection(companyID: page.company.id)
+                .id(PageScroll.ask)
             if page.quarterReport != nil || !page.periodicReports.isEmpty {
                 Section {
                     if let report = page.quarterReport {
@@ -54,14 +70,11 @@ struct CompanyPageView: View {
                     SectionTitle(language("정기 보고서", "Periodic reports"))
                 }
             }
-            // D99: below the quarterly results, above the filings by month.
-            AskSection(companyID: page.company.id)
-                .id(PageScroll.ask)
             ForEach(Array(page.months.enumerated()), id: \.element.id) { index, month in
                 Section {
                     ForEach(month.filings) { filing in
                         FilingRowLink(filingID: filing.id) {
-                            FilingRow(filing: filing, dataAsOf: page.dataAsOf)
+                            FilingRow(filing: filing, dataAsOf: page.dataAsOf, secondLine: secondLine(filing))
                         }
                     }
                 } header: {

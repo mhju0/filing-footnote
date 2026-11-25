@@ -176,6 +176,9 @@ struct SplitShell: View {
     @State private var glossaryKey: String?
     /// The screens pushed over the filing in the detail column: figure, compare, calculation.
     @State private var detailPath: [Route]
+    /// A filing or term a sidebar search opened, chosen once its sidebar item shows.
+    @State private var pendingFilingID: String?
+    @State private var pendingTermKey: String?
 
     init(store: BundleStore, labels: FactLabels) {
         self.store = store
@@ -195,7 +198,7 @@ struct SplitShell: View {
 
     var body: some View {
         NavigationSplitView {
-            SidebarView(store: store, selection: $sidebar)
+            SidebarView(store: store, selection: $sidebar, open: open)
         } content: {
             content
                 .environment(\.filingSelection, $filingID)
@@ -215,6 +218,10 @@ struct SplitShell: View {
                         FilingDestination(store: store, labels: labels, filingID: filingID)
                     } else if case .company(let companyID)? = sidebar, let intent = AskSelection.intent(filingID) {
                         AnswerDestination(store: store, companyID: companyID, intent: intent)
+                    } else if case .company(let companyID)? = sidebar, let part = SummarySelection(filingID),
+                              let summary = CompanyAnswerer.summary(store: store, companyID: companyID),
+                              let route = part.route(summary, companyID: companyID) {
+                        RouteDestination(store: store, labels: labels, route: route)
                     } else {
                         placeholder("doc.text", language("공시를 고르면 여기에 보여 줘요", "Choose a filing to see it here"))
                     }
@@ -231,8 +238,10 @@ struct SplitShell: View {
         // A new sidebar item clears the detail column; a new filing or term clears what was
         // pushed over the old one.
         .onChange(of: sidebar) {
-            filingID = nil
-            glossaryKey = nil
+            filingID = pendingFilingID
+            glossaryKey = pendingTermKey
+            pendingFilingID = nil
+            pendingTermKey = nil
             detailPath = []
         }
         #if os(macOS)
@@ -249,6 +258,31 @@ struct SplitShell: View {
             if sidebar == .glossary && store.glossary(language: language).isEmpty {
                 sidebar = store.companies.first.map { .company($0.id) }
             }
+        }
+    }
+
+    /// A search result from the sidebar: a filing opens on its company's page, a term in
+    /// the glossary.
+    private func open(_ route: Route) {
+        switch route {
+        case .filing(let id):
+            guard let filing = store.filing(id: id) else { return }
+            let item = SidebarView.Item.company(filing.companyID)
+            if sidebar == item {
+                filingID = id
+            } else {
+                pendingFilingID = id
+                sidebar = item
+            }
+        case .glossary(let key):
+            if sidebar == .glossary {
+                glossaryKey = key
+            } else {
+                pendingTermKey = key
+                sidebar = .glossary
+            }
+        default:
+            break
         }
     }
 

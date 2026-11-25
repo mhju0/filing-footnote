@@ -51,6 +51,9 @@ public struct NewsFeed: Sendable {
 
     public var filings: [Filing] { days.flatMap(\.filings) }
 
+    /// Every filing the company pages list, newest first, including those past the cap.
+    public var allFilings: [Filing] { eligible }
+
     public var isEmpty: Bool { days.isEmpty }
 }
 

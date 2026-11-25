@@ -147,7 +147,7 @@ struct FilingMeta: View {
     var body: some View {
         FlowLayout(spacing: 6, lineSpacing: 4) {
             if showsCategory {
-                TagView(text: filing.category.label(language), kind: .category)
+                TagView(text: filing.category.label(language), kind: .category, symbol: filing.category.symbol)
             }
             if filing.isCorrected {
                 TagView(text: language("정정됨", "Corrected"), kind: .corrected)
@@ -166,13 +166,16 @@ struct FilingMeta: View {
     }
 }
 
-/// An event filing in a list: tag, date, title. No preview line (DESIGN.md, Screens).
+/// An event filing in a list: tag, date, title, and under it, when given, the first line of
+/// the filing's approved summary (D100; DESIGN.md, Screens).
 struct FilingRow: View {
     @Environment(\.language) private var language
     let filing: Filing
     let dataAsOf: CivilDate
     var companyName: String?
     var showsDate = true
+    /// Only ever an approved summary line; nil shows no second line.
+    var secondLine: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -188,10 +191,19 @@ struct FilingRow: View {
                 .foregroundStyle(Theme.ink)
                 .multilineTextAlignment(.leading)
                 .fixedSize(horizontal: false, vertical: true)
+            if let secondLine {
+                Text(words: secondLine)
+                    .font(.subheadline)
+                    .foregroundStyle(Theme.muted)
+                    .multilineTextAlignment(.leading)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
         .padding(.vertical, 6)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Self.spoken(filing, dataAsOf: dataAsOf, companyName: companyName, language))
+        .accessibilityLabel(
+            [Self.spoken(filing, dataAsOf: dataAsOf, companyName: companyName, language), secondLine]
+                .compactMap { $0 }.joined(separator: ", "))
     }
 
     static func spoken(_ filing: Filing, dataAsOf: CivilDate, companyName: String?, _ language: Language) -> String {

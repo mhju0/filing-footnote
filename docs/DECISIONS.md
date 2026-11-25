@@ -1212,6 +1212,8 @@ and their periodic rows showed revenue with no change (the open item in D80).
 
 ## D83 · Filing page and annual page in FootnoteKit models · 2026-11-19 (`PROPOSED`)
 
+*Partly superseded by D100 (a rate shows as glyph plus word, not sign plus word).*
+
 Roadmap I7. The filing page (board 12A) and the annual report at a glance (board 4) are
 built from two FootnoteKit models, `FilingPage` and `AnnualPage`, so `swift test` covers
 what each page shows; the SwiftUI views only lay them out.
@@ -1769,3 +1771,38 @@ generated on the device.
 - A missing summary, report or figure is said to be missing, never shown as zero.
 - iPhone pushes the answer. iPad and Mac show it in the detail column and keep the
   question filled. Amounts use the app's formatter, so Korean USD reads `1,094억 달러`.
+
+## D100 · Company summary card and design picks, wave 2 · 2026-11-26 (`ACCEPTED`)
+
+The owner's picks from the 2026-11-26 design study (directions 1 B, 3 C, 5 B, 7 B, 9 B) and
+the UX review's issues 1, 3, 10, 13 and 15, carried out through the Orca coordinator.
+
+- Supersedes the G1 direction rule (DESIGN.md Rules; D83 "shows as sign plus word"): a
+  change shows a ▲ or ▼ glyph held to its number by a no-break space, then the word, in
+  the text colour (`▲ 6.29% 늘었어요`, `▼ 3.45% down`). No change shows no glyph.
+  VoiceOver reads 증가 / increased and 감소 / decreased instead of the glyph. A
+  calculation's own result keeps its arithmetic sign. `Formatting.percentChange` is the one
+  place this is written.
+- The company page opens with one summary card: the newest annual revenue (rounded, exact
+  below, change from the year before, source report) and the newest quarter's revenue,
+  operating income and net income against the same quarter a year earlier, with one
+  fixed sentence and the source report. It is built by `CompanyAnswerer.summary`, from the
+  same report lookup, figures and sentences as the answers (D99). A missing report or
+  figure is said in the answers' fixed sentences, never shown as zero. The six questions
+  move directly under the card, above the periodic reports.
+- The quarter report shows the answers' revenue sentence above its figures, and the
+  quarter figure's label names its calendar months (`Q3 FY2026 · Mar 29–Jun 27`).
+- Changes DESIGN.md's "no preview line per filing row": a filing row may show a second,
+  smaller line, and it is only ever the first line of the filing's approved summary (the
+  bundle holds no other review state). News rows and search results show it when there
+  is one; the company page shows it only where two titles repeat. No approved summary,
+  no second line.
+- The Companies search field also lists up to five recent filings whose type or title
+  matches, in either language, and up to five glossary terms, below the companies.
+- Category tags lead with an SF Symbol (table in DESIGN.md). The table awaits the
+  owner's one-time approval; until then it is a proposal like any copy.
+- Motion: digits roll in place when a figure's text changes, expanding rows take a
+  quarter-second snappy animation, and the market control and sort menu give a selection
+  haptic. Nothing moves when Reduce Motion is on.
+- Headline amounts are rounded with the exact amount below (direction 9 B) on the
+  quarter figure and the card, as on the figure screen (D98).

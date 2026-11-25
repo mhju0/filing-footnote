@@ -86,9 +86,9 @@ final class FilingPagesUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["The company said it filed this report."].exists)
         let revenue = app.buttons["figure-revenue"]
         reveal(revenue, in: app)
-        XCTAssertTrue(revenue.label.contains("up 16.20 percent from the year before"), revenue.label)
+        XCTAssertTrue(revenue.label.contains("increased 16.20 percent from the year before"), revenue.label)
         revenue.tap()
         XCTAssertTrue(app.descendants(matching: .any)["figure-page"].waitForExistence(timeout: 5))
-        XCTAssertTrue(element("+16.20% up", in: app).exists)
+        XCTAssertTrue(element("16.20% up", in: app).exists)
     }
 }

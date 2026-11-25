@@ -20,25 +20,69 @@ enum Theme {
     static let minTarget: CGFloat = 44
 }
 
-/// A small label in a filing row: its category, 정정됨 / Corrected, or 새 공시 / New.
+/// Brief, native motion where content changes (owner pick 2026-11-26, design direction 5 B):
+/// no bounce, a quarter second, and none at all when Reduce Motion is on.
+enum Motion {
+    static let snappy = Animation.snappy(duration: 0.25)
+
+    /// Runs `change` animated, or at once under Reduce Motion.
+    @MainActor static func perform(reduceMotion: Bool, _ change: () -> Void) {
+        if reduceMotion {
+            change()
+        } else {
+            withAnimation(snappy, change)
+        }
+    }
+}
+
+extension View {
+    /// A figure whose digits roll in place when its text changes, as on a language switch.
+    func numberTransition(_ text: String) -> some View {
+        modifier(NumberTransition(text: text))
+    }
+}
+
+private struct NumberTransition: ViewModifier {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    let text: String
+
+    func body(content: Content) -> some View {
+        content
+            .contentTransition(reduceMotion ? .identity : .numericText())
+            .animation(reduceMotion ? nil : Motion.snappy, value: text)
+    }
+}
+
+/// A small label in a filing row: its category, 정정됨 / Corrected, or 새 공시 / New. A
+/// category tag leads with its symbol (owner pick 2026-11-26, design direction 7 B), so the
+/// type never rests on colour alone; VoiceOver reads the text only.
 struct TagView: View {
     enum Kind { case category, corrected, new }
 
     let text: String
     let kind: Kind
+    var symbol: String?
 
     var body: some View {
-        Text(words: text)
-            .font(.caption.weight(kind == .new ? .bold : .semibold))
-            .foregroundStyle(foreground)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 2)
-            .background(background, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
-            // Its own width unless that is wider than the row (`Management matters` at the
-            // accessibility sizes): then it wraps inside the row instead of pushing the whole
-            // row past both edges of its card. Text beside it gives way first.
-            .fixedSize(horizontal: false, vertical: true)
-            .layoutPriority(1)
+        HStack(alignment: .firstTextBaseline, spacing: 4) {
+            if let symbol {
+                Image(systemName: symbol)
+                    .imageScale(.small)
+                    .accessibilityHidden(true)
+            }
+            Text(words: text)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .font(.caption.weight(kind == .new ? .bold : .semibold))
+        .foregroundStyle(foreground)
+        .padding(.horizontal, 6)
+        .padding(.vertical, 2)
+        .background(background, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
+        // Its own width unless that is wider than the row (`Management matters` at the
+        // accessibility sizes): then it wraps inside the row instead of pushing the whole
+        // row past both edges of its card. Text beside it gives way first.
+        .fixedSize(horizontal: false, vertical: true)
+        .layoutPriority(1)
     }
 
     private var foreground: Color {
@@ -54,6 +98,31 @@ struct TagView: View {
         case .category: Theme.tint
         case .corrected: Theme.line
         case .new: Theme.saffron
+        }
+    }
+}
+
+extension FilingCategory {
+    /// The SF Symbol beside the category's name in its tag (design direction 7 B).
+    var symbol: String {
+        switch self {
+        case .earnings: "chart.bar"
+        case .unitSales: "shippingbox"
+        case .buyback: "arrow.triangle.2.circlepath"
+        case .dividend: "banknote"
+        case .capital: "chart.pie"
+        case .deal: "signature"
+        case .leadership: "person.crop.circle"
+        case .legal: "building.columns"
+        case .outlook: "binoculars"
+        case .shareholderValue: "person.2.circle"
+        case .meeting: "person.3"
+        case .operations: "gearshape.2"
+        case .lending: "arrow.left.arrow.right"
+        case .management: "briefcase"
+        case .clarification: "questionmark.bubble"
+        case .annual: "doc.text"
+        case .quarterly: "calendar"
         }
     }
 }
