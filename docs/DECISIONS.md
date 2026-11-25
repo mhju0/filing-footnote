@@ -1706,3 +1706,34 @@ rows and source text give the same report.
   Korean line say 영남권. No approval was changed.
 - **Not changed.** The bundle schema and the app. Showing the support sentence in the app
   needs a bundle table; the proposal is in the pull request, not built.
+
+## D99 · Ask about this company: fixed questions answered from the bundle · 2026-11-26 (`ACCEPTED`)
+
+Requested by the owner through the Orca coordinator, which had full UI control and
+reviewed the screenshots. PRODUCT.md's "the app does not chat" still holds: nothing is
+generated on the device.
+
+- The company page gets six fixed questions below the quarterly results, in this order:
+  Should I buy this? What are the fundamentals? What's the recent trend? Does it make or
+  lose money? How is revenue doing? What's next quarter's revenue? The bundle can answer
+  all six for every company, so none was cut.
+- The flow is question → `QuestionIntent` → `CompanyAnswerer` (FootnoteKit) → `Answer`.
+  A button maps straight to an intent. A later typed-question router may only choose an
+  intent; it never writes an answer or a figure.
+- Answers use only the bundle: the newest annual report's approved business lines, and
+  exact `Decimal` figures from the newest quarterly report and annual report, each
+  against the same period a year earlier through the existing comparisons. Each block
+  cites its filing.
+- Sentences are fixed text with no digits (`contracts/company-questions.json`). Code picks
+  them from the figures: revenue up, down or about the same (the change rounds to
+  0.00%), not compared, or not stated; a net profit, a net loss, neither, or not stated.
+  The backend's neutrality guard checks every sentence for digits, judgement words,
+  predictions, advice and language. Attribution (N4) and summary shape (N6) are not
+  applied, because the sentences describe the app in its own voice.
+- "Should I buy this?" says the app does not tell anyone to buy or sell, then offers the
+  fundamentals, profit and trend questions. "What's next quarter's revenue?" says the
+  app shows ended periods only and does not estimate. It points to the company's newest
+  outlook filing when there is one, and never shows a figure for a future period.
+- A missing summary, report or figure is said to be missing, never shown as zero.
+- iPhone pushes the answer. iPad and Mac show it in the detail column and keep the
+  question filled. Amounts use the app's formatter, so Korean USD reads `1,094억 달러`.

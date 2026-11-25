@@ -20,6 +20,8 @@ enum Route: Hashable {
     case companyCalculation(CompanyCompareRoute)
     /// The glossary, scrolled to and marking one entry (`metric_revenue`) when given.
     case glossary(String?)
+    /// A company and a question asked about it (D99).
+    case answer(String, QuestionIntent)
 }
 
 struct CompanyCompareRoute: Hashable {
