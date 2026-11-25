@@ -39,8 +39,8 @@ extension PageCopy {
     /// Board 15 names the quarter a year earlier. The second sentence describes the
     /// figure screen that opens on tap (D91).
     static func quarterNote(prior: (start: CivilDate, end: CivilDate)?, _ language: Language) -> String {
-        let tap = language("숫자를 누르면 해당 기간과 금액을 볼 수 있어요.",
-                           "Tap a figure to see its reporting period and amount.")
+        let tap = language("숫자를 \(PageCopy.choose.ko) 해당 기간과 금액을 볼 수 있어요.",
+                           "\(PageCopy.choose.en) a figure to see its reporting period and amount.")
         guard let prior else { return tap }
         let period = quarterPeriod(start: prior.start, end: prior.end, language)
         return language("작년 같은 기간(\(period))과 비교했어요. ", "Compared with \(period). ") + tap

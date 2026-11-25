@@ -26,13 +26,14 @@ struct NewsView: View {
                 }
                 if feed.isEmpty {
                     Section {
-                        Text(words: emptyMessage)
-                            .font(.body)
-                            .foregroundStyle(Theme.muted)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .frame(minHeight: Theme.minTarget, alignment: .leading)
-                            .listRowBackground(Theme.surface)
-                            .accessibilityIdentifier("news-empty")
+                        ContentUnavailableView {
+                            Label(language("최근 공시가 없어요", "No recent filings"), systemImage: "magnifyingglass")
+                        } description: {
+                            Text(words: emptyMessage)
+                        }
+                        .listRowBackground(Theme.surface)
+                        .accessibilityElement(children: .combine)
+                        .accessibilityIdentifier("news-empty")
                     }
                 }
                 ForEach(feed.days) { day in
@@ -164,17 +165,8 @@ struct GlossaryView: View {
         !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
-    private var sections: [(initial: String, entries: [GlossaryEntry])] {
-        var initials = [String]()
-        var seen = Set<String>()
-        let groups = Dictionary(grouping: store.sortedGlossary(language: language, matching: query)) { entry in
-            let initial = Self.initial(of: entry.term)
-            if seen.insert(initial).inserted { initials.append(initial) }
-            return initial
-        }
-        return initials.compactMap { initial in
-            groups[initial].map { (initial, $0) }
-        }
+    private var sections: [GlossarySection] {
+        store.glossarySections(language: language, matching: query)
     }
 
     var body: some View {
@@ -194,7 +186,7 @@ struct GlossaryView: View {
                         .headerRow()
                         .accessibilityIdentifier("glossary-empty")
                 }
-                ForEach(sections, id: \.initial) { group in
+                ForEach(sections) { group in
                     let section = Section {
                         ForEach(group.entries) { entry in
                             if let selection {
@@ -217,12 +209,12 @@ struct GlossaryView: View {
                             }
                         }
                     } header: {
-                        SectionTitle(group.initial)
+                        SectionTitle(title(of: group))
                             .accessibilityAddTraits(.isHeader)
                     }
                     #if os(iOS)
                     if #available(iOS 26.0, *) {
-                        section.sectionIndexLabel(isSearching ? nil : group.initial)
+                        section.sectionIndexLabel(isSearching ? nil : indexLabel(of: group))
                     } else {
                         section
                     }
@@ -232,16 +224,21 @@ struct GlossaryView: View {
                 }
             }
             .toolbar {
-                if usesJumpMenu, !isSearching, sections.count > 1 {
+                // The jump menu is on every platform: each item is a full-size menu row, so
+                // it is the 44 pt way to jump. iOS 26 also shows the native index, which is
+                // dragged rather than tapped (2026-11-26 review, issue 12).
+                if !isSearching, sections.count > 1 {
                     ToolbarItem {
                         Menu {
-                            ForEach(sections, id: \.initial) { group in
+                            ForEach(sections) { group in
                                 if let first = group.entries.first {
-                                    Button(group.initial) { proxy.scrollTo(first.termKey, anchor: .top) }
+                                    Button(title(of: group)) { proxy.scrollTo(first.termKey, anchor: .top) }
                                 }
                             }
                         } label: {
                             Label(language("초성으로 이동", "Jump to letter"), systemImage: "textformat.abc")
+                                .frame(minWidth: Theme.minTarget, minHeight: Theme.minTarget)
+                                .contentShape(Rectangle())
                         }
                         .accessibilityIdentifier("glossary-index")
                     }
@@ -261,24 +258,19 @@ struct GlossaryView: View {
         .accessibilityIdentifier("glossary-page")
     }
 
-    private var usesJumpMenu: Bool {
-        #if os(iOS)
-        if #available(iOS 26.0, *) { return false }
-        #endif
-        return true
+    private func title(of group: GlossarySection) -> String {
+        switch group.kind {
+        case .keyTerms: language("자주 보는 용어", "Key terms")
+        case .initial(let initial): initial
+        case .refusals: language("비교할 수 없을 때", "When a comparison can’t be made")
+        }
     }
 
-    static func initial(of term: String) -> String {
-        guard let first = term.first else { return "#" }
-        let consonants = Array("ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ")
-        if let scalar = String(first).precomposedStringWithCanonicalMapping.unicodeScalars.first,
-           (0xAC00...0xD7A3).contains(scalar.value) {
-            return String(consonants[Int((scalar.value - 0xAC00) / 588)])
-        }
-        if consonants.contains(first) { return String(first) }
-        let latin = String(first).folding(options: [.diacriticInsensitive, .widthInsensitive], locale: nil)
-            .uppercased()
-        return latin.count == 1 && "ABCDEFGHIJKLMNOPQRSTUVWXYZ".contains(latin) ? latin : "#"
+    /// The native index shows initials only; the key terms sit at the top and the refusal
+    /// reasons at the end, both reachable from the jump menu.
+    private func indexLabel(of group: GlossarySection) -> String? {
+        if case .initial(let initial) = group.kind { return initial }
+        return nil
     }
 }
 

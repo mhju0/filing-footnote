@@ -190,6 +190,7 @@ struct QuarterFigureView: View {
                         .fixedSize(horizontal: false, vertical: true)
                         .frame(minHeight: Theme.minTarget, alignment: .leading)
                 }
+                .rowDisclosure()
                 .tint(Theme.pine)
                 .listRowBackground(Theme.surface)
                 .accessibilityIdentifier("quarter-calculation-details")
@@ -202,6 +203,7 @@ struct QuarterFigureView: View {
                             .fixedSize(horizontal: false, vertical: true)
                             .frame(minHeight: Theme.minTarget, alignment: .leading)
                     }
+                    .rowDisclosure()
                     .tint(Theme.pine)
                     .listRowBackground(Theme.surface)
                 }

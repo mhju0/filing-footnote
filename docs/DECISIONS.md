@@ -1707,6 +1707,38 @@ rows and source text give the same report.
 - **Not changed.** The bundle schema and the app. Showing the support sentence in the app
   needs a bundle table; the proposal is in the pull request, not built.
 
+## D98 · UX review wave 1 and two design picks · 2026-11-26 (`ACCEPTED`)
+
+The owner approved all fifteen issues of the 2026-11-26 UX review and its recommended
+fixes, and picked directions 4 B and 9 B in the design study the same day. This entry
+records the ones outside the company page body; the summary card and the other company
+page issues follow separately.
+
+- 새 공시 / New marks event filings only. Every company files its periodic reports in the
+  same weeks, so the tag marked almost every Korean company and told nothing apart. This
+  narrows the seven-day rule of 2026-11-19: the window is unchanged, annual, half-year and
+  quarterly reports drop out.
+- Companies rows show the newest filing or notice date and type ("11월 16일 · 분기
+  보고서") instead of the tag. The "Latest filing" sort orders by the same date; on one
+  day a filing comes before a notice. This supersedes "company names and the New filing
+  tag" in D92.
+- Companies opens with one line on what the app does and the data date. The visible
+  "기업 검색" label is gone, and the sort moved to a toolbar menu that names the current
+  order.
+- Search on Companies is the system search field (direction 4 B), with the app's own
+  bilingual prompt and empty state. 한국 / 미국 stays a segmented control in the list
+  rather than a search scope, because search already covers both markets (D93).
+- The figure screen headline is rounded to 억 like the company page, and the exact amount
+  is on a labelled line below (direction 9 B). The figure stays an exact decimal.
+- A rate gap is written in percentage points in full and links to a new glossary entry,
+  `percentage_point`. Its wording waits for the owner's approval; until then the export
+  leaves it out of release bundles and a release build refuses.
+- The glossary opens with key terms and ends with the refusal reasons.
+- The Mac has one language button in the window toolbar, says 선택하면 / Select instead of
+  누르면 / Tap, wraps section notes, and keeps disclosure chevrons inside the row.
+- A one-word Korean name too wide for its line shrinks rather than breaking inside the
+  word.
+
 ## D99 · Ask about this company: fixed questions answered from the bundle · 2026-11-26 (`ACCEPTED`)
 
 Requested by the owner through the Orca coordinator, which had full UI control and

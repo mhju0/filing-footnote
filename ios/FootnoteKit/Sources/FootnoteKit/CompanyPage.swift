@@ -146,19 +146,58 @@ public enum Freshness {
     /// Days a filing counts as new: the data date and the six days before it.
     public static let newDays = 7
 
-    /// 새 공시 / New: filed within seven days of the bundle's data date.
+    /// Filed within seven days of the bundle's data date.
     public static func isNew(_ filedOn: CivilDate, dataAsOf: CivilDate) -> Bool {
         let age = filedOn.days(to: dataAsOf)
         return age >= 0 && age < newDays
     }
+
+    /// 새 공시 / New: an event filing filed within seven days of the data date. Annual and
+    /// quarterly reports never get the tag: every company files them in the same weeks, so
+    /// the tag would mark them all and tell nothing apart (2026-11-26 review, issue 2).
+    public static func isNew(_ filing: Filing, dataAsOf: CivilDate) -> Bool {
+        filing.kind == .event && isNew(filing.filedOn, dataAsOf: dataAsOf)
+    }
+}
+
+/// A company's newest filing or notice, for the Companies list: its date and type
+/// (`11월 16일 · 분기 보고서`). The "Latest filing" sort orders companies by the same date.
+public struct LatestFiling: Sendable, Hashable {
+    public enum Kind: Sendable, Hashable {
+        case filing(FilingCategory, halfYear: Bool)
+        case notice(NoticeCategory)
+    }
+
+    public let filedOn: CivilDate
+    public let kind: Kind
+
+    /// The type in the reader's language: the category label, or 반기보고서 / Half-year report
+    /// for a DART half-year report, which shares the quarterly category.
+    public func label(_ language: Language) -> String {
+        switch kind {
+        case .filing(_, halfYear: true): language == .ko ? "반기보고서" : "Half-year report"
+        case .filing(let category, halfYear: false): category.label(language)
+        case .notice(let category): category.label(language)
+        }
+    }
 }
 
 extension BundleStore {
-    /// True when a filing the company page lists is new.
-    public func hasNewFiling(companyID: String) -> Bool {
-        guard let page = CompanyPage(store: self, companyID: companyID) else { return false }
-        return ([page.quarterReport?.filing].compactMap { $0 } + page.periodicReports.map(\.filing) + page.filings)
-            .contains { Freshness.isNew($0.filedOn, dataAsOf: meta.dataAsOf) }
+    /// The newest of the company's filings and notices. On the same day a filing wins over a
+    /// notice, and the later receipt number over the earlier one.
+    public func latestFiling(companyID: String) -> LatestFiling? {
+        let filing = filings(forCompany: companyID).max {
+            ($0.filedOn, $0.id) < ($1.filedOn, $1.id)
+        }
+        let notice = notices(forCompany: companyID).max {
+            ($0.filedOn, $0.id) < ($1.filedOn, $1.id)
+        }
+        if let filing, notice.map({ $0.filedOn <= filing.filedOn }) ?? true {
+            return LatestFiling(
+                filedOn: filing.filedOn,
+                kind: .filing(filing.category, halfYear: filing.form == "반기보고서"))
+        }
+        return notice.map { LatestFiling(filedOn: $0.filedOn, kind: .notice($0.category)) }
     }
 }
 

@@ -65,7 +65,7 @@ owner), boards 11A, 12A, 13 and 14–20 (2026-11-19, owner).
 
 | Screen | Shows | One tap away | Never shown |
 |---|---|---|---|
-| Companies list | Bilingual company or ticker search; Korea / US browsing with visible sort; company name and 새 공시 tag | News | Newest event filings by date, with a filing-type filter | Filing page | Market commentary |
+| Companies list | One line on what the app does, with the data date; the system search field (company or ticker, both markets); Korea / US browsing; sort as a toolbar menu showing the current order; company name, then its newest filing date and type (D98) | News | Newest event filings by date, with a filing-type filter | Filing page | Market commentary |
 | Glossary | Term search and letter or initial jump; definitions expand on iPhone | Definition on iPad and Mac | |
 | Company page | Up to 2 periodic reports with one figure each; six questions to ask (D99) as wrapping rounded-rectangle buttons, Pine on Surface with a Line border; up to 10 filings grouped by month (tag, date, title); notices row; insider row; data date | Notices sheet, insider screen, all filings on DART, an answer | Price, news, analyst views, scores, a preview line per filing row |
 | Answer | Company and question; fixed sentences in a card; the company's business lines; the latest quarter's and year's figures against a year earlier, each block with its source filing; related questions after a deflection; how answers are made | Source filing, outlook filing, exact amounts on tap | Advice, estimates, judgement words, a figure for a future period |
@@ -82,7 +82,8 @@ Details:
 - Company page: periodic reports are pinned above the filings; the subtitle is the data
   date ("11월 18일까지 낸 공시 / Filings up to Nov 18"); the list ends with a note on what
   it covers and a link to every filing on DART or SEC.
-- 새 공시 / New: only on filings made within 7 days of the data date.
+- 새 공시 / New: only on event filings made within 7 days of the data date. Annual,
+  half-year and quarterly reports never carry it, and the Companies list shows no tag (D98).
 - Notices row: "안내 공시 N건 / N notices", counting notices filed in the same span as
   the listed filings; hidden when there are none.
 - Filing page order is fixed for every type: sentences, then numbers, then the original. The Original section shows the filed date and regulator link first. Form and receipt number expand in Filing details.
@@ -93,7 +94,8 @@ Details:
   re-filing due date, and earlier answers to the same report.
 - Corrected filings: 정정됨 / Corrected tag; the corrected version shows, the first opens
   from "다른 버전 / Other versions".
-- G1 picks: language switch is a globe "EN" button in the nav bar; earlier years are a
+- G1 picks: language switch is a globe "EN" button in the nav bar (on the Mac, one button
+  at the trailing end of the window toolbar, D98); earlier years are a
   list; the compare-company picker is one list by market; direction is sign plus word with no
   colour; a restated figure has a 정정됨 / Restated tag beside the value and a note below.
 - The quarter figure shows the original quarterly report before exact figures and calculation. The annual figure link stays labelled separately. Refusals have no calculation.
@@ -101,3 +103,18 @@ Details:
   months"; fewer than ten ("these are all N filings"); summary in review; numbers section
   hidden when empty; outlook without figures; corrected filing; notices row hidden.
   There is no loading or offline state because the app reads a bundled file.
+- 2026-11-26 UX review and design picks (D98):
+  - Glossary order: 자주 보는 용어 / Key terms (revenue, operating income, net income, EPS,
+    operating margin) first, then the dictionary by initial, then the reasons a comparison
+    is refused under their own heading. A jump menu of at least 44 pt is in the toolbar on
+    every platform; current iOS also keeps the native index.
+  - Figure screen: the headline is rounded as on the company page ("333조 6,059억원");
+    the exact amount sits on a smaller line below ("정확한 금액 333조 6,059억 3,800만원" /
+    "Exact amount …"). VoiceOver reads the exact amount.
+  - A gap between two rates is written "4.18%포인트" / "4.18 percentage points", never
+    "%p" or "pp", and links to its glossary entry.
+  - Mac copy says 선택하면 / Select where touch screens say 누르면 / Tap. Section notes wrap.
+  - Mac disclosure rows keep their chevron inside the row inset. Rows of full-width buttons
+    have no separator.
+  - Empty search and empty News use the system empty state with a magnifying glass and the
+    app's own bilingual copy.

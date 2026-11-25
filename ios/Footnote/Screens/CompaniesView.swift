@@ -5,13 +5,23 @@ struct CompaniesView: View {
     @Environment(\.language) private var language
     @State private var market: Regulator = .dart
     @State private var sort: CompanySort = .latest
+    @State private var query = ""
     let store: BundleStore
 
     var body: some View {
         List {
-            CompanyDirectory(store: store, market: $market, sort: $sort, showsDataFooter: true) { company in
+            // What the app does and the data date, before any control (2026-11-26 review,
+            // issue 7).
+            Text(words: Copy.appIntro(store.meta.dataAsOf, language))
+                .font(.subheadline)
+                .foregroundStyle(Theme.muted)
+                .fixedSize(horizontal: false, vertical: true)
+                .headerRow()
+                .listRowSeparator(.hidden)
+                .accessibilityIdentifier("app-intro")
+            CompanyDirectory(store: store, query: $query, market: $market, sort: $sort, showsDataFooter: true) { company in
                 NavigationLink(value: Route.company(company.id)) {
-                    CompanyRow(company: company, isNew: store.hasNewFiling(companyID: company.id))
+                    CompanyRow(company: company, latest: store.latestFiling(companyID: company.id))
                 }
                 .listRowBackground(Theme.surface)
                 .accessibilityIdentifier("company-\(company.id)")
@@ -20,14 +30,53 @@ struct CompaniesView: View {
         .scrollDismissesKeyboard(.interactively)
         .groupedScreen()
         .navigationTitle(language("기업", "Companies"))
+        .companySearch($query, placement: phoneSearchPlacement)
+        .toolbar {
+            if !CompanySearch(query).isActive {
+                #if os(iOS)
+                ToolbarItem(placement: .topBarLeading) { CompanySortMenu(sort: $sort) }
+                #else
+                ToolbarItem { CompanySortMenu(sort: $sort) }
+                #endif
+            }
+        }
         .languageToolbar()
+    }
+
+    private var phoneSearchPlacement: SearchFieldPlacement {
+        #if os(iOS)
+        .navigationBarDrawer(displayMode: .always)
+        #else
+        .automatic
+        #endif
+    }
+}
+
+extension View {
+    /// The system search field for companies (owner pick 2026-11-26, design direction 4 B):
+    /// Cancel, keyboard return and the Mac find shortcut come from the system. The prompt is
+    /// the app's own copy, so it follows the in-app language, not the device's.
+    fileprivate func companySearch(_ query: Binding<String>, placement: SearchFieldPlacement) -> some View {
+        modifier(CompanySearchField(query: query, placement: placement))
+    }
+}
+
+private struct CompanySearchField: ViewModifier {
+    @Environment(\.language) private var language
+    @Binding var query: String
+    let placement: SearchFieldPlacement
+
+    func body(content: Content) -> some View {
+        content.searchable(
+            text: $query, placement: placement,
+            prompt: Text(verbatim: language("기업명 또는 종목 코드", "Company name or ticker")))
     }
 }
 
 private struct CompanyDirectory<Row: View>: View {
     @Environment(\.language) private var language
-    @State private var query = ""
     let store: BundleStore
+    @Binding var query: String
     @Binding var market: Regulator
     @Binding var sort: CompanySort
     var showsDataFooter = false
@@ -39,22 +88,11 @@ private struct CompanyDirectory<Row: View>: View {
             ? search.companies(in: store, language: language)
             : sort.companies(in: market, store: store, language: language)
 
-        DirectorySearchField(
-            title: language("기업 검색", "Search companies"),
-            prompt: language("기업명 또는 종목 코드", "Company name or ticker"),
-            identifier: "company-search",
-            query: $query
-        )
-        .padding(.bottom, search.isActive ? 0 : 10)
-        .headerRow()
-        .listRowSeparator(.hidden)
-
+        // The search field is the system one (`companySearch`); sort is a toolbar menu
+        // (2026-11-26 review, issue 7).
         if !search.isActive {
             CompanyMarketPicker(market: $market)
                 .padding(.bottom, 8)
-                .headerRow()
-                .listRowSeparator(.hidden)
-            CompanySortMenu(sort: $sort)
                 .headerRow()
                 .listRowSeparator(.hidden)
             if sort == .marketCap {
@@ -66,12 +104,14 @@ private struct CompanyDirectory<Row: View>: View {
 
         Section {
             if search.isActive && companies.isEmpty {
-                Text(words: language("다른 기업명이나 종목 코드로 검색해 보세요.", "Try another company name or ticker."))
-                    .foregroundStyle(Theme.muted)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.vertical, 4)
-                    .listRowBackground(Theme.surface)
-                    .accessibilityIdentifier("company-search-empty")
+                ContentUnavailableView {
+                    Label(language("찾는 기업이 없어요", "No matching companies"), systemImage: "magnifyingglass")
+                } description: {
+                    Text(words: language("다른 기업명이나 종목 코드로 검색해 보세요.", "Try another company name or ticker."))
+                }
+                .listRowBackground(Theme.surface)
+                .accessibilityElement(children: .combine)
+                .accessibilityIdentifier("company-search-empty")
             }
             ForEach(companies, content: row)
         } header: {
@@ -180,9 +220,11 @@ enum CompanySort: CaseIterable {
 
     func companies(in market: Regulator, store: BundleStore, language: Language) -> [Company] {
         let companies = store.companies.filter { $0.regulator == market }
+        // The same date the row shows under the name.
         let dates = self == .latest
-            ? Dictionary(store.filings.map { ($0.companyID, $0.filedOn) }
-                         + store.notices.map { ($0.companyID, $0.filedOn) }, uniquingKeysWith: max)
+            ? Dictionary(uniqueKeysWithValues: companies.compactMap { company in
+                store.latestFiling(companyID: company.id).map { (company.id, $0.filedOn) }
+            })
             : [:]
         return companies.sorted { lhs, rhs in
             switch self {
@@ -230,55 +272,40 @@ private struct CompanyMarketPicker: View {
     }
 }
 
+/// The sort as a toolbar menu showing the current order (2026-11-26 review, issues 5 and 7):
+/// a native toolbar control, so it reads in light and dark and in an inactive Mac window.
 private struct CompanySortMenu: View {
     @Environment(\.language) private var language
-    @Environment(\.dynamicTypeSize) private var typeSize
     @Binding var sort: CompanySort
 
     var body: some View {
         Menu {
-            Picker(language("정렬", "Sort"), selection: $sort) {
+            Picker(language("정렬", "Sort by"), selection: $sort) {
                 ForEach(CompanySort.allCases, id: \.self) { option in
                     Text(option.title(language)).tag(option)
                 }
             }
             .pickerStyle(.inline)
         } label: {
-            #if os(macOS)
-            Text(words: language("정렬", "Sort by") + Copy.dot + sort.title(language))
-                .fixedSize(horizontal: false, vertical: true)
-            #else
-            let layout = typeSize.isAccessibilitySize
-                ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8))
-                : AnyLayout(HStackLayout(spacing: 16))
-            layout {
-                Text(words: language("정렬", "Sort by"))
-                    .font(.subheadline)
-                    .foregroundStyle(Theme.muted)
-                    .fixedSize(horizontal: false, vertical: true)
-                HStack(spacing: 8) {
-                    if !typeSize.isAccessibilitySize { Spacer(minLength: 0) }
-                    Text(words: sort.title(language))
-                        .font((typeSize.isAccessibilitySize ? Font.subheadline : .body).weight(.semibold))
-                        .foregroundStyle(Theme.ink)
-                        .multilineTextAlignment(.leading)
-                        .fixedSize(horizontal: false, vertical: true)
-                    if typeSize.isAccessibilitySize { Spacer(minLength: 0) }
-                    Image(systemName: "chevron.up.chevron.down")
-                        .font(.footnote.weight(.semibold))
-                        .foregroundStyle(Theme.pine)
-                        .accessibilityHidden(true)
-                }
+            // An HStack, not a Label: the iOS toolbar reduces a Label to its icon, and the
+            // current order should stay visible (DESIGN.md, Companies list).
+            HStack(spacing: 4) {
+                Image(systemName: "arrow.up.arrow.down")
+                    .accessibilityHidden(true)
+                Text(words: sort.title(language))
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .frame(minHeight: 60)
-            .background(Theme.surface, in: RoundedRectangle(cornerRadius: 10))
+            .fixedSize()
+            #if os(iOS)
+            .padding(.horizontal, 6)
+            .frame(minWidth: Theme.minTarget, minHeight: Theme.minTarget)
+            .contentShape(Rectangle())
             #endif
         }
-        .menuStyle(.borderlessButton)
         #if os(iOS)
-        .menuIndicator(.hidden)
+        .accessibilityShowsLargeContentViewer {
+            Image(systemName: "arrow.up.arrow.down")
+            Text(verbatim: language("정렬", "Sort by") + ": " + sort.title(language))
+        }
         #endif
         .accessibilityLabel(language("정렬", "Sort by"))
         .accessibilityValue(sort.title(language))
@@ -327,42 +354,34 @@ struct DataFooter: View {
     }
 }
 
+/// A company: its name, then its newest filing's date and type (2026-11-26 review, issue 2).
+/// The name wraps only between words; a one-word name wider than the row shrinks instead
+/// (issue 4).
 struct CompanyRow: View {
     @Environment(\.language) private var language
     let company: Company
-    let isNew: Bool
+    let latest: LatestFiling?
     var isSelected = false
 
     var body: some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(spacing: 8) {
-                name.fixedSize()
-                Spacer(minLength: 8)
-                newTag
-            }
-            VStack(alignment: .leading, spacing: 4) {
-                name.fixedSize(horizontal: false, vertical: true)
-                newTag
+        VStack(alignment: .leading, spacing: 2) {
+            UnbrokenWords(text: Titles.name(of: company, language: language))
+                .font(.body)
+                .foregroundStyle(onFill ? AnyShapeStyle(.primary) : AnyShapeStyle(Theme.ink))
+            if let latest {
+                Text(words: Copy.latestFiling(latest, language))
+                    .font(.footnote)
+                    .monospacedDigit()
+                    .foregroundStyle(onFill ? AnyShapeStyle(.secondary) : AnyShapeStyle(Theme.muted))
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
         .frame(maxWidth: .infinity, minHeight: Theme.minTarget, alignment: .leading)
         #if os(iOS)
-        .padding(.vertical, 8)
+        .padding(.vertical, 6)
         #endif
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(spoken)
-    }
-
-    private var name: some View {
-        Text(words: Titles.name(of: company, language: language))
-            .font(.body)
-            .foregroundStyle(onFill ? AnyShapeStyle(.primary) : AnyShapeStyle(Theme.ink))
-    }
-
-    @ViewBuilder private var newTag: some View {
-        if isNew {
-            TagView(text: language("새 공시", "New"), kind: .new)
-        }
     }
 
     private var onFill: Bool {
@@ -375,7 +394,7 @@ struct CompanyRow: View {
 
     private var spoken: String {
         var parts = [Titles.name(of: company, language: language)]
-        if isNew { parts.append(language("새 공시 있음", "has a new filing")) }
+        if let latest { parts.append(Copy.latestFilingSpoken(latest, language)) }
         return parts.joined(separator: ", ")
     }
 }
@@ -393,6 +412,7 @@ struct SidebarView: View {
     @Binding var selection: Item?
     @State private var market: Regulator
     @State private var sort: CompanySort = .latest
+    @State private var query = ""
 
     init(store: BundleStore, selection: Binding<Item?>) {
         self.store = store
@@ -414,8 +434,8 @@ struct SidebarView: View {
                         .tag(Item.glossary)
                 }
             }
-            CompanyDirectory(store: store, market: $market, sort: $sort) { company in
-                CompanyRow(company: company, isNew: store.hasNewFiling(companyID: company.id),
+            CompanyDirectory(store: store, query: $query, market: $market, sort: $sort) { company in
+                CompanyRow(company: company, latest: store.latestFiling(companyID: company.id),
                            isSelected: selection == .company(company.id))
                     .accessibilityIdentifier("company-\(company.id)")
                     .tag(Item.company(company.id))
@@ -428,6 +448,12 @@ struct SidebarView: View {
             }
         }
         .navigationTitle(language("기업", "Companies"))
+        .companySearch($query, placement: .sidebar)
+        .toolbar {
+            if !CompanySearch(query).isActive {
+                ToolbarItem { CompanySortMenu(sort: $sort) }
+            }
+        }
         #if os(macOS)
         .navigationSplitViewColumnWidth(min: 280, ideal: 300)
         #endif
