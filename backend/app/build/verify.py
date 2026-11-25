@@ -32,6 +32,11 @@ summary line needs a record from the current aligner for that exact line and app
 ``--faithfulness-policy`` decides which verdicts block. The default, ``unsupported``, blocks
 unsupported lines and lines without source text unless the owner accepted them; ``partly``
 also blocks partly supported lines, ``warn`` only reports the counts, ``off`` skips the check.
+
+Every check also reads ``summary_sources`` (D100): each row belongs to a line the bundle holds,
+in order and in its filing's language. A release requires a supported, partly or template
+source row for every summary line the owner did not accept, and, when the report is read,
+exactly the rows its current record gives.
 """
 
 from __future__ import annotations
@@ -683,7 +688,7 @@ def check_bundle(
             return [f"build_meta has {len(meta_rows)} rows"]
         meta = dict(zip(BUILD_META_COLUMNS, meta_rows[0], strict=True))
         problems = []
-        if content_sha256(connection) != meta["content_sha256"]:
+        if content_sha256(connection, meta["aligner_version"]) != meta["content_sha256"]:
             problems.append("content_sha256 does not match the file's contents")
         for table, column, declared in _declared_types(connection):
             if declared.upper() not in ("TEXT", "INTEGER"):
@@ -695,6 +700,7 @@ def check_bundle(
         quarter_figures = _select(connection, "quarter_figures")
         facts = _select(connection, "filing_facts")
         summaries = _select(connection, "filing_summaries")
+        sources = _select(connection, "summary_sources")
     finally:
         connection.close()
 
@@ -736,6 +742,20 @@ def check_bundle(
                 problems.append(f"{filing_id}: no approved summary {', '.join(missing)}")
         if faithfulness_gate is not None:
             problems += faithfulness_gate.problems(summaries)
+    if meta["aligner_version"] != faithfulness.ALIGNER_VERSION:
+        problems.append(f"aligner_version {meta['aligner_version']!r} is not "
+                        f"{faithfulness.ALIGNER_VERSION!r}")  # fmt: skip
+    gate = faithfulness_gate
+    index = gate.index if gate is not None else None
+    # The rows are compared with the report only when the gate reads it and its verdicts block.
+    compare = gate is not None and gate.policy in ("unsupported", "partly") and gate.missing is None
+    regulators = {
+        fid: companies[f["company_id"]]["regulator"]
+        for fid, f in filings.items() if f["company_id"] in companies
+    }  # fmt: skip
+    problems += faithfulness.bundle_source_problems(
+        summaries, sources, regulators, release=release, index=index, compare=compare
+    )
     return problems
 
 

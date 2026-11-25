@@ -12,7 +12,7 @@ import pytest
 from app.build import export, faithfulness, source, summaries, verify
 from app.build.model import EVENT_PROMPT_VERSION, PROMPT_VERSION, BuildInput
 from app.build.summaries import select_targets
-from tests.build_seed import AS_OF, PINNED_DIRS
+from tests.build_seed import AS_OF, PINNED_DIRS, supported_records
 from tests.test_build_summaries import MODEL, _approve, _sourced
 
 
@@ -30,9 +30,12 @@ def _write_approved(path: Path, data: BuildInput, *, skip_state: bool = False) -
 
 
 def _run(data: BuildInput, path: Path, out: Path, *extra: str) -> int:
+    """Export with a faithfulness report that supports every line of ``path`` (D100)."""
+    report = path.with_name("faithfulness.jsonl")
+    faithfulness.write_records(report, supported_records(source.read_summaries(path)))
     pinned = [arg for d in PINNED_DIRS for arg in ("--pinned", str(d))]
     args = ["--as-of", AS_OF.isoformat(), "--out", str(out), "--source-revision", "test",
-            "--llm-model", MODEL, *pinned, *extra]  # fmt: skip
+            "--llm-model", MODEL, "--faithfulness", str(report), *pinned, *extra]  # fmt: skip
     return export.run(
         args,
         load=lambda _args: dataclasses.replace(data, summaries=tuple(source.read_summaries(path))),
@@ -96,7 +99,8 @@ def test_a_bundle_from_an_approved_file_passes_release_verify(tmp_path, capsys) 
     out = tmp_path / "footnote.sqlite"
     assert _run(bare, path, out, "--release") == 0  # the default prompt version, no flag
     # The faithfulness report built from approved.jsonl covers every line of the bundle. The
-    # fixture's lines are the same for every filing, so the verdicts only warn here.
+    # fixture's lines are the same for every filing, so the verdicts only warn here, and the
+    # export took its source sentences from a report that supports every line.
     sources = {(t.filing_id, t.section): faithfulness.Source(t.source_text, t.template is not None)
                for t in select_targets(data, AS_OF) if t.source_text}  # fmt: skip
     rows = summaries.read_jsonl(path)

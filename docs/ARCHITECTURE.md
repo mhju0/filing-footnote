@@ -47,12 +47,14 @@ v0.5.2 portfolio architecture of Filing Digest is kept in
 
 `backend/app/build/bundle.py` is the schema. Its tables:
 
-- `build_meta`: `schema_version` (4), `data_as_of`, `source_revision`, `llm_model`,
-  `prompt_version`, `content_sha256`, `allow_unapproved` (1 for a development build) and
-  `preview` (1 for a preview build, D90).
+- `build_meta`: `schema_version` (5), `data_as_of`, `source_revision`, `llm_model`,
+  `prompt_version`, `content_sha256`, `allow_unapproved` (1 for a development build),
+  `preview` (1 for a preview build, D90) and `aligner_version` (D100).
 - `companies`, `filings` (annual or event, with category and source link), `notices`
   (listed as a count, never summarised), `filing_summaries` (only rows whose
-  `review_state` is `approved` can be written), `filing_facts`, `figures` and `glossary`.
+  `review_state` is `approved` can be written), `summary_sources` (the verbatim source
+  sentence behind each summary line, from the faithfulness report, D100), `filing_facts`,
+  `figures` and `glossary`.
 - Every amount is `TEXT` in canonical decimal form; there is no `REAL` column. The
   fingerprint is a SHA-256 over a canonical dump of every table except `build_meta`
   ([build-bundle.md](build-bundle.md)).
@@ -70,7 +72,8 @@ Both sides read shared files in [`contracts/`](../contracts/):
 | `glossary.json` | Glossary entries, each with an owner `approved` flag |
 
 FootnoteKit's tests keep copies of three of these files; a backend test byte-compares the
-copies with the originals, and `BundleStore` refuses any `schema_version` but the current one.
+copies with the originals, and `BundleStore` refuses any `schema_version` but the current one
+and schema 4, which it opens without source sentences.
 
 ## The app (`ios/`)
 

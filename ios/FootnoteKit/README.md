@@ -4,7 +4,8 @@ The Swift package the Filing Footnote app (iPhone, iPad and native Mac) builds o
 third-party dependencies and no UI.
 
 - `BundleStore` opens the bundled `footnote.sqlite` read-only with the system SQLite, refuses a
-  `schema_version` other than the one in `backend/app/build/bundle.py`, and reads every table
+  `schema_version` other than the one in `backend/app/build/bundle.py` (5) or schema 4, which
+  opens without source sentences (D100), and reads every table
   into `Sendable` values. Figures and decimal facts are `Decimal`, parsed from canonical
   strings. A release build of the app calls `requireRelease()`, which throws for a
   development bundle (`allow_unapproved = 1`).
@@ -34,3 +35,6 @@ Test resources:
   the real exporter from the backend's offline test seed. It is never shipped. Rewrite it
   after a schema change with `cd backend && ../.venv/bin/python -m tests.footnotekit_fixture`;
   `backend/tests/test_footnotekit_fixture.py` fails while it does not match `bundle.py`.
+  The generator has drifted from the committed fixture (its event summary is missing), so
+  the schema 5 change migrated the committed file and added `summary_sources` rows from
+  the generator's made-up records instead of rewriting it.

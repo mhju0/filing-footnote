@@ -80,6 +80,21 @@ final class FilingPagesUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["공시를 바탕으로 쓰고, 게시 전에 확인한 문장이에요."].exists)
     }
 
+    /// D100: the source sentence stays closed until its disclosure is opened; a line without
+    /// a source row has no disclosure.
+    @MainActor func testSourceSentenceOpensOnDemand() throws {
+        let app = try launch("filing=\(Self.samsung)|\(Self.purchase)")
+        XCTAssertTrue(app.descendants(matching: .any)["filing-page"].waitForExistence(timeout: 10))
+        let excerpt = element("이사회는 자기주식 취득을 결의하였습니다.", in: app)
+        XCTAssertFalse(excerpt.exists)
+        let disclosures = app.descendants(matching: .any).matching(identifier: "source-sentence")
+        XCTAssertEqual(disclosures.count, 2)
+        disclosures.element(boundBy: 0).buttons.firstMatch.tap()
+        XCTAssertTrue(excerpt.waitForExistence(timeout: 5))
+        XCTAssertTrue(element("한국어 원문", in: app).exists)
+        XCTAssertFalse(element("취득 목적 : 임직원 주식보상", in: app).exists)
+    }
+
     @MainActor func testAnnualPageShowsTwoYearsAndOpensAFigure() throws {
         let app = try launch("filing=\(Self.samsung)|\(Self.annual)", language: "en")
         XCTAssertTrue(app.descendants(matching: .any)["annual-page"].waitForExistence(timeout: 10))

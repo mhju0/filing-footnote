@@ -8,7 +8,10 @@ exporter, :func:`app.build.export.build_bundle` and :func:`app.build.export.writ
 ``allow_unapproved``. A few summaries keyed to the current source text, prompt version and word
 lists are marked approved so the ``filing_summaries`` table has rows; their lines are fixture
 text, not owner-approved summaries. The exporter writes no glossary yet, so two entries are added
-before the write. ``tests/test_footnotekit_fixture.py`` fails when this file's schema drifts
+before the write. Source sentences (D100) come from made-up faithfulness records that cover each
+kind of ``summary_sources`` row: the event summary's first line has one sentence, its second two
+(partly supported), its third none; the annual one line has one sentence and the business line
+is a template line without an excerpt. ``tests/test_footnotekit_fixture.py`` fails when this file's schema drifts
 from :mod:`app.build.bundle`.
 """
 
@@ -18,7 +21,7 @@ import dataclasses
 import sys
 from pathlib import Path
 
-from app.build import export
+from app.build import export, faithfulness
 from app.build.export import BuildOptions, build_bundle, write_bundle
 from app.build.model import (
     BuildInput,
@@ -84,14 +87,43 @@ def _approved(data: BuildInput, filing_ids: list[str]) -> tuple[SummaryRow, ...]
     return tuple(rows)
 
 
+# Made-up source sentences by (section, line): (verdict, [(start, text), ...]).
+_SPANS = {
+    ("summary", 1): ("supported", [(40, "이사회는 자기주식 취득을 결의하였습니다.")]),
+    ("summary", 2): ("partly", [(120, "취득 목적 : 임직원 주식보상"),
+                                (180, "취득 방법은 유가증권시장을 통한 장내 매수로 합니다.")]),
+    ("one_line", 1): ("supported", [(10, "당사는 전자 부품을 만들어 판매하고 있습니다.")]),
+    ("business", 1): ("template", []),
+}  # fmt: skip
+
+
+def _records(summaries: tuple[SummaryRow, ...]) -> faithfulness.RecordIndex:
+    records = []
+    for row in summaries:
+        lines = (row.line1, row.line2, row.line3)
+        for number, line in enumerate(lines, start=1):
+            if line is None or (row.section, number) not in _SPANS:
+                continue
+            verdict, spans = _SPANS[(row.section, number)]
+            records.append({
+                "filing_id": row.filing_id, "lang": row.lang, "section": row.section,
+                "line_no": number, "line_sha256": faithfulness.line_sha256(line),
+                "input_sha256": row.input_sha256, "verdict": verdict,
+                "aligner_version": faithfulness.ALIGNER_VERSION,
+                "spans": [{"start": a, "end": a + len(t), "text": t} for a, t in spans],
+            })  # fmt: skip
+    return faithfulness.RecordIndex(records)
+
+
 def write_fixture(out: Path) -> dict:
     data = _sourced(fixture_build_input())
     options = BuildOptions(AS_OF, SOURCE_REVISION, allow_unapproved=True)
     first = build_bundle(data, options, PINNED_DIRS)
     filings = first.rows["filings"]
     chosen = [next(r[0] for r in filings if r[2] == kind) for kind in ("annual", "event")]
+    summaries = _approved(data, chosen)
     bundle = build_bundle(
-        dataclasses.replace(data, summaries=_approved(data, chosen)), options, PINNED_DIRS
+        dataclasses.replace(data, summaries=summaries), options, PINNED_DIRS, _records(summaries)
     )
     bundle.rows["glossary"] = sorted(_GLOSSARY)
     report = write_bundle(bundle, out)

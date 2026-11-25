@@ -19,7 +19,11 @@ public enum BundleError: Error, Equatable, Sendable {
 /// The file is opened read-only, checked for a known `schema_version` before any other table
 /// is read, and closed before `init` returns. The schema is `backend/app/build/bundle.py`.
 public struct BundleStore: Sendable {
-    public static let supportedSchemaVersion = 4
+    /// The schema `bundle.py` writes.
+    public static let supportedSchemaVersion = 5
+    /// Every schema the app opens. A schema 4 bundle has no source sentences (D100) and opens
+    /// with none.
+    public static let readableSchemaVersions: Set<Int> = [4, 5]
 
     public let meta: BuildMeta
     /// By `sort_order`.
@@ -30,6 +34,8 @@ public struct BundleStore: Sendable {
     public let notices: [Notice]
     /// By filing, language, then section in `SummarySection` order.
     public let summaries: [FilingSummary]
+    /// By filing, language, section, line, then position; empty in a schema 4 bundle.
+    public let sources: [SummarySource]
     /// By filing, then position.
     public let facts: [FilingFact]
     /// By company, metric, then `period_end` descending.
@@ -48,19 +54,22 @@ public struct BundleStore: Sendable {
             row throws(BundleError) in try row.int(0)
         }
         guard versions.count == 1 else { throw .missingBuildMeta(rows: versions.count) }
-        guard versions[0] == Self.supportedSchemaVersion else {
+        guard Self.readableSchemaVersions.contains(versions[0]) else {
             throw .unsupportedSchemaVersion(found: versions[0], supported: Self.supportedSchemaVersion)
         }
+        let hasSources = versions[0] >= 5
         let metaRows = try db.rows(
             "build_meta",
             "SELECT schema_version, data_as_of, source_revision, llm_model, prompt_version, "
-                + "content_sha256, allow_unapproved, preview FROM build_meta"
+                + "content_sha256, allow_unapproved, preview, "
+                + (hasSources ? "aligner_version" : "NULL") + " FROM build_meta"
         ) { row throws(BundleError) in
             BuildMeta(
                 schemaVersion: try row.int(0), dataAsOf: try row.date(1),
                 sourceRevision: try row.text(2), llmModel: try row.text(3),
                 promptVersion: try row.text(4), contentSHA256: try row.text(5),
-                allowUnapproved: try row.bool(6), preview: try row.bool(7))
+                allowUnapproved: try row.bool(6), preview: try row.bool(7),
+                alignerVersion: hasSources ? try row.text(8) : nil)
         }
         meta = metaRows[0]
 
@@ -119,6 +128,21 @@ public struct BundleStore: Sendable {
             ($0.filingID, $0.language.rawValue, sectionOrder[$0.section]!)
                 < ($1.filingID, $1.language.rawValue, sectionOrder[$1.section]!)
         }
+        sources = hasSources ? try db.rows(
+            "summary_sources",
+            "SELECT filing_id, lang, section, line_no, position, verdict, excerpt, excerpt_lang "
+                + "FROM summary_sources ORDER BY filing_id, lang, section, line_no, position"
+        ) { row throws(BundleError) in
+            let verdict: SummarySource.Verdict = try row.choice(5)
+            let excerpt = try row.optionalText(6)
+            guard (verdict == .template) == (excerpt == nil) else {
+                throw .invalidValue(table: "summary_sources", column: "excerpt", value: excerpt ?? "NULL")
+            }
+            return SummarySource(
+                filingID: try row.text(0), language: try row.choice(1), section: try row.choice(2),
+                lineNumber: try row.int(3), position: try row.int(4), verdict: verdict,
+                excerpt: excerpt, excerptLanguage: try row.choice(7))
+        } : []
         facts = try db.rows(
             "filing_facts",
             "SELECT filing_id, position, fact_key, value_kind, value_text, unit, origin "
@@ -246,6 +270,17 @@ public struct BundleStore: Sendable {
     /// In `SummarySection` order.
     public func summaries(forFiling filingID: String, language: Language) -> [FilingSummary] {
         summaries.filter { $0.filingID == filingID && $0.language == language }
+    }
+
+    /// The source sentences behind one summary line (one-based), in source order; empty when
+    /// the bundle has none for it.
+    public func sources(
+        forFiling filingID: String, language: Language, section: SummarySection, line: Int
+    ) -> [SummarySource] {
+        sources.filter {
+            $0.filingID == filingID && $0.language == language && $0.section == section
+                && $0.lineNumber == line
+        }
     }
 
     public func summary(

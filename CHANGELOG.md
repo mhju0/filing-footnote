@@ -21,6 +21,8 @@ the release bundle is not built and the walkthrough is not recorded.
 - The Filing Digest app, its Pages site and its tests are removed (D77, D80).
 
 **Added**
+- The filing page shows the verbatim source sentence behind each summary line on
+  demand; bundles move to schema 5 with a `summary_sources` table (D100).
 - `scripts/check.sh`, one command that runs lint, the offline tests, the
   FootnoteKit tests, the Xcode project check and the no-currency-conversion
   check, and ends with `GATE: PASS` or `GATE: FAIL`.

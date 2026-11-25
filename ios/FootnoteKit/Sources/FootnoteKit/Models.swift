@@ -13,6 +13,9 @@ public struct BuildMeta: Sendable, Hashable {
     /// True for a preview bundle (D90): it holds only approved summaries, but filings without
     /// approved summaries are left out. Fit for internal TestFlight, never for a release.
     public let preview: Bool
+    /// The faithfulness aligner that chose the source sentences (D100); nil in a schema 4
+    /// bundle, which has none.
+    public let alignerVersion: String?
 }
 
 public struct Company: Sendable, Hashable, Identifiable {
@@ -64,6 +67,32 @@ public struct FilingSummary: Sendable, Hashable {
     /// One to three lines, in order.
     public let lines: [String]
     public let inputSHA256: String
+}
+
+/// One source sentence behind a summary line (D100), from `summary_sources`.
+public struct SummarySource: Sendable, Hashable {
+    public enum Verdict: String, Sendable, Hashable {
+        /// The excerpt holds every word of the line.
+        case supported
+        /// The excerpts hold most of it; shown the same way.
+        case partly
+        /// A fixed sentence (D78) whose figures come from the filing's table: no excerpt.
+        case template
+    }
+
+    public let filingID: String
+    /// The summary line's language.
+    public let language: Language
+    public let section: SummarySection
+    /// One-based, as `FilingSummary.lines` plus one.
+    public let lineNumber: Int
+    /// The excerpt's order among the line's sources, from zero.
+    public let position: Int
+    public let verdict: Verdict
+    /// Verbatim from the filing; nil for a template line.
+    public let excerpt: String?
+    /// The filing's language, which is the excerpt's.
+    public let excerptLanguage: Language
 }
 
 public enum FactValue: Sendable, Hashable {
