@@ -85,6 +85,56 @@ public enum Glossary {
 
     /// The entry that explains a reported metric (`metric_<key>`).
     public static func key(for metric: ReportedMetric) -> String { "metric_\(metric.rawValue)" }
+
+    /// The unit of a rate difference (`%포인트` / percentage points), linked from 차이.
+    public static let percentagePoint = "percentage_point"
+
+    /// 자주 보는 용어 / Key terms, in this order, above the dictionary (2026-11-26 review,
+    /// issue 12): the figures a first-time reader meets first.
+    public static let keyTerms = [
+        "metric_revenue", "metric_operating_income", "metric_net_income", "metric_eps",
+        "metric_operating_margin",
+    ]
+
+    /// The reasons a comparison is refused (`refusal_<reason>`): their own group at the end,
+    /// not mixed in with the terms.
+    public static func isRefusal(_ termKey: String) -> Bool { termKey.hasPrefix("refusal_") }
+
+    /// The heading a term is filed under: its first Hangul consonant (`매출액` -> `ㅁ`), its
+    /// first Latin letter in upper case, or `#`.
+    public static func initial(of term: String) -> String {
+        guard let first = term.first else { return "#" }
+        let consonants = Array("ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ")
+        if let scalar = String(first).precomposedStringWithCanonicalMapping.unicodeScalars.first,
+           (0xAC00...0xD7A3).contains(scalar.value) {
+            return String(consonants[Int((scalar.value - 0xAC00) / 588)])
+        }
+        if consonants.contains(first) { return String(first) }
+        let latin = String(first).folding(options: [.diacriticInsensitive, .widthInsensitive], locale: nil)
+            .uppercased()
+        return latin.count == 1 && "ABCDEFGHIJKLMNOPQRSTUVWXYZ".contains(latin) ? latin : "#"
+    }
+}
+
+/// One group of the glossary list: the key terms, the terms under one initial, or the
+/// refusal reasons.
+public struct GlossarySection: Sendable, Hashable, Identifiable {
+    public enum Kind: Sendable, Hashable {
+        case keyTerms
+        case initial(String)
+        case refusals
+    }
+
+    public let kind: Kind
+    public let entries: [GlossaryEntry]
+
+    public var id: String {
+        switch kind {
+        case .keyTerms: "key-terms"
+        case .initial(let initial): "initial-\(initial)"
+        case .refusals: "refusals"
+        }
+    }
 }
 
 extension BundleStore {
@@ -101,6 +151,27 @@ extension BundleStore {
             case .orderedSame: $0.termKey < $1.termKey
             }
         }
+    }
+
+    /// The glossary as the list shows it: the key terms first in `Glossary.keyTerms` order,
+    /// then the other terms by initial in dictionary order, then the refusal reasons. Each
+    /// entry appears once. A search keeps the groups and drops the entries that do not match;
+    /// an empty group is left out.
+    public func glossarySections(language: Language, matching query: String = "") -> [GlossarySection] {
+        let entries = sortedGlossary(language: language, matching: query)
+        let keyTerms = Glossary.keyTerms.compactMap { key in entries.first { $0.termKey == key } }
+        let refusals = entries.filter { Glossary.isRefusal($0.termKey) }
+        var sections = keyTerms.isEmpty ? [] : [GlossarySection(kind: .keyTerms, entries: keyTerms)]
+        var initials: [String] = []
+        var byInitial: [String: [GlossaryEntry]] = [:]
+        for entry in entries where !Glossary.keyTerms.contains(entry.termKey) && !Glossary.isRefusal(entry.termKey) {
+            let initial = Glossary.initial(of: entry.term)
+            if byInitial[initial] == nil { initials.append(initial) }
+            byInitial[initial, default: []].append(entry)
+        }
+        sections += initials.map { GlossarySection(kind: .initial($0), entries: byInitial[$0]!) }
+        if !refusals.isEmpty { sections.append(GlossarySection(kind: .refusals, entries: refusals)) }
+        return sections
     }
 
     /// Terms and formal names in either language match the same dictionary entry.

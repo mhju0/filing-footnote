@@ -152,7 +152,7 @@ struct FilingMeta: View {
             if filing.isCorrected {
                 TagView(text: language("정정됨", "Corrected"), kind: .corrected)
             }
-            if Freshness.isNew(filing.filedOn, dataAsOf: dataAsOf) {
+            if Freshness.isNew(filing, dataAsOf: dataAsOf) {
                 TagView(text: language("새 공시", "New"), kind: .new)
             }
             if showsDate {
@@ -199,7 +199,7 @@ struct FilingRow: View {
         if let companyName { parts.append(companyName) }
         parts.append(filing.category.label(language))
         if filing.isCorrected { parts.append(language("정정됨", "Corrected")) }
-        if Freshness.isNew(filing.filedOn, dataAsOf: dataAsOf) { parts.append(language("새 공시", "New")) }
+        if Freshness.isNew(filing, dataAsOf: dataAsOf) { parts.append(language("새 공시", "New")) }
         parts.append(Formatting.fullDate(filing.filedOn, language: language))
         parts.append(Titles.title(for: filing, language: language))
         return parts.joined(separator: ", ")
@@ -236,7 +236,7 @@ struct QuarterRow: View {
         .accessibilityLabel(spoken)
     }
 
-    private var isNew: Bool { Freshness.isNew(report.filing.filedOn, dataAsOf: dataAsOf) }
+    private var isNew: Bool { Freshness.isNew(report.filing, dataAsOf: dataAsOf) }
 
     private var spoken: String {
         var parts = [Titles.title(for: report.filing, language: language)]
@@ -295,7 +295,7 @@ struct PeriodicRow: View {
         .accessibilityLabel(spoken)
     }
 
-    private var isNew: Bool { Freshness.isNew(report.filing.filedOn, dataAsOf: dataAsOf) }
+    private var isNew: Bool { Freshness.isNew(report.filing, dataAsOf: dataAsOf) }
 
     private var spoken: String {
         var parts = [Titles.title(for: report.filing, language: language)]

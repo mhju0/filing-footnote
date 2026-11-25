@@ -170,6 +170,11 @@ struct CompanyCompareView: View {
                         value: PageCopy.rateDifference(difference, language),
                         spoken: PageCopy.rateDifferenceSpoken(difference, language))
                     .accessibilityIdentifier("rate-difference")
+                // What a percentage point is; hidden until the bundle has the entry.
+                if let entry = store.glossaryEntry(termKey: Glossary.percentagePoint, language: language) {
+                    LinkRow(title: Copy.glossaryLink(entry.term, language)) { navigate(.glossary(entry.termKey)) }
+                        .accessibilityIdentifier("percentage-point-link")
+                }
             }
         } header: {
             SectionTitle(PageCopy.ratesHeading(page.chosenMeasure, metric: page.reportedMetric, language))

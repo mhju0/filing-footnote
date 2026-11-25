@@ -40,13 +40,19 @@ final class CoreFlowUITests: XCTestCase {
         XCTAssertTrue(apple.exists)
         XCTAssertEqual(sort.value as? String, "Company name")
 
-        let field = app.textFields["company-search"]
-        let clear = app.buttons["company-search-clear"]
+        // The system search field (owner pick 2026-11-26); its clear button is the system's.
+        let field = app.searchFields.firstMatch
+        let clear = field.buttons.firstMatch
         field.tap()
         field.typeText("no match")
         XCTAssertTrue(identified("company-search-empty", in: app).waitForExistence(timeout: 5))
         clear.tap()
         XCTAssertTrue(apple.waitForExistence(timeout: 5))
+        // While the field has focus the system hides the bar's toolbar items. Its dismiss button
+        // (Cancel before iOS 26, Close after, in the device language) ends the search and
+        // brings the sort menu back with its choice kept.
+        app.buttons.matching(NSPredicate(format: "label IN %@", ["Cancel", "취소", "Close", "닫기"])).firstMatch.tap()
+        XCTAssertTrue(sort.waitForExistence(timeout: 5))
         XCTAssertEqual(sort.value as? String, "Company name")
 
         field.tap()
