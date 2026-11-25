@@ -5,11 +5,10 @@ created on first get_*_engine() call only (and SQLAlchemy itself connects lazily
 on first use). Tests import app code without any DB running.
 
 The ``postgresql+psycopg://`` URL drives psycopg3's async dialect. The async
-stack is shared by request handlers, ingestion, and embedding backfills.
+stack is shared by ingestion and the build.
 """
 
 import logging
-from collections.abc import AsyncIterator
 from functools import lru_cache
 
 from sqlalchemy.ext.asyncio import (
@@ -55,16 +54,3 @@ def get_async_session() -> AsyncSession:
         result = await ingest_filing(adapter, get_async_session)
     """
     return get_async_session_factory()()
-
-
-async def get_db_session() -> AsyncIterator[AsyncSession]:
-    """FastAPI dependency: yield a request-scoped AsyncSession, then close it.
-
-        @router.post("/search")
-        async def search(session: AsyncSession = Depends(get_db_session)): ...
-
-    API consumers are read-only. Write workflows open their own session and
-    explicit transaction boundaries instead of reusing this dependency.
-    """
-    async with get_async_session() as session:
-        yield session

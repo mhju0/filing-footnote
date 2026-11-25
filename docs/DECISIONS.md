@@ -1593,3 +1593,47 @@ based on the unofficial [Toss Design Skill v2](https://github.com/Ilbie/Toss-Des
 - Glossary search matches both languages and formal terms. The native jump
   index remains. Definitions expand on the phone; larger layouts keep a
   separate detail pane.
+
+## D94 · Filing Digest's server, search and embedding code removed · 2026-11-26
+
+Filing Footnote has no server: the app reads a bundled file (ADR 0006). Nothing in the ingest,
+build, export or verify path imported Filing Digest's FastAPI service; an import graph from
+`app.ingest` and `app.build` confirmed it before anything was deleted. The finish-line audit of
+2026-11-26 asked for the removal.
+
+- Deleted from `backend/app/`: `main.py` (FastAPI), `api/`, `answers/`, `digests/`, `search/`,
+  `evidence/`, `embeddings/`, `figures/`, `schemas.py`, `digest_narrative.py`,
+  `financials/calculations.py` and `llm/{answer,citation_guard,narrative,deps}.py`, 25 files
+  and 2,509 lines. `figures/`, `schemas.py`, `digest_narrative.py`, `financials/calculations.py`
+  and `llm/deps.py` were imported only by the other deleted modules.
+- Deleted with them: their 14 test files and the smoke seed (3,009 lines), the live eval
+  harness `backend/evals/` (it called the HTTP API), `backend/Dockerfile`, `.dockerignore`, and
+  the Compose `backend` service with its `hf_cache` volume. So are the FastAPI dependency
+  `db.session.get_db_session` and the settings `allowed_hosts`, `embedding_model`,
+  `embedding_offline_first` and `embedding_warmup_enabled`.
+- Annual ingest no longer embeds chunks. `ingest_filing` persists the snapshot and returns;
+  `IngestResult` loses `embeddings_backfilled`. Chunks are still stored, because the summary
+  build reads them.
+- Kept, although the app does not call it: `compare/calculator.py`, the reference calculator
+  that `contracts/comparison-cases.json` holds FootnoteKit's port to. Kept in the schema:
+  `filing_chunks.embedding`, its HNSW index and `filings.indexed_at`. New rows leave them
+  empty; dropping them needs a migration and is outside this change.
+- `llm/number_guard.py` scans plain strings instead of `/answer` objects; the neutrality guard
+  still imports its spelled-number patterns. `_ANY_DIGIT_RE` moved from `digest_narrative.py`
+  into `neutrality_guard.py`, and rule N1's `sources` in the lexicon name its new place. The
+  lexicon version is unchanged, so no summary cache key or approval changes.
+- Removed from `requirements.txt`: fastapi, uvicorn[standard], httpx2, sentence-transformers,
+  and PyYAML (used only by the eval harness). The lock, regenerated with
+  `uv pip compile --universal --no-header --no-annotate` constrained to the previous pins,
+  drops 41 packages, among them torch, transformers, scikit-learn and scipy. No remaining pin
+  changed. CI no longer installs CPU torch.
+- The local database defaults D77 kept are renamed from `filing_digest` to `filing_footnote`
+  (user, password `filing_footnote_dev`, database) in `docker-compose.yml`, CI and `config.py`.
+  PostgreSQL reads them only when a volume is first created, so an existing volume keeps its
+  `filing_digest` role and data. On such a volume, a command that relies on the default URL
+  needs `DATABASE_URL` in `backend/.env` or a `filing_footnote` role.
+- `contracts/family-glossary.json` no longer asks to be kept identical with the partner
+  repositories.
+- Not changed: `backend/.env.example` still names the old database URL and the `EMBEDDING_*`
+  variables (settings ignore unknown variables). ADR 0006 mentions a small read-only API that
+  serves the bundle; none exists, and this entry neither builds nor drops it.

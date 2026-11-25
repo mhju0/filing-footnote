@@ -23,8 +23,6 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    allowed_hosts: list[str] = ["127.0.0.1", "localhost", "testserver"]
-
     # DART (OpenDART) -- secret; keep as SecretStr, never log its value.
     dart_api_key: SecretStr | None = None
     dart_base_url: str = "https://opendart.fss.or.kr/api"
@@ -44,24 +42,8 @@ class Settings(BaseSettings):
     sec_user_agent: str = "filing-footnote/0.5.2 your-contact@example.com"
 
     database_url: str = (
-        "postgresql+psycopg://filing_digest:filing_digest_dev@localhost:5433/filing_digest"
+        "postgresql+psycopg://filing_footnote:filing_footnote_dev@localhost:5433/filing_footnote"
     )
-
-    # KURE-v1 (nlpai-lab/KURE-v1): the cross-lingual (KO/EN) 1024-dim model whose
-    # vectors backfill filing_chunks.embedding. A HuggingFace model id; overriding
-    # it would change the embedding space, so it is pinned here as the one knob.
-    embedding_model: str = "nlpai-lab/KURE-v1"
-
-    # When the model is already in the local HF cache, skip HF Hub's network
-    # freshness checks at load time (see app.embeddings.kure._configure_offline_mode).
-    # Turn off to force a network check even when cached (e.g. to pick up a
-    # newly pushed revision).
-    embedding_offline_first: bool = True
-
-    # Skip the KURE-v1 warm-up in FastAPI's lifespan (app.main.lifespan) so
-    # CI/health-check startups don't pay the multi-second model load. The
-    # model then lazy-loads on the first /search request instead.
-    embedding_warmup_enabled: bool = True
 
 
 @lru_cache

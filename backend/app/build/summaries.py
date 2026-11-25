@@ -382,8 +382,7 @@ def _schema_keys(section: str) -> list[str]:
 
 
 def build_summary_json_schema(section: str) -> dict[str, Any]:
-    """Flat ``response_format`` for one section, shaped like
-    :func:`app.digest_narrative.build_digest_json_schema`: one object of string fields."""
+    """Flat ``response_format`` for one section: one object of string fields."""
     keys = _schema_keys(section)
     return {
         "type": "json_schema",

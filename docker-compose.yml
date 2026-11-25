@@ -1,19 +1,18 @@
-# filing-footnote 로컬 개발 스택 (Compose Spec v2 스타일 - 최상위 `version:` 키는 사용하지 않음)
+# filing-footnote 로컬 빌드 데이터베이스 (Compose Spec v2 스타일 - 최상위 `version:` 키는 사용하지 않음)
 #
-# 개발 정본: `docker compose up -d db` (DB만) + host uvicorn `--reload --port 8001`.
-#   backend 서비스는 profile "container"에 격리되어 bare `up`으로는 뜨지 않는다 (아래 backend.profiles 참고).
-#   컨테이너로 backend를 띄우려면 명시적으로: `docker compose --profile container up -d --build backend`
-# 포트: backend 8001(host, 컨테이너 사용 시), postgres 5433(host) -> 5432(내부)
+# 실행: `docker compose up -d db`. 수집(app.ingest)과 빌드(app.build)는 호스트에서 실행한다.
+# 포트: postgres 5433(host) -> 5432(내부)
 
 services:
   db:
     image: pgvector/pgvector:pg16
     environment:
-      # 아래 기본값(filing_digest / filing_digest_dev / filing_digest)은 "로컬 개발 전용" 기본값이며
+      # 아래 기본값(filing_footnote / filing_footnote_dev / filing_footnote)은 "로컬 개발 전용" 기본값이며
       # 운영(production) 비밀번호가 아니다. 운영 환경에서는 반드시 호스트 환경변수로 덮어쓸 것.
-      POSTGRES_USER: ${POSTGRES_USER:-filing_digest}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-filing_digest_dev}
-      POSTGRES_DB: ${POSTGRES_DB:-filing_digest}
+      # 이미 초기화된 볼륨에서는 PostgreSQL이 이 값을 읽지 않는다 (기존 역할과 데이터는 그대로).
+      POSTGRES_USER: ${POSTGRES_USER:-filing_footnote}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-filing_footnote_dev}
+      POSTGRES_DB: ${POSTGRES_DB:-filing_footnote}
     ports:
       - "127.0.0.1:5433:5432"
     volumes:
@@ -28,31 +27,5 @@ services:
       retries: 10
       start_period: 5s
 
-  backend:
-    build: ./backend
-    # 개발 정본은 host uvicorn(:8001)이다. backend 컨테이너는 첫 실행에서 KURE 모델을
-    # 다운로드할 수 있어 시작이 느리고, host uvicorn과 동시에 쓰면 포트 충돌이 난다.
-    # profile "container"로 격리하여 bare `docker compose up`에서 자동 기동되지 않게 한다.
-    # 컨테이너 실행이 필요할 때만: `docker compose --profile container up -d --build backend`
-    profiles: ["container"]
-    ports:
-      - "127.0.0.1:8001:8000"
-    # Native uvicorn and the container share one local configuration source.
-    # The file is gitignored; a fresh checkout without it uses Settings defaults.
-    env_file:
-      - path: ./backend/.env
-        required: false
-    environment:
-      # db 서비스명을 호스트로 사용 (compose 내부 네트워크). 기본값 미변경 시:
-      # postgresql+psycopg://filing_digest:filing_digest_dev@db:5432/filing_digest
-      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-filing_digest}:${POSTGRES_PASSWORD:-filing_digest_dev}@db:5432/${POSTGRES_DB:-filing_digest}
-    volumes:
-      # Persist the ~2.2 GB model snapshot across backend container recreation.
-      - hf_cache:/root/.cache/huggingface
-    depends_on:
-      db:
-        condition: service_healthy
-
 volumes:
   pgdata:
-  hf_cache:

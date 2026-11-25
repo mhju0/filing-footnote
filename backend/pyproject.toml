@@ -3,7 +3,7 @@
 [project]
 name = "filing-footnote-backend"
 version = "0.5.2"
-description = "Filing Footnote backend (FastAPI) - DART/SEC filings API"
+description = "Filing Footnote backend - DART/SEC ingest and the app data build"
 requires-python = "==3.11.*"
 
 [tool.pytest.ini_options]
@@ -15,10 +15,6 @@ line-length = 100
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B"]
-
-[tool.ruff.lint.flake8-bugbear]
-# FastAPI dependency injection uses call-in-default by design.
-extend-immutable-calls = ["fastapi.Depends", "fastapi.Query"]
 
 [tool.ruff.lint.per-file-ignores]
 # Korean fixture strings exceed the line limit; app code must stay within it.

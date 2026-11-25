@@ -1,5 +1,5 @@
 {
-  "about": "Filing family glossary, [Korean, English]. ledger_years lists the fiscal years in Filing Agent's ledger, linked at #ledger/ledger-<ticker>. Keep identical in filing-agent slice/web/src/glossary.json and filing-digest contracts/family-glossary.json.",
+  "about": "Company and metric names for Filing Footnote, [Korean, English]. app.build.export reads the Korean company names. ledger_years and company_aliases are inherited from Filing Agent's ledger and nothing in this repository reads them.",
   "version": 1,
   "metrics": {
     "revenue": ["매출액", "Revenue"],

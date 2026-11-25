@@ -1,13 +1,12 @@
 """Deterministic guard against inline financial numbers in narrative prose.
 
-Mirror of :mod:`app.llm.citation_guard`: pure validation, no repair, no network,
-no DB. In Filing Footnote, numbers come only from the structured filing API; the
-LLM narrates and must never emit figures of its own. This module scans each
-answer segment's narrated ``text`` for recognized financial
-number tokens -- currency amounts, percentages, and multiples -- and reports
-every one it finds. It NEVER scans ``segment.citations`` (those are chunk-id
-strings / UUIDs and would always false-positive). Callers decide what to do with
-the violations reported here.
+Pure validation, no repair, no network, no DB. In Filing Footnote, numbers come
+only from structured filing data; the LLM narrates and must never emit figures
+of its own. This module scans each text for recognized financial number tokens
+-- currency amounts, percentages, and multiples -- and reports every one it
+finds. Callers decide what to do with the violations reported here. The
+neutrality guard (:mod:`app.llm.neutrality_guard`) reuses its spelled-number
+patterns for rule N1.
 
 Calibration: stored prose chunks are structurally prose but retain inline
 numbers. Recognized financial expressions carry a ``원``/``%``/``배`` suffix (Korean)
@@ -19,16 +18,15 @@ scan.
 
 import re
 import unicodedata
+from collections.abc import Sequence
 from dataclasses import dataclass
-
-from app.llm.answer import Answer
 
 
 @dataclass(frozen=True)
 class Violation:
-    """One inline financial number found in a single answer segment.
+    """One inline financial number found in a single text.
 
-    ``span`` is a ``(start, end)`` half-open range into segment text after NFKC
+    ``span`` is a ``(start, end)`` half-open range into the text after NFKC
     normalization and format-character removal. ``token`` is the
     exact matched substring from that normalized text.
     """
@@ -132,17 +130,16 @@ _NUMBER_RES = (
 )
 
 
-def find_number_violations(answer: Answer) -> list[Violation]:
+def find_number_violations(texts: Sequence[str]) -> list[Violation]:
     """Return recognized financial expressions; an empty list is not entailment proof.
 
-    Each segment's ``text`` is NFKC-normalized first (so full-width digits like
-    ``８`` collapse to ``8``), then scanned against the currency/percent/multiple
-    blocklist. ``segment.citations`` is never scanned. Violations are ordered by
-    segment, then by start position within the segment.
+    Each text is NFKC-normalized first (so full-width digits like ``８`` collapse
+    to ``8``), then scanned against the currency/percent/multiple blocklist.
+    Violations are ordered by text, then by start position within the text.
     """
     violations: list[Violation] = []
-    for index, segment in enumerate(answer.answer_segments):
-        text = "".join(char for char in unicodedata.normalize("NFKC", segment.text)
+    for index, raw in enumerate(texts):
+        text = "".join(char for char in unicodedata.normalize("NFKC", raw)
                        if unicodedata.category(char) != "Cf")
         matches: list[Violation] = []
         for pattern in _NUMBER_RES:
@@ -158,8 +155,8 @@ def find_number_violations(answer: Answer) -> list[Violation]:
     return violations
 
 
-def assert_number_free(answer: Answer) -> None:
-    """Raise :class:`NumberInNarrativeError` if ``answer`` has any inline number."""
-    violations = find_number_violations(answer)
+def assert_number_free(texts: Sequence[str]) -> None:
+    """Raise :class:`NumberInNarrativeError` if any text has an inline number."""
+    violations = find_number_violations(texts)
     if violations:
         raise NumberInNarrativeError(violations)

@@ -6,8 +6,7 @@ Filing Footnote replaces it piece by piece.
 
 Check command, from the repository root: `scripts/check.sh`. It must end with
 `GATE: PASS`. It uses `.venv` (Python 3.11; create it and install
-`backend/requirements.lock` plus `ruff==0.15.21`). The KURE model is never loaded in
-tests; offline tests set `EMBEDDING_WARMUP_ENABLED=false`.
+`backend/requirements.lock` plus `ruff==0.15.21`).
 
 ## Rules
 
@@ -27,7 +26,7 @@ tests; offline tests set `EMBEDDING_WARMUP_ENABLED=false`.
 - `make test-db` creates and removes a unique `*_test` database. Never point
   destructive persistence tests at the local corpus, and never touch the owner's
   Homebrew PostgreSQL service; use the Compose database on 5433.
-- Preserve `Decimal` in Financial Facts and `/answer.figures`.
+- Preserve `Decimal` in Financial Facts.
 - `backend/db/init.sql` stays aligned with `backend/app/db/models.py`; existing
   databases change only through `backend/db/migrations/` SQL.
 - Backend metric vocabulary and the Swift enums match
