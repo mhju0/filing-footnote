@@ -14,7 +14,7 @@ enum AskSelection {
     }
 }
 
-/// The company page's question section (D95): one button per question, wrapping like words.
+/// The company page's question section (D99): one button per question, wrapping like words.
 /// A button opens the answer: pushed on iPhone, in the detail column on iPad and Mac, where
 /// the question being answered stays filled.
 struct AskSection: View {
@@ -84,7 +84,7 @@ private struct QuestionButton: View {
     private var shape: RoundedRectangle { RoundedRectangle(cornerRadius: 10, style: .continuous) }
 }
 
-/// An answer (D95): the question as the title, then the fixed sentences, quoted summary
+/// An answer (D99): the question as the title, then the fixed sentences, quoted summary
 /// lines and exact figures the answerer chose, each block with the filing it comes from.
 struct AnswerView: View {
     @Environment(\.language) private var language

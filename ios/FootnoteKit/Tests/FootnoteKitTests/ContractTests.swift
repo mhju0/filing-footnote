@@ -44,7 +44,7 @@ struct ContractTests {
         }
     }
 
-    /// D95: the questions and answer sentences the backend's neutrality guard checks.
+    /// D99: the questions and answer sentences the backend's neutrality guard checks.
     @Test func companyQuestions() throws {
         let contract = try Support.contract("company-questions.json")
         #expect(contract["version"] == .integer(1))

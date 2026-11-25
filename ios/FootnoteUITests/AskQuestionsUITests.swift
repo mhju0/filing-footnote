@@ -1,6 +1,6 @@
 import XCTest
 
-/// D95: "Ask about this company" on the FootnoteKit fixture. A question on the company page
+/// D99: "Ask about this company" on the FootnoteKit fixture. A question on the company page
 /// opens its answer; the answer's figures carry exact amounts and open their filing; the buy
 /// and next-quarter questions are deflected to what the filings say.
 final class AskQuestionsUITests: XCTestCase {

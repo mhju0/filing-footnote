@@ -1,6 +1,6 @@
 import Foundation
 
-// "Ask about this company" (D95): a fixed set of questions, each answered by code from the
+// "Ask about this company" (D99): a fixed set of questions, each answered by code from the
 // bundle. The flow is question -> `QuestionIntent` -> `CompanyAnswerer` -> `Answer`. A later
 // typed-question router may only choose an intent; it never writes an answer or a figure.
 // Every sentence is fixed text with no digits (`contracts/company-questions.json`, checked

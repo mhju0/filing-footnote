@@ -1707,7 +1707,7 @@ rows and source text give the same report.
 - **Not changed.** The bundle schema and the app. Showing the support sentence in the app
   needs a bundle table; the proposal is in the pull request, not built.
 
-## D95 · Ask about this company: fixed questions answered from the bundle · 2026-11-26 (`ACCEPTED`)
+## D99 · Ask about this company: fixed questions answered from the bundle · 2026-11-26 (`ACCEPTED`)
 
 Requested by the owner through the Orca coordinator, which had full UI control and
 reviewed the screenshots. PRODUCT.md's "the app does not chat" still holds: nothing is

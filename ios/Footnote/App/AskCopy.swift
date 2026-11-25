@@ -1,7 +1,7 @@
 import FootnoteKit
 import Foundation
 
-/// Copy around "Ask about this company" (D95). The questions and the answer sentences are
+/// Copy around "Ask about this company" (D99). The questions and the answer sentences are
 /// FootnoteKit's fixed text (`contracts/company-questions.json`); these are the labels
 /// around them.
 enum AskCopy {

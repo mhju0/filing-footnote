@@ -8,7 +8,7 @@ import SwiftUI
 /// `figure`, `picker` (the figure with the company picker open), `yearcompare`
 /// and `yearcalc` take `<company id>|<metric>|<fiscal year>`; `compare` and `companycalc`
 /// take `<company id>|<peer id>|<metric>|<measure or none>|<fiscal year>`; `ask` takes
-/// `<company id>|<question intent>` and opens its answer (D95). Release builds ignore the
+/// `<company id>|<question intent>` and opens its answer (D99). Release builds ignore the
 /// argument.
 struct LaunchRoute: Sendable {
     enum Kind: String, Sendable {

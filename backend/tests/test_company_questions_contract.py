@@ -1,4 +1,4 @@
-"""The "Ask about this company" contract (D95): fixed questions and answer sentences.
+"""The "Ask about this company" contract (D99): fixed questions and answer sentences.
 
 The app's answers are fixed sentences chosen by code, so the neutrality guard checks them
 here once, as it checks every generated summary line. FootnoteKit's contract tests hold

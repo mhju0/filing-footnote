@@ -1,5 +1,5 @@
 {
-  "about": "Fixed questions and answer sentences for \"Ask about this company\" (D95). FootnoteKit's QuestionIntent and AnswerSentence hold the same keys and text in this order; FootnoteKit's ContractTests fail when they drift. backend/tests/test_company_questions_contract.py runs the neutrality guard over every sentence. Sentences hold no digits: the app renders figures from exact decimals. Questions are the reader's own words, so only the digit and language rules apply to them.",
+  "about": "Fixed questions and answer sentences for \"Ask about this company\" (D99). FootnoteKit's QuestionIntent and AnswerSentence hold the same keys and text in this order; FootnoteKit's ContractTests fail when they drift. backend/tests/test_company_questions_contract.py runs the neutrality guard over every sentence. Sentences hold no digits: the app renders figures from exact decimals. Questions are the reader's own words, so only the digit and language rules apply to them.",
   "version": 1,
   "intents": [
     {

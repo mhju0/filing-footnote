@@ -1,7 +1,7 @@
 import FootnoteKit
 import SwiftUI
 
-/// Board 14: periodic reports pinned, the questions to ask (D95), up to ten filings by
+/// Board 14: periodic reports pinned, the questions to ask (D99), up to ten filings by
 /// month, the notices row, then the end note and the link to every filing on DART or SEC.
 struct CompanyPageView: View {
     @Environment(\.language) private var language
@@ -54,7 +54,7 @@ struct CompanyPageView: View {
                     SectionTitle(language("정기 보고서", "Periodic reports"))
                 }
             }
-            // D95: below the quarterly results, above the filings by month.
+            // D99: below the quarterly results, above the filings by month.
             AskSection(companyID: page.company.id)
                 .id(PageScroll.ask)
             ForEach(Array(page.months.enumerated()), id: \.element.id) { index, month in

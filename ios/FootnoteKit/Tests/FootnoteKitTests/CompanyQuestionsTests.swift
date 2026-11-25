@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import FootnoteKit
 
-/// "Ask about this company" (D95) on the fixture: Samsung has a quarter report, two annual
+/// "Ask about this company" (D99) on the fixture: Samsung has a quarter report, two annual
 /// years, an approved business section and an outlook filing; Apple has a quarter report,
 /// one annual year, no annual summary and no outlook.
 @Suite("Company questions")
