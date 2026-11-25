@@ -40,6 +40,8 @@ struct AskTests {
         #expect(AskCopy.halves("이 주식 사도 될까요?") == ["이 주식", "사도 될까요?"])
         #expect(AskCopy.halves("What's next quarter's revenue?") == ["What's next", "quarter's revenue?"])
         #expect(AskCopy.halves("매출은 어때요?") == ["매출은", "어때요?"])
+        #expect(AskCopy.halves("What are the fundamentals?") == ["What are the", "fundamentals?"])
+        #expect(AskCopy.halves("Does it make or lose money?") == ["Does it make", "or lose money?"])
         #expect(AskCopy.halves("Revenue") == ["Revenue"])
         #expect(AskCopy.balanced("이 주식 사도 될까요?") == "이\u{00A0}주식 사도\u{00A0}될까요?")
     }

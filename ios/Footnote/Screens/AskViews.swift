@@ -25,20 +25,13 @@ struct AskSection: View {
 
     var body: some View {
         Section {
-            FlowLayout(spacing: 8, lineSpacing: 8) {
-                ForEach(QuestionIntent.allCases) { intent in
-                    QuestionButton(
-                        title: intent.question(language),
-                        isSelected: AskSelection.intent(selection?.wrappedValue) == intent
-                    ) {
-                        if let selection {
-                            selection.wrappedValue = AskSelection.id(intent)
-                        } else {
-                            navigate(.answer(companyID, intent))
-                        }
-                    }
-                    .accessibilityIdentifier("ask-\(intent.rawValue)")
-                }
+            // The note is part of the row, not the section footer: a plain list (the iPad's
+            // content column) pins a footer to the bottom edge, over the questions at large
+            // text sizes.
+            VStack(alignment: .leading, spacing: 12) {
+                questions
+                SectionNote(text: AskCopy.sectionNote(language))
+                    .padding(.horizontal, 16)
             }
             .padding(.vertical, 4)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -47,8 +40,24 @@ struct AskSection: View {
         } header: {
             SectionTitle(AskCopy.sectionTitle(language))
                 .accessibilityAddTraits(.isHeader)
-        } footer: {
-            SectionNote(text: AskCopy.sectionNote(language))
+        }
+    }
+
+    private var questions: some View {
+        FlowLayout(spacing: 8, lineSpacing: 8) {
+            ForEach(QuestionIntent.allCases) { intent in
+                QuestionButton(
+                    title: intent.question(language),
+                    isSelected: AskSelection.intent(selection?.wrappedValue) == intent
+                ) {
+                    if let selection {
+                        selection.wrappedValue = AskSelection.id(intent)
+                    } else {
+                        navigate(.answer(companyID, intent))
+                    }
+                }
+                .accessibilityIdentifier("ask-\(intent.rawValue)")
+            }
         }
     }
 }

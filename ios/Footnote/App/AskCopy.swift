@@ -99,12 +99,14 @@ enum AskCopy {
         halves(text).map { $0.replacingOccurrences(of: " ", with: "\u{00A0}") }.joined(separator: " ")
     }
 
-    /// A short text in two phrases of about equal length, the second at least two words
-    /// long when the text has three or more.
+    /// A short text in two phrases of about equal length. With three or more words the
+    /// second phrase has at least two, unless its last word is long enough to stand alone
+    /// (`What are the` / `fundamentals?`).
     static func halves(_ text: String) -> [String] {
         let words = text.split(separator: " ").map(String.init)
         guard words.count > 1 else { return [text] }
-        let last = words.count >= 3 ? words.count - 2 : words.count - 1
+        let alone = words.count < 3 || words[words.count - 1].count >= 10
+        let last = alone ? words.count - 1 : words.count - 2
         let cut = (1...last).min { a, b in
             abs(2 * words[..<a].joined(separator: " ").count - text.count)
                 < abs(2 * words[..<b].joined(separator: " ").count - text.count)
