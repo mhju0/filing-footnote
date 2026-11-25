@@ -16,7 +16,7 @@ from pathlib import Path
 
 import pytest
 
-from app.build import export, verify
+from app.build import export, faithfulness, verify
 from app.build.bundle import SCHEMA, TABLES, canonical_dump_lines, content_sha256
 from app.build.export import BuildOptions, build_bundle, run, write_bundle
 from app.build.model import (
@@ -411,6 +411,42 @@ def test_release_passes_when_every_filing_has_approved_summaries(data, tmp_path)
     assert _rows(out, "SELECT allow_unapproved FROM build_meta") == [(0,)]
     assert _rows(out, "SELECT DISTINCT review_state FROM filing_summaries") == [("approved",)]
     assert check_bundle(out, release=True, pinned_dirs=PINNED_DIRS) == []
+
+
+def test_release_holds_every_summary_line_to_the_faithfulness_gate(data, tmp_path, capsys) -> None:
+    approved = _all_approved(data, build_bundle(data, _options(), PINNED_DIRS))
+    out = tmp_path / "footnote.sqlite"
+    assert _export(approved, out, *RELEASE) == 0
+    with sqlite3.connect(out) as connection:
+        connection.row_factory = sqlite3.Row
+        summaries = [dict(r) for r in connection.execute("SELECT * FROM filing_summaries")]
+    records = [
+        {"filing_id": s["filing_id"], "lang": s["lang"], "section": s["section"], "line_no": n,
+         "line_sha256": faithfulness.line_sha256(s[f"line{n}"]),
+         "input_sha256": s["input_sha256"], "verdict": faithfulness.SUPPORTED,
+         "aligner_version": faithfulness.ALIGNER_VERSION, "reasons": []}
+        for s in summaries for n in (1, 2, 3) if s[f"line{n}"] is not None
+    ]  # fmt: skip
+    gate = faithfulness.ReleaseGate(records)
+    assert check_bundle(out, release=True, pinned_dirs=PINNED_DIRS, faithfulness_gate=gate) == []
+    # One unsupported line blocks the release, unless the policy only warns.
+    records[0] = {**records[0], "verdict": faithfulness.UNSUPPORTED}
+    report = tmp_path / "faithfulness.jsonl"
+    faithfulness.write_records(report, records)
+    pinned = [arg for d in PINNED_DIRS for arg in ("--pinned", str(d))]
+    assert verify.main([str(out), "--release", *pinned, "--faithfulness", str(report)]) == 1
+    assert "faithfulness unsupported" in capsys.readouterr().err
+    assert verify.main([str(out), "--release", *pinned, "--faithfulness", str(report),
+                        "--faithfulness-policy", "warn"]) == 0  # fmt: skip
+    missing = tmp_path / "missing.jsonl"
+    assert verify.main([str(out), "--release", *pinned, "--faithfulness", str(missing)]) == 1
+    assert capsys.readouterr().err.count("FAIL no faithfulness report at") == 1
+    # A line edited after the check has no record for its new text.
+    faithfulness.write_records(report, records[1:])
+    assert verify.main([str(out), "--release", *pinned, "--faithfulness", str(report)]) == 1
+    assert "no faithfulness record" in capsys.readouterr().err
+    # A development check never reads the report.
+    assert verify.main([str(out), *pinned, "--faithfulness", str(missing)]) == 0
 
 
 def test_development_build_never_writes_unapproved_summaries(data, tmp_path) -> None:
@@ -845,7 +881,9 @@ def test_release_verify_runs_the_neutrality_guard_and_coverage(data, tmp_path) -
     approved = _all_approved(data, build_bundle(data, _options(), PINNED_DIRS))
     out = tmp_path / "footnote.sqlite"
     assert _export(approved, out, *RELEASE) == 0
-    assert verify.main([str(out), "--release", *_pinned_args()]) == 0
+    # The faithfulness gate has its own test; this one is about the neutrality guard.
+    off = ("--faithfulness-policy", "off")
+    assert verify.main([str(out), "--release", *_pinned_args(), *off]) == 0
     event = _rows(out, "SELECT filing_id FROM filing_summaries WHERE section = 'summary' "
                        "ORDER BY filing_id LIMIT 1")[0][0]  # fmt: skip
     _rehash(out, "UPDATE filing_summaries SET line1 = 'The company said revenue soared.' "

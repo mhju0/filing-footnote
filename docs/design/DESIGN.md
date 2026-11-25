@@ -65,7 +65,7 @@ owner), boards 11A, 12A, 13 and 14–20 (2026-11-19, owner).
 
 | Screen | Shows | One tap away | Never shown |
 |---|---|---|---|
-| Companies list | One line on what the app does, with the data date; the system search field (company or ticker, both markets); Korea / US browsing; sort as a toolbar menu showing the current order; company name, then its newest filing date and type (D96) | News | Newest event filings by date, with a filing-type filter | Filing page | Market commentary |
+| Companies list | One line on what the app does, with the data date; the system search field (company or ticker, both markets); Korea / US browsing; sort as a toolbar menu showing the current order; company name, then its newest filing date and type (D98) | News | Newest event filings by date, with a filing-type filter | Filing page | Market commentary |
 | Glossary | Term search and letter or initial jump; definitions expand on iPhone | Definition on iPad and Mac | |
 | Company page | Up to 2 periodic reports with one figure each; up to 10 filings grouped by month (tag, date, title); notices row; insider row; data date | Notices sheet, insider screen, all filings on DART | Price, news, analyst views, scores, a preview line per filing row |
 | Filing page | Tag and status, title, date; outlook banner (outlook only); up to 3 sentences; how they were written; up to 6 numbers; up to 2 related filings; original | Glossary, other versions | Model confidence, judgement words, a gap against a forecast |
@@ -82,7 +82,7 @@ Details:
   date ("11월 18일까지 낸 공시 / Filings up to Nov 18"); the list ends with a note on what
   it covers and a link to every filing on DART or SEC.
 - 새 공시 / New: only on event filings made within 7 days of the data date. Annual,
-  half-year and quarterly reports never carry it, and the Companies list shows no tag (D96).
+  half-year and quarterly reports never carry it, and the Companies list shows no tag (D98).
 - Notices row: "안내 공시 N건 / N notices", counting notices filed in the same span as
   the listed filings; hidden when there are none.
 - Filing page order is fixed for every type: sentences, then numbers, then the original. The Original section shows the filed date and regulator link first. Form and receipt number expand in Filing details.
@@ -94,7 +94,7 @@ Details:
 - Corrected filings: 정정됨 / Corrected tag; the corrected version shows, the first opens
   from "다른 버전 / Other versions".
 - G1 picks: language switch is a globe "EN" button in the nav bar (on the Mac, one button
-  at the trailing end of the window toolbar, D96); earlier years are a
+  at the trailing end of the window toolbar, D98); earlier years are a
   list; the compare-company picker is one list by market; direction is sign plus word with no
   colour; a restated figure has a 정정됨 / Restated tag beside the value and a note below.
 - The quarter figure shows the original quarterly report before exact figures and calculation. The annual figure link stays labelled separately. Refusals have no calculation.
@@ -102,7 +102,7 @@ Details:
   months"; fewer than ten ("these are all N filings"); summary in review; numbers section
   hidden when empty; outlook without figures; corrected filing; notices row hidden.
   There is no loading or offline state because the app reads a bundled file.
-- 2026-11-26 UX review and design picks (D96):
+- 2026-11-26 UX review and design picks (D98):
   - Glossary order: 자주 보는 용어 / Key terms (revenue, operating income, net income, EPS,
     operating margin) first, then the dictionary by initial, then the reasons a comparison
     is refused under their own heading. A jump menu of at least 44 pt is in the toolbar on

@@ -1,7 +1,7 @@
 PYTHON ?= $(CURDIR)/.venv/bin/python
 RUFF ?= $(CURDIR)/.venv/bin/ruff
 
-.PHONY: check lint test test-db compose data data-preview
+.PHONY: check lint test test-db compose data data-preview faithfulness faithfulness-eval
 
 check: lint test compose
 
@@ -36,3 +36,13 @@ data-preview:
 		--out "$(CURDIR)/dist/footnote.sqlite" --pinned "$(abspath $(PINNED))"
 	cd backend && "$(PYTHON)" -m app.build.verify "$(CURDIR)/dist/footnote.sqlite" --preview \
 		--pinned "$(abspath $(PINNED))"
+
+# Faithfulness report for every staged and approved summary line (D97); verify --release reads
+# it. AS_OF is the summary run's --as-of; DATABASE_URL picks the build database.
+faithfulness:
+	$(if $(AS_OF),,$(error set AS_OF=YYYY-MM-DD))
+	cd backend && "$(PYTHON)" -m app.build.faithfulness check --as-of "$(AS_OF)" --list
+
+# Scores the check on the labelled lines in backend/tests/fixtures/faithfulness (offline).
+faithfulness-eval:
+	cd backend && "$(PYTHON)" -m app.build.faithfulness eval

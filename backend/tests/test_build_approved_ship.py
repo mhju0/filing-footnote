@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from app.build import export, source, summaries, verify
+from app.build import export, faithfulness, source, summaries, verify
 from app.build.model import EVENT_PROMPT_VERSION, PROMPT_VERSION, BuildInput
 from app.build.summaries import select_targets
 from tests.build_seed import AS_OF, PINNED_DIRS
@@ -89,18 +89,28 @@ def test_the_default_path_is_the_summary_stores_approved_file(monkeypatch, tmp_p
     assert len(source.read_summaries()) > 0
 
 
-def test_a_bundle_from_an_approved_file_passes_release_verify(tmp_path) -> None:
+def test_a_bundle_from_an_approved_file_passes_release_verify(tmp_path, capsys) -> None:
     data = _sourced()
     path = tmp_path / "approved.jsonl"
     bare = _write_approved(path, data)
     out = tmp_path / "footnote.sqlite"
     assert _run(bare, path, out, "--release") == 0  # the default prompt version, no flag
+    # The faithfulness report built from approved.jsonl covers every line of the bundle. The
+    # fixture's lines are the same for every filing, so the verdicts only warn here.
+    sources = {(t.filing_id, t.section): faithfulness.Source(t.source_text, t.template is not None)
+               for t in select_targets(data, AS_OF) if t.source_text}  # fmt: skip
+    rows = summaries.read_jsonl(path)
+    report_path = tmp_path / "faithfulness.jsonl"
+    faithfulness.write_records(report_path, faithfulness.check_rows(rows, sources))
+    capsys.readouterr()
     assert (
         verify.main(
-            [str(out), "--release", *[a for d in PINNED_DIRS for a in ("--pinned", str(d))]]
+            [str(out), "--release", *[a for d in PINNED_DIRS for a in ("--pinned", str(d))],
+             "--faithfulness", str(report_path), "--faithfulness-policy", "warn"]
         )
         == 0
-    )
+    )  # fmt: skip
+    assert ", accepted 0, unchecked 0" in capsys.readouterr().out
     report = json.loads((tmp_path / "footnote.report.json").read_text(encoding="utf-8"))
     assert report["mode"] == "release"
     assert report["summaries"]["approved_rows"] > 0
