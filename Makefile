@@ -37,7 +37,7 @@ data-preview:
 	cd backend && "$(PYTHON)" -m app.build.verify "$(CURDIR)/dist/footnote.sqlite" --preview \
 		--pinned "$(abspath $(PINNED))"
 
-# Faithfulness report for every staged and approved summary line (D95); verify --release reads
+# Faithfulness report for every staged and approved summary line (D97); verify --release reads
 # it. AS_OF is the summary run's --as-of; DATABASE_URL picks the build database.
 faithfulness:
 	$(if $(AS_OF),,$(error set AS_OF=YYYY-MM-DD))

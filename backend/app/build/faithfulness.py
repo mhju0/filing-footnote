@@ -1,4 +1,4 @@
-"""Build-time faithfulness check (D95): find the source sentence behind each summary line.
+"""Build-time faithfulness check (D97): find the source sentence behind each summary line.
 
     python -m app.build.faithfulness check --as-of DATE [--database-url URL]
         [--rows PATH ...] [--out PATH]
@@ -86,7 +86,7 @@ _RANK = {SUPPORTED: 2, PARTLY: 1, UNSUPPORTED: 0}
 
 TEMPLATE_MODEL = "template"  # app.build.templates.TEMPLATE_MODEL, kept here to avoid the import
 
-# Release policy: the verdicts that block a release, by policy name (D95).
+# Release policy: the verdicts that block a release, by policy name (D97).
 POLICIES: dict[str, frozenset[str]] = {
     "off": frozenset(),
     "warn": frozenset(),
@@ -1038,7 +1038,7 @@ def eval_report(result: EvalResult, show: bool = False) -> list[str]:
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="python -m app.build.faithfulness",
-        description="Find the source sentence behind each summary line (D95).",
+        description="Find the source sentence behind each summary line (D97).",
     )
     commands = parser.add_subparsers(dest="command", required=True)
     check = commands.add_parser("check", help="check summary rows against their source text")

@@ -27,7 +27,7 @@ approved summaries in both languages and every section for each filing that need
 ``--preview`` runs every release check except that summary coverage, and refuses a development
 build.
 
-A release also reads the faithfulness report of :mod:`app.build.faithfulness` (D95): every
+A release also reads the faithfulness report of :mod:`app.build.faithfulness` (D97): every
 summary line needs a record from the current aligner for that exact line and approval, and
 ``--faithfulness-policy`` decides which verdicts block. The default, ``unsupported``, blocks
 unsupported lines and lines without source text unless the owner accepted them; ``partly``
@@ -673,7 +673,7 @@ def check_bundle(
     faithfulness_gate: faithfulness.ReleaseGate | None = None,
 ) -> list[str]:
     """Problems with a finished bundle; an empty list means it passes. With ``release`` and a
-    ``faithfulness_gate``, every summary line is also held to that gate (D95)."""
+    ``faithfulness_gate``, every summary line is also held to that gate (D97)."""
     connection = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
     try:
         meta_rows = connection.execute(
@@ -930,7 +930,7 @@ def main(argv: list[str] | None = None) -> int:
         "--faithfulness-policy",
         choices=sorted(faithfulness.POLICIES),
         default=faithfulness.DEFAULT_POLICY,
-        help=f"verdicts that block a release (default {faithfulness.DEFAULT_POLICY}, D95)",
+        help=f"verdicts that block a release (default {faithfulness.DEFAULT_POLICY}, D97)",
     )
     args = parser.parse_args(argv)
     gate = None

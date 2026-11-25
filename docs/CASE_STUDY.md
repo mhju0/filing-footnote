@@ -249,7 +249,7 @@ What the counts say:
 ## Faithfulness check
 
 The guard reads how a line is written; it cannot tell whether the filing says it. A pilot line
-that swapped the filing's region passed both the guard and the model reviewer. Since D95 a
+that swapped the filing's region passed both the guard and the model reviewer. Since D97 a
 deterministic aligner looks for the source sentences behind every line, and a release blocks
 a line the source does not support unless the owner accepts it. It makes no model call.
 

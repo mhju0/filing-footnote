@@ -9,7 +9,7 @@ warnings, the reviewer's flags, the source link and the command that approves it
 reviewer flags, warnings or a faithfulness flag come first, then withheld ones, then the rest.
 With ``--database-url`` the page also shows the company, the filing title, the facts the filing
 states, the source text and, under each line, the faithfulness verdict and the source sentence
-that supports it (:mod:`app.build.faithfulness`, D95); without it only the staged rows are
+that supports it (:mod:`app.build.faithfulness`, D97); without it only the staged rows are
 shown. The same input gives the same bytes.
 """
 

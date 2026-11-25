@@ -1,4 +1,4 @@
-"""The build-time faithfulness check (D95): alignment, verdicts, the release gate and the eval."""
+"""The build-time faithfulness check (D97): alignment, verdicts, the release gate and the eval."""
 
 from __future__ import annotations
 
@@ -317,7 +317,7 @@ def test_accept_writes_one_entry_per_line(tmp_path) -> None:
 
 
 def test_the_eval_reproduces_the_recorded_numbers() -> None:
-    """The numbers in D95 and the case study. Change them only with a new aligner version."""
+    """The numbers in D97 and the case study. Change them only with a new aligner version."""
     result = f.run_eval()
     assert len(result.pairs) == 73
     assert result.confusion() == {

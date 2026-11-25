@@ -1638,7 +1638,7 @@ build, export or verify path imported Filing Digest's FastAPI service; an import
   variables (settings ignore unknown variables). ADR 0006 mentions a small read-only API that
   serves the bundle; none exists, and this entry neither builds nor drops it.
 
-## D95 · Every summary line is checked against its source text before release · 2026-11-26
+## D97 · Every summary line is checked against its source text before release · 2026-11-26
 
 The guard (ADR 0005) checks how a line is written, not whether the filing says it. A pilot
 line swapped the filing's region for another place, and neither the guard nor the model
