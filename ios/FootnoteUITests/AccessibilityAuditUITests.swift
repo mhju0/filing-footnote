@@ -55,6 +55,10 @@ final class AccessibilityAuditUITests: XCTestCase {
         Screen(name: "news", route: "news"),
         Screen(name: "glossary", route: "glossary"),
         Screen(name: "glossary-entry", route: "glossary=metric_revenue"),
+        Screen(name: "answer-trend", route: "ask=\(samsung)|recent_trend", swipes: 3),
+        Screen(name: "answer-buy", route: "ask=\(samsung)|should_buy", swipes: 0),
+        Screen(name: "answer-next-quarter", route: "ask=\(samsung)|next_quarter_revenue", swipes: 1),
+        Screen(name: "answer-fundamentals-sec", route: "ask=\(apple)|fundamentals", swipes: 1),
     ]
 
     private static let accessibilityXL = "UICTContentSizeCategoryAccessibilityXL"

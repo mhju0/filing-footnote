@@ -15,8 +15,10 @@ extension String {
     }
 
     /// The string as VoiceOver should read it: each separator becomes a comma, so the dot
-    /// is a pause, not the word "middle dot".
-    var spokenSeparators: String { replacingOccurrences(of: Titles.separator, with: ", ") }
+    /// is a pause, not the word "middle dot", and a no-break space is a plain space.
+    var spokenSeparators: String {
+        replacingOccurrences(of: Titles.separator, with: ", ").replacingOccurrences(of: "\u{00A0}", with: " ")
+    }
 }
 
 private extension Unicode.Scalar {
