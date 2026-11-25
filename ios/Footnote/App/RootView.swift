@@ -97,6 +97,8 @@ struct RouteDestination: View {
             }
         case .glossary(let focus):
             GlossaryView(store: store, focus: focus)
+        case .answer(let companyID, let intent):
+            AnswerDestination(store: store, companyID: companyID, intent: intent)
         }
     }
 }
@@ -211,6 +213,8 @@ struct SplitShell: View {
                         }
                     } else if let filingID, store.filing(id: filingID) != nil {
                         FilingDestination(store: store, labels: labels, filingID: filingID)
+                    } else if case .company(let companyID)? = sidebar, let intent = AskSelection.intent(filingID) {
+                        AnswerDestination(store: store, companyID: companyID, intent: intent)
                     } else {
                         placeholder("doc.text", language("공시를 고르면 여기에 보여 줘요", "Choose a filing to see it here"))
                     }

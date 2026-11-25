@@ -39,7 +39,9 @@ guessing. It explains; it does not advise or trade.
 - Runs entirely on the device from a bundled, read-only data file. No accounts, servers,
   sign-in, or network needed to use it.
 - Explanations are written in advance by a build step on the owner's Mac; the app does
-  not chat or generate text on the phone.
+  not chat or generate text on the phone. Its fixed questions ("Ask about this company")
+  are answered on the device by code that picks approved fixed sentences and the bundled
+  figures (D99).
 - Primary demonstration is a recorded screen walkthrough, Korean first, then a one-tap
   switch to English.
 
@@ -71,8 +73,17 @@ guessing. It explains; it does not advise or trade.
   (K-IFRS vs US GAAP) and year-ends. Restated figures are labelled.
 - Refusal reasons the UI must explain: ambiguous request, unsupported basis, metric out of
   scope, missing period, incompatible currency, incompatible comparison.
+- Ask about this company (2026-11-26, D99): six fixed questions on the company page, below
+  the quarterly results. Should I buy this? What are the fundamentals? What's the recent
+  trend? Does it make or lose money? How is revenue doing? What's next quarter's revenue?
+  Each answer uses only the bundle: the latest annual report's approved business lines and
+  exact figures from the latest quarter and fiscal year, each against the same period a
+  year earlier, with its source filing. A missing figure is said to be missing, never
+  shown as zero. The buy and next-quarter questions say what the app does not do, then
+  point to the reported facts and the company's own outlook filing when there is one.
 - Korean and English throughout. Korean text wraps only between words.
-- Optional later: typed questions on iPad and Mac only (on-device model); iPhones minis
+- Optional later: typed questions on iPad and Mac only (on-device model); the model may
+  only choose one of the fixed questions, and the same code answers it (D99). iPhone minis
   cannot run it.
 
 ## Brand Commitments

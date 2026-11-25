@@ -7,12 +7,14 @@ import SwiftUI
 /// optional filing id to open), `glossary` (an optional term key to mark);
 /// `figure`, `picker` (the figure with the company picker open), `yearcompare`
 /// and `yearcalc` take `<company id>|<metric>|<fiscal year>`; `compare` and `companycalc`
-/// take `<company id>|<peer id>|<metric>|<measure or none>|<fiscal year>`. Release builds
-/// ignore the argument.
+/// take `<company id>|<peer id>|<metric>|<measure or none>|<fiscal year>`; `ask` takes
+/// `<company id>|<question intent>` and opens its answer (D99). Release builds ignore the
+/// argument.
 struct LaunchRoute: Sendable {
     enum Kind: String, Sendable {
         case company, notices, filing, news, glossary
         case figure, picker, yearcompare, yearcalc, compare, companycalc
+        case ask
     }
 
     let kind: Kind
@@ -47,7 +49,7 @@ struct LaunchRoute: Sendable {
         case .company, .notices: return (id, nil)
         case .news: return (nil, id)
         case .glossary: return (nil, nil)
-        case .figure, .picker, .yearcompare, .yearcalc, .compare, .companycalc:
+        case .figure, .picker, .yearcompare, .yearcalc, .compare, .companycalc, .ask:
             return (id.split(separator: "|").first.map(String.init), nil)
         }
     }
@@ -75,6 +77,12 @@ struct LaunchRoute: Sendable {
         return CompanyCompareRoute(
             companyID: pieces[0], peerID: pieces[1], metric: pieces[2],
             measure: pieces[3] == "none" ? nil : pieces[3], fiscalYear: year)
+    }
+
+    /// The question an `ask` launch opens.
+    var askIntent: QuestionIntent? {
+        guard kind == .ask, pieces.count == 2 else { return nil }
+        return QuestionIntent(rawValue: pieces[1])
     }
 
     /// The screens over the company page: the figure (when the metric has one), then the
@@ -122,6 +130,7 @@ struct LaunchRoute: Sendable {
         var path: [Route] = []
         if let company = parts.company { path.append(.company(company)) }
         if let filing = parts.filing, kind == .filing { path.append(.filing(filing)) }
+        if let company = parts.company, let intent = askIntent { path.append(.answer(company, intent)) }
         return path + detailPath
     }
 
@@ -138,16 +147,17 @@ struct LaunchRoute: Sendable {
         }
     }
 
-    var filingID: String? { parts.filing }
+    /// The detail column's selection: a filing, or an `ask` launch's answer.
+    var filingID: String? { askIntent.map(AskSelection.id) ?? parts.filing }
 
     func opensNotices(_ company: Company) -> Bool {
         kind == .notices && id == company.id
     }
 
-    /// Debug builds only: `-FootnoteScroll top|center|bottom` opens a filing or annual page
-    /// scrolled to its numbers (`center`) or its end (`bottom`), and a figure, calculation
-    /// or company compare page scrolled to its end, so the screenshot script can capture a
-    /// page longer than the screen.
+    /// Debug builds only: `-FootnoteScroll top|center|bottom|ask` opens a filing or annual
+    /// page scrolled to its numbers (`center`) or its end (`bottom`), a figure, calculation
+    /// or company compare page scrolled to its end, and a company page scrolled to its
+    /// questions (`ask`), so the screenshot script can capture a page longer than the screen.
     static let scrollTarget: (id: String, anchor: UnitPoint)? = {
         #if DEBUG
         let arguments = ProcessInfo.processInfo.arguments
@@ -156,6 +166,7 @@ struct LaunchRoute: Sendable {
         return switch arguments[index + 1] {
         case "center": (PageScroll.numbers, .top)
         case "bottom": (PageScroll.end, .bottom)
+        case "ask": (PageScroll.ask, .center)
         default: nil
         }
         #else
@@ -168,6 +179,7 @@ struct LaunchRoute: Sendable {
 enum PageScroll {
     static let numbers = "page-numbers"
     static let end = "page-end"
+    static let ask = "page-ask"
 }
 
 extension View {
