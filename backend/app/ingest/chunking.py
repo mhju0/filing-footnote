@@ -34,9 +34,8 @@ logger = logging.getLogger(__name__)
 
 # Chunk-size budget, in *characters* (not tokens). We size by character count on
 # purpose [Inferred]: a token count would pull in a Korean tokenizer dependency,
-# and for a first cut the search/embedding unit only needs to be "roughly a
-# paragraph or two". These are initial values -- revisit once retrieval quality
-# is measured on real filings (kept as module constants, not config: promoting
+# and a stored chunk only needs to be "roughly a paragraph or two". These are
+# initial values (kept as module constants, not config: promoting
 # them to config.py now would be over-engineering for three numbers).
 TARGET_CHARS = 800  # accumulate paragraphs until a chunk reaches ~this size
 MAX_CHARS = 1200  # hard upper bound: no chunk may exceed this
@@ -151,7 +150,7 @@ def chunk_document(sections: list[ProseSection]) -> list[Chunk]:
     ``chunk_index`` runs 0..N-1 across all sections, while ``part_index`` restarts
     at 0 within each section. Empty-content sections (e.g. a title-only TOC header,
     or a shell whose prose lives in nested sub-sections) are skipped and logged --
-    there is nothing to embed and we never invent content.
+    there is nothing to store and we never invent content.
 
     Returns chunks ready for the NEXT step (the ``filing_chunks`` load, docs §6);
     no DB write or network call happens here. Pure ->

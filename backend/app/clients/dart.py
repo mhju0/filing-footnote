@@ -788,7 +788,7 @@ def extract_dsd_prose(text: str) -> list[ProseSection]:
         title, content, dropped = _collect_section_prose(el)
         tables_skipped += dropped
         if title is None and not content:
-            continue  # empty section -> nothing to embed
+            continue  # empty section -> nothing to store
         top = el
         while (parent := parents.get(top)) is not None:
             if _is_section_tag(parent.tag):
