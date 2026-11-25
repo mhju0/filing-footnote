@@ -166,7 +166,7 @@ struct LaunchRoute: Sendable {
         return switch arguments[index + 1] {
         case "center": (PageScroll.numbers, .top)
         case "bottom": (PageScroll.end, .bottom)
-        case "ask": (PageScroll.ask, .top)
+        case "ask": (PageScroll.ask, .center)
         default: nil
         }
         #else

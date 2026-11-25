@@ -63,10 +63,10 @@ private struct QuestionButton: View {
 
     var body: some View {
         Button(action: action) {
-            Text(words: title)
+            Text(words: AskCopy.balanced(title))
+                .fixedSize(horizontal: false, vertical: true)
                 .font(.body.weight(.medium))
                 .multilineTextAlignment(.leading)
-                .fixedSize(horizontal: false, vertical: true)
                 .foregroundStyle(isSelected ? Theme.onPine : Theme.pine)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 10)
@@ -76,6 +76,7 @@ private struct QuestionButton: View {
                 .contentShape(shape)
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(title)
         .accessibilityHint(AskCopy.chipHint(language))
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
@@ -88,6 +89,7 @@ private struct QuestionButton: View {
 struct AnswerView: View {
     @Environment(\.language) private var language
     @Environment(\.navigate) private var navigate
+    @Environment(\.dynamicTypeSize) private var typeSize
     let store: BundleStore
     let answer: Answer
 
@@ -96,7 +98,7 @@ struct AnswerView: View {
             List {
                 ScreenHeader(
                     context: Titles.name(of: answer.company, language: language),
-                    title: answer.intent.question(language))
+                    title: wrapped(answer.intent.question(language)))
                 ForEach(Array(groups.enumerated()), id: \.offset) { _, group in
                     switch group {
                     case .statements(let sentences): statements(sentences)
@@ -114,7 +116,7 @@ struct AnswerView: View {
                     }
                 }
                 Section {
-                    SectionNote(text: AnswerSentence.howAnswered.text(language))
+                    SectionNote(text: wrapped(AnswerSentence.howAnswered.text(language)))
                         .headerRow()
                         .listRowSeparator(.hidden)
                 }
@@ -126,6 +128,12 @@ struct AnswerView: View {
         .screenTitle(answer.intent.question(language))
         .languageToolbar()
         .accessibilityIdentifier("answer-page")
+    }
+
+    /// Below accessibility sizes, a wrapped line never ends with one or two words alone. At
+    /// those sizes the joined words could be wider than the line, so text wraps by word.
+    private func wrapped(_ text: String) -> String {
+        typeSize.isAccessibilitySize ? text : AskCopy.keepingTail(text)
     }
 
     /// Consecutive statements share one card; every other part is its own section.
@@ -152,7 +160,7 @@ struct AnswerView: View {
 
     private func statements(_ sentences: [AnswerSentence]) -> some View {
         Section {
-            SentenceRows(lines: sentences.map { $0.text(language) })
+            SentenceRows(lines: sentences.map { wrapped($0.text(language)) })
                 .accessibilityElement(children: .combine)
                 .accessibilityIdentifier("answer-statements")
         }
@@ -168,7 +176,7 @@ struct AnswerView: View {
                 statements([.businessMissing])
             } else {
                 Section {
-                    SentenceRows(lines: lines)
+                    SentenceRows(lines: lines.map(wrapped))
                         .accessibilityElement(children: .combine)
                     SourceRow(filing: summary.filing)
                 } header: {
@@ -176,10 +184,10 @@ struct AnswerView: View {
                 }
             }
         case .figures(let figures):
-            FiguresSection(figures: figures)
+            FiguresSection(figures: figures, wrapped: wrapped)
         case .filing(let sentence, let filing):
             Section {
-                SentenceRows(lines: [sentence.text(language)])
+                SentenceRows(lines: [wrapped(sentence.text(language))])
                 NavigationLink(value: Route.filing(filing.id)) {
                     FilingRow(filing: filing, dataAsOf: answer.dataAsOf)
                 }
@@ -197,11 +205,12 @@ struct AnswerView: View {
 private struct FiguresSection: View {
     @Environment(\.language) private var language
     let figures: AnswerFigures
+    let wrapped: (String) -> String
 
     var body: some View {
         Section {
             if let statement = figures.statement {
-                SentenceRows(lines: [statement.text(language)])
+                SentenceRows(lines: [wrapped(statement.text(language))])
             }
             ForEach(figures.rows) { row in
                 if let current = row.current {
@@ -221,7 +230,7 @@ private struct FiguresSection: View {
         } header: {
             SectionTitle(heading)
         } footer: {
-            SectionNote(text: AskCopy.figuresNote(prior: figures.priorPeriod, language))
+            SectionNote(text: wrapped(AskCopy.figuresNote(prior: figures.priorPeriod, language)))
         }
     }
 

@@ -23,6 +23,27 @@ struct AskTests {
         #expect(route.filingID == "ask:profit_or_loss")
     }
 
+    @Test func wrappedTextKeepsItsLastWordsTogether() {
+        #expect(AskCopy.keepingTail("The company reported higher revenue for its latest quarter.")
+            == "The company reported higher revenue for its\u{00A0}latest\u{00A0}quarter.")
+        #expect(AskCopy.keepingTail("회사는 최근 분기 매출이 늘었다고 보고했어요.")
+            == "회사는 최근 분기 매출이\u{00A0}늘었다고\u{00A0}보고했어요.")
+        // A long last word stays alone rather than making an unbreakable run.
+        #expect(AskCopy.keepingTail("Tap to see consolidated-statement-figures")
+            == "Tap to see consolidated-statement-figures")
+        #expect(AskCopy.keepingTail("매출은 어때요?") == "매출은 어때요?")
+        // VoiceOver reads plain spaces.
+        #expect(AskCopy.keepingTail("최근 흐름은 어때요?").spokenSeparators == "최근 흐름은 어때요?")
+    }
+
+    @Test func aLongQuestionSplitsIntoTwoPhrases() {
+        #expect(AskCopy.halves("이 주식 사도 될까요?") == ["이 주식", "사도 될까요?"])
+        #expect(AskCopy.halves("What's next quarter's revenue?") == ["What's next", "quarter's revenue?"])
+        #expect(AskCopy.halves("매출은 어때요?") == ["매출은", "어때요?"])
+        #expect(AskCopy.halves("Revenue") == ["Revenue"])
+        #expect(AskCopy.balanced("이 주식 사도 될까요?") == "이\u{00A0}주식 사도\u{00A0}될까요?")
+    }
+
     @Test func launchWithAnUnknownQuestionOpensTheCompanyPage() throws {
         let route = try #require(LaunchRoute(argument: "ask=dart:00126380|forecast"))
         #expect(route.askIntent == nil)

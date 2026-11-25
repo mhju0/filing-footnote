@@ -78,6 +78,40 @@ enum AskCopy {
         return lines
     }
 
+    /// The text with its last words joined by no-break spaces, so a wrapped sentence never
+    /// leaves one or two words alone on its last line: three words when the text has five
+    /// or more, else two, and fewer when the joined words would be long. Display only; the
+    /// words are unchanged.
+    static func keepingTail(_ text: String) -> String {
+        var words = text.split(separator: " ", omittingEmptySubsequences: false).map(String.init)
+        guard words.count >= 3 else { return text }
+        var count = words.count >= 5 ? 3 : 2
+        while count > 1 && words.suffix(count).joined(separator: " ").count > 24 { count -= 1 }
+        guard count > 1 else { return text }
+        let tail = words.suffix(count).joined(separator: "\u{00A0}")
+        words.removeLast(count)
+        return (words + [tail]).joined(separator: " ")
+    }
+
+    /// A question that wraps, if at all, only between two halves of about equal length
+    /// (`이 주식` / `사도 될까요?`): the words inside each half are joined by no-break spaces.
+    static func balanced(_ text: String) -> String {
+        halves(text).map { $0.replacingOccurrences(of: " ", with: "\u{00A0}") }.joined(separator: " ")
+    }
+
+    /// A short text in two phrases of about equal length, the second at least two words
+    /// long when the text has three or more.
+    static func halves(_ text: String) -> [String] {
+        let words = text.split(separator: " ").map(String.init)
+        guard words.count > 1 else { return [text] }
+        let last = words.count >= 3 ? words.count - 2 : words.count - 1
+        let cut = (1...last).min { a, b in
+            abs(2 * words[..<a].joined(separator: " ").count - text.count)
+                < abs(2 * words[..<b].joined(separator: " ").count - text.count)
+        } ?? 1
+        return [words[..<cut].joined(separator: " "), words[cut...].joined(separator: " ")]
+    }
+
     static func shortened(_ amount: AnswerAmount, _ language: Language) -> String {
         Formatting.amount(amount.value, currency: amount.currency ?? amount.unit, language: language)
     }
