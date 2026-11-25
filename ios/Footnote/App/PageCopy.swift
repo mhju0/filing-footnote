@@ -551,9 +551,10 @@ enum PageCopy {
         return digits + percentagePoints(language)
     }
 
-    /// The unit after a rate difference: `%포인트` / ` percentage points`.
+    /// The unit after a rate difference: `%포인트` / ` percentage points`. The English spaces
+    /// are no-break so the value and its unit stay on one line.
     static func percentagePoints(_ language: Language) -> String {
-        language("%포인트", " percentage points")
+        language("%포인트", "\u{00A0}percentage\u{00A0}points")
     }
 
     static func rateDifferenceSpoken(_ value: Decimal, _ language: Language) -> String {
