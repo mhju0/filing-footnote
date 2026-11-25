@@ -56,6 +56,7 @@ private struct SourcedSentenceRow: View {
                         .fixedSize(horizontal: false, vertical: true)
                         .frame(minHeight: Theme.minTarget, alignment: .leading)
                 }
+                .rowDisclosure()
                 .tint(Theme.pine)
                 .accessibilityIdentifier("source-sentence")
             }
