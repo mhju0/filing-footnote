@@ -51,6 +51,7 @@ struct GuideView: View {
         .onAppear { focused = true }
         .onKeyPress(.leftArrow) { go(to: page - 1); return .handled }
         .onKeyPress(.rightArrow) { go(to: page + 1); return .handled }
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("guide")
     }
 

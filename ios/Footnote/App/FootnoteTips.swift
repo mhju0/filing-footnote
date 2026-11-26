@@ -49,7 +49,7 @@ protocol FootnoteTip: Tip {
 
 extension FootnoteTip {
     private var copy: (title: String, message: String) { FootnoteTips.language == .ko ? ko : en }
-    var title: Text { Text(words: copy.title) }
+    var title: Text { Text(words: AskCopy.keepingTail(copy.title)) }
     var message: Text? { Text(words: AskCopy.keepingTail(copy.message)) }
     var image: Image? { Image(systemName: symbol) }
     var options: [any TipOption] { [Tips.MaxDisplayCount(3)] }

@@ -48,18 +48,20 @@ struct CompanyPageView: View {
             if page.quarterReport != nil || !page.periodicReports.isEmpty {
                 Section {
                     if let report = page.quarterReport {
+                        // The tip goes on the label: a wrapper outside the row would hide
+                        // its selection tag on the Mac and shrink its button on iPad.
                         FilingRowLink(filingID: report.filing.id) {
                             QuarterRow(report: report, company: page.company, dataAsOf: page.dataAsOf)
+                                .footnoteTip(tips.currentTip as? FigureSourceTip)
                         }
-                        .footnoteTip(tips.currentTip as? FigureSourceTip)
                     }
                     ForEach(page.periodicReports, id: \.filing.id) { report in
                         FilingRowLink(filingID: report.filing.id) {
                             PeriodicRow(report: report, company: page.company, dataAsOf: page.dataAsOf)
+                                .footnoteTip(
+                                    page.quarterReport == nil && report.filing.id == page.periodicReports.first?.filing.id
+                                        ? tips.currentTip as? FigureSourceTip : nil)
                         }
-                        .footnoteTip(
-                            page.quarterReport == nil && report.filing.id == page.periodicReports.first?.filing.id
-                                ? tips.currentTip as? FigureSourceTip : nil)
                     }
                 } header: {
                     SectionTitle(language("정기 보고서", "Periodic reports"))
