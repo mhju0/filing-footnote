@@ -2,34 +2,35 @@
 
 Footnote is an iPhone, iPad and Mac app that explains, in plain Korean and English, what 18 Korean and US companies have filed with their regulators, DART in Korea and the SEC in the US. For each company it covers the latest annual report and up to ten recent event filings: results, dividends, buybacks, executive changes, company outlooks and similar. Each filing gets a three-line summary attributed to the company, the figures it states, and a link to the original.
 
-Every summary line can be traced to the sentence in the filing it was written from. Figures are exact decimals taken from the regulator's structured data, not from model output. The app runs offline from a bundled read-only database. It gives no investment advice and makes no predictions. Asked "Should I buy this?", it says it does not tell anyone to buy or sell, and offers the fundamentals, profit and trend questions instead.
+Every summary line can be traced to the sentence in the filing it was written from. Figures are exact decimals taken from the regulator's structured data, not from model output. The app runs offline from a bundled read-only database. It gives no investment advice and makes no predictions. If asked "Should I buy this?", the app says it does not tell anyone to buy or sell, and points to its questions about the fundamentals, profit and the recent trend.
 
 **Status:** v0.5.2 is the version number the backend and app still carry from the predecessor project; it changes with Footnote's first release. The release data bundle is not built yet, because some filings still lack an owner-approved summary (see [Current numbers](#current-numbers)).
 
 ## Screenshots
 
-From the iPhone 17 simulator (iOS 26.5) and the Mac app, on 2026-11-26. The data is a preview bundle: real filings, and only summaries the owner approved.
+Taken on 2026-11-26 on the iPhone 17 simulator (iOS 26.5) and the Mac app, from a preview bundle: real filings, with only the summaries the owner has approved.
 
 <table>
 <tr>
-<td width="33%"><img src="docs/screenshots/iphone-company-summary-ko.png" alt="Samsung Electronics' company page in Korean. A summary card shows 2025 revenue rounded, the exact amount below it, the change from the year before and the source report, then the latest quarter's revenue, operating income and net income against the same quarter a year earlier."></td>
-<td width="33%"><img src="docs/screenshots/iphone-company-summary-en.png" alt="The same company page in English: revenue of 333.61 trillion won for fiscal 2025, up 10.88 percent from the year before, then the July to September quarter."></td>
+<td width="50%"><img src="docs/screenshots/iphone-company-summary-ko.png" alt="Samsung Electronics' company page in Korean. A summary card shows 2025 revenue rounded, the exact amount below it, the change from the year before and the source report, then the latest quarter's revenue, operating income and net income against the same quarter a year earlier."></td>
+<td width="50%"><img src="docs/screenshots/iphone-company-summary-en.png" alt="The same company page in English: revenue of 333.61 trillion won for fiscal 2025, up 10.88 percent from the year before, then the July to September quarter."></td>
+</tr>
+<tr>
+<td>Company page with the summary card, Korean</td>
+<td>The same page in English</td>
+</tr>
+</table>
+
+<table>
+<tr>
 <td width="33%"><img src="docs/screenshots/iphone-filing-source-sentences-ko.png" alt="Hyundai Motor's treasury share disposal filing in Korean. Under each summary line the source sentence disclosure is open and quotes the filing's own Korean sentence."></td>
+<td width="33%"><img src="docs/screenshots/iphone-glossary-ko.png" alt="The Korean glossary: a search field, frequently used terms such as revenue, operating income and earnings per share, then terms in Korean alphabetical order with a section index."></td>
+<td width="33%"><img src="docs/screenshots/iphone-first-run-guide-ko.png" alt="Page three of the first-run guide in Korean, showing a live, scaled-down Kia company page above a short explanation of what the company page holds."></td>
 </tr>
 <tr>
-<td>Company page, Korean</td>
-<td>Company page, English</td>
-<td>Filing page with each line's source sentence open</td>
-</tr>
-<tr>
-<td><img src="docs/screenshots/iphone-glossary-ko.png" alt="The Korean glossary: a search field, frequently used terms such as revenue, operating income and earnings per share, then terms in Korean alphabetical order with a section index."></td>
-<td><img src="docs/screenshots/iphone-first-run-guide-ko.png" alt="Page three of the first-run guide in Korean, showing a live, scaled-down Kia company page above a short explanation of what the company page holds."></td>
-<td></td>
-</tr>
-<tr>
+<td>Filing page, source sentences open</td>
 <td>Glossary</td>
 <td>First-run guide, page 3 of 4</td>
-<td></td>
 </tr>
 </table>
 
@@ -49,7 +50,7 @@ DART / SEC APIs
                            └─ FootnoteKit ── SwiftUI app on iPhone, iPad and Mac
 ```
 
-Everything above the app runs on the owner's Mac before a build. The app makes no network call to show a filing; only "open the original" goes online.
+Everything above the app runs on the owner's Mac before a build. The app itself makes no network call to show a filing; only the "open the original" link needs the internet.
 
 - **Ingest** (`backend/app/ingest`, `backend/app/clients`). Fetches annual reports, financial statements and twelve months of event filings from DART and SEC EDGAR. Each filing gets one category from fixed rules, not from a model ([ADR 0004](docs/adr/0004-event-filings-in-scope.md), [ADR 0007](docs/adr/0007-notices-and-wider-event-scope.md)). With `--save-pinned` it keeps the regulator's raw responses, and the export later re-parses every figure from them and fails on any difference.
 - **Summaries** (`backend/app/build/summaries.py`). One model call writes the Korean and English lines together. Filings that are tables (preliminary results, dividends, unit sales, outlooks) get template lines with the table's values and no model call (D78).
@@ -70,7 +71,7 @@ Each generated line then goes through three checks.
 2. **Model reviewer**. One advisory call per summary that passed the guard. It stores flags for the owner and never approves or blocks.
 3. **Faithfulness aligner** (`backend/app/build/faithfulness.py`, D97, D102, D103). The guard checks how a line is written, not whether the filing says it. In a pilot, a line replaced the region named in a filing with a different place, and neither the guard nor the reviewer caught it. The aligner is deterministic and makes no model call. It cuts the source text into sentences, matches Korean words by stem and English words by prefix, treats places, products, currencies, numbers and acronyms as strict entities ([contracts/faithfulness-lexicon.json](contracts/faithfulness-lexicon.json)), and scores each line against its best span of up to two sentences. Overlap from 0.7 is `supported`, from 0.4 `partly`, below that `unsupported`. A strict entity the source never names, or a rival action (acquire instead of dispose, appoint instead of resign), makes a line `unsupported`.
 
-**Release gate.** `verify --release` blocks any `unsupported` line by default, unless the owner has read it and recorded an override that is bound to the line's hash, so an edit voids it. `partly` lines show on the review page but do not block. Over the approved summaries the gate counts 0 unsupported lines; the owner accepted 2 (line 3 of one SEC filing, Korean and English, a faithful paraphrase of a list of note tranches) (D100, D105).
+**Release gate.** `verify --release` blocks any `unsupported` line by default, unless the owner has read it and recorded an override that is bound to the line's hash, so an edit voids it. `partly` lines show on the review page but do not block. Over the approved summaries the gate counts 0 unsupported lines; the owner accepted 2: line 3 of one SEC filing in both languages, a faithful paraphrase of a list of note tranches (D100, D105).
 
 **Eval.** `make faithfulness-eval` scores the aligner on 73 labelled lines from 22 cases in both languages: real approved lines and synthetic edits of them (a swapped region, product, action, number or negation). The labels were written by the coding agent and have not been reviewed by the owner.
 
@@ -118,7 +119,7 @@ Then, from the repository root, `make faithfulness AS_OF=2026-11-19` and `make d
 
 ### The app
 
-The Xcode project is generated from `ios/project.yml` and committed, so a fresh checkout opens as is. Without a bundle at `ios/Footnote/Resources/footnote.sqlite` (git-ignored), a debug build uses the small FootnoteKit test fixture, so the app runs from a clean checkout.
+The Xcode project is generated from `ios/project.yml` and committed, so a fresh checkout opens as is. Without a bundle at `ios/Footnote/Resources/footnote.sqlite` (git-ignored), a debug build falls back to the small FootnoteKit test fixture, so the app also runs from a clean checkout.
 
 ```bash
 xcodebuild test -project ios/Footnote.xcodeproj -scheme Footnote \
@@ -138,19 +139,19 @@ Measured on 2026-11-26 at commit `1797e79`.
 | Number | Value | Source |
 |---|---|---|
 | Companies | 18 (9 DART, 9 SEC) | PRODUCT.md; `companies` table of the preview bundle |
-| Event filings per company | up to 10 | `EVENT_CAP` in `backend/app/build/export.py` (D76) |
-| Approved summaries | 188 Korean–English pairs over 162 filings: 158 written by the model, 30 from templates; 1,068 lines | `backend/data/summaries/approved.jsonl` |
-| Unsupported lines at the release gate | 0, plus 2 the owner accepted | D105; `backend/data/summaries/faithfulness_accepted.jsonl` |
-| Faithfulness eval | see the table above | `make faithfulness-eval` |
-| Backend offline tests | 1,674 passed, 56 skipped | `scripts/check.sh` (`make test`) |
-| FootnoteKit tests | 189 tests in 26 suites, all passed | `scripts/check.sh` (`swift test`) |
-| App unit tests | 68 `@Test` functions | counted in `ios/FootnoteTests/`; last run 68/68 on iPhone and Mac in PR #64 |
-| UI test methods | 40 | counted in `ios/FootnoteUITests/`; not run for this count |
-| Audited screens | 28, in 6 configurations | `AccessibilityAuditUITests.swift` |
-| Comparison contract cases | 112 | `contracts/comparison-cases.json` |
-| Groq limits in code | 768 output tokens per call; 7,000 DART source characters | `summaries.py` `_MAX_TOKENS`; `model.py` `MAX_SOURCE_CHARS` |
+| Events&nbsp;per&nbsp;company | up to 10 | `EVENT_CAP` in `backend/app/build/export.py` (D76) |
+| Approved&nbsp;summaries | 188 Korean–English pairs over 162 filings: 158 written by the model, 30 from templates; 1,068 lines | `backend/data/summaries/approved.jsonl` |
+| Unsupported&nbsp;lines | 0 at the release gate, plus 2 the owner accepted | D105; `backend/data/summaries/faithfulness_accepted.jsonl` |
+| Faithfulness&nbsp;eval | see the table above | `make faithfulness-eval` |
+| Backend&nbsp;offline&nbsp;tests | 1,674 passed, 56 skipped | `scripts/check.sh` (`make test`) |
+| FootnoteKit&nbsp;tests | 189 tests in 26 suites, all passed | `scripts/check.sh` (`swift test`) |
+| App&nbsp;unit&nbsp;tests | 68 `@Test` functions | counted in `ios/FootnoteTests/`; last run 68/68 on iPhone and Mac in PR #64 |
+| UI&nbsp;test&nbsp;methods | 40 | counted in `ios/FootnoteUITests/`; not run for this count |
+| Audited&nbsp;screens | 28, in 6 configurations | `AccessibilityAuditUITests.swift` |
+| Comparison&nbsp;cases | 112 | `contracts/comparison-cases.json` |
+| Groq&nbsp;limits&nbsp;in&nbsp;code | 768 output tokens per call; 7,000 DART source characters | `summaries.py` `_MAX_TOKENS`; `model.py` `MAX_SOURCE_CHARS` |
 
-The [case study](docs/CASE_STUDY.md) records the problem, the trade-offs and the failures found along the way. Its tables are dated 2026-11-20 and are kept as written.
+The [case study](docs/CASE_STUDY.md) covers the problem, the trade-offs and the failures found along the way; its tables are a dated record from 2026-11-20.
 
 ## Documentation
 
