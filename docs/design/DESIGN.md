@@ -94,7 +94,7 @@ Details:
 - Notices row: "안내 공시 N건 / N notices", counting notices filed in the same span as
   the listed filings; hidden when there are none.
 - Filing page order is fixed for every type: sentences, then numbers, then the original. The Original section shows the filed date and regulator link first. Form and receipt number expand in Filing details.
-- Source sentence (D101): under each summary line, a Pine "출처 문장 / Source sentence"
+- Source sentence (D101): under each summary line, an Ink "출처 문장 / Source sentence"
   disclosure, closed by default. Open, it shows the language and the filing's name
   ("한국어 원문 · 자기주식 취득 결정"), then the excerpt verbatim in the filing's
   language beside a thin Muted rule. A partly supported line looks the same. A template
@@ -181,7 +181,7 @@ tips E, timing B). The copy is the owner's and is not reworded.
 
 | Tip | On | Shows from | Ends when |
 |---|---|---|---|
-| 숫자를 누르면 출처가 보여요 / Tap a figure to see its source | The company page's first report row (the figure) | Second company page | A figure or report is opened |
+| 숫자를 누르면 출처가 보여요 / Tap a figure to see its source | The summary card's year figure (D107); on a page whose card has none, the first report row | Second company page | A figure or report is opened |
 | 질문을 눌러 보세요 / Tap a question | The first question to ask | Third company page, after the figure tip ends | A question is tapped |
 | 작년과 비교해 보세요 / Compare with last year | 작년과 비교 on the figure screen | Second figure screen | Either comparison is opened |
 | 공시 종류로 골라 보기 / Filter by filing type | The News filter | Second visit to 소식 / News | A filing type is chosen |

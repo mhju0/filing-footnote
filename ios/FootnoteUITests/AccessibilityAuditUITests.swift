@@ -140,15 +140,32 @@ final class AccessibilityAuditUITests: XCTestCase {
         // Every screen has a navigation bar; wait for it and a moment for the list to settle.
         XCTAssertTrue(app.navigationBars.firstMatch.waitForExistence(timeout: 10), config)
         sleep(1)
+        waitForStillScreen(app)
         try audit(app, config, pass: 0)
         for pass in 0..<screen.swipes {
             app.swipeUp()
             // A list keeps gliding after a swipe; an audit taken while it moves measures
             // blurred text and reports contrast failures that are not there.
             sleep(2)
+            waitForStillScreen(app)
             try audit(app, config, pass: pass + 1)
         }
         app.terminate()
+    }
+
+    /// Waits, up to ten seconds, until two screenshots half a second apart match. Under load
+    /// a list can still be gliding, or text fading in, when the fixed sleep ends. An audit of
+    /// a moving screen measured a news pass's contrast for fifteen seconds until it timed out,
+    /// where the same pass takes about three (D107).
+    @MainActor private func waitForStillScreen(_ app: XCUIApplication) {
+        var last = app.screenshot().pngRepresentation
+        for _ in 0..<20 {
+            usleep(500_000)
+            let next = app.screenshot().pngRepresentation
+            if next == last { return }
+            last = next
+        }
+        print("AUDIT-MOVING|the screen was still changing after ten seconds")
     }
 
     @MainActor private func audit(_ app: XCUIApplication, _ config: String, pass: Int) throws {
@@ -170,24 +187,43 @@ final class AccessibilityAuditUITests: XCTestCase {
         let investorRow = app.descendants(matching: .any)["investor-event"].firstMatch
         let investorEvent = investorRow.exists ? investorRow.frame : nil
         if recording { print("BARS|\(config) #\(pass): \(bars.map(\.integral)) window=\(window.integral)") }
-        try app.performAccessibilityAudit(for: .all) { issue in
-            let element = issue.element
-            let where_ = "\(config) #\(pass): \(issue.auditType.name) · \(issue.compactDescription) · "
-                + "id=\(element?.identifier ?? "-") label=\(element?.label ?? "-") type=\(element?.elementType.rawValue ?? 0)"
-            if let reason = Self.falsePositive(issue, bars: bars, sidebar: sidebar, window: window,
-                                                 investorEvent: investorEvent, afterSwipe: pass > 0) {
-                // Issues without an element are always printed, so a log shows them.
-                if self.recording || element == nil { print("FILTERED|\(reason)|" + where_) }
-                return true
+        for type in Self.auditTypes {
+            let start = Date()
+            defer { print("AUDIT-TIME|\(config) #\(pass) \(type.name): \(Date().timeIntervalSince(start))") }
+            try app.performAccessibilityAudit(for: type) { issue in
+                self.handle(issue, config, pass: pass, bars: bars, sidebar: sidebar, window: window,
+                            investorEvent: investorEvent)
             }
-            if self.recording {
-                let frame = element.map { "\($0.frame.integral)" } ?? "-"
-                print("AUDIT|" + where_ + " frame=\(frame) · \(issue.detailedDescription)")
-                return true
-            }
-            XCTFail(where_)
+        }
+    }
+
+    /// Every audit type `.all` covers on iOS (XCUIAccessibilityAuditTypes.h), one call each.
+    /// With `.all`, one call on the company page took up to twenty-five seconds, about half of it
+    /// the Dynamic Type check, and a call that runs past XCTest's limit leaves testmanagerd
+    /// working at full speed for the rest of the run, which slowed every later audit until
+    /// they timed out as well (D107). One type per call keeps each call well inside the limit.
+    private static let auditTypes: [XCUIAccessibilityAuditType] = [
+        .contrast, .elementDetection, .hitRegion, .sufficientElementDescription, .dynamicType, .textClipped, .trait,
+    ]
+
+    @MainActor private func handle(_ issue: XCUIAccessibilityAuditIssue, _ config: String, pass: Int, bars: [CGRect],
+                                   sidebar: CGRect?, window: CGRect, investorEvent: CGRect?) -> Bool {
+        let element = issue.element
+        let where_ = "\(config) #\(pass): \(issue.auditType.name) · \(issue.compactDescription) · "
+            + "id=\(element?.identifier ?? "-") label=\(element?.label ?? "-") type=\(element?.elementType.rawValue ?? 0)"
+        if let reason = Self.falsePositive(issue, bars: bars, sidebar: sidebar, window: window,
+                                             investorEvent: investorEvent, afterSwipe: pass > 0) {
+            // Issues without an element are always printed, so a log shows them.
+            if self.recording || element == nil { print("FILTERED|\(reason)|" + where_) }
             return true
         }
+        if self.recording {
+            let frame = element.map { "\($0.frame.integral)" } ?? "-"
+            print("AUDIT|" + where_ + " frame=\(frame) · \(issue.detailedDescription)")
+            return true
+        }
+        XCTFail(where_)
+        return true
     }
 
     /// `XCUIAccessibilityAuditError` "Audit failed to complete in time".

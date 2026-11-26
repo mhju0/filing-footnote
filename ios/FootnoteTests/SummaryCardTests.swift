@@ -1,5 +1,6 @@
 import Foundation
 import FootnoteKit
+import SQLite3
 import Testing
 @testable import Footnote
 
@@ -36,6 +37,26 @@ struct SummaryCardTests {
         let summary = try #require(CompanyAnswerer.summary(store: store, companyID: Self.samsung))
         #expect(SummarySelection.year.route(summary, companyID: Self.samsung) == .figure(Self.samsung, "revenue", 2025))
         #expect(SummarySelection.quarter.route(summary, companyID: Self.samsung) == .filing("dart:20261116000111"))
+    }
+
+    /// t2 sits on the year figure when the card links it (D107); a card that says the year
+    /// is missing has no year link, and t2 stays on the report row.
+    @Test func theFigureTipGoesWhereTheCardLinksTheYear() throws {
+        let summary = try #require(CompanyAnswerer.summary(store: store, companyID: Self.samsung))
+        #expect(CompanySummaryCard.linksYear(summary, companyID: Self.samsung))
+
+        let path = NSTemporaryDirectory() + "footnote-\(UUID().uuidString).sqlite"
+        try FileManager.default.copyItem(at: fixtureURL, to: URL(fileURLWithPath: path))
+        defer { try? FileManager.default.removeItem(atPath: path) }
+        var db: OpaquePointer?
+        #expect(sqlite3_open(path, &db) == SQLITE_OK)
+        let sql = "UPDATE filings SET period_label = NULL WHERE id = 'dart:20260310000123'"
+        #expect(sqlite3_exec(db, sql, nil, nil, nil) == SQLITE_OK)
+        sqlite3_close(db)
+        let edited = try BundleStore(contentsOf: URL(fileURLWithPath: path))
+        let missing = try #require(CompanyAnswerer.summary(store: edited, companyID: Self.samsung))
+        #expect(missing.year == .statement(.yearMissing))
+        #expect(!CompanySummaryCard.linksYear(missing, companyID: Self.samsung))
     }
 
     @Test func quarterLabelsNameTheirCalendarMonths() throws {

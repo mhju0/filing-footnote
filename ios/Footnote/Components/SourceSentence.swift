@@ -49,9 +49,11 @@ private struct SourcedSentenceRow: View {
                     SourceExcerpt(source: source, filing: filing)
                         .padding(.bottom, 6)
                 } label: {
+                    // Ink, not Pine: the audit reported Pine here as "Contrast nearly passed" in
+                    // dark mode (7.71:1 measured on the screenshot); Ink gives it 14.1:1 (D107).
                     Text(words: SourceCopy.disclosure(count: source.count, language))
                         .font(.subheadline)
-                        .foregroundStyle(Theme.pine)
+                        .foregroundStyle(Theme.ink)
                         .fixedSize(horizontal: false, vertical: true)
                         .frame(minHeight: Theme.minTarget, alignment: .leading)
                 }
