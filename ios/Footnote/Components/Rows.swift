@@ -167,7 +167,7 @@ struct FilingMeta: View {
 }
 
 /// An event filing in a list: tag, date, title, and under it, when given, the first line of
-/// the filing's approved summary (D100; DESIGN.md, Screens).
+/// the filing's approved summary (D106; DESIGN.md, Screens).
 struct FilingRow: View {
     @Environment(\.language) private var language
     let filing: Filing

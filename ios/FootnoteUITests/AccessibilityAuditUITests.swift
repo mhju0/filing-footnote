@@ -250,7 +250,7 @@ final class AccessibilityAuditUITests: XCTestCase {
             // each screen checks text clipping, at every text size.
             if afterSwipe, element.elementType == .staticText { return "scrolled-text" }
             // The Companies tab's system search field (`.searchable`, D98): its placeholder
-            // `Company name or ticker` shows in full at Accessibility XL (D100 audit screenshot
+            // `Company name or ticker` shows in full at Accessibility XL (D106 audit screenshot
             // companies-en-AX-0, the field grown to 97 points). Placement and truncation of a
             // system search bar's placeholder are the system's.
             if element.elementType == .searchField { return "system-search" }

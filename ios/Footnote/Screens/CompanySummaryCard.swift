@@ -29,7 +29,7 @@ enum SummarySelection: String {
     }
 }
 
-/// The company page's first card (owner pick 2026-11-26, design direction 1 B; D100): the
+/// The company page's first card (owner pick 2026-11-26, design direction 1 B; D106): the
 /// newest annual revenue against the year before, then the newest quarter's three figures
 /// against the same quarter a year earlier, each with the filing it comes from. A missing
 /// report or figure is said in words, never shown as zero.

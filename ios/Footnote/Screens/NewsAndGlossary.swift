@@ -4,7 +4,7 @@ import SwiftUI
 /// 소식 / News: the filings the company pages list, across every company, newest first and
 /// grouped by day (`NewsFeed`, D86). Rows are the company page's (tag, title) with the
 /// company's name in place of the date the heading already gives, and the first line of the
-/// filing's approved summary under the title when it has one (D100).
+/// filing's approved summary under the title when it has one (D106).
 struct NewsView: View {
     @Environment(\.language) private var language
     @Environment(\.filingSelection) private var selection

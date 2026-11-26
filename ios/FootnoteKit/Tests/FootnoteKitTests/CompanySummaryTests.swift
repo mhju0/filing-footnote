@@ -3,7 +3,7 @@ import Testing
 @testable import FootnoteKit
 
 /// The company page's summary card, a filing row's second line and the search across
-/// filings and terms (D100) on the fixture.
+/// filings and terms (D106) on the fixture.
 @Suite("Company summary")
 struct CompanySummaryTests {
     static let samsung = CompanyQuestionsTests.samsung

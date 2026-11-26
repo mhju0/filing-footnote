@@ -40,7 +40,7 @@ final class QuarterReportUITests: XCTestCase {
     @MainActor func testCompanyRowOpensTheQuarterReportAndAFigure() throws {
         let app = try launch("company=\(Self.samsung)", language: "ko")
         XCTAssertTrue(identified("summary-quarter", in: app).waitForExistence(timeout: 10))
-        // The summary card and the questions come first (D100); the report row is below them.
+        // The summary card and the questions come first (D106); the report row is below them.
         let row = identified(Self.samsungQuarter, in: app)
         reveal(row, in: app)
         XCTAssertTrue(row.exists)

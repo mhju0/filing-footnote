@@ -251,7 +251,7 @@ struct DirectorySearchField: View {
                     .foregroundStyle(Theme.muted)
                     .accessibilityHidden(true)
                 // Vertical, so a long query wraps at large text sizes rather than clips
-                // (D100, accessibility audit). The field's own prompt stays on one line and
+                // (D106, accessibility audit). The field's own prompt stays on one line and
                 // clips, so the prompt is drawn behind the field, where it wraps and sets the
                 // height; a tap on it focuses the field. VoiceOver reads it as the hint.
                 // Return ends the search, as on a one-line field.

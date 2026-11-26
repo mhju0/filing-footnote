@@ -1,7 +1,7 @@
 import FootnoteKit
 import SwiftUI
 
-/// Board 14: the summary card and the questions to ask under it (D100), the periodic
+/// Board 14: the summary card and the questions to ask under it (D106), the periodic
 /// reports, up to ten filings by month, the notices row, then the end note and the link to
 /// every filing on DART or SEC.
 struct CompanyPageView: View {
@@ -22,7 +22,7 @@ struct CompanyPageView: View {
     private var summary: CompanySummary? { CompanyAnswerer.summary(store: store, companyID: page.company.id) }
 
     /// A title another filing on the page shares gets its approved summary's first line
-    /// under it, to tell the two apart (2026-11-26 review, issue 13; D100).
+    /// under it, to tell the two apart (2026-11-26 review, issue 13; D106).
     private func secondLine(_ filing: Filing) -> String? {
         guard Titles.repeatedTitleIDs(page.filings, language: language).contains(filing.id) else { return nil }
         return store.firstSummaryLine(filingID: filing.id, language: language)
@@ -51,7 +51,7 @@ struct CompanyPageView: View {
             if let summary {
                 CompanySummaryCard(summary: summary, companyID: page.company.id)
             }
-            // D100: directly under the summary card, above the reports and filings.
+            // D106: directly under the summary card, above the reports and filings.
             AskSection(companyID: page.company.id)
                 .id(PageScroll.ask)
             if page.quarterReport != nil || !page.periodicReports.isEmpty {

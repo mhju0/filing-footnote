@@ -74,7 +74,7 @@ guessing. It explains; it does not advise or trade.
 - Refusal reasons the UI must explain: ambiguous request, unsupported basis, metric out of
   scope, missing period, incompatible currency, incompatible comparison.
 - Ask about this company (2026-11-26, D99): six fixed questions on the company page,
-  directly under its summary card (D100). Should I buy this? What are the fundamentals? What's the recent
+  directly under its summary card (D106). Should I buy this? What are the fundamentals? What's the recent
   trend? Does it make or lose money? How is revenue doing? What's next quarter's revenue?
   Each answer uses only the bundle: the latest annual report's approved business lines and
   exact figures from the latest quarter and fiscal year, each against the same period a
@@ -132,4 +132,4 @@ guessing. It explains; it does not advise or trade.
 Dynamic Type, VoiceOver labels on every figure and control, 44 pt targets, light and dark
 appearance, color never the only signal of up or down (Korean markets read red as up, so
 direction is always shown as a ▲ or ▼ glyph with a word, and VoiceOver says 증가 / increased
-or 감소 / decreased; D100).
+or 감소 / decreased; D106).

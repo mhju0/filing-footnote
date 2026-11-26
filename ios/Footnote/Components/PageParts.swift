@@ -245,7 +245,7 @@ extension View {
     /// sits inside the row, in line with the rows around it rather than out in the margin
     /// (2026-11-26 review, issue 14). On iPhone and iPad it stays at the trailing edge where
     /// the system draws it; the system group in a list makes the chevron a separate button
-    /// with no label, about ten by fourteen points (D100, accessibility audit).
+    /// with no label, about ten by fourteen points (D106, accessibility audit).
     func rowDisclosure() -> some View {
         disclosureGroupStyle(InsetDisclosureStyle())
     }

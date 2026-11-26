@@ -118,6 +118,135 @@ def test_sentences_keep_offsets_and_decimals() -> None:
     assert [s.text for s in sentences if s.text.startswith("5.")] == ["5. 처분목적 임금협상 결과."]
 
 
+def test_a_dot_between_a_latin_name_and_hangul_is_not_a_sentence_end() -> None:
+    # NAVER, dart:20261027800510: "L.P." is a name, so the sentence runs on after it.
+    text = ("- 본 공시는 당사 및 당사의 종속회사인 네이버클라우드(주)가 Green Holding L.P.와 체결한 "
+            "투자 및 운영계약에 관한 것입니다. Brookfield는 Green Holding L.P.를 통하여 국내에 "
+            "투자목적회사를 설립할 예정입니다. 채권자는 Abc Pte. Ltd.(이하 '회사')에서 변경됩니다.")  # fmt: skip
+    sentences = f.split_sentences(text)
+    assert all(text[s.start : s.end] == s.text for s in sentences)
+    starts = ("- 본 공시는", "Brookfield는", "채권자는 Abc Pte. Ltd.(이하")
+    assert len(sentences) == len(starts)
+    assert all(s.text.startswith(start) for s, start in zip(sentences, starts, strict=True))
+    # A sentence that ends in Hangul before the next one still ends there.
+    assert len(f.split_sentences("결정하였습니다.이사회는 승인하였습니다.")) == 2
+
+
+def test_a_soft_wrapped_line_is_not_a_sentence_end() -> None:
+    # An 8-K's text keeps the printed line breaks; a line that runs on is one sentence.
+    text = ("Item 5.07 Submission of Matters to a Vote of Security Holders\n"
+            "The compensation of our named executive officers\n"
+            "as disclosed in the proxy statement was approved in an advisory vote, as set\n"
+            "forth below:\n"
+            "The transaction is subject to certain closing conditions, including\n"
+            "receipt of required regulatory approvals.\n\n"
+            "[Item 9.01 Financial Statements and Exhibits]\n"
+            "exhibits are filed with this report.\n"
+            "- the press release,\n"
+            "dated July 30, 2026.\n"
+            "$2,250,000,000 aggregate principal amount of its 6.250%\n"
+            "notes due 2066.")  # fmt: skip
+    sentences = f.split_sentences(text)
+    assert all(text[s.start : s.end] == s.text for s in sentences)
+    assert [s.text for s in sentences] == [
+        "Item 5.07 Submission of Matters to a Vote of Security Holders",
+        "The compensation of our named executive officers\nas disclosed in the proxy statement "
+        "was approved in an advisory vote, as set\nforth below:",
+        "The transaction is subject to certain closing conditions, including\nreceipt of "
+        "required regulatory approvals.",
+        # "[Item 9.01 Financial Statements and Exhibits]" is a label the pipeline added (D103).
+        "exhibits are filed with this report.",
+        "- the press release,\ndated July 30, 2026.",
+        "$2,250,000,000 aggregate principal amount of its 6.250%\nnotes due 2066.",
+    ]
+
+
+def test_a_quoted_or_attached_list_number_is_not_a_sentence_end() -> None:
+    # DART notes point back at a numbered field: "상기 '4. …'은", "상기4. 및 5.와", "'2.…'".
+    text = ("3. 상기 '4. 채무보증내역-채무보증금액'은 채무금액의 당사 지분비율에 해당하는 금액임. "
+            "- 상기4. 및 5.와 관련하여 당사는 주식기준보상 제도를 운영 중임. "
+            "'2.금전대여내역'의 금액은 변동될 수 있음. 그 결과는 순위다. 다음 문장임.")  # fmt: skip
+    assert [s.text for s in f.split_sentences(text)] == [
+        "3. 상기 '4. 채무보증내역-채무보증금액'은 채무금액의 당사 지분비율에 해당하는 금액임.",
+        "- 상기4. 및 5.와 관련하여 당사는 주식기준보상 제도를 운영 중임.",
+        "'2.금전대여내역'의 금액은 변동될 수 있음.",
+        "그 결과는 순위다.",
+        "다음 문장임.",
+    ]
+
+
+def test_the_lines_the_pipeline_adds_are_not_sentences() -> None:
+    # The title and text labels, the report name and section labels come from
+    # app.build.model and app.clients.sec_8k, not from the filing (D103).
+    event = "Filing title: 타인에대한채무보증결정\n\nFiling text:\n[8-K]\n이사회 결의로 채무보증을 결정함."
+    assert [s.text for s in f.split_sentences(event)] == ["이사회 결의로 채무보증을 결정함."]
+    annual = "Report: Form 10-K\n\n[Item 1. Business]\nThe Company designs smartphones."
+    assert [s.text for s in f.split_sentences(annual)] == ["The Company designs smartphones."]
+    # A bracket inside a sentence stays: only a line that is the label alone is left out.
+    inline = "[변경 후 대표이사의 약력]은 아래와 같음."
+    assert [s.text for s in f.split_sentences(inline)] == [inline]
+
+
+def test_a_line_break_inside_an_open_quote_or_bracket_runs_on() -> None:
+    text = ("Notes due 2036 (the “2036\nNotes”), issued under the Indenture with the “Prior\n"
+            "Trustee”).\nCloud Services\nThe Company’s cloud services store content.")  # fmt: skip
+    assert [s.text for s in f.split_sentences(text)] == [
+        "Notes due 2036 (the “2036\nNotes”), issued under the Indenture with the “Prior\n"
+        "Trustee”).",
+        "Cloud Services",
+        "The Company’s cloud services store content.",
+    ]
+
+
+def test_a_time_of_day_is_not_a_sentence_end() -> None:
+    text = "The call starts at 4:30 p.m. Central Time (5:30 p.m. Eastern Time) on the day."
+    assert [s.text for s in f.split_sentences(text)] == [text]
+
+
+def test_a_list_marker_inside_a_quoted_reference_is_not_a_cut() -> None:
+    text = ("- 상기 '8. 취득전 자기주식보유현황 - 기타취득(보통주식)' 자기주식수는 교환사채 상환분임. "
+            "상세 내용은 'II. 사업의 내용 - 2. 주요제품 및 서비스'를 참조하시기 바랍니다. "
+            "자세한 사항은 『Ⅲ. 재무에 관한 사항 중 3. 연결재무제표 주석』에 기재하였습니다. "
+            "2. 처분목적 - 주주가치 제고")  # fmt: skip
+    assert [s.text for s in f.split_sentences(text)] == [
+        "- 상기 '8. 취득전 자기주식보유현황 - 기타취득(보통주식)' 자기주식수는 교환사채 상환분임.",
+        "상세 내용은 'II. 사업의 내용 - 2. 주요제품 및 서비스'를 참조하시기 바랍니다.",
+        "자세한 사항은 『Ⅲ. 재무에 관한 사항 중 3. 연결재무제표 주석』에 기재하였습니다.",
+        "2. 처분목적",
+        "- 주주가치 제고",
+    ]
+
+
+def test_a_date_before_a_particle_is_not_a_sentence_end() -> None:
+    text = "기준일 2024.12.31.이 속하는 사업연도의 배당금임. 다음 항목임."
+    assert [s.text for s in f.split_sentences(text)] == [
+        "기준일 2024.12.31.이 속하는 사업연도의 배당금임.",
+        "다음 항목임.",
+    ]
+
+
+def test_english_references_and_abbreviations_before_a_lowercase_word_run_on() -> None:
+    text = ("(see General Instruction A.2. below): Adj. operating income rose. "
+            'Read it with "Item 1A. Risk Factors" and "Item 1. Business" above. '
+            'Brands include "Wonder Nation." The Company also sells online.')  # fmt: skip
+    assert [s.text for s in f.split_sentences(text)] == [
+        "(see General Instruction A.2. below): Adj. operating income rose.",
+        'Read it with "Item 1A. Risk Factors" and "Item 1. Business" above.',
+        'Brands include "Wonder Nation."',
+        "The Company also sells online.",
+    ]
+
+
+def test_a_bullet_alone_on_its_line_and_a_line_after_a_bracket_run_on() -> None:
+    text = ("Factors such as:\n•\nintense competition in all of our markets.\n"
+            "Pursuant to Section 13 or 15(d)\nof the Securities Exchange Act of 1934")  # fmt: skip
+    assert [s.text for s in f.split_sentences(text)] == [
+        "Factors such as:",
+        "•\nintense competition in all of our markets.",
+        "Pursuant to Section 13 or 15(d)\nof the Securities Exchange Act of 1934",
+    ]
+
+
 # -- verdicts ------------------------------------------------------------------------------------
 
 

@@ -1,7 +1,7 @@
 import Foundation
 
 // A filing row's second line and the search across filings and terms (2026-11-26 review,
-// issues 3, 13 and 15; D100). The second line is only ever an approved summary line: the
+// issues 3, 13 and 15; D106). The second line is only ever an approved summary line: the
 // bundle holds nothing else (`BundleStore` refuses any other review state).
 
 extension BundleStore {

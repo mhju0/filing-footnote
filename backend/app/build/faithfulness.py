@@ -45,6 +45,7 @@ counts both.
 from __future__ import annotations
 
 import argparse
+import bisect
 import hashlib
 import json
 import re
@@ -71,7 +72,7 @@ EVAL_CASES_PATH = EVAL_DIR / "cases.jsonl"
 EVAL_SOURCES_PATH = EVAL_DIR / "sources.json"
 
 # Part of every record; a release refuses records from another version.
-ALIGNER_VERSION = "f1-2026-11-26"
+ALIGNER_VERSION = "f3-2026-11-26"
 SUPPORTED_AT = Fraction(7, 10)
 PARTLY_AT = Fraction(2, 5)
 MAX_SPAN_SENTENCES = 2
@@ -367,33 +368,132 @@ class Sentence:
 
 
 _ABBREVIATIONS = frozenset(
-    "inc co corp ltd llc llp plc no mr ms mrs dr jr sr st vs etc u.s u.k e.g i.e n.a".split()
+    "inc co corp ltd llc llp l.p pte plc no mr ms mrs dr jr sr st vs etc u.s u.k e.g i.e "
+    "n.a a.m p.m adj ex reg d.c".split()
 )
 # A boundary before a DART list marker: " - ", "【", "※", "■", "□", "○", "▶", "•", a numbered
 # field (" 5. 처분목적") or a lettered item (" 가. ").
 _MARKER_RE = re.compile(
     r"(?<=\s)(?=-\s|[【※■□○▶•])|(?<=\s)(?=[0-9]{1,2}\.\s+[가-힣A-Za-z(])|(?<=\s)(?=[가-하]\.\s)"
 )
-_STOP_RE = re.compile(r"[.!?。](?=\s|[가-힣\-【※(\"'])")
+_STOP_RE = re.compile(r"[.!?。](?=\s|[가-힣\-【※(\"'”’])")
+# A '.' after a Latin letter and before Hangul ends a name, not a sentence: "Green Holding
+# L.P.와 체결한", "Pte. Ltd.(이하 '회사')".
+_NAME_DOT_RE = re.compile(r"(?<=[A-Za-z])\.(?=\(?[가-힣])")
+# A soft-wrapped line in English filing text: the line runs on into the next one, which starts
+# with a lowercase word ("named executive officers\nas disclosed in the proxy statement",
+# "6.250%\nnotes due 2066"), or the line ends on a comma or semicolon. Blank lines, headings,
+# list items and lines that end a sentence or a label stay cuts.
+_WRAP_RE = re.compile(
+    r"(?<=[A-Za-z0-9%,;’”)™])[ \t]*\n[ \t]*(?=[a-z])|(?<=[,;])[ \t]*\n[ \t]*(?=[A-Z0-9$])"
+)
+# A line break inside an open quote or bracket also runs on when the next line starts with a
+# Latin word or a number: "(the “2036\nNotes”)", "the “Prior\nTrustee”)".
+_RUNS_ON_RE = re.compile(r"[ \t]*[A-Za-z0-9$“]")
+# Lines the pipeline adds around the filing's own text (``app.build.model``,
+# ``app.clients.sec_8k``): the title and text labels, the report name and section labels such
+# as "[Item 1. Business]" or "[EX-99.1]". They are not the filing's sentences, so they are
+# neither excerpts nor support.
+_HEADER_RE = re.compile(
+    r"^[ \t]*(?:Filing title: .*|Filing text:|Report: .*|\[[^\[\]\n]{1,80}\])[ \t]*$", re.M
+)
+# A list number after a space, an opening quote or bracket, or a word that points back
+# ("상기", "위", "아래") is a list marker or a reference to a field, not the end of a sentence:
+# "5. 처분목적", "상기 '4. 채무보증내역'은", "상기4. 및 5.와", "'2.금전대여내역'".
+_FIELD_NUMBER_RE = re.compile(
+    r"(?:^|[\s'‘\"“(\[「『〈<])(?:[0-9]{1,2}|[가-하]|[Ⅰ-Ⅹ])$|(?:상기|위|아래)[0-9]{1,2}$"
+    r"|['‘\"“(\[「『〈<][IVX]{1,4}$"
+)
+# The '.' that ends a date before a particle: "2024.12.31.이 속하는".
+_DATE_DOT_RE = re.compile(r"[0-9]{4}\.[0-9]{1,2}\.[0-9]{1,2}(\.)(?=[가-힣])")
+# In English text a sentence starts with a capital, so a '.' after a Latin letter or a digit and
+# before a lowercase word ends a reference or an abbreviation: "General Instruction A.2.
+# below", "Adj. operating income". An SEC item number is a reference too: "Item 1A. Risk".
+_RUNS_ON_DOT_RE = re.compile(r"(?<=[A-Za-z0-9])\.(?=[ \t]+[a-z])")
+_ITEM_RE = re.compile(r"\bItem\s+(?:[0-9]{1,2}[A-C]?)?$", re.I)
+# A quoted reference in DART text names a numbered field, and the field's own list markers
+# stay inside it: "상기 '8. 취득전 자기주식보유현황 - 기타취득'",
+# "『Ⅲ. 재무에 관한 사항 중 3. 연결재무제표 주석』".
+_QUOTES = (("'", "'"), ("‘", "’"), ("「", "」"), ("『", "』"))
+_BULLETS = frozenset("•◦▪●·")
+
+
+def _soft_breaks(text: str) -> set[int]:
+    """Positions of the line breaks that are not cuts: a soft wrap, a break inside a quote or
+    bracket that is still open since the last cut, or a break after a bullet alone on its line."""
+    wraps = {m.group(0).index("\n") + m.start() for m in _WRAP_RE.finditer(text)}
+    segment = 0
+    for m in re.finditer(r"\n", text):
+        at = m.start()
+        if at in wraps:
+            continue
+        open_text = text[segment:at]
+        still_open = (open_text.count("“") > open_text.count("”")
+                      or open_text.count("(") > open_text.count(")"))  # fmt: skip
+        line = text[text.rfind("\n", 0, at) + 1 : at].strip()
+        if (still_open and _RUNS_ON_RE.match(text, at + 1)) or line in _BULLETS:
+            wraps.add(at)
+        else:
+            segment = at + 1
+    return wraps
+
+
+def _in_quote(text: str, start: int, at: int) -> bool:
+    """Whether ``at`` sits inside a short quoted reference in Korean text that opened after
+    ``start``, the last cut before it, and closes within the next few words."""
+    back = text[max(start, at - 80) : at]
+    if not re.search(r"[가-힣]", back):
+        return False
+    end = text.find("\n", at)
+    ahead = text[at : min(at + 80, len(text) if end == -1 else end)]
+    for opening, closing in _QUOTES:
+        if opening == closing:
+            still_open = back.count(opening) % 2 == 1
+        else:
+            still_open = back.count(opening) > back.count(closing)
+        if still_open and closing in ahead:
+            return True
+    return False
 
 
 def split_sentences(text: str) -> list[Sentence]:
     """The source text cut at line breaks, sentence ends and DART list markers, each piece with
-    its offsets into ``text``."""
+    its offsets into ``text``. A soft-wrapped line break is not a cut, so a sentence can hold a
+    line break; its text is still ``text[start:end]``. Lines the pipeline adds around the
+    filing's text are left out."""
     cuts = {0, len(text)}
-    cuts.update(m.start() for m in re.finditer(r"\n", text))
-    cuts.update(m.end() for m in re.finditer(r"\n", text))
-    cuts.update(m.start() for m in _MARKER_RE.finditer(text))
+    headers = [(m.start(), m.end()) for m in _HEADER_RE.finditer(text)]
+    wraps = _soft_breaks(text)
+    breaks = [m.start() for m in re.finditer(r"\n", text) if m.start() not in wraps]
+    cuts.update(breaks)
+    cuts.update(at + 1 for at in breaks)
+    not_ends = {m.start() for m in _NAME_DOT_RE.finditer(text)}
+    not_ends.update(m.start(1) for m in _DATE_DOT_RE.finditer(text))
+    not_ends.update(m.start() for m in _RUNS_ON_DOT_RE.finditer(text))
     for match in _STOP_RE.finditer(text):
+        if match.start() in not_ends:
+            continue
         before = text[max(0, match.start() - 4) : match.start()]
         word = re.search(r"([A-Za-z.]+)$", before)
         if word and word.group(1).lower().strip(".") in _ABBREVIATIONS:
             continue
         if re.search(r"(?:^|\s)[A-Z]$", before):  # an initial: "Joseph E. Creed"
             continue
-        if re.search(r"(?:^|\s)(?:[0-9]{1,2}|[가-하])$", before):  # a list marker: "5." "가."
-            continue
-        cuts.add(match.end())
+        wide = text[max(0, match.start() - 9) : match.start()]
+        if _FIELD_NUMBER_RE.search(wide[-6:]) or _ITEM_RE.search(wide):
+            continue  # "5." "가." "'4." "상기4." "'II." "Item 1A."
+        after = text[match.end() : match.end() + 2]
+        if after[:1] in "\"'”’" and after[1:] in ("", " ", "\n", "\t"):
+            cuts.add(match.end() + 1)  # the quote closes with the sentence: Nation." The
+        elif after[:1] not in "”’":
+            cuts.add(match.end())
+    ordered = sorted(cuts)
+    for m in _MARKER_RE.finditer(text):
+        last = ordered[bisect.bisect_right(ordered, m.start()) - 1]
+        if _ITEM_RE.search(text[max(0, m.start() - 9) : m.start()]):
+            continue  # "Item 1. Business" is one reference
+        if not _in_quote(text, last, m.start()):
+            cuts.add(m.start())
     sentences = []
     ordered = sorted(cuts)
     for start, end in zip(ordered, ordered[1:], strict=False):
@@ -402,7 +502,10 @@ def split_sentences(text: str) -> list[Sentence]:
         if len(stripped) < 2:
             continue
         offset = start + (len(piece) - len(piece.lstrip()))
-        sentences.append(Sentence(offset, offset + len(stripped), stripped))
+        end_at = offset + len(stripped)
+        if any(a <= offset and end_at <= b for a, b in headers):  # a line the pipeline added
+            continue
+        sentences.append(Sentence(offset, end_at, stripped))
     return sentences
 
 

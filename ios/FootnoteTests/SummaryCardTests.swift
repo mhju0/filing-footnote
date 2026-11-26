@@ -8,7 +8,7 @@ private final class TestBundle {}
 private let fixtureURL = Bundle(for: TestBundle.self).url(forResource: "footnote", withExtension: "sqlite")!
 
 /// The company page's summary card, the quarter's fiscal label and the category symbols
-/// (D100).
+/// (D106).
 @Suite("Summary card")
 struct SummaryCardTests {
     static let samsung = "dart:00126380"

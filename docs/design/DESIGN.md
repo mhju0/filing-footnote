@@ -48,12 +48,12 @@ Platforms: iPhone tab bar; iPad and Mac sidebar, content and detail columns
 - Layout floor is iPhone mini (375 pt wide). Targets are at least 44 pt.
 - Korean wraps only between words (`keep-all` behaviour).
 - Direction is a ▲ or ▼ glyph plus a word ("▲ 6.4% 늘었어요", "▼ 3.45% 줄었어요"), in the
-  text colour, never colour alone (D100, replacing the G1 sign-and-word rule). No change
+  text colour, never colour alone (D106, replacing the G1 sign-and-word rule). No change
   shows no glyph ("0.00% 변동 없어요"). VoiceOver reads words, not the glyph: "증가" /
   "increased", "감소" / "decreased". A calculation's own result keeps its arithmetic sign.
   Korean markets read red as up, so up and down do not use red or green.
-- Category tags carry an SF Symbol before the word, in the same Pine on Tint (D100).
-- Motion is brief and native (D100): digits roll in place when a figure's text changes, and
+- Category tags carry an SF Symbol before the word, in the same Pine on Tint (D106).
+- Motion is brief and native (D106): digits roll in place when a figure's text changes, and
   expanding rows take a quarter-second snappy spring with no bounce. With Reduce Motion
   on, nothing moves. A selection haptic marks only the market control and the sort menu.
 - Not used: cream backgrounds, pill buttons, italic accents, monospace labels.
@@ -72,9 +72,9 @@ owner), boards 11A, 12A, 13 and 14–20 (2026-11-19, owner).
 
 | Screen | Shows | One tap away | Never shown |
 |---|---|---|---|
-| Companies list | One line on what the app does, with the data date; the system search field (company or ticker, both markets; below the companies, up to 5 recent filings whose type or title matches and up to 5 glossary terms, D100); Korea / US browsing; sort as a toolbar menu showing the current order; company name, then its newest filing date and type (D98) | News | Newest event filings by date, with a filing-type filter; under a title, the first line of its approved summary when there is one (D100) | Filing page | Market commentary |
+| Companies list | One line on what the app does, with the data date; the system search field (company or ticker, both markets; below the companies, up to 5 recent filings whose type or title matches and up to 5 glossary terms, D106); Korea / US browsing; sort as a toolbar menu showing the current order; company name, then its newest filing date and type (D98) | News | Newest event filings by date, with a filing-type filter; under a title, the first line of its approved summary when there is one (D106) | Filing page | Market commentary |
 | Glossary | Term search and letter or initial jump; definitions expand on iPhone | Definition on iPad and Mac | |
-| Company page | The summary card first (D100): the newest annual revenue rounded, the exact amount below, its change against the year before and its source; then the newest quarter's revenue, operating income and net income against the same quarter a year earlier, with one fixed sentence and its source. Six questions to ask (D99) directly under it as wrapping rounded-rectangle buttons, Pine on Surface with a Line border; up to 2 periodic reports with one figure each; up to 10 filings grouped by month (tag, date, title, and the approved summary's first line only where two titles repeat); notices row; insider row; data date | Annual figure, quarter report, notices sheet, insider screen, all filings on DART, an answer | Price, news, analyst views, scores, a summary line on a title that does not repeat |
+| Company page | The summary card first (D106): the newest annual revenue rounded, the exact amount below, its change against the year before and its source; then the newest quarter's revenue, operating income and net income against the same quarter a year earlier, with one fixed sentence and its source. Six questions to ask (D99) directly under it as wrapping rounded-rectangle buttons, Pine on Surface with a Line border; up to 2 periodic reports with one figure each; up to 10 filings grouped by month (tag, date, title, and the approved summary's first line only where two titles repeat); notices row; insider row; data date | Annual figure, quarter report, notices sheet, insider screen, all filings on DART, an answer | Price, news, analyst views, scores, a summary line on a title that does not repeat |
 | Answer | Company and question; fixed sentences in a card; the company's business lines; the latest quarter's and year's figures against a year earlier, each block with its source filing; related questions after a deflection; how answers are made | Source filing, outlook filing, exact amounts on tap | Advice, estimates, judgement words, a figure for a future period |
 | Filing page | Tag and status, title, date; outlook banner (outlook only); up to 3 sentences; how they were written; up to 6 numbers; up to 2 related filings; original | Glossary, other versions | Model confidence, judgement words, a gap against a forecast |
 | Quarter report | One fixed sentence on revenue (the answers' own), then 3 figures, each against the same quarter last year; related preliminary filing; IR materials link | Quarter figure detail leads with its rounded amount, the exact amount below and the comparison period; its fiscal label names the calendar months ("Q3 FY2026 · Mar 29–Jun 27"); exact amounts, dates and calculation are expandable | Quarter-on-quarter change, charts |
@@ -104,7 +104,7 @@ Details:
 - G1 picks: language switch is a globe "EN" button in the nav bar (on the Mac, one button
   at the trailing end of the window toolbar, D98); earlier years are a
   list; the compare-company picker is one list by market; direction is sign plus word with no
-  colour (superseded by D100: glyph plus word); a restated figure has a 정정됨 / Restated tag beside the value and a note below.
+  colour (superseded by D106: glyph plus word); a restated figure has a 정정됨 / Restated tag beside the value and a note below.
 - The quarter figure shows the original quarterly report before exact figures and calculation. The annual figure link stays labelled separately. Refusals have no calculation.
 - State copy (board 19, approved): data date; "the 10 newest filings from the last 12
   months"; fewer than ten ("these are all N filings"); summary in review; numbers section
@@ -125,7 +125,7 @@ Details:
     have no separator.
   - Empty search and empty News use the system empty state with a magnifying glass and the
     app's own bilingual copy.
-- 2026-11-26 design picks, wave 2 (D100):
+- 2026-11-26 design picks, wave 2 (D106):
   - Summary card (direction 1 B): one card at the top of the company page. Its figures,
     sentences and formatter are the answers' own (`CompanyAnswerer`), so the card, the
     quarter report and an answer never show a figure two ways. A missing report or figure
