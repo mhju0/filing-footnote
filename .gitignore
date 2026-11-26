@@ -85,3 +85,7 @@ docs/CLAUDE_ENV_INVENTORY.md
 
 # Local review pages, mockups and screenshots
 .scratch/
+
+# Owner's local notes and browser automation output
+.local/
+.playwright-mcp/
