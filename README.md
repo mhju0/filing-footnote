@@ -36,7 +36,7 @@ Taken on 2026-11-26 on the iPhone 17 simulator (iOS 26.5) and the Mac app, from 
 
 ![The Mac app in dark appearance with three columns: the company list by market, Hyundai Motor's company page with its summary card and six fixed questions, and a filing with its source sentences open](docs/screenshots/mac-filing-source-sentences-ko-dark.png)
 
-Older screens (2026-11-20, development bundle) are in [docs/screenshots/footnote/](docs/screenshots/footnote/). A [walkthrough video](https://github.com/mhju0/filing-footnote/releases/tag/walkthrough-2026-11-20) (2&nbsp;min&nbsp;23&nbsp;s) was recorded on 2026-11-20, before the summary card, source sentences and first-run guide were added.
+Older screens (2026-11-20, development bundle) are in [docs/screenshots/footnote/](docs/screenshots/footnote/). A [walkthrough video](https://github.com/mhju0/filing-footnote/releases/tag/walkthrough-2026-11-20) (2&nbsp;min&nbsp;23&nbsp;s) was recorded on 2026-11-20, before the summary card, source sentences and first-run guide were&nbsp;added.
 
 ## Architecture
 
@@ -94,7 +94,7 @@ It has not falsely blocked a faithful line, and it misses many unfaithful ones. 
 
 ### The gate
 
-Requires Python 3.11. On macOS it also runs the FootnoteKit tests with Xcode's `swift test`; XcodeGen&nbsp;2.47.0 is&nbsp;optional.
+Requires Python 3.11. On macOS it also runs the FootnoteKit tests with Xcode's `swift test`; XcodeGen&nbsp;2.47.0&nbsp;is&nbsp;optional.
 
 ```bash
 python3.11 -m venv .venv
@@ -141,7 +141,7 @@ Measured on 2026-11-26 at commit `1797e79`.
 | Companies | 18 (9 DART, 9 SEC) | PRODUCT.md; `companies` table of the preview bundle |
 | Events&nbsp;per&nbsp;company | up to 10 | `EVENT_CAP` in `backend/app/build/export.py` (D76) |
 | Approved&nbsp;summaries | 188 Korean–English pairs over 162 filings: 158 written by the model, 30 from templates; 1,068&nbsp;lines | `backend/data/summaries/approved.jsonl` |
-| Unsupported&nbsp;lines | 0 at the release gate, plus 2 the&nbsp;owner&nbsp;accepted | D105; `backend/data/summaries/faithfulness_accepted.jsonl` |
+| Unsupported&nbsp;lines | 0 at the release gate; the&nbsp;owner&nbsp;accepted&nbsp;2 | D105; `backend/data/summaries/faithfulness_accepted.jsonl` |
 | Faithfulness&nbsp;eval | see the table above | `make faithfulness-eval` |
 | Backend&nbsp;offline&nbsp;tests | 1,674 passed, 56&nbsp;skipped | `scripts/check.sh` (`make test`) |
 | FootnoteKit&nbsp;tests | 189 tests in 26 suites, all passed | `scripts/check.sh` (`swift test`) |
