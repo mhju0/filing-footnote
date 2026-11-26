@@ -12,9 +12,8 @@ struct SourcedSentenceRows: View {
         if lines.allSatisfy({ $0.source == nil }) {
             SentenceRows(lines: lines.map(\.text))
         } else {
-            ForEach(Array(lines.enumerated()), id: \.offset) { index, line in
+            ForEach(Array(lines.enumerated()), id: \.offset) { _, line in
                 SourcedSentenceRow(line: line, filing: filing)
-                    .accessibilityIdentifier("summary-line-\(index + 1)")
             }
         }
     }
@@ -56,7 +55,7 @@ private struct SourcedSentenceRow: View {
                         .fixedSize(horizontal: false, vertical: true)
                         .frame(minHeight: Theme.minTarget, alignment: .leading)
                 }
-                .rowDisclosure()
+                .inlineDisclosure()
                 .tint(Theme.pine)
                 .accessibilityIdentifier("source-sentence")
             }

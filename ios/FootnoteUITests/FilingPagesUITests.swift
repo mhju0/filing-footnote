@@ -87,9 +87,10 @@ final class FilingPagesUITests: XCTestCase {
         XCTAssertTrue(app.descendants(matching: .any)["filing-page"].waitForExistence(timeout: 10))
         let excerpt = element("이사회는 자기주식 취득을 결의하였습니다.", in: app)
         XCTAssertFalse(excerpt.exists)
-        let disclosures = app.descendants(matching: .any).matching(identifier: "source-sentence")
-        XCTAssertEqual(disclosures.count, 2)
-        disclosures.element(boundBy: 0).buttons.firstMatch.tap()
+        // One toggle per sourced line; the third line has no source row.
+        let toggles = app.buttons.matching(identifier: "source-sentence")
+        XCTAssertEqual(toggles.count, 2)
+        toggles.element(boundBy: 0).tap()
         XCTAssertTrue(excerpt.waitForExistence(timeout: 5))
         XCTAssertTrue(element("한국어 원문", in: app).exists)
         XCTAssertFalse(element("취득 목적 : 임직원 주식보상", in: app).exists)
