@@ -64,6 +64,11 @@ final class AccessibilityAuditUITests: XCTestCase {
         Screen(name: "answer-buy", route: "ask=\(samsung)|should_buy", swipes: 0),
         Screen(name: "answer-next-quarter", route: "ask=\(samsung)|next_quarter_revenue", swipes: 1),
         Screen(name: "answer-fundamentals-sec", route: "ask=\(apple)|fundamentals", swipes: 1),
+        // D108: the typed-question field (stand-in router), empty and after a question none fits.
+        Screen(name: "company-typed", route: "company=\(samsung)", swipes: 1,
+               arguments: ["-FootnoteTypedQuestions", "stub", "-FootnoteScroll", "ask"]),
+        Screen(name: "company-typed-none", route: "company=\(samsung)", swipes: 1,
+               arguments: ["-FootnoteTypedQuestions", "stub", "-FootnoteScroll", "ask", "-FootnoteAsk", "weather"]),
     ]
 
     private static let accessibilityXL = "UICTContentSizeCategoryAccessibilityXL"

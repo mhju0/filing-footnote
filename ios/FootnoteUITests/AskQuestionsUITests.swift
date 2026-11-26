@@ -9,12 +9,14 @@ final class AskQuestionsUITests: XCTestCase {
     private static let samsungQuarter = "dart:20261116000111"
     private static let samsungAnnual = "dart:20260310000123"
 
-    @MainActor private func launch(_ route: String, language: String) throws -> XCUIApplication {
+    @MainActor private func launch(_ route: String, language: String, arguments: [String] = []) throws
+        -> XCUIApplication
+    {
         let fixture = try XCTUnwrap(Bundle(for: Self.self).path(forResource: "footnote", ofType: "sqlite"))
         continueAfterFailure = false
         let app = XCUIApplication()
         app.launchArguments = ["-FootnoteBundle", fixture, "-FootnoteOpen", route, "-language", language,
-                               "-FootnoteSkipGuideAndTips"]
+                               "-FootnoteSkipGuideAndTips"] + arguments
         app.launch()
         return app
     }
@@ -106,5 +108,47 @@ final class AskQuestionsUITests: XCTestCase {
         XCTAssertTrue(year.label.contains("A year is missing"), year.label)
         XCTAssertTrue(trend.staticTexts[
             "The latest fiscal year's revenue can't be compared with the year before."].exists)
+    }
+
+    /// D108, with the stand-in router: a typed question opens the answer of the question it
+    /// maps to, and one that fits none says so and leaves the six questions. On iPad the
+    /// answer opens in the detail column and its question is marked selected.
+    @MainActor func testTypedQuestionOpensTheMatchingAnswer() throws {
+        let app = try launch("company=\(Self.samsung)", language: "ko",
+                             arguments: ["-FootnoteTypedQuestions", "stub", "-FootnoteScroll", "ask"])
+        let field = identified("typed-question", in: app)
+        reveal(field, in: app)
+        XCTAssertTrue(field.waitForExistence(timeout: 10))
+        let submit = identified("typed-submit", in: app)
+        XCTAssertFalse(submit.isEnabled, "nothing to ask yet")
+        XCTAssertGreaterThanOrEqual(submit.frame.height, 44)
+
+        field.tap()
+        field.typeText("오늘 날씨 어때요?\n")
+        let none = identified("typed-none", in: app)
+        XCTAssertTrue(none.waitForExistence(timeout: 10))
+        XCTAssertEqual(none.label, "이 질문에는 답할 수 없어요. 아래 질문 중에서 골라 주세요.")
+        XCTAssertTrue(identified("ask-revenue", in: app).exists, "the six questions stay")
+        XCTAssertFalse(identified("answer-page", in: app).exists)
+
+        field.tap()
+        field.typeText(" 매출은요")
+        XCTAssertFalse(none.exists, "editing the text clears the line")
+        submit.tap()
+        XCTAssertTrue(identified("answer-page", in: app).waitForExistence(timeout: 10))
+        XCTAssertTrue(app.staticTexts["회사는 최근 분기 매출이 작년 같은 분기보다 늘었다고 보고했어요."].exists)
+        if UIDevice.current.userInterfaceIdiom == .pad {
+            XCTAssertTrue(identified("ask-revenue", in: app).isSelected)
+        }
+    }
+
+    /// Without the stand-in, a simulator or device whose model is off shows no field.
+    @MainActor func testNoFieldWhenTypedQuestionsAreOff() throws {
+        let app = try launch("company=\(Self.samsung)", language: "en",
+                             arguments: ["-FootnoteTypedQuestions", "off", "-FootnoteScroll", "ask"])
+        let question = identified("ask-revenue", in: app)
+        reveal(question, in: app)
+        XCTAssertTrue(question.waitForExistence(timeout: 10))
+        XCTAssertFalse(identified("typed-question", in: app).exists)
     }
 }

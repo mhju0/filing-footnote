@@ -82,9 +82,9 @@ guessing. It explains; it does not advise or trade.
   shown as zero. The buy and next-quarter questions say what the app does not do, then
   point to the reported facts and the company's own outlook filing when there is one.
 - Korean and English throughout. Korean text wraps only between words.
-- Optional later: typed questions on iPad and Mac only (on-device model); the model may
-  only choose one of the fixed questions, and the same code answers it (D99). iPhone minis
-  cannot run it.
+- Typed questions on iPad and Mac only, where Apple's on-device model is available (D108):
+  the model may only choose one of the fixed questions or none, and the same code answers
+  it (D99). iPhone minis cannot run it, and the iPhone page is unchanged.
 
 ## Brand Commitments
 

@@ -17,6 +17,36 @@ enum AskCopy {
         language("답을 열어요", "Opens the answer")
     }
 
+    // Typed questions on iPad and Mac (D108). Drafts: option A of each pair on the copy
+    // review page, used until the owner picks.
+
+    static func typedPlaceholder(_ language: Language) -> String {
+        language("질문을 직접 입력해 보세요", "Type a question")
+    }
+
+    /// The field's VoiceOver label, which stays once the placeholder is gone.
+    static func typedFieldLabel(_ language: Language) -> String {
+        language("질문 입력", "Your question")
+    }
+
+    static func typedSubmit(_ language: Language) -> String { language("묻기", "Ask") }
+
+    /// Read while the model picks a question.
+    static func typedWorking(_ language: Language) -> String {
+        language("질문을 찾고 있어요", "Finding the question")
+    }
+
+    /// When none of the six questions fits.
+    static func typedNone(_ language: Language) -> String {
+        language("이 질문에는 답할 수 없어요. 아래 질문 중에서 골라 주세요.",
+                 "This app can't answer that. Pick one of the questions below.")
+    }
+
+    static func typedNote(_ language: Language) -> String {
+        language("입력한 질문은 아래 여섯 질문 중 가장 가까운 질문으로 답해요. 질문은 이 기기 안에서만 처리돼요.",
+                 "Your question is answered as the closest of the six questions below. It never leaves this device.")
+    }
+
     static func business(_ language: Language) -> String {
         language("회사가 밝힌 사업", "The business, in the company's words")
     }

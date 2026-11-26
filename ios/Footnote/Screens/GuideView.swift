@@ -177,6 +177,8 @@ private struct CompanyPreview: View {
             .environment(\.showsLanguageButton, false)
             .environment(\.tipsPaused, true)
             .environment(\.drawsTitleInList, true)
+            // The approved preview shows the six questions only, on every device (D108).
+            .environment(\.questionRouter, nil)
             .dynamicTypeSize(.large)
             .frame(width: Self.width, height: Self.height)
             .scaleEffect(Self.scale, anchor: .topLeading)
