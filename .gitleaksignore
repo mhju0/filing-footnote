@@ -1,0 +1,3 @@
+# Key-shaped test dummy (0123456789abcdef repeated), not a credential. The line at HEAD
+# carries an inline gitleaks:allow; this entry covers the commit that added it.
+8eacbf4c1f5ff2feaa414b5987fd2c6239afa907:backend/tests/test_pinned.py:generic-api-key:56

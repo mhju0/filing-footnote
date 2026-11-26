@@ -54,7 +54,7 @@ BUILD_PINNED = Path(__file__).parent / "fixtures" / "build" / "pinned"
 TODAY = datetime.date(2026, 11, 17)
 DART_ANNUAL = BUILD_PINNED / "dart/fnlttSinglAcntAll/00126380_2025_11011_CFS.json"
 SEC_FACTS = BUILD_PINNED / "sec/companyfacts/CIK0000320193.json"
-KEY = "0123456789abcdef0123456789abcdef01234567"  # key-shaped: 40 hex characters
+KEY = "0123456789abcdef0123456789abcdef01234567"  # key-shaped: 40 hex characters. gitleaks:allow
 
 
 def _settings() -> Settings:
