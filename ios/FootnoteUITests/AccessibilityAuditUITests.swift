@@ -110,21 +110,39 @@ final class AccessibilityAuditUITests: XCTestCase {
         let bundle = try AuditFixture.glossaryBundle(for: self)
         let only = ProcessInfo.processInfo.environment["FOOTNOTE_AUDIT_ONLY"].map { $0.split(separator: ",").map(String.init) }
         for screen in Self.screens where only?.contains(screen.name) ?? true {
-            let app = AuditFixture.launch(screen.route, language: language, size: size, bundle: bundle)
             let config = "\(screen.name) \(language)\(size == nil ? "" : " AX")\(dark ? " dark" : "")"
-            // Every screen has a navigation bar; wait for it and a moment for the list to settle.
-            XCTAssertTrue(app.navigationBars.firstMatch.waitForExistence(timeout: 10), config)
-            sleep(1)
-            try audit(app, config, pass: 0)
-            for pass in 0..<screen.swipes {
-                app.swipeUp()
-                // A list keeps gliding after a swipe; an audit taken while it moves measures
-                // blurred text and reports contrast failures that are not there.
-                sleep(2)
-                try audit(app, config, pass: pass + 1)
+            // Under load an audit can run past XCTest's time limit ("Audit failed to complete
+            // in time"). Once one has, every further audit of that launch timed out too (lane A
+            // runs, 2026-11-26), so the screen is audited again from a fresh launch; a second
+            // timeout fails that screen and the other screens are still audited.
+            for attempt in 1...2 {
+                do {
+                    try auditScreen(screen, config, language: language, size: size, bundle: bundle)
+                    break
+                } catch let error as NSError where error.code == Self.auditTimedOut {
+                    print("AUDIT-TIMEOUT|\(config): attempt \(attempt)")
+                    XCUIApplication().terminate()
+                    if attempt == 2 { XCTFail("\(config): audit timed out twice") }
+                }
             }
-            app.terminate()
         }
+    }
+
+    @MainActor private func auditScreen(_ screen: Screen, _ config: String, language: String, size: String?,
+                                        bundle: String) throws {
+        let app = AuditFixture.launch(screen.route, language: language, size: size, bundle: bundle)
+        // Every screen has a navigation bar; wait for it and a moment for the list to settle.
+        XCTAssertTrue(app.navigationBars.firstMatch.waitForExistence(timeout: 10), config)
+        sleep(1)
+        try audit(app, config, pass: 0)
+        for pass in 0..<screen.swipes {
+            app.swipeUp()
+            // A list keeps gliding after a swipe; an audit taken while it moves measures
+            // blurred text and reports contrast failures that are not there.
+            sleep(2)
+            try audit(app, config, pass: pass + 1)
+        }
+        app.terminate()
     }
 
     @MainActor private func audit(_ app: XCUIApplication, _ config: String, pass: Int) throws {
@@ -165,6 +183,9 @@ final class AccessibilityAuditUITests: XCTestCase {
             return true
         }
     }
+
+    /// `XCUIAccessibilityAuditError` "Audit failed to complete in time".
+    private static let auditTimedOut = -56
 
     /// Findings checked by hand and judged false positives. Each names one audit type and
     /// the elements it applies to; anything else fails the test.
@@ -228,6 +249,16 @@ final class AccessibilityAuditUITests: XCTestCase {
             // where it is drawn; the pass's screenshot shows it in full. Only the first pass of
             // each screen checks text clipping, at every text size.
             if afterSwipe, element.elementType == .staticText { return "scrolled-text" }
+            // The Companies tab's system search field (`.searchable`, D98): its placeholder
+            // `Company name or ticker` shows in full at Accessibility XL (D100 audit screenshot
+            // companies-en-AX-0, the field grown to 97 points). Placement and truncation of a
+            // system search bar's placeholder are the system's.
+            if element.elementType == .searchField { return "system-search" }
+        case .hitRegion:
+            // The glossary's native section index (iOS 26, D98) is the system's 15-point strip,
+            // dragged along the screen's height. The toolbar's jump menu does the same with
+            // 44-point rows (`glossary-index`), the equivalent control WCAG 2.5.8 allows.
+            if element.label == "섹션 인덱스" || element.label == "Section index" { return "section-index" }
         case .contrast:
             // List content scrolls under the translucent (Liquid Glass) navigation and tab
             // bars, and the audit then measures the text against the blurred bar. The same

@@ -13,6 +13,8 @@ import SwiftUI
 struct LaunchRoute: Sendable {
     enum Kind: String, Sendable {
         case company, notices, filing, news, glossary
+        /// `<company id>|<filing id>|<metric>`: a quarter report's figure screen.
+        case quarterfigure
         case figure, picker, yearcompare, yearcalc, compare, companycalc
         case ask
     }
@@ -46,6 +48,8 @@ struct LaunchRoute: Sendable {
         case .filing:
             let pieces = id.split(separator: "|", maxSplits: 1).map(String.init)
             return pieces.count == 2 ? (pieces[0], pieces[1]) : (nil, id)
+        case .quarterfigure:
+            return pieces.count == 3 ? (pieces[0], pieces[1]) : (nil, nil)
         case .company, .notices: return (id, nil)
         case .news: return (nil, id)
         case .glossary: return (nil, nil)
@@ -88,6 +92,9 @@ struct LaunchRoute: Sendable {
     /// The screens over the company page: the figure (when the metric has one), then the
     /// compare screen and its calculation.
     var detailPath: [Route] {
+        if kind == .quarterfigure, let filing = parts.filing, let metric = ReportedMetric(rawValue: pieces[2]) {
+            return [.quarterFigure(filing, metric)]
+        }
         guard let key = figureKey else { return [] }
         var path: [Route] = []
         if ReportedMetric(rawValue: key.metric) != nil {
@@ -129,7 +136,7 @@ struct LaunchRoute: Sendable {
     var companiesPath: [Route] {
         var path: [Route] = []
         if let company = parts.company { path.append(.company(company)) }
-        if let filing = parts.filing, kind == .filing { path.append(.filing(filing)) }
+        if let filing = parts.filing, kind == .filing || kind == .quarterfigure { path.append(.filing(filing)) }
         if let company = parts.company, let intent = askIntent { path.append(.answer(company, intent)) }
         return path + detailPath
     }
@@ -169,6 +176,22 @@ struct LaunchRoute: Sendable {
         case "ask": (PageScroll.ask, .center)
         default: nil
         }
+        #else
+        return nil
+        #endif
+    }()
+}
+
+extension LaunchRoute {
+    /// Debug builds only: `-FootnoteSearch <text>` opens the Companies tab (the sidebar on
+    /// iPad and Mac) with `<text>` in its search field, so the screenshot script can capture
+    /// the search results.
+    static let searchQuery: String? = {
+        #if DEBUG
+        let arguments = ProcessInfo.processInfo.arguments
+        guard let index = arguments.firstIndex(of: "-FootnoteSearch"), index + 1 < arguments.count
+        else { return nil }
+        return arguments[index + 1]
         #else
         return nil
         #endif

@@ -49,8 +49,10 @@ final class AccessibilityLabelsUITests: XCTestCase {
             XCTAssertFalse(button.label.trimmingCharacters(in: .whitespaces).isEmpty,
                            "\(config): a button has no label: \(button.debugDescription)")
             guard screen.contains(frame), !bars.contains(where: { $0.contains(frame) }) else { continue }
-            XCTAssertGreaterThanOrEqual(frame.height, 44, "\(config): \(button.label) is \(frame.size)")
-            XCTAssertGreaterThanOrEqual(frame.width, 44, "\(config): \(button.label) is \(frame.size)")
+            // A thousandth of a point of slack: a 44-point button can come back as
+            // 43.99999999999994 after the frame is converted to screen coordinates.
+            XCTAssertGreaterThanOrEqual(frame.height, 44 - 0.001, "\(config): \(button.label) is \(frame)")
+            XCTAssertGreaterThanOrEqual(frame.width, 44 - 0.001, "\(config): \(button.label) is \(frame)")
         }
         // Decorative images are not checked here: XCUITest lists images marked
         // `accessibilityHidden` too (the calculation's check marks), so its image query does

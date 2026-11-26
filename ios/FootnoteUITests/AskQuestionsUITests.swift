@@ -33,8 +33,9 @@ final class AskQuestionsUITests: XCTestCase {
     @MainActor func testQuestionOpensItsAnswerAndTheSourceFiling() throws {
         let app = try launch("company=\(Self.samsung)", language: "ko")
         let question = identified("ask-revenue", in: app)
-        XCTAssertTrue(question.waitForExistence(timeout: 10))
+        // The summary card sits above the questions; a list creates a row only near the screen.
         reveal(question, in: app)
+        XCTAssertTrue(question.waitForExistence(timeout: 10))
         XCTAssertEqual(question.label, "매출은 어때요?")
         // Every question is a full-size target.
         for intent in ["should_buy", "fundamentals", "recent_trend", "profit_or_loss", "revenue", "next_quarter_revenue"] {
@@ -62,8 +63,8 @@ final class AskQuestionsUITests: XCTestCase {
     @MainActor func testBuyingIsDeflectedToQuestionsTheFilingsAnswer() throws {
         let app = try launch("company=\(Self.samsung)", language: "en")
         let question = identified("ask-should_buy", in: app)
-        XCTAssertTrue(question.waitForExistence(timeout: 10))
         reveal(question, in: app)
+        XCTAssertTrue(question.waitForExistence(timeout: 10))
         question.tap()
 
         XCTAssertTrue(identified("answer-page", in: app).waitForExistence(timeout: 5))

@@ -39,8 +39,11 @@ final class QuarterReportUITests: XCTestCase {
 
     @MainActor func testCompanyRowOpensTheQuarterReportAndAFigure() throws {
         let app = try launch("company=\(Self.samsung)", language: "ko")
+        XCTAssertTrue(identified("summary-quarter", in: app).waitForExistence(timeout: 10))
+        // The summary card and the questions come first (D100); the report row is below them.
         let row = identified(Self.samsungQuarter, in: app)
-        XCTAssertTrue(row.waitForExistence(timeout: 10))
+        reveal(row, in: app)
+        XCTAssertTrue(row.exists)
         // Board 14: the title, then revenue against the same quarter a year earlier.
         XCTAssertTrue(row.label.hasPrefix("2026년 3분기 보고서"), row.label)
         XCTAssertTrue(row.label.contains("전년보다 8.80퍼센트 증가"), row.label)

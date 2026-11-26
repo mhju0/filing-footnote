@@ -106,10 +106,9 @@ private struct YearHero: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(words: context)
+            PhraseFlow(phrases: SummarySource.phrases(contextParts))
                 .font(.subheadline)
                 .foregroundStyle(Theme.muted)
-                .fixedSize(horizontal: false, vertical: true)
             if let current = row.current {
                 let headline = AskCopy.shortened(current, language)
                 let exact = AskCopy.exact(current, language)
@@ -143,11 +142,13 @@ private struct YearHero: View {
         .accessibilityLabel(spoken)
     }
 
-    private var context: String {
+    private var contextParts: [String] {
         var parts = [row.metric.name(language), PageCopy.fiscalYear(fiscalYear, language)]
         if let basis = PageCopy.basisName(figures.basis, language) { parts.append(basis) }
-        return parts.joined(separator: Copy.dot)
+        return parts
     }
+
+    private var context: String { contextParts.joined(separator: Copy.dot) }
 
     private var spoken: String {
         [context.spokenSeparators, AskCopy.spoken(row, language), SummarySource.spoken(figures.filing, language)]
@@ -267,19 +268,45 @@ private struct SummarySource: View {
     let filing: Filing
 
     var body: some View {
-        Text(words: Self.line(filing, language))
+        PhraseFlow(phrases: Self.phrases(Self.parts(filing, language)))
             .font(.footnote)
             .monospacedDigit()
             .foregroundStyle(Theme.muted)
-            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private static func parts(_ filing: Filing, _ language: Language) -> [String] {
+        [AskCopy.source(language), Titles.title(for: filing, language: language),
+         Copy.filedOn(filing.filedOn, language)]
     }
 
     static func line(_ filing: Filing, _ language: Language) -> String {
-        AskCopy.source(language) + Copy.dot + Titles.title(for: filing, language: language)
-            + Copy.dot + Copy.filedOn(filing.filedOn, language)
+        parts(filing, language).joined(separator: Copy.dot)
+    }
+
+    /// Parts joined by `·` as phrases for `PhraseFlow`: when the line does not fit, it
+    /// breaks after a `·`, never inside a part (`2025 회계연도`, `11월 16일 공시`).
+    static func phrases(_ parts: [String]) -> [String] {
+        parts.enumerated().map { index, part in
+            index < parts.count - 1 ? part + Copy.noBreak + "·" : part
+        }
     }
 
     static func spoken(_ filing: Filing, _ language: Language) -> String {
         line(filing, language).spokenSeparators
+    }
+}
+
+/// Phrases laid out like words: as many on a line as fit, a line break only between
+/// phrases. A phrase wider than the line wraps between its own words.
+private struct PhraseFlow: View {
+    let phrases: [String]
+
+    var body: some View {
+        FlowLayout(spacing: 4, lineSpacing: 0) {
+            ForEach(Array(phrases.enumerated()), id: \.offset) { _, phrase in
+                Text(words: phrase)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
     }
 }

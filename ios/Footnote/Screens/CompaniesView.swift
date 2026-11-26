@@ -5,7 +5,7 @@ struct CompaniesView: View {
     @Environment(\.language) private var language
     @State private var market: Regulator = .dart
     @State private var sort: CompanySort = .latest
-    @State private var query = ""
+    @State private var query = LaunchRoute.searchQuery ?? ""
     let store: BundleStore
 
     var body: some View {
@@ -250,19 +250,43 @@ struct DirectorySearchField: View {
                 Image(systemName: "magnifyingglass")
                     .foregroundStyle(Theme.muted)
                     .accessibilityHidden(true)
-                TextField(title, text: $query, prompt: Text(words: prompt).foregroundStyle(Theme.muted))
-                    .textFieldStyle(.plain)
-                    .foregroundStyle(Theme.ink)
-                    .autocorrectionDisabled()
-                    #if os(iOS)
-                    .textInputAutocapitalization(.never)
-                    #endif
-                    .focused($focused)
-                    .submitLabel(.search)
-                    .onSubmit { focused = false }
-                    .accessibilityIdentifier(identifier)
-                    .padding(.vertical, 8)
-                    .frame(minHeight: Theme.minTarget)
+                // Vertical, so a long query wraps at large text sizes rather than clips
+                // (D100, accessibility audit). The field's own prompt stays on one line and
+                // clips, so the prompt is drawn behind the field, where it wraps and sets the
+                // height; a tap on it focuses the field. VoiceOver reads it as the hint.
+                // Return ends the search, as on a one-line field.
+                ZStack(alignment: .topLeading) {
+                    if query.isEmpty {
+                        Text(words: prompt)
+                            .foregroundStyle(Theme.muted)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .accessibilityHidden(true)
+                    }
+                    TextField(title, text: $query, prompt: Text(verbatim: ""), axis: .vertical)
+                        .lineLimit(1...4)
+                        .textFieldStyle(.plain)
+                        .foregroundStyle(Theme.ink)
+                        .autocorrectionDisabled()
+                        #if os(iOS)
+                        .textInputAutocapitalization(.never)
+                        #endif
+                        .focused($focused)
+                        .submitLabel(.search)
+                        .onSubmit { focused = false }
+                        .onChange(of: query) { _, text in
+                            guard text.contains(where: \.isNewline) else { return }
+                            query = text.filter { !$0.isNewline }
+                            focused = false
+                        }
+                        // A vertical field with an empty prompt has no name of its own.
+                        .accessibilityLabel(title)
+                        .accessibilityHint(prompt)
+                        .accessibilityIdentifier(identifier)
+                }
+                .padding(.vertical, 8)
+                .frame(maxWidth: .infinity, minHeight: Theme.minTarget, alignment: .leading)
+                .contentShape(Rectangle())
+                .onTapGesture { focused = true }
                 if !query.isEmpty {
                     Button {
                         query = ""
@@ -503,7 +527,7 @@ struct SidebarView: View {
     let open: (Route) -> Void
     @State private var market: Regulator
     @State private var sort: CompanySort = .latest
-    @State private var query = ""
+    @State private var query = LaunchRoute.searchQuery ?? ""
 
     init(store: BundleStore, selection: Binding<Item?>, open: @escaping (Route) -> Void) {
         self.store = store

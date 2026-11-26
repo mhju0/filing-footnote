@@ -140,7 +140,7 @@ final class NewsGlossaryUITests: XCTestCase {
 
     @MainActor func testGlossarySearchMatchesOtherLanguageAndClears() throws {
         let app = try launch("glossary", bundle: try glossaryFixture())
-        let search = app.textFields["glossary-search"]
+        let search = app.descendants(matching: .any)["glossary-search"].firstMatch
         XCTAssertTrue(search.waitForExistence(timeout: 10))
         search.tap()
         search.typeText("unmatched")

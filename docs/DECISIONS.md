@@ -1806,3 +1806,15 @@ the UX review's issues 1, 3, 10, 13 and 15, carried out through the Orca coordin
   haptic. Nothing moves when Reduce Motion is on.
 - Headline amounts are rounded with the exact amount below (direction 9 B) on the
   quarter figure and the card, as on the figure screen (D98).
+- Accessibility audit (iOS 27 simulator): an expandable row on iPhone and iPad is one
+  button the width of the row, as on the Mac, since the system group in a list made its
+  chevron a separate unlabeled button about ten by fourteen points. The glossary search
+  field and its prompt wrap instead of clipping. The question buttons sit on whole
+  points, so none measures under forty-four. The Companies system search field and the
+  glossary's native section index are recorded as false positives: the first shows in
+  full at Accessibility XL, the second has the toolbar's jump menu as its full-size
+  equivalent. When an audit runs past XCTest's time limit, the screen is audited again
+  from a fresh launch; a second timeout fails that screen, and the other screens are
+  still audited. Retrying in the same launch never recovered: every retry timed out too.
+- The card's context and source lines break only after a `·`, so a filing date stays
+  whole with its 공시 (screenshot review, iPhone 13 mini).

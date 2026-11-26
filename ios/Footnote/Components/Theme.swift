@@ -146,8 +146,11 @@ struct FlowLayout: Layout {
             var x = bounds.minX
             for index in row.indices {
                 let size = Self.size(of: subviews[index], maxWidth: bounds.width)
+                // Whole points: a fractional origin (beside a taller neighbour, or under a
+                // wrapped row) is snapped to pixels and trims a third of a point off a 44 pt
+                // button.
                 subviews[index].place(
-                    at: CGPoint(x: x, y: y + (row.height - size.height) / 2),
+                    at: CGPoint(x: x, y: (y + (row.height - size.height) / 2).rounded(.down)),
                     proposal: ProposedViewSize(size))
                 x += size.width + spacing
             }

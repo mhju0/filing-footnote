@@ -241,19 +241,16 @@ struct SectionNote: View {
 }
 
 extension View {
-    /// A disclosure group whose chevron sits inside the row on the Mac, in line with the
-    /// rows around it rather than out in the margin (2026-11-26 review, issue 14). iPhone and
-    /// iPad keep the system style.
+    /// A disclosure group drawn as one button the width of the row. On the Mac the chevron
+    /// sits inside the row, in line with the rows around it rather than out in the margin
+    /// (2026-11-26 review, issue 14). On iPhone and iPad it stays at the trailing edge where
+    /// the system draws it; the system group in a list makes the chevron a separate button
+    /// with no label, about ten by fourteen points (D100, accessibility audit).
     func rowDisclosure() -> some View {
-        #if os(macOS)
         disclosureGroupStyle(InsetDisclosureStyle())
-        #else
-        self
-        #endif
     }
 }
 
-#if os(macOS)
 private struct InsetDisclosureStyle: DisclosureGroupStyle {
     func makeBody(configuration: Configuration) -> some View {
         InsetDisclosure(configuration: configuration)
@@ -271,14 +268,17 @@ private struct InsetDisclosure: View {
                 Motion.perform(reduceMotion: reduceMotion) { configuration.isExpanded.toggle() }
             } label: {
                 HStack(spacing: 8) {
-                    Image(systemName: "chevron.right")
-                        .font(.footnote.weight(.semibold))
-                        .foregroundStyle(Theme.muted)
-                        .rotationEffect(.degrees(configuration.isExpanded ? 90 : 0))
-                        .accessibilityHidden(true)
+                    #if os(macOS)
+                    chevron
                     configuration.label
                     Spacer(minLength: 0)
+                    #else
+                    configuration.label
+                    Spacer(minLength: 0)
+                    chevron
+                    #endif
                 }
+                .frame(minHeight: Theme.minTarget)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -291,8 +291,15 @@ private struct InsetDisclosure: View {
             }
         }
     }
+
+    private var chevron: some View {
+        Image(systemName: "chevron.right")
+            .font(.footnote.weight(.semibold))
+            .foregroundStyle(Theme.muted)
+            .rotationEffect(.degrees(configuration.isExpanded ? 90 : 0))
+            .accessibilityHidden(true)
+    }
 }
-#endif
 
 struct SourceSection: View {
     @Environment(\.language) private var language
