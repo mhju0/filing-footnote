@@ -614,7 +614,7 @@
       }
     },
     "percentage_point": {
-      "approved": false,
+      "approved": true,
       "ko": {
         "term": "퍼센트포인트(%포인트)",
         "plain": "두 비율의 차이를 나타내는 단위예요. 한 비율에서 다른 비율을 뺀 값이라, 몇 퍼센트 늘었는지와는 달라요.",

@@ -1769,3 +1769,25 @@ generated on the device.
 - A missing summary, report or figure is said to be missing, never shown as zero.
 - iPhone pushes the answer. iPad and Mac show it in the detail column and keep the
   question filled. Amounts use the app's formatter, so Korean USD reads `1,094억 달러`.
+
+## D100 · Owner picks after the summary regeneration · 2026-11-26 (`ACCEPTED`)
+
+The owner chose these on 2026-11-26 (12:31 KST) after the regeneration of the three flagged
+summaries (D97), and Claude recorded them.
+
+- `sec:0001193125-26-234488`: three regeneration tries did not pass, so the owner accepts the
+  original approved lines as faithful. Line 3 in both languages, the tranche paraphrase that
+  D97 flags as unsupported, goes in `backend/data/summaries/faithfulness_accepted.jsonl`
+  through `faithfulness accept`. Each entry names the filing and is bound to the line's
+  hash and the approval's input hash, so an edit or a new approval voids it. D97 says agents
+  never run `accept`; this time the owner's pick is the acceptance, and Claude ran the
+  command to record it. Lines 1 and 2 are supported and need no entry.
+- `dart:20261030800867` (a clarification filing): no more regeneration tries. Its two rows
+  stay withheld, and the approve path never approves a withheld row. The summary loop does
+  not retry withheld rows, so the filing gets no summary, and the export writes none for it.
+  The filing's own row still ships in a preview, without a summary, like every other filing
+  that has no approved summary (D90). A release refuses while it lacks one.
+- `percentage_point` (퍼센트포인트(%포인트) / Percentage points, D98): the wording is approved as
+  written. Glossary entries carry an `approved` flag and no hash, so the flag is set.
+- `sec:0001193125-26-216986`: the owner chose the regenerated summary. It is recorded
+  through the hash-bound review page once the owner marks it there, in a separate change.
