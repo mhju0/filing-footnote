@@ -36,7 +36,7 @@ def data() -> BuildInput:
     return fixture_build_input()
 
 
-# Entries approved by the owner in D88 and D91.
+# Entries approved by the owner in D88, D91 and D100.
 OWNER_APPROVED = {
     "metric_revenue",
     "metric_operating_income",
@@ -85,12 +85,11 @@ OWNER_APPROVED = {
     "refusal_missing_period",
     "refusal_incompatible_currency",
     "refusal_incompatible_comparison",
+    "percentage_point",
 }
 
 
-# Added in the 2026-11-26 UX review (issue 9): the unit of a rate difference. Waits for the
-# owner's approval of its wording.
-PENDING_OWNER: set[str] = {"percentage_point"}
+PENDING_OWNER: set[str] = set()
 
 
 def test_only_owner_approved_entries_are_approved() -> None:
