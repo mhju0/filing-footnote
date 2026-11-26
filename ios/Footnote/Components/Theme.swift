@@ -164,6 +164,10 @@ extension EnvironmentValues {
     /// False in the split view's sidebar and detail columns, so the window shows one
     /// language button (in the content column), not three.
     @Entry var showsLanguageButton = true
+    /// True in the guide's company page preview (D104): the company page draws its title in
+    /// the list, inset like the subtitle, because the navigation bar's large title loses its
+    /// inset when the page is scaled down.
+    @Entry var drawsTitleInList = false
 }
 
 private struct LanguageToolbar: ViewModifier {

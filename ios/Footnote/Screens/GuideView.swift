@@ -130,11 +130,11 @@ private struct GuidePage: View {
                         CompanyPreview(store: store)
                     }
                     VStack(spacing: 10) {
-                        Text(words: AskCopy.keepingTail(page.title(language)))
+                        Text(words: AskCopy.keepingTail(page.title(language).bindingShortWords))
                             .font(.title2.bold())
                             .foregroundStyle(Theme.ink)
                             .accessibilityAddTraits(.isHeader)
-                        Text(words: AskCopy.keepingTail(page.body(language)))
+                        Text(words: AskCopy.keepingTail(page.body(language).bindingShortWords))
                             .font(.body)
                             .foregroundStyle(Theme.muted)
                     }
@@ -176,6 +176,7 @@ private struct CompanyPreview: View {
             }
             .environment(\.showsLanguageButton, false)
             .environment(\.tipsPaused, true)
+            .environment(\.drawsTitleInList, true)
             .dynamicTypeSize(.large)
             .frame(width: Self.width, height: Self.height)
             .scaleEffect(Self.scale, anchor: .topLeading)

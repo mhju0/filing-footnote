@@ -122,6 +122,26 @@ struct GuideTests {
         #expect(GuideCopy.position(1, of: 4, .en) == "Page 2 of 4")
     }
 
+    /// A one-letter word never ends a line: it is joined to the next word (`그 아래`), and
+    /// the visible text is unchanged.
+    @Test func shortWordsStayWithTheNextWord() {
+        let body = GuideCopy.pages[2].body(.ko).bindingShortWords
+        #expect(body.contains("그\u{00A0}아래"))
+        #expect(body.contains("맨\u{00A0}위에"))
+        #expect(body.contains("볼\u{00A0}수\u{00A0}있어요."))
+        #expect(body.replacingOccurrences(of: "\u{00A0}", with: " ") == GuideCopy.pages[2].body(.ko))
+        #expect("Pick a company".bindingShortWords == "Pick a\u{00A0}company")
+        #expect("배당, 자사주".bindingShortWords == "배당, 자사주")
+        for page in GuideCopy.pages {
+            for language in Language.allCases {
+                for text in [page.title(language), page.body(language)] {
+                    let words = text.bindingShortWords.split(separator: " ")
+                    #expect(words.dropLast().allSatisfy { $0.count > 1 })
+                }
+            }
+        }
+    }
+
     /// The four kept tips (t2 to t5), with the approved copy; t1, t6 and t7 are not built.
     @Test func tipCopy() {
         let tips: [any FootnoteTip] = [FigureSourceTip(), AskTip(), CompareTip(), NewsFilterTip()]
