@@ -1838,6 +1838,8 @@ in PR #53 and changes it where noted. The owner has not reviewed the screens yet
 
 ## D102 · Source sentences are cut where sentences end, not inside a name or a wrapped line · 2026-11-26
 
+*Partly superseded by D103 (the count of excerpts that start inside a sentence, and lines the pipeline adds).*
+
 The source sentences D97 finds are what the app will show under each summary line (D101). In
 the 2026-11-19 report, 31 of 788 distinct excerpts began inside a sentence: "와 체결한 …"
 after "Green Holding L.P." and "as disclosed in the proxy statement …" after a printed line
@@ -1857,5 +1859,46 @@ break in an 8-K. The aligner (`f2-2026-11-26`) cuts the source text differently 
   inside a sentence fall from 31 to 5. Three of those are bullet items that start a line,
   which are right. The other two are one excerpt in two sections ("rtising, fulfillment …"):
   the section's source text itself starts a new window there, which the splitter cannot see.
+- A new aligner version means `verify --release` needs a fresh report: run
+  `make faithfulness AS_OF=<the summary run's --as-of>` before the next release build.
+
+## D103 · Source sentences start where a sentence can start, and pipeline labels are not sentences · 2026-11-26
+
+D102's count of excerpts that begin inside a sentence only measured the two causes it fixed.
+A check that looks only at a sentence and the character before it finds more. It flags a
+sentence that starts on a Korean particle or ending, a closing quote or bracket, a lowercase
+word, the rest of a cut word, a closing mark with no opening one, or a label line, and names
+the likely cause from the text before it. On the 2026-11-19 report it flagged 66 of 788
+distinct excerpts under f1 and 47 of 779 under f2; over every sentence of every source text,
+1,733 under f2. The aligner (`f3-2026-11-26`) changes where it cuts in these ways.
+
+- A list number after an opening quote or bracket, or straight after "상기", "위" or "아래",
+  is a reference to a numbered field, not the end of a sentence: `상기 '4. 채무보증내역'은`,
+  `상기4. 및 5.와`, `'2.금전대여내역'`, `'II. 사업의 내용`. "Ⅰ" to "Ⅹ" are list numbers.
+- A DART list marker inside a short quoted reference is not a cut:
+  `상기 '8. 취득전 자기주식보유현황 - 기타취득'`, `『Ⅲ. 재무에 관한 사항 중 3. 연결재무제표 주석』`.
+- The lines the pipeline adds around the filing's own text are neither excerpts nor support:
+  "Filing title: …", "Filing text:", "Report: …" and a section label alone on its line, such
+  as "[Item 1. Business]", "[8-K]" or "[2. 주요 제품 및 서비스]". A bracket inside a line stays.
+- In English text, a '.' after a letter or digit and before a lowercase word is not an end
+  (`General Instruction A.2. below`, `Adj. operating income`), nor is the '.' of an SEC item
+  number (`“Item 1A. Risk Factors”`, `"Item 1. Business"`). `a.m`, `p.m`, `adj`, `ex`, `reg`
+  and `d.c` join the abbreviations. A sentence that ends inside a quote ends after the quote
+  (`"Wonder Nation." The Company`). A date's last '.' before a particle is not an end
+  (`2024.12.31.이 속하는`).
+- A line break runs on after a bullet alone on its line (`•\nintense competition`), after ')'
+  or '™' before a lowercase word (`15(d)\nof the`), and inside a quote or bracket still open
+  when the next line starts with a Latin word or a number (`(the “2036\nNotes”)`).
+- Effect on the same 1,368 lines: flagged excerpts fall from 47 to 2, and flagged sentences
+  over all source text from 1,733 to 163. The two excerpts are one excerpt in two sections
+  ("rtising, fulfillment …"): the section's source text itself starts inside a word, and that
+  text also feeds `input_sha256`, so changing it would void approvals. Of the 163, 61 are the
+  first line of an SEC document (its file name, such as "wmt-20260108"), 42 more start where a
+  section's source text starts mid-sentence, and the rest are sentences inside a quotation of
+  several sentences, lines after a colon that opens a list, and the filing's own subheadings.
+- Two approved lines (Kia's English business and one-line summaries, line one) move from
+  supported to partly with "term not in source: term.service": their only "서비스" was the
+  section label. Partly ships as supported does (D101). No line moves the other way, 124 lines
+  get a different span, and the labelled eval is unchanged.
 - A new aligner version means `verify --release` needs a fresh report: run
   `make faithfulness AS_OF=<the summary run's --as-of>` before the next release build.
