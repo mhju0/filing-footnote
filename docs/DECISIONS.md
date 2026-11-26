@@ -1639,6 +1639,7 @@ build, export or verify path imported Filing Digest's FastAPI service; an import
   serves the bundle; none exists, and this entry neither builds nor drops it.
 
 ## D97 · Every summary line is checked against its source text before release · 2026-11-26
+*Partly superseded by D102 (where the source text is cut into sentences).*
 
 The guard (ADR 0005) checks how a line is written, not whether the filing says it. A pilot
 line swapped the filing's region for another place, and neither the guard nor the model
@@ -1770,7 +1771,53 @@ generated on the device.
 - iPhone pushes the answer. iPad and Mac show it in the detail column and keep the
   question filled. Amounts use the app's formatter, so Korean USD reads `1,094억 달러`.
 
-## D100 · First-run guide and in-app tips · 2026-11-26 (`ACCEPTED`)
+## D100 · Owner picks after the summary regeneration · 2026-11-26 (`ACCEPTED`)
+
+The owner chose these on 2026-11-26 (12:31 KST) after the regeneration of the three flagged
+summaries (D97), and Claude recorded them.
+
+- `sec:0001193125-26-234488`: three regeneration tries did not pass, so the owner accepts the
+  original approved lines as faithful. Line 3 in both languages, the tranche paraphrase that
+  D97 flags as unsupported, goes in `backend/data/summaries/faithfulness_accepted.jsonl`
+  through `faithfulness accept`. Each entry names the filing and is bound to the line's
+  hash and the approval's input hash, so an edit or a new approval voids it. D97 says agents
+  never run `accept`; this time the owner's pick is the acceptance, and Claude ran the
+  command to record it. Lines 1 and 2 are supported and need no entry.
+- `dart:20261030800867` (a clarification filing): no more regeneration tries. Its two rows
+  stay withheld, and the approve path never approves a withheld row. The summary loop does
+  not retry withheld rows, so the filing gets no summary, and the export writes none for it.
+  The filing's own row still ships in a preview, without a summary, like every other filing
+  that has no approved summary (D90). A release refuses while it lacks one.
+- `percentage_point` (퍼센트포인트(%포인트) / Percentage points, D98): the wording is approved as
+  written. Glossary entries carry an `approved` flag and no hash, so the flag is set.
+- `sec:0001193125-26-216986`: the owner chose the regenerated summary. It is recorded
+  through the hash-bound review page once the owner marks it there, in a separate change.
+
+## D102 · Source sentences are cut where sentences end, not inside a name or a wrapped line · 2026-11-26
+
+The source sentences D97 finds are what the app will show under each summary line (D101). In
+the 2026-11-19 report, 31 of 788 distinct excerpts began inside a sentence: "와 체결한 …"
+after "Green Holding L.P." and "as disclosed in the proxy statement …" after a printed line
+break in an 8-K. The aligner (`f2-2026-11-26`) cuts the source text differently in two ways.
+
+- A '.' between a Latin letter and Hangul, or a Latin letter and '(' plus Hangul, ends a name,
+  not a sentence (`L.P.와`, `Ltd.(이하`). `l.p` and `pte` join the abbreviations. A '.' after
+  Hangul still ends a sentence, with or without a space after it (`했습니다.이사회는`).
+- A single line break is not a cut when the line runs on: the next line starts with a
+  lowercase Latin word after a letter, digit, '%', closing quote, comma or semicolon, or the
+  line ends on a comma or semicolon. Blank lines, headings, list items and lines that end a
+  sentence or a label stay cuts. A sentence can therefore hold a line break; its text is still
+  the source between its offsets.
+- Effect on the same 1,368 lines: 3 approved lines move from partly to supported (their span
+  is now the whole sentence, which also clears a negation mismatch), none move the other way,
+  and 60 lines get a different span. The labelled eval is unchanged. Excerpts that begin
+  inside a sentence fall from 31 to 5. Three of those are bullet items that start a line,
+  which are right. The other two are one excerpt in two sections ("rtising, fulfillment …"):
+  the section's source text itself starts a new window there, which the splitter cannot see.
+- A new aligner version means `verify --release` needs a fresh report: run
+  `make faithfulness AS_OF=<the summary run's --as-of>` before the next release build.
+
+## D104 · First-run guide and in-app tips · 2026-11-26 (`ACCEPTED`)
 
 The owner picked these on the first-run guide and tips study page (design direction 8
 follow-up, 2026-11-26): q1 A (four pages), style D (text with an SF Symbol, a live crop of

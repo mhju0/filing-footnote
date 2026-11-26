@@ -192,7 +192,7 @@ for shot in "${shots[@]}"; do
   xcrun simctl terminate "$udid" "$bundle_id" 2>/dev/null || true
   args=(-language "$language" -FootnoteScroll "$scroll")
   # `guide:<page>` opens the first-run guide on that page; `tips:<route>` opens the route
-  # with every tip shown (D100). Every other shot skips the guide and the tips.
+  # with every tip shown (D104). Every other shot skips the guide and the tips.
   case "$route" in
     guide:*) args+=(-FootnoteResetGuide -FootnoteGuidePage "${route#guide:}") ;;
     tips:*) args+=(-guideSeen YES -FootnoteResetTips -FootnoteShowAllTips -FootnoteOpen "${route#tips:}") ;;

@@ -2,7 +2,7 @@ import FootnoteKit
 import SwiftUI
 import TipKit
 
-/// In-app tips (design direction 8, owner picks q2 E and q4 B; D100). Each is a TipKit
+/// In-app tips (design direction 8, owner picks q2 E and q4 B; D104). Each is a TipKit
 /// popover on the one control it explains; none is a centred pop-up or a sheet. At most one
 /// new tip a day, and no tip while the guide is up: every tip waits for `guideDone`, and
 /// `footnoteTip` hides its popover while `tipsPaused` is set. Closing a tip or using what it

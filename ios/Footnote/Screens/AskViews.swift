@@ -22,7 +22,7 @@ struct AskSection: View {
     @Environment(\.navigate) private var navigate
     @Environment(\.filingSelection) private var selection
     let companyID: String
-    /// t3, shown on the first question (D100).
+    /// t3, shown on the first question (D104).
     var tip: AskTip?
 
     var body: some View {

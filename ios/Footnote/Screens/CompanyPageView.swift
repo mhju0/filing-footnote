@@ -10,7 +10,7 @@ struct CompanyPageView: View {
     let page: CompanyPage
     @Environment(\.filingSelection) private var selection
     @State private var showsNotices: Bool
-    /// t2 on the figure, then t3 on the questions once t2 has ended (D100).
+    /// t2 on the figure, then t3 on the questions once t2 has ended (D104).
     @State private var tips = TipGroup(.ordered) {
         FigureSourceTip()
         AskTip()

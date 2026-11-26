@@ -1,6 +1,6 @@
 import XCTest
 
-/// The first-run guide and the tips (D100): the guide shows on first launch only, Skip ends
+/// The first-run guide and the tips (D104): the guide shows on first launch only, Skip ends
 /// it, it reopens from the end of the glossary, and no tip shows while it is up. Each test
 /// resets the guide flag and TipKit's datastore through debug launch arguments.
 final class GuideTipsUITests: XCTestCase {

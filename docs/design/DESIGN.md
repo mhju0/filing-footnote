@@ -119,7 +119,7 @@ Details:
   - Empty search and empty News use the system empty state with a magnifying glass and the
     app's own bilingual copy.
 
-## First-run guide and tips (D100)
+## First-run guide and tips (D104)
 
 Owner picks of 2026-11-26 (first-run guide and tips study: q1 A, style D, reopen A,
 tips E, timing B). The copy is the owner's and is not reworded.

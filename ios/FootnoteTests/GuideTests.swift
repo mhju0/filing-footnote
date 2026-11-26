@@ -3,7 +3,7 @@ import FootnoteKit
 import Testing
 @testable import Footnote
 
-/// The first-run guide and the tips' pause (D100).
+/// The first-run guide and the tips' pause (D104).
 @MainActor
 @Suite("First-run guide and tips")
 struct GuideTests {
