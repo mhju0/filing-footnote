@@ -1901,3 +1901,23 @@ were approved on that page and ship verbatim. DESIGN.md has the layout and the t
   기업): shipped bundles always hold the glossary in both languages, and the Mac has the
   Help menu. Moving VoiceOver focus to the 기업 title after the guide closes is left to the
   system.
+
+## D105 · Regenerated summary of `sec:0001193125-26-216986` approved · 2026-11-26 (`ACCEPTED`)
+
+The owner chose the regenerated summary of `sec:0001193125-26-216986` on 2026-11-26 (D100).
+The owner's click never reached the hash-bound review page, so the coordinating agent saved
+the mark there from the owner's explicit approval. The saved note reads: "Recorded by bot
+number 1 from the owner's explicit approval: morning-page pick 'Approved' (12:31 KST) and
+item 3 answer 'Done' (2026-11-26). The page had no click saved."
+
+- The page's recorder checked the snapshot hash, the pair digest and the live staged rows
+  byte for byte, then moved the pair to `approved.jsonl` with `app.build.approve`. It replaces
+  the earlier approved pair, whose line 3 D97 flagged as unsupported. The source text did not
+  change, so the input hash is the same.
+- Faithfulness (aligner `f3-2026-11-26`, as-of 2026-11-19): line 1 is supported and lines 2
+  and 3 are partly, in both languages. Over all of `approved.jsonl` the release gate counts 0
+  unsupported; the only unsupported verdicts left are line 3 of `sec:0001193125-26-234488`, which
+  the owner accepted (D100).
+- New line 3 in English: "The company said the Canadian notes consist of tranches due in
+  various years with different coupon rates." It cannot list the amounts, rates or dates,
+  because generated lines contain no digits.
