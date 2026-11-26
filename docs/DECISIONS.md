@@ -1639,6 +1639,7 @@ build, export or verify path imported Filing Digest's FastAPI service; an import
   serves the bundle; none exists, and this entry neither builds nor drops it.
 
 ## D97 · Every summary line is checked against its source text before release · 2026-11-26
+*Partly superseded by D102 (where the source text is cut into sentences).*
 
 The guard (ADR 0005) checks how a line is written, not whether the filing says it. A pilot
 line swapped the filing's region for another place, and neither the guard nor the model
@@ -1834,3 +1835,27 @@ in PR #53 and changes it where noted. The owner has not reviewed the screens yet
   unsupported line 3 (D97), pending the owner's `accept`. Excerpts are about 243 KB of
   the 1.08 MB bundle. Some spans start mid-word where the source text was cut into chunks;
   they are shown as they are.
+
+## D102 · Source sentences are cut where sentences end, not inside a name or a wrapped line · 2026-11-26
+
+The source sentences D97 finds are what the app will show under each summary line (D101). In
+the 2026-11-19 report, 31 of 788 distinct excerpts began inside a sentence: "와 체결한 …"
+after "Green Holding L.P." and "as disclosed in the proxy statement …" after a printed line
+break in an 8-K. The aligner (`f2-2026-11-26`) cuts the source text differently in two ways.
+
+- A '.' between a Latin letter and Hangul, or a Latin letter and '(' plus Hangul, ends a name,
+  not a sentence (`L.P.와`, `Ltd.(이하`). `l.p` and `pte` join the abbreviations. A '.' after
+  Hangul still ends a sentence, with or without a space after it (`했습니다.이사회는`).
+- A single line break is not a cut when the line runs on: the next line starts with a
+  lowercase Latin word after a letter, digit, '%', closing quote, comma or semicolon, or the
+  line ends on a comma or semicolon. Blank lines, headings, list items and lines that end a
+  sentence or a label stay cuts. A sentence can therefore hold a line break; its text is still
+  the source between its offsets.
+- Effect on the same 1,368 lines: 3 approved lines move from partly to supported (their span
+  is now the whole sentence, which also clears a negation mismatch), none move the other way,
+  and 60 lines get a different span. The labelled eval is unchanged. Excerpts that begin
+  inside a sentence fall from 31 to 5. Three of those are bullet items that start a line,
+  which are right. The other two are one excerpt in two sections ("rtising, fulfillment …"):
+  the section's source text itself starts a new window there, which the splitter cannot see.
+- A new aligner version means `verify --release` needs a fresh report: run
+  `make faithfulness AS_OF=<the summary run's --as-of>` before the next release build.

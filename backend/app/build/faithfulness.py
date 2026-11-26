@@ -71,7 +71,7 @@ EVAL_CASES_PATH = EVAL_DIR / "cases.jsonl"
 EVAL_SOURCES_PATH = EVAL_DIR / "sources.json"
 
 # Part of every record; a release refuses records from another version.
-ALIGNER_VERSION = "f1-2026-11-26"
+ALIGNER_VERSION = "f2-2026-11-26"
 SUPPORTED_AT = Fraction(7, 10)
 PARTLY_AT = Fraction(2, 5)
 MAX_SPAN_SENTENCES = 2
@@ -367,7 +367,8 @@ class Sentence:
 
 
 _ABBREVIATIONS = frozenset(
-    "inc co corp ltd llc llp plc no mr ms mrs dr jr sr st vs etc u.s u.k e.g i.e n.a".split()
+    "inc co corp ltd llc llp l.p pte plc no mr ms mrs dr jr sr st vs etc u.s u.k e.g i.e "
+    "n.a".split()
 )
 # A boundary before a DART list marker: " - ", "【", "※", "■", "□", "○", "▶", "•", a numbered
 # field (" 5. 처분목적") or a lettered item (" 가. ").
@@ -375,16 +376,32 @@ _MARKER_RE = re.compile(
     r"(?<=\s)(?=-\s|[【※■□○▶•])|(?<=\s)(?=[0-9]{1,2}\.\s+[가-힣A-Za-z(])|(?<=\s)(?=[가-하]\.\s)"
 )
 _STOP_RE = re.compile(r"[.!?。](?=\s|[가-힣\-【※(\"'])")
+# A '.' after a Latin letter and before Hangul ends a name, not a sentence: "Green Holding
+# L.P.와 체결한", "Pte. Ltd.(이하 '회사')".
+_NAME_DOT_RE = re.compile(r"(?<=[A-Za-z])\.(?=\(?[가-힣])")
+# A soft-wrapped line in English filing text: the line runs on into the next one, which starts
+# with a lowercase word ("named executive officers\nas disclosed in the proxy statement",
+# "6.250%\nnotes due 2066"), or the line ends on a comma or semicolon. Blank lines, headings,
+# list items and lines that end a sentence or a label stay cuts.
+_WRAP_RE = re.compile(
+    r"(?<=[A-Za-z0-9%,;’”])[ \t]*\n[ \t]*(?=[a-z])|(?<=[,;])[ \t]*\n[ \t]*(?=[A-Z0-9$])"
+)
 
 
 def split_sentences(text: str) -> list[Sentence]:
     """The source text cut at line breaks, sentence ends and DART list markers, each piece with
-    its offsets into ``text``."""
+    its offsets into ``text``. A soft-wrapped line break is not a cut, so a sentence can hold a
+    line break; its text is still ``text[start:end]``."""
     cuts = {0, len(text)}
-    cuts.update(m.start() for m in re.finditer(r"\n", text))
-    cuts.update(m.end() for m in re.finditer(r"\n", text))
+    wraps = {m.group(0).index("\n") + m.start() for m in _WRAP_RE.finditer(text)}
+    breaks = [m.start() for m in re.finditer(r"\n", text) if m.start() not in wraps]
+    cuts.update(breaks)
+    cuts.update(at + 1 for at in breaks)
     cuts.update(m.start() for m in _MARKER_RE.finditer(text))
+    names = {m.start() for m in _NAME_DOT_RE.finditer(text)}
     for match in _STOP_RE.finditer(text):
+        if match.start() in names:
+            continue
         before = text[max(0, match.start() - 4) : match.start()]
         word = re.search(r"([A-Za-z.]+)$", before)
         if word and word.group(1).lower().strip(".") in _ABBREVIATIONS:
