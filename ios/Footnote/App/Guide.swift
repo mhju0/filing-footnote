@@ -96,6 +96,20 @@ enum GuideCopy {
             symbol: "newspaper"),
     ]
 
+    /// Word pairs that read as one phrase, so a line never splits them (`쉬운` / `말로`,
+    /// `투자` / `조언을`).
+    static let phrases = ["쉬운 말로", "투자 조언"]
+
+    /// A title or body ready to wrap: one-letter words and the phrases above stay with the
+    /// next word, and the last words stay together. The visible text is unchanged.
+    static func wrapping(_ text: String) -> String {
+        var text = text.bindingShortWords
+        for phrase in phrases {
+            text = text.replacingOccurrences(of: phrase, with: phrase.replacingOccurrences(of: " ", with: "\u{00A0}"))
+        }
+        return AskCopy.keepingTail(text)
+    }
+
     static func skip(_ language: Language) -> String { language("건너뛰기", "Skip") }
     static func next(_ language: Language) -> String { language("다음", "Next") }
     static func start(_ language: Language) -> String { language("시작하기", "Get started") }

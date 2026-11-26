@@ -109,20 +109,21 @@ struct CompanyPageView: View {
     /// subtitle instead. In the guide's preview the title is drawn here too, above it.
     @ViewBuilder private var header: some View {
         #if os(iOS)
-        VStack(alignment: .leading, spacing: 6) {
-            if drawsTitleInList {
-                Text(words: name)
-                    .font(.largeTitle.bold())
-                    .foregroundStyle(Theme.ink)
-            }
-            Text(words: Copy.companySubtitle(page.company, dataAsOf: page.dataAsOf, language))
-                .font(.subheadline)
-                .monospacedDigit()
-                .foregroundStyle(Theme.muted)
+        if drawsTitleInList {
+            Text(words: name)
+                .font(.largeTitle.bold())
+                .foregroundStyle(Theme.ink)
+                .listRowBackground(Color.clear)
+                .listRowInsets(EdgeInsets(top: 0, leading: 4, bottom: 0, trailing: 4))
+                .listRowSeparator(.hidden)
         }
-        .fixedSize(horizontal: false, vertical: true)
-        .listRowBackground(Color.clear)
-        .listRowInsets(EdgeInsets(top: 0, leading: 4, bottom: 0, trailing: 4))
+        Text(words: Copy.companySubtitle(page.company, dataAsOf: page.dataAsOf, language))
+            .font(.subheadline)
+            .monospacedDigit()
+            .foregroundStyle(Theme.muted)
+            .fixedSize(horizontal: false, vertical: true)
+            .listRowBackground(Color.clear)
+            .listRowInsets(EdgeInsets(top: 0, leading: 4, bottom: 0, trailing: 4))
         #endif
     }
 

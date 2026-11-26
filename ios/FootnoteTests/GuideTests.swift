@@ -130,6 +130,12 @@ struct GuideTests {
         #expect(body.contains("맨\u{00A0}위에"))
         #expect(body.contains("볼\u{00A0}수\u{00A0}있어요."))
         #expect(body.replacingOccurrences(of: "\u{00A0}", with: " ") == GuideCopy.pages[2].body(.ko))
+        #expect(GuideCopy.wrapping(GuideCopy.pages[1].body(.ko)).contains("투자\u{00A0}조언을"))
+        #expect(GuideCopy.wrapping(GuideCopy.pages[3].body(.ko)).contains("쉬운\u{00A0}말로"))
+        for page in GuideCopy.pages {
+            let wrapped = GuideCopy.wrapping(page.body(.ko))
+            #expect(wrapped.replacingOccurrences(of: "\u{00A0}", with: " ") == page.body(.ko))
+        }
         #expect("Pick a company".bindingShortWords == "Pick a\u{00A0}company")
         #expect("배당, 자사주".bindingShortWords == "배당, 자사주")
         for page in GuideCopy.pages {

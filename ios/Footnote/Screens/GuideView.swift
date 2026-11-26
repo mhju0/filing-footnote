@@ -130,11 +130,11 @@ private struct GuidePage: View {
                         CompanyPreview(store: store)
                     }
                     VStack(spacing: 10) {
-                        Text(words: AskCopy.keepingTail(page.title(language).bindingShortWords))
+                        Text(words: GuideCopy.wrapping(page.title(language)))
                             .font(.title2.bold())
                             .foregroundStyle(Theme.ink)
                             .accessibilityAddTraits(.isHeader)
-                        Text(words: AskCopy.keepingTail(page.body(language).bindingShortWords))
+                        Text(words: GuideCopy.wrapping(page.body(language)))
                             .font(.body)
                             .foregroundStyle(Theme.muted)
                     }
