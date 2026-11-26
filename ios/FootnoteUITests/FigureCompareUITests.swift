@@ -13,7 +13,8 @@ final class FigureCompareUITests: XCTestCase {
         let fixture = try XCTUnwrap(Bundle(for: Self.self).path(forResource: "footnote", ofType: "sqlite"))
         continueAfterFailure = false
         let app = XCUIApplication()
-        app.launchArguments = ["-FootnoteBundle", fixture, "-FootnoteOpen", route, "-language", language]
+        app.launchArguments = ["-FootnoteBundle", fixture, "-FootnoteOpen", route, "-language", language,
+                               "-FootnoteSkipGuideAndTips"]
         app.launch()
         return app
     }

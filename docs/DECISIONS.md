@@ -1902,3 +1902,65 @@ distinct excerpts under f1 and 47 of 779 under f2; over every sentence of every 
   get a different span, and the labelled eval is unchanged.
 - A new aligner version means `verify --release` needs a fresh report: run
   `make faithfulness AS_OF=<the summary run's --as-of>` before the next release build.
+
+## D104 · First-run guide and in-app tips · 2026-11-26 (`ACCEPTED`)
+
+The owner picked these on the first-run guide and tips study page (design direction 8
+follow-up, 2026-11-26): q1 A (four pages), style D (text with an SF Symbol, a live crop of
+the company page on page 3), reopen A (bottom of 용어 plus the Help menu), q2 E (popover
+for a tip about one control, inline for a tip about a screen; no centred pop-up or sheet)
+and q4 B (at most one tip a day). The guide copy (pages p1 to p4) and the kept tips' copy
+were approved on that page and ship verbatim. DESIGN.md has the layout and the tip table.
+
+- **Guide.** `GuideModel` stores `guideSeen` in user defaults when Skip, Get started or
+  closing the sheet ends the guide. Quitting mid-guide stores nothing, so the guide shows
+  again; an app update never brings it back. Page 3 renders `CompanyPageView` for the first
+  company with a report, at a fixed text size, scaled and not interactive, so it changes
+  with the company page (including the coming summary card) without new images.
+- **Tips.** TipKit, configured at launch with `.displayFrequency(.daily)`. Four tips are
+  kept: t2 figure source, t3 ask, t4 compare and t5 News filter. t1 (Companies) and t6
+  (jump to letter) were dropped by the owner. t7 (typed questions on iPad and Mac) is not
+  built: the feature does not exist, and its approved copy waits here for it:
+  "직접 물어보기 / 궁금한 점을 입력해 보세요. 공시로 답할 수 없는 질문이면 그렇다고 알려 줘요." and
+  "Ask in your own words / Type a question. If the filings can't answer it, Footnote says so."
+  All kept tips are popovers; no kept tip is about a whole screen, so no inline TipView ships.
+- **Order and timing.** The company page holds `TipGroup(.ordered)`: t2, then t3 only after
+  t2 has ended. Rules count TipKit events: company pages (t2 from the second, t3 from the
+  third), figure screens (t4 from the second) and News visits (t5 from the second). A
+  screen counts once per visit, so coming back from a pushed screen does not count again.
+  Each tip also has `MaxDisplayCount(3)`, and using the feature invalidates it with
+  `.actionPerformed`.
+- **No tip while the guide is up.** Every tip has a rule on the `guideDone` parameter, set
+  false while the guide shows (also when it is reopened). The popover modifier also drops
+  its tip while the guide is presented, which holds even when the tips are forced on for
+  testing, and no event is counted then.
+- **Language.** A tip is not a view, so its text reads the stored in-app language; the
+  anchor redraws when the language switches.
+- **Testing.** Debug-only launch arguments: `-FootnoteSkipGuideAndTips` (the existing UI
+  tests, the walkthrough and the screenshot script use it), `-FootnoteResetGuide`,
+  `-FootnoteResetTips` (`Tips.resetDatastore()`), `-FootnoteShowAllTips` and
+  `-FootnoteGuidePage <n>`. Release builds ignore them.
+- **Not built.** The reopen fallback for a bundle without glossary rows (a ? button on
+  기업): shipped bundles always hold the glossary in both languages, and the Mac has the
+  Help menu. Moving VoiceOver focus to the 기업 title after the guide closes is left to the
+  system.
+
+## D105 · Regenerated summary of `sec:0001193125-26-216986` approved · 2026-11-26 (`ACCEPTED`)
+
+The owner chose the regenerated summary of `sec:0001193125-26-216986` on 2026-11-26 (D100).
+The owner's click never reached the hash-bound review page, so the coordinating agent saved
+the mark there from the owner's explicit approval. The saved note reads: "Recorded by bot
+number 1 from the owner's explicit approval: morning-page pick 'Approved' (12:31 KST) and
+item 3 answer 'Done' (2026-11-26). The page had no click saved."
+
+- The page's recorder checked the snapshot hash, the pair digest and the live staged rows
+  byte for byte, then moved the pair to `approved.jsonl` with `app.build.approve`. It replaces
+  the earlier approved pair, whose line 3 D97 flagged as unsupported. The source text did not
+  change, so the input hash is the same.
+- Faithfulness (aligner `f3-2026-11-26`, as-of 2026-11-19): line 1 is supported and lines 2
+  and 3 are partly, in both languages. Over all of `approved.jsonl` the release gate counts 0
+  unsupported; the only unsupported verdicts left are line 3 of `sec:0001193125-26-234488`, which
+  the owner accepted (D100).
+- New line 3 in English: "The company said the Canadian notes consist of tranches due in
+  various years with different coupon rates." It cannot list the amounts, rates or dates,
+  because generated lines contain no digits.

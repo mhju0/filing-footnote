@@ -1,5 +1,6 @@
 import FootnoteKit
 import SwiftUI
+import TipKit
 
 /// Board 14: periodic reports pinned, the questions to ask (D99), up to ten filings by
 /// month, the notices row, then the end note and the link to every filing on DART or SEC.
@@ -8,7 +9,13 @@ struct CompanyPageView: View {
     let store: BundleStore
     let page: CompanyPage
     @Environment(\.filingSelection) private var selection
+    @Environment(\.drawsTitleInList) private var drawsTitleInList
     @State private var showsNotices: Bool
+    /// t2 on the figure, then t3 on the questions once t2 has ended (D104).
+    @State private var tips = TipGroup(.ordered) {
+        FigureSourceTip()
+        AskTip()
+    }
 
     init(store: BundleStore, page: CompanyPage) {
         self.store = store
@@ -26,10 +33,12 @@ struct CompanyPageView: View {
         .navigationTitle(name)
         #if os(iOS)
         .navigationBarTitleDisplayMode(.large)
+        .toolbar(drawsTitleInList ? .hidden : .automatic, for: .navigationBar)
         #else
         .navigationSubtitle(Copy.companySubtitle(page.company, dataAsOf: page.dataAsOf, language))
         #endif
         .languageToolbar()
+        .countsTipEvent(FootnoteTips.companyPageOpened)
         .sheet(isPresented: $showsNotices) {
             NoticesSheet(page: page)
         }
@@ -41,13 +50,19 @@ struct CompanyPageView: View {
             if page.quarterReport != nil || !page.periodicReports.isEmpty {
                 Section {
                     if let report = page.quarterReport {
+                        // The tip goes on the label: a wrapper outside the row would hide
+                        // its selection tag on the Mac and shrink its button on iPad.
                         FilingRowLink(filingID: report.filing.id) {
                             QuarterRow(report: report, company: page.company, dataAsOf: page.dataAsOf)
+                                .footnoteTip(tips.currentTip as? FigureSourceTip)
                         }
                     }
                     ForEach(page.periodicReports, id: \.filing.id) { report in
                         FilingRowLink(filingID: report.filing.id) {
                             PeriodicRow(report: report, company: page.company, dataAsOf: page.dataAsOf)
+                                .footnoteTip(
+                                    page.quarterReport == nil && report.filing.id == page.periodicReports.first?.filing.id
+                                        ? tips.currentTip as? FigureSourceTip : nil)
                         }
                     }
                 } header: {
@@ -55,7 +70,7 @@ struct CompanyPageView: View {
                 }
             }
             // D99: below the quarterly results, above the filings by month.
-            AskSection(companyID: page.company.id)
+            AskSection(companyID: page.company.id, tip: tips.currentTip as? AskTip)
                 .id(PageScroll.ask)
             ForEach(Array(page.months.enumerated()), id: \.element.id) { index, month in
                 Section {
@@ -91,9 +106,17 @@ struct CompanyPageView: View {
     }
 
     /// The ticker and data date under the large title. The Mac shows it as the toolbar's
-    /// subtitle instead.
+    /// subtitle instead. In the guide's preview the title is drawn here too, above it.
     @ViewBuilder private var header: some View {
         #if os(iOS)
+        if drawsTitleInList {
+            Text(words: name)
+                .font(.largeTitle.bold())
+                .foregroundStyle(Theme.ink)
+                .listRowBackground(Color.clear)
+                .listRowInsets(EdgeInsets(top: 0, leading: 4, bottom: 0, trailing: 4))
+                .listRowSeparator(.hidden)
+        }
         Text(words: Copy.companySubtitle(page.company, dataAsOf: page.dataAsOf, language))
             .font(.subheadline)
             .monospacedDigit()
