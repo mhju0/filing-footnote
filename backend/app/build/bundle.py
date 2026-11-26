@@ -1,10 +1,13 @@
 """The bundled SQLite schema (build plan section 4) and its content fingerprint.
 
 ``content_sha256`` is the SHA-256 of a canonical dump of every table except ``build_meta``:
-tables in name order, rows in primary-key order, one line per row, lines joined by ``\\n``
-and encoded as UTF-8. A line is the JSON array ``[table, row]`` where ``row`` maps each
-column name to its stored value, serialised with sorted keys, no whitespace and no ASCII
-escaping. It reads the stored values back, so it does not depend on SQLite page layout.
+tables in name order, rows in primary-key order, one line per row, then one last line for
+``build_meta.aligner_version``; lines joined by ``\\n`` and encoded as UTF-8. A line is the JSON
+array ``[table, row]`` where ``row`` maps each column name to its stored value, serialised with
+sorted keys, no whitespace and no ASCII escaping; the last line is
+``["build_meta", {"aligner_version": ...}]`` in the same form, so the fingerprint covers the
+aligner that chose the source sentences as well as the sentences. It reads the stored values
+back, so it does not depend on SQLite page layout.
 """
 
 from __future__ import annotations
@@ -14,8 +17,8 @@ import json
 import sqlite3
 
 # 2: the notices table (D76); 3: quarterly filings and quarter_figures (I11);
-# 4: build_meta.preview (D90)
-SCHEMA_VERSION = 4
+# 4: build_meta.preview (D90); 5: summary_sources and build_meta.aligner_version (D101)
+SCHEMA_VERSION = 5
 
 SCHEMA = """
 CREATE TABLE build_meta (
@@ -26,7 +29,8 @@ CREATE TABLE build_meta (
   prompt_version   TEXT NOT NULL,
   content_sha256   TEXT NOT NULL,
   allow_unapproved INTEGER NOT NULL CHECK (allow_unapproved IN (0, 1)),
-  preview          INTEGER NOT NULL CHECK (preview IN (0, 1))
+  preview          INTEGER NOT NULL CHECK (preview IN (0, 1)),
+  aligner_version  TEXT NOT NULL
 ) STRICT;
 
 CREATE TABLE companies (
@@ -81,6 +85,31 @@ CREATE TABLE filing_summaries (
   review_state TEXT NOT NULL CHECK (review_state = 'approved'),
   input_sha256 TEXT NOT NULL,
   PRIMARY KEY (filing_id, lang, section)
+) STRICT;
+
+-- The source sentences behind each summary line (D101), copied by the export from the
+-- faithfulness report (D97) for the exported lines only. A supported or partly line has one
+-- row per span sentence, in source order (position 0, 1). A template line (D78) has one row
+-- without an excerpt: its wording is fixed and its figures come from the filing's table.
+-- Unsupported lines never ship; a line the owner accepted ships without a row. The excerpt is
+-- verbatim, in the filing's language (excerpt_lang), not the line's. The offsets point into
+-- the build's source text, which the bundle does not carry; they are kept for audit.
+CREATE TABLE summary_sources (
+  filing_id    TEXT NOT NULL,
+  lang         TEXT NOT NULL CHECK (lang IN ('ko','en')),
+  section      TEXT NOT NULL,
+  line_no      INTEGER NOT NULL CHECK (line_no BETWEEN 1 AND 3),
+  position     INTEGER NOT NULL CHECK (position BETWEEN 0 AND 1),
+  verdict      TEXT NOT NULL CHECK (verdict IN ('supported','partly','template')),
+  excerpt      TEXT,
+  excerpt_lang TEXT NOT NULL CHECK (excerpt_lang IN ('ko','en')),
+  source_start INTEGER,
+  source_end   INTEGER,
+  PRIMARY KEY (filing_id, lang, section, line_no, position),
+  FOREIGN KEY (filing_id, lang, section) REFERENCES filing_summaries (filing_id, lang, section),
+  CHECK ((verdict = 'template') = (excerpt IS NULL)),
+  CHECK ((excerpt IS NULL) = (source_start IS NULL) AND (excerpt IS NULL) = (source_end IS NULL)),
+  CHECK (source_end IS NULL OR source_end > source_start)
 ) STRICT;
 
 CREATE TABLE filing_facts (
@@ -167,14 +196,19 @@ TABLES = {name: spec for name, spec in _ALL_TABLES.items() if name != "build_met
 
 # Tables in insert order, so every foreign key points at a row already written.
 INSERT_ORDER = (
-    "companies", "filings", "notices", "filing_summaries", "filing_facts", "figures",
-    "quarter_figures", "glossary",
+    "companies", "filings", "notices", "filing_summaries", "summary_sources", "filing_facts",
+    "figures", "quarter_figures", "glossary",
 )  # fmt: skip
 
 BUILD_META_COLUMNS = _ALL_TABLES["build_meta"][0]
 
 
-def canonical_dump_lines(connection: sqlite3.Connection) -> list[str]:
+def canonical_dump_lines(
+    connection: sqlite3.Connection, aligner_version: str | None = None
+) -> list[str]:
+    """The fingerprint's lines; ``aligner_version`` defaults to the one ``build_meta`` holds."""
+    if aligner_version is None:
+        aligner_version = connection.execute("SELECT aligner_version FROM build_meta").fetchone()[0]
     lines: list[str] = []
     for table in sorted(TABLES):
         columns, key = TABLES[table]
@@ -187,8 +221,13 @@ def canonical_dump_lines(connection: sqlite3.Connection) -> list[str]:
             lines.append(
                 json.dumps([table, row], sort_keys=True, ensure_ascii=False, separators=(",", ":"))
             )
+    meta = {"aligner_version": aligner_version}
+    lines.append(
+        json.dumps(["build_meta", meta], sort_keys=True, ensure_ascii=False, separators=(",", ":"))
+    )
     return lines
 
 
-def content_sha256(connection: sqlite3.Connection) -> str:
-    return hashlib.sha256("\n".join(canonical_dump_lines(connection)).encode("utf-8")).hexdigest()
+def content_sha256(connection: sqlite3.Connection, aligner_version: str | None = None) -> str:
+    lines = canonical_dump_lines(connection, aligner_version)
+    return hashlib.sha256("\n".join(lines).encode("utf-8")).hexdigest()

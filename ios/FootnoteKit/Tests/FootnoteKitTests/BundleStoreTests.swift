@@ -186,6 +186,43 @@ struct BundleStoreTests {
         #expect(entry.formal != nil)
     }
 
+    // MARK: - Source sentences (D101)
+
+    @Test func readsTheSourceSentences() {
+        #expect(store.meta.alignerVersion == "f1-2026-11-26")
+        #expect(store.sources.count == 10)
+        let second = store.sources(forFiling: Self.buyback, language: .en, section: .summary, line: 2)
+        #expect(second.map(\.position) == [0, 1])
+        #expect(second.map(\.verdict) == [.partly, .partly])
+        #expect(second.first?.excerpt == "취득 목적 : 임직원 주식보상")
+        // An English line of a Korean filing quotes the Korean original.
+        #expect(second.allSatisfy { $0.excerptLanguage == .ko })
+        #expect(store.sources(forFiling: Self.buyback, language: .ko, section: .summary, line: 3).isEmpty)
+        let template = store.sources(
+            forFiling: Self.samsungAnnual, language: .ko, section: .business, line: 1)
+        #expect(template.map(\.verdict) == [.template])
+        #expect(template.first?.excerpt == nil)
+    }
+
+    @Test func opensASchemaFourBundleWithoutSourceSentences() throws {
+        let url = try Self.editedCopy(
+            "DROP TABLE summary_sources; ALTER TABLE build_meta DROP COLUMN aligner_version; "
+                + "UPDATE build_meta SET schema_version = 4")
+        let old = try BundleStore(contentsOf: url)
+        #expect(old.meta.schemaVersion == 4)
+        #expect(old.meta.alignerVersion == nil)
+        #expect(old.sources.isEmpty)
+        #expect(old.summaries == store.summaries)
+        let page = try #require(FilingPage(store: old, filingID: Self.buyback))
+        #expect(page.sourcedSummaryLines(.ko).map(\.text) == page.summaryLines(.ko))
+        #expect(page.sourcedSummaryLines(.ko).allSatisfy { $0.source == nil })
+    }
+
+    @Test func rejectsASchemaFiveBundleWithoutItsSourceTable() throws {
+        let url = try Self.editedCopy("DROP TABLE summary_sources")
+        #expect(throws: BundleError.self) { try BundleStore(contentsOf: url) }
+    }
+
     // MARK: - Refusing a file
 
     @Test func openingLeavesTheFileUnchanged() throws {
@@ -196,7 +233,7 @@ struct BundleStoreTests {
 
     @Test func rejectsAnUnknownSchemaVersion() throws {
         let url = try Self.editedCopy("UPDATE build_meta SET schema_version = 2")
-        #expect(throws: BundleError.unsupportedSchemaVersion(found: 2, supported: 4)) {
+        #expect(throws: BundleError.unsupportedSchemaVersion(found: 2, supported: 5)) {
             try BundleStore(contentsOf: url)
         }
     }
@@ -204,7 +241,7 @@ struct BundleStoreTests {
     @Test func rejectsAFutureSchemaBeforeReadingItsColumns() throws {
         let url = try Self.editedCopy(
             "UPDATE build_meta SET schema_version = 9; ALTER TABLE build_meta DROP COLUMN llm_model")
-        #expect(throws: BundleError.unsupportedSchemaVersion(found: 9, supported: 4)) {
+        #expect(throws: BundleError.unsupportedSchemaVersion(found: 9, supported: 5)) {
             try BundleStore(contentsOf: url)
         }
     }

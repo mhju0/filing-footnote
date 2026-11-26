@@ -26,6 +26,7 @@ from sqlalchemy import text
 from sqlalchemy.engine import make_url
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
+from app.build import faithfulness
 from app.build.model import (
     AnnualFilingRow,
     BuildInput,
@@ -307,3 +308,28 @@ if __name__ == "__main__":
         drop(sys.argv[2])
     else:
         raise SystemExit("usage: python -m tests.build_seed create | drop URL")
+
+
+def supported_records(summaries) -> list[dict]:
+    """A current, supported record with a one-sentence span for every approved line; the
+    sentence and its offsets are made up, in the filing's language."""
+    records = []
+    for summary in summaries:
+        if summary.review_state != "approved":
+            continue
+        for number, line in enumerate((summary.line1, summary.line2, summary.line3), start=1):
+            if line is None:
+                continue
+            text = ("공시 원문 문장" if summary.filing_id.startswith("dart:")
+                    else "A sentence of the filing.")  # fmt: skip
+            start = 100 * number
+            records.append({
+                "filing_id": summary.filing_id, "lang": summary.lang,
+                "section": summary.section, "line_no": number,
+                "line_sha256": faithfulness.line_sha256(line),
+                "input_sha256": summary.input_sha256, "verdict": faithfulness.SUPPORTED,
+                "method": "direct", "aligner_version": faithfulness.ALIGNER_VERSION,
+                "spans": [{"start": start, "end": start + len(text), "text": text}],
+                "reasons": [],
+            })  # fmt: skip
+    return records

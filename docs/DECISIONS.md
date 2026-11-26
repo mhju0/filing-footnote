@@ -1795,6 +1795,49 @@ summaries (D97), and Claude recorded them.
 - `sec:0001193125-26-216986`: the owner chose the regenerated summary. It is recorded
   through the hash-bound review page once the owner marks it there, in a separate change.
 
+## D101 · The source sentence behind each summary line ships in the bundle · 2026-11-26
+
+Builds on D97. Asked for through the Orca coordinator; it starts from the phase B proposal
+in PR #53 and changes it where noted. The owner has not reviewed the screens yet.
+
+- **Bundle schema 5.** A `summary_sources` table holds, for each exported summary line,
+  its span sentences from the faithfulness report: one row per sentence in source order
+  (`position` 0 and 1), with the verdict (`supported`, `partly` or `template`), the
+  excerpt verbatim, `excerpt_lang` (the filing's language, not the line's) and the
+  offsets, which point into the build's source text and are kept for audit only.
+  `build_meta.aligner_version` names the aligner. The content fingerprint covers the
+  table like any other and ends with one `build_meta` line for the aligner version.
+- **Changed from the proposal.** A template line (D78) has one row with no excerpt and no
+  offsets, since its wording is fixed and its figures come from the filing's table; the
+  proposal had a non-null excerpt for every row. A line the owner accepted ships with no
+  row, so the app never shows a weak span as the source. A supported or partly record with
+  no span is treated like an unsupported one. The aligner version is stored once in
+  `build_meta`, not on every row.
+- **Export.** It copies the spans for the exported lines only. A release refuses a missing
+  report, a line with no current record for its text and approval, and a line whose record
+  has no shippable span unless the owner accepted it. A development or preview build ships
+  a line without a record but with no source row, and withholds a section with an
+  unsupported line in both languages. `--faithfulness PATH` names the report. The report
+  JSON gains a `summary_sources` block with these counts.
+- **Verify.** Every build checks that each row belongs to a line the bundle holds, that
+  positions run from zero with one verdict per line, that a template line has one row,
+  that `excerpt_lang` is the filing's language, and that each excerpt's length matches its
+  offsets. `verify --release` also requires a row for every line that is not accepted,
+  under every policy. Under the blocking policies (`unsupported`, `partly`) it compares
+  the rows with the report.
+- **App.** FootnoteKit reads schema 5 and still opens schema 4, which has no source
+  sentences. On the filing page, each summary line has a closed "출처 문장 / Source
+  sentence" disclosure. Open, it shows the language and the filing's name, then the
+  excerpt verbatim. A partly line looks the same as a supported one. A template line says
+  it was written from a fixed sentence with the filing's table values. VoiceOver reads the
+  caption and then the excerpt, tagged with the filing's language. The annual page is not
+  changed.
+- **Data at 2026-11-19 (preview build, local only).** 1,408 rows: supported 1,124, partly
+  104, template 180. No line lacks a record. Two SEC event sections are withheld for their
+  unsupported line 3 (D97), pending the owner's `accept`. Excerpts are about 243 KB of
+  the 1.08 MB bundle. Some spans start mid-word where the source text was cut into chunks;
+  they are shown as they are.
+
 ## D102 · Source sentences are cut where sentences end, not inside a name or a wrapped line · 2026-11-26
 
 *Partly superseded by D103 (the count of excerpts that start inside a sentence, and lines the pipeline adds).*

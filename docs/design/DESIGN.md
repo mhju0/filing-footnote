@@ -76,7 +76,7 @@ owner), boards 11A, 12A, 13 and 14–20 (2026-11-19, owner).
 | Glossary | Term search and letter or initial jump; definitions expand on iPhone | Definition on iPad and Mac | |
 | Company page | The summary card first (D106): the newest annual revenue rounded, the exact amount below, its change against the year before and its source; then the newest quarter's revenue, operating income and net income against the same quarter a year earlier, with one fixed sentence and its source. Six questions to ask (D99) directly under it as wrapping rounded-rectangle buttons, Pine on Surface with a Line border; up to 2 periodic reports with one figure each; up to 10 filings grouped by month (tag, date, title, and the approved summary's first line only where two titles repeat); notices row; insider row; data date | Annual figure, quarter report, notices sheet, insider screen, all filings on DART, an answer | Price, news, analyst views, scores, a summary line on a title that does not repeat |
 | Answer | Company and question; fixed sentences in a card; the company's business lines; the latest quarter's and year's figures against a year earlier, each block with its source filing; related questions after a deflection; how answers are made | Source filing, outlook filing, exact amounts on tap | Advice, estimates, judgement words, a figure for a future period |
-| Filing page | Tag and status, title, date; outlook banner (outlook only); up to 3 sentences; how they were written; up to 6 numbers; up to 2 related filings; original | Glossary, other versions | Model confidence, judgement words, a gap against a forecast |
+| Filing page | Tag and status, title, date; outlook banner (outlook only); up to 3 sentences, each with a closed "출처 문장 / Source sentence" disclosure (D101); how they were written; up to 6 numbers; up to 2 related filings; original | Glossary, other versions, each sentence's verbatim source | Model confidence, judgement words, a gap against a forecast, support scores or verdict words |
 | Quarter report | One fixed sentence on revenue (the answers' own), then 3 figures, each against the same quarter last year; related preliminary filing; IR materials link | Quarter figure detail leads with its rounded amount, the exact amount below and the comparison period; its fiscal label names the calendar months ("Q3 FY2026 · Mar 29–Jun 27"); exact amounts, dates and calculation are expandable | Quarter-on-quarter change, charts |
 | Annual at a glance | One line, then 무슨 사업, 무엇이 바뀌었나, 회사가 꼽은 위험, 핵심 숫자 | Figure, compare | |
 | Notices sheet | Medium-detent sheet: date, title, related filing, original link | | Summaries |
@@ -94,6 +94,12 @@ Details:
 - Notices row: "안내 공시 N건 / N notices", counting notices filed in the same span as
   the listed filings; hidden when there are none.
 - Filing page order is fixed for every type: sentences, then numbers, then the original. The Original section shows the filed date and regulator link first. Form and receipt number expand in Filing details.
+- Source sentence (D101): under each summary line, a Pine "출처 문장 / Source sentence"
+  disclosure, closed by default. Open, it shows the language and the filing's name
+  ("한국어 원문 · 자기주식 취득 결정"), then the excerpt verbatim in the filing's
+  language beside a thin Muted rule. A partly supported line looks the same. A template
+  line says it was written from a fixed sentence with the filing's table values. A line
+  without a source row, and every line of a schema 4 bundle, has no disclosure.
 - Company outlook: banner saying it is the company's forecast; a corrected forecast shows
   old and new values side by side; the filing's own prior-year target and result may be
   shown, but the app computes no gap.

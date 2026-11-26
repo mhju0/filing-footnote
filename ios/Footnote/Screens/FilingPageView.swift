@@ -83,7 +83,7 @@ struct FilingPageView: View {
             if lines.isEmpty {
                 InReviewRow()
             } else {
-                SentenceRows(lines: lines)
+                SourcedSentenceRows(lines: page.sourcedSummaryLines(language), filing: page.filing)
             }
         } header: {
             SectionTitle(PageCopy.sentences(language))

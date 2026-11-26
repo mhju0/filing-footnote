@@ -11,7 +11,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from app.build import export, summaries
+from app.build import export, faithfulness, summaries
 from app.build.export import BuildOptions, build_bundle
 from app.build.model import (
     MAX_SOURCE_CHARS,
@@ -33,7 +33,7 @@ from app.build.verify import summary_problems
 from app.llm.base import LLMResult
 from app.llm.chat_completions import LLMApiError
 from app.llm.neutrality_guard import check_summary, load_lexicon
-from tests.build_seed import AS_OF, PINNED_DIRS, fixture_build_input
+from tests.build_seed import AS_OF, PINNED_DIRS, fixture_build_input, supported_records
 
 MODEL = "gemini-2.5-flash-lite"
 FID = "dart:20260821000616"
@@ -819,7 +819,8 @@ def _approve(data: BuildInput, targets: list[Target], skip: frozenset = frozense
 def _release(data: BuildInput):
     options = BuildOptions(AS_OF, "test", allow_unapproved=False, llm_model=MODEL,
                            prompt_version=summaries.PROMPT_VERSION)  # fmt: skip
-    return build_bundle(data, options, PINNED_DIRS)
+    return build_bundle(data, options, PINNED_DIRS,
+                        faithfulness.RecordIndex(supported_records(data.summaries)))  # fmt: skip
 
 
 def _annual(targets: list[Target]) -> dict[str, list[str]]:
