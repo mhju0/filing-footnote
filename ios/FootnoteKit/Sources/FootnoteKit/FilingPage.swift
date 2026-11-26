@@ -53,7 +53,7 @@ public struct FilingPage: Sendable {
         summaries.first { $0.language == language && $0.section == .summary }?.lines ?? []
     }
 
-    /// The approved lines in `language`, each with what the bundle says it came from (D100).
+    /// The approved lines in `language`, each with what the bundle says it came from (D101).
     public func sourcedSummaryLines(_ language: Language) -> [SummaryLine] {
         summaryLines(language).enumerated().map { index, text in
             let found = sources.filter { $0.language == language && $0.lineNumber == index + 1 }
@@ -479,7 +479,7 @@ public struct SourceDetails: Sendable, Hashable {
     }
 }
 
-/// One summary line and its source (D100).
+/// One summary line and its source (D101).
 public struct SummaryLine: Sendable, Hashable {
     public let text: String
     /// Nil when the bundle has no source row for the line: a schema 4 bundle, a line the

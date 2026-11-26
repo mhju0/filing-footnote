@@ -80,7 +80,7 @@ final class FilingPagesUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["공시를 바탕으로 쓰고, 게시 전에 확인한 문장이에요."].exists)
     }
 
-    /// D100: the source sentence stays closed until its disclosure is opened; a line without
+    /// D101: the source sentence stays closed until its disclosure is opened; a line without
     /// a source row has no disclosure.
     @MainActor func testSourceSentenceOpensOnDemand() throws {
         let app = try launch("filing=\(Self.samsung)|\(Self.purchase)")

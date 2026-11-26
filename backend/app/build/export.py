@@ -29,7 +29,7 @@ entries are omitted, never written, and do not refuse the build. A preview recor
 ``allow_unapproved = 0`` and ``preview = 1`` in ``build_meta``; ``python -m app.build.verify
 --release`` refuses it. Only approved summaries are ever written, in every mode.
 
-Source sentences (D100): every exported summary line gets its rows in ``summary_sources``,
+Source sentences (D101): every exported summary line gets its rows in ``summary_sources``,
 copied from the faithfulness report (``--faithfulness``, default
 ``data/summaries/faithfulness.jsonl``, D97) when its record is from the current aligner for
 exactly that line and approval. A supported or partly line ships its span sentences, a template
@@ -1205,7 +1205,7 @@ def _summaries(build: _Build, company_rows: list[tuple]) -> list[tuple]:
 def _summary_sources(
     build: _Build, rows: list[tuple], approved: set[tuple[str, str, str]]
 ) -> list[tuple]:
-    """Fill ``build.sources`` for the summary rows that ship and return those rows (D100).
+    """Fill ``build.sources`` for the summary rows that ship and return those rows (D101).
 
     A release refuses a line without a current record, and an unsupported or unsourced line the
     owner did not accept. A development build or a preview leaves such a section out in both
@@ -1412,7 +1412,7 @@ def _parser() -> argparse.ArgumentParser:
         type=Path,
         default=faithfulness.REPORT_PATH,
         help="faithfulness report the source sentences come from (default "
-        "data/summaries/faithfulness.jsonl, D97, D100)",
+        "data/summaries/faithfulness.jsonl, D97, D101)",
     )
     parser.add_argument("--llm-model", default=DEFAULT_LLM_MODEL)
     parser.add_argument(

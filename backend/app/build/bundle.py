@@ -17,7 +17,7 @@ import json
 import sqlite3
 
 # 2: the notices table (D76); 3: quarterly filings and quarter_figures (I11);
-# 4: build_meta.preview (D90); 5: summary_sources and build_meta.aligner_version (D100)
+# 4: build_meta.preview (D90); 5: summary_sources and build_meta.aligner_version (D101)
 SCHEMA_VERSION = 5
 
 SCHEMA = """
@@ -87,7 +87,7 @@ CREATE TABLE filing_summaries (
   PRIMARY KEY (filing_id, lang, section)
 ) STRICT;
 
--- The source sentences behind each summary line (D100), copied by the export from the
+-- The source sentences behind each summary line (D101), copied by the export from the
 -- faithfulness report (D97) for the exported lines only. A supported or partly line has one
 -- row per span sentence, in source order (position 0, 1). A template line (D78) has one row
 -- without an excerpt: its wording is fixed and its figures come from the filing's table.

@@ -33,7 +33,7 @@ summary line needs a record from the current aligner for that exact line and app
 unsupported lines and lines without source text unless the owner accepted them; ``partly``
 also blocks partly supported lines, ``warn`` only reports the counts, ``off`` skips the check.
 
-Every check also reads ``summary_sources`` (D100): each row belongs to a line the bundle holds,
+Every check also reads ``summary_sources`` (D101): each row belongs to a line the bundle holds,
 in order and in its filing's language. A release requires a supported, partly or template
 source row for every summary line the owner did not accept, and, when the report is read,
 exactly the rows its current record gives.

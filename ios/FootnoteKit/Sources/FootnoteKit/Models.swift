@@ -13,7 +13,7 @@ public struct BuildMeta: Sendable, Hashable {
     /// True for a preview bundle (D90): it holds only approved summaries, but filings without
     /// approved summaries are left out. Fit for internal TestFlight, never for a release.
     public let preview: Bool
-    /// The faithfulness aligner that chose the source sentences (D100); nil in a schema 4
+    /// The faithfulness aligner that chose the source sentences (D101); nil in a schema 4
     /// bundle, which has none.
     public let alignerVersion: String?
 }
@@ -69,7 +69,7 @@ public struct FilingSummary: Sendable, Hashable {
     public let inputSHA256: String
 }
 
-/// One source sentence behind a summary line (D100), from `summary_sources`.
+/// One source sentence behind a summary line (D101), from `summary_sources`.
 public struct SummarySource: Sendable, Hashable {
     public enum Verdict: String, Sendable, Hashable {
         /// The excerpt holds every word of the line.

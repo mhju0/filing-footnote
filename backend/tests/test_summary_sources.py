@@ -1,4 +1,4 @@
-"""Source sentences in the bundle (D100): the export copies them, verify holds them to the report."""
+"""Source sentences in the bundle (D101): the export copies them, verify holds them to the report."""
 
 from __future__ import annotations
 

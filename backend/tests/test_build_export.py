@@ -1465,7 +1465,7 @@ def test_every_schema_column_is_in_the_fingerprint(data, tmp_path) -> None:
                               supported_index(approved)), out)  # fmt: skip
     with sqlite3.connect(out) as connection:
         lines = [json.loads(line) for line in canonical_dump_lines(connection)]
-    # The last line is the aligner version, so the fingerprint covers it (D100).
+    # The last line is the aligner version, so the fingerprint covers it (D101).
     assert lines.pop() == ["build_meta", {"aligner_version": faithfulness.ALIGNER_VERSION}]
     seen: dict[str, set[str]] = {}
     for table, row in lines:

@@ -30,7 +30,7 @@ def _write_approved(path: Path, data: BuildInput, *, skip_state: bool = False) -
 
 
 def _run(data: BuildInput, path: Path, out: Path, *extra: str) -> int:
-    """Export with a faithfulness report that supports every line of ``path`` (D100)."""
+    """Export with a faithfulness report that supports every line of ``path`` (D101)."""
     report = path.with_name("faithfulness.jsonl")
     faithfulness.write_records(report, supported_records(source.read_summaries(path)))
     pinned = [arg for d in PINNED_DIRS for arg in ("--pinned", str(d))]

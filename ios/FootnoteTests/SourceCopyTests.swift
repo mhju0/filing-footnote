@@ -4,7 +4,7 @@ import Testing
 
 @Suite("Source sentence copy")
 struct SourceCopyTests {
-    /// The source sentence disclosure (D100): the filing's language and name above the excerpt.
+    /// The source sentence disclosure (D101): the filing's language and name above the excerpt.
     @Test func sourceSentence() {
         #expect(SourceCopy.disclosure(count: 2, .ko) == "출처 문장")
         #expect(SourceCopy.disclosure(count: 1, .en) == "Source sentence")

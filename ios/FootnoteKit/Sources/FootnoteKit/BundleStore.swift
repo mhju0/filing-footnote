@@ -21,7 +21,7 @@ public enum BundleError: Error, Equatable, Sendable {
 public struct BundleStore: Sendable {
     /// The schema `bundle.py` writes.
     public static let supportedSchemaVersion = 5
-    /// Every schema the app opens. A schema 4 bundle has no source sentences (D100) and opens
+    /// Every schema the app opens. A schema 4 bundle has no source sentences (D101) and opens
     /// with none.
     public static let readableSchemaVersions: Set<Int> = [4, 5]
 

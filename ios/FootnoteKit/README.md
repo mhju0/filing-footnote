@@ -5,7 +5,7 @@ third-party dependencies and no UI.
 
 - `BundleStore` opens the bundled `footnote.sqlite` read-only with the system SQLite, refuses a
   `schema_version` other than the one in `backend/app/build/bundle.py` (5) or schema 4, which
-  opens without source sentences (D100), and reads every table
+  opens without source sentences (D101), and reads every table
   into `Sendable` values. Figures and decimal facts are `Decimal`, parsed from canonical
   strings. A release build of the app calls `requireRelease()`, which throws for a
   development bundle (`allow_unapproved = 1`).

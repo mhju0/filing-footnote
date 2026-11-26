@@ -186,7 +186,7 @@ struct BundleStoreTests {
         #expect(entry.formal != nil)
     }
 
-    // MARK: - Source sentences (D100)
+    // MARK: - Source sentences (D101)
 
     @Test func readsTheSourceSentences() {
         #expect(store.meta.alignerVersion == "f1-2026-11-26")

@@ -1,7 +1,7 @@
 import FootnoteKit
 import SwiftUI
 
-/// The summary lines, each with its source sentence behind a disclosure (D100). Closed by
+/// The summary lines, each with its source sentence behind a disclosure (D101). Closed by
 /// default. A line without a source row shows only the line, and lines without any source
 /// look as `SentenceRows` does.
 struct SourcedSentenceRows: View {

@@ -49,11 +49,11 @@ v0.5.2 portfolio architecture of Filing Digest is kept in
 
 - `build_meta`: `schema_version` (5), `data_as_of`, `source_revision`, `llm_model`,
   `prompt_version`, `content_sha256`, `allow_unapproved` (1 for a development build),
-  `preview` (1 for a preview build, D90) and `aligner_version` (D100).
+  `preview` (1 for a preview build, D90) and `aligner_version` (D101).
 - `companies`, `filings` (annual or event, with category and source link), `notices`
   (listed as a count, never summarised), `filing_summaries` (only rows whose
   `review_state` is `approved` can be written), `summary_sources` (the verbatim source
-  sentence behind each summary line, from the faithfulness report, D100), `filing_facts`,
+  sentence behind each summary line, from the faithfulness report, D101), `filing_facts`,
   `figures` and `glossary`.
 - Every amount is `TEXT` in canonical decimal form; there is no `REAL` column. The
   fingerprint is a SHA-256 over a canonical dump of every table except `build_meta`

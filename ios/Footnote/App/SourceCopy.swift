@@ -1,6 +1,6 @@
 import FootnoteKit
 
-/// Copy for the source sentence under each summary line (D100).
+/// Copy for the source sentence under each summary line (D101).
 enum SourceCopy {
     /// The disclosure under a line.
     static func disclosure(count: Int, _ language: Language) -> String {

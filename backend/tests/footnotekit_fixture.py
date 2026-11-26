@@ -8,7 +8,7 @@ exporter, :func:`app.build.export.build_bundle` and :func:`app.build.export.writ
 ``allow_unapproved``. A few summaries keyed to the current source text, prompt version and word
 lists are marked approved so the ``filing_summaries`` table has rows; their lines are fixture
 text, not owner-approved summaries. The exporter writes no glossary yet, so two entries are added
-before the write. Source sentences (D100) come from made-up faithfulness records that cover each
+before the write. Source sentences (D101) come from made-up faithfulness records that cover each
 kind of ``summary_sources`` row: the event summary's first line has one sentence, its second two
 (partly supported), its third none; the annual one line has one sentence and the business line
 is a template line without an excerpt. ``tests/test_footnotekit_fixture.py`` fails when this file's schema drifts
