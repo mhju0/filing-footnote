@@ -66,9 +66,8 @@ Platforms: iPhone tab bar; iPad and Mac sidebar, content and detail columns
 ## Screens
 
 The flow is filing-first (`PRODUCT.md`). Every limit below is a maximum; a part with no
-data is removed, never shown empty. Picks are from the design canvas
-(https://claude.ai/artifact/8zsRsVmN6gQrfzYWhJeYFh): G1 boards 1–10 all A (2026-11-18,
-owner), boards 11A, 12A, 13 and 14–20 (2026-11-19, owner).
+data is removed, never shown empty. Picks are from the design canvas: G1 boards 1–10 all A
+(2026-11-18, owner), boards 11A, 12A, 13 and 14–20 (2026-11-19, owner).
 
 | Screen | Shows | One tap away | Never shown |
 |---|---|---|---|
