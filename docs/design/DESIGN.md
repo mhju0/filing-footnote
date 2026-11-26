@@ -118,3 +118,33 @@ Details:
     have no separator.
   - Empty search and empty News use the system empty state with a magnifying glass and the
     app's own bilingual copy.
+
+## First-run guide and tips (D104)
+
+Owner picks of 2026-11-26 (first-run guide and tips study: q1 A, style D, reopen A,
+tips E, timing B). The copy is the owner's and is not reworded.
+
+- Guide: four pages, shown once on the very first launch, over 기업 / Companies. A
+  full-screen cover on iPhone, a form sheet on iPad, a 520 × 620 sheet on Mac. Pages 1, 2
+  and 4 are an SF Symbol in a Tint square, a title and a body; page 3 shows the real
+  company page, drawn by the app's own views at a fixed text size and scaled down, so it
+  follows the language, the appearance and the data. Every page has 건너뛰기 / Skip at the
+  top trailing edge (Esc on a keyboard), page dots (one adjustable VoiceOver element,
+  "페이지 2/4"), and a full-width Pine button: 다음 / Next, then 시작하기 / Get started.
+  iPhone and iPad swipe between pages; ← and → work with a keyboard. Pages slide; with
+  Reduce Motion, Next, the dots and the arrow keys change pages without animation. At accessibility sizes
+  the page scrolls and the button stays pinned.
+- Skip, Get started and closing the sheet mark the guide seen; quitting the app mid-guide
+  does not. It reopens from "Footnote 안내 다시 보기 / Show the Footnote guide again", the
+  last row of 용어 / Glossary, and from Help ▸ Footnote 안내 / Footnote Guide.
+- Tips: TipKit popovers on the one control they explain, never a centred pop-up or a
+  sheet. An inline TipView is for a tip about a whole screen; none of the kept tips is one.
+  At most one new tip a day; none while the guide is up; ✕ or using the feature ends a tip
+  for good, and one ignored on three visits retires.
+
+| Tip | On | Shows from | Ends when |
+|---|---|---|---|
+| 숫자를 누르면 출처가 보여요 / Tap a figure to see its source | The company page's first report row (the figure) | Second company page | A figure or report is opened |
+| 질문을 눌러 보세요 / Tap a question | The first question to ask | Third company page, after the figure tip ends | A question is tapped |
+| 작년과 비교해 보세요 / Compare with last year | 작년과 비교 on the figure screen | Second figure screen | Either comparison is opened |
+| 공시 종류로 골라 보기 / Filter by filing type | The News filter | Second visit to 소식 / News | A filing type is chosen |

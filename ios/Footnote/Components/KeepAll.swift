@@ -14,6 +14,19 @@ extension String {
             .joined(separator: " ")
     }
 
+    /// Each one-letter word is joined to the word after it by a no-break space, so a line
+    /// never ends on one (`그` / `아래`, `a` / `company`): `그 아래`, `맨 위에`, `볼 수 있어요`.
+    var bindingShortWords: String {
+        let words = split(separator: " ", omittingEmptySubsequences: false)
+        var out = ""
+        for (index, word) in words.enumerated() {
+            out += word
+            guard index < words.count - 1 else { break }
+            out += word.count == 1 && word.first?.isLetter == true ? "\u{00A0}" : " "
+        }
+        return out
+    }
+
     /// The string as VoiceOver should read it: each separator becomes a comma, so the dot
     /// is a pause, not the word "middle dot", and a no-break space is a plain space.
     var spokenSeparators: String {

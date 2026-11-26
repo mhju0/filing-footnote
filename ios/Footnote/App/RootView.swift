@@ -3,6 +3,7 @@ import SwiftUI
 
 struct RootView: View {
     let library: Library
+    let guide: GuideModel
     @AppStorage("language") private var stored = Language.ko.rawValue
 
     private var language: Language { Language(rawValue: stored) ?? .ko }
@@ -12,6 +13,8 @@ struct RootView: View {
             switch library {
             case .ready(let store, let labels):
                 AppShell(store: store, labels: labels)
+                    .environment(guide)
+                    .modifier(GuidePresentation(guide: guide, store: store))
             case .failed(let error):
                 BundleErrorView(error: error)
             }
@@ -124,6 +127,7 @@ struct PhoneTabs: View {
     enum TabID: Hashable { case companies, news, glossary }
 
     @Environment(\.language) private var language
+    @Environment(\.tipsPaused) private var tipsPaused
     let store: BundleStore
     let labels: FactLabels
     @State private var tab: TabID = LaunchRoute.current?.tab ?? .companies
@@ -163,11 +167,15 @@ struct PhoneTabs: View {
         .onChange(of: language) {
             if tab == .glossary && store.glossary(language: language).isEmpty { tab = .companies }
         }
+        .onChange(of: tab, initial: true) {
+            if tab == .news { FootnoteTips.countNewsVisit(paused: tipsPaused) }
+        }
     }
 }
 
 struct SplitShell: View {
     @Environment(\.language) private var language
+    @Environment(\.tipsPaused) private var tipsPaused
     let store: BundleStore
     let labels: FactLabels
     @State private var sidebar: SidebarView.Item?
@@ -243,6 +251,9 @@ struct SplitShell: View {
             ToolbarItem(placement: .primaryAction) { LanguageButton() }
         }
         #endif
+        .onChange(of: sidebar, initial: true) {
+            if sidebar == .news { FootnoteTips.countNewsVisit(paused: tipsPaused) }
+        }
         .onChange(of: filingID) { detailPath = [] }
         .onChange(of: glossaryKey) { detailPath = [] }
         .onChange(of: language) {

@@ -15,6 +15,7 @@ struct AnnualReportView: View {
         .groupedScreen()
         .pageTitle(page.company)
         .languageToolbar()
+        .endsFigureSourceTip()
         .accessibilityIdentifier("annual-page")
     }
 

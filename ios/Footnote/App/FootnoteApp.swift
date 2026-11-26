@@ -4,14 +4,35 @@ import SwiftUI
 @main
 struct FootnoteApp: App {
     private let library = Library.loadBundled()
+    @State private var guide: GuideModel
+
+    init() {
+        let guide = GuideModel()
+        _guide = State(initialValue: guide)
+        FootnoteTips.configure(.current, guideShowing: guide.isPresented)
+    }
 
     var body: some Scene {
         WindowGroup {
-            RootView(library: library)
+            RootView(library: library, guide: guide)
         }
+        .commands { GuideCommands(guide: guide) }
         #if os(macOS)
         .defaultSize(width: 1180, height: 760)
         #endif
+    }
+}
+
+/// Help ▸ Footnote 안내 / Footnote Guide reopens the guide (owner pick q1 reopen A), in
+/// place of the system's empty Help item.
+struct GuideCommands: Commands {
+    let guide: GuideModel
+    @AppStorage("language") private var stored = Language.ko.rawValue
+
+    var body: some Commands {
+        CommandGroup(replacing: .help) {
+            Button(GuideCopy.helpItem(Language(rawValue: stored) ?? .ko)) { guide.reopen() }
+        }
     }
 }
 
