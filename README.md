@@ -28,7 +28,7 @@ Taken on 2026-11-26 on the iPhone 17 simulator (iOS 26.5) and the Mac app, from 
 <td width="33%"><img src="docs/screenshots/iphone-first-run-guide-ko.png" alt="Page three of the first-run guide in Korean, showing a live, scaled-down Kia company page above a short explanation of what the company page holds."></td>
 </tr>
 <tr>
-<td>Filing page, source sentences open</td>
+<td>Filing page, source&nbsp;sentences&nbsp;open</td>
 <td>Glossary</td>
 <td>First-run guide, page 3 of 4</td>
 </tr>
@@ -36,7 +36,7 @@ Taken on 2026-11-26 on the iPhone 17 simulator (iOS 26.5) and the Mac app, from 
 
 ![The Mac app in dark appearance with three columns: the company list by market, Hyundai Motor's company page with its summary card and six fixed questions, and a filing with its source sentences open](docs/screenshots/mac-filing-source-sentences-ko-dark.png)
 
-Older screens (2026-11-20, development bundle) are in [docs/screenshots/footnote/](docs/screenshots/footnote/). A [walkthrough video](https://github.com/mhju0/filing-footnote/releases/tag/walkthrough-2026-11-20) (2 min 23 s) was recorded on 2026-11-20, before the summary card, source sentences and first-run guide were added.
+Older screens (2026-11-20, development bundle) are in [docs/screenshots/footnote/](docs/screenshots/footnote/). A [walkthrough video](https://github.com/mhju0/filing-footnote/releases/tag/walkthrough-2026-11-20) (2&nbsp;min&nbsp;23&nbsp;s) was recorded on 2026-11-20, before the summary card, source sentences and first-run guide were added.
 
 ## Architecture
 
@@ -55,7 +55,7 @@ Everything above the app runs on the owner's Mac before a build. The app itself 
 - **Ingest** (`backend/app/ingest`, `backend/app/clients`). Fetches annual reports, financial statements and twelve months of event filings from DART and SEC EDGAR. Each filing gets one category from fixed rules, not from a model ([ADR 0004](docs/adr/0004-event-filings-in-scope.md), [ADR 0007](docs/adr/0007-notices-and-wider-event-scope.md)). With `--save-pinned` it keeps the regulator's raw responses, and the export later re-parses every figure from them and fails on any difference.
 - **Summaries** (`backend/app/build/summaries.py`). One model call writes the Korean and English lines together. Filings that are tables (preliminary results, dividends, unit sales, outlooks) get template lines with the table's values and no model call (D78).
 - **Owner approval** (`app.build.review`, `app.build.approve`). The review page shows each line with its faithfulness verdict and source sentence, flagged summaries first. Only rows the owner approves move to the tracked `backend/data/summaries/approved.jsonl`. Agents and the model reviewer never approve.
-- **Bundle** (`app.build.export`, `app.build.verify`). A STRICT SQLite file, schema 5, with figures stored as canonical decimal strings ([ADR 0006](docs/adr/0006-bundled-sqlite-with-exact-decimals.md)) and a `summary_sources` table holding each line's source sentences (D101). A release export refuses unapproved or stale summaries, unapproved glossary wording, figures that differ from the pinned source, and lines that fail the faithfulness gate. A release build of the app refuses a development bundle.
+- **Bundle** (`app.build.export`, `app.build.verify`). A STRICT SQLite file, schema 5, with figures stored as canonical decimal strings ([ADR 0006](docs/adr/0006-bundled-sqlite-with-exact-decimals.md)) and a `summary_sources` table holding each line's source sentences (D101). A release export refuses unapproved or stale summaries, unapproved glossary wording, figures that differ from the pinned source, and lines that fail the faithfulness gate. A release build of the app refuses a&nbsp;development&nbsp;bundle.
 - **App** (`ios/`). One SwiftUI target for iPhone, iPad and native Mac, not Catalyst ([ADR 0008](docs/adr/0008-native-multiplatform-app.md)). The FootnoteKit Swift package reads the bundle and holds the models, formatting and comparison calculator, so it is tested with `swift test` without a simulator. The comparison rules are a shared contract: Python and Swift both pass the same 112 cases in `contracts/comparison-cases.json`. Cross-company comparisons use growth rates and margins only, and the gate fails if app code converts a currency (D84).
 - **Ask about this company** (D99). Six fixed questions on the company page, answered by FootnoteKit from the bundle with fixed sentences and exact figures. Nothing is generated on the device.
 
@@ -94,7 +94,7 @@ It has not falsely blocked a faithful line, and it misses many unfaithful ones. 
 
 ### The gate
 
-Requires Python 3.11. On macOS it also runs the FootnoteKit tests with Xcode's `swift test`; XcodeGen 2.47.0 is optional.
+Requires Python 3.11. On macOS it also runs the FootnoteKit tests with Xcode's `swift test`; XcodeGen&nbsp;2.47.0 is&nbsp;optional.
 
 ```bash
 python3.11 -m venv .venv
@@ -115,7 +115,7 @@ Building a data bundle needs a DART API key, an SEC contact string and a Groq AP
 ../.venv/bin/python -m app.build.review --out ../dist/review.html
 ```
 
-Then, from the repository root, `make faithfulness AS_OF=2026-11-19` and `make data AS_OF=2026-11-19 PINNED=backend/data/pinned` (or `make data-preview` with the same arguments). [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) has every step.
+Then, from the repository root, `make faithfulness AS_OF=2026-11-19` and `make data AS_OF=2026-11-19 PINNED=backend/data/pinned` (or `make data-preview` with the same arguments). [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) has&nbsp;every&nbsp;step.
 
 ### The app
 
@@ -140,14 +140,14 @@ Measured on 2026-11-26 at commit `1797e79`.
 |---|---|---|
 | Companies | 18 (9 DART, 9 SEC) | PRODUCT.md; `companies` table of the preview bundle |
 | Events&nbsp;per&nbsp;company | up to 10 | `EVENT_CAP` in `backend/app/build/export.py` (D76) |
-| Approved&nbsp;summaries | 188 Korean–English pairs over 162 filings: 158 written by the model, 30 from templates; 1,068 lines | `backend/data/summaries/approved.jsonl` |
-| Unsupported&nbsp;lines | 0 at the release gate, plus 2 the owner accepted | D105; `backend/data/summaries/faithfulness_accepted.jsonl` |
+| Approved&nbsp;summaries | 188 Korean–English pairs over 162 filings: 158 written by the model, 30 from templates; 1,068&nbsp;lines | `backend/data/summaries/approved.jsonl` |
+| Unsupported&nbsp;lines | 0 at the release gate, plus 2 the&nbsp;owner&nbsp;accepted | D105; `backend/data/summaries/faithfulness_accepted.jsonl` |
 | Faithfulness&nbsp;eval | see the table above | `make faithfulness-eval` |
-| Backend&nbsp;offline&nbsp;tests | 1,674 passed, 56 skipped | `scripts/check.sh` (`make test`) |
+| Backend&nbsp;offline&nbsp;tests | 1,674 passed, 56&nbsp;skipped | `scripts/check.sh` (`make test`) |
 | FootnoteKit&nbsp;tests | 189 tests in 26 suites, all passed | `scripts/check.sh` (`swift test`) |
 | App&nbsp;unit&nbsp;tests | 68 `@Test` functions | counted in `ios/FootnoteTests/`; last run 68/68 on iPhone and Mac in PR #64 |
 | UI&nbsp;test&nbsp;methods | 40 | counted in `ios/FootnoteUITests/`; not run for this count |
-| Audited&nbsp;screens | 28, in 6 configurations | `AccessibilityAuditUITests.swift` |
+| Audited&nbsp;screens | 28, in 6&nbsp;configurations | `AccessibilityAuditUITests.swift` |
 | Comparison&nbsp;cases | 112 | `contracts/comparison-cases.json` |
 | Groq&nbsp;limits&nbsp;in&nbsp;code | 768 output tokens per call; 7,000 DART source characters | `summaries.py` `_MAX_TOKENS`; `model.py` `MAX_SOURCE_CHARS` |
 
