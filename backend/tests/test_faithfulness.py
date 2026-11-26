@@ -118,6 +118,49 @@ def test_sentences_keep_offsets_and_decimals() -> None:
     assert [s.text for s in sentences if s.text.startswith("5.")] == ["5. 처분목적 임금협상 결과."]
 
 
+def test_a_dot_between_a_latin_name_and_hangul_is_not_a_sentence_end() -> None:
+    # NAVER, dart:20261027800510: "L.P." is a name, so the sentence runs on after it.
+    text = ("- 본 공시는 당사 및 당사의 종속회사인 네이버클라우드(주)가 Green Holding L.P.와 체결한 "
+            "투자 및 운영계약에 관한 것입니다. Brookfield는 Green Holding L.P.를 통하여 국내에 "
+            "투자목적회사를 설립할 예정입니다. 채권자는 Abc Pte. Ltd.(이하 '회사')에서 변경됩니다.")  # fmt: skip
+    sentences = f.split_sentences(text)
+    assert all(text[s.start : s.end] == s.text for s in sentences)
+    starts = ("- 본 공시는", "Brookfield는", "채권자는 Abc Pte. Ltd.(이하")
+    assert len(sentences) == len(starts)
+    assert all(s.text.startswith(start) for s, start in zip(sentences, starts, strict=True))
+    # A sentence that ends in Hangul before the next one still ends there.
+    assert len(f.split_sentences("결정하였습니다.이사회는 승인하였습니다.")) == 2
+
+
+def test_a_soft_wrapped_line_is_not_a_sentence_end() -> None:
+    # An 8-K's text keeps the printed line breaks; a line that runs on is one sentence.
+    text = ("Item 5.07 Submission of Matters to a Vote of Security Holders\n"
+            "The compensation of our named executive officers\n"
+            "as disclosed in the proxy statement was approved in an advisory vote, as set\n"
+            "forth below:\n"
+            "The transaction is subject to certain closing conditions, including\n"
+            "receipt of required regulatory approvals.\n\n"
+            "[Item 9.01 Financial Statements and Exhibits]\n"
+            "exhibits are filed with this report.\n"
+            "- the press release,\n"
+            "dated July 30, 2026.\n"
+            "$2,250,000,000 aggregate principal amount of its 6.250%\n"
+            "notes due 2066.")  # fmt: skip
+    sentences = f.split_sentences(text)
+    assert all(text[s.start : s.end] == s.text for s in sentences)
+    assert [s.text for s in sentences] == [
+        "Item 5.07 Submission of Matters to a Vote of Security Holders",
+        "The compensation of our named executive officers\nas disclosed in the proxy statement "
+        "was approved in an advisory vote, as set\nforth below:",
+        "The transaction is subject to certain closing conditions, including\nreceipt of "
+        "required regulatory approvals.",
+        "[Item 9.01 Financial Statements and Exhibits]",
+        "exhibits are filed with this report.",
+        "- the press release,\ndated July 30, 2026.",
+        "$2,250,000,000 aggregate principal amount of its 6.250%\nnotes due 2066.",
+    ]
+
+
 # -- verdicts ------------------------------------------------------------------------------------
 
 
