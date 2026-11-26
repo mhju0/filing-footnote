@@ -41,6 +41,16 @@ struct CompanySummaryCard: View {
     /// t2 (D104), on the year's figure when the card links it.
     var tip: FigureSourceTip?
 
+    /// Above the figure on iPhone and iPad. On the Mac a popover above it covered the
+    /// company's name, so it opens beside the figure, over the detail column.
+    #if os(macOS)
+    private static let tipAnchor: PopoverAttachmentAnchor? = .rect(.bounds)
+    private static let tipEdge: Edge = .trailing
+    #else
+    private static let tipAnchor: PopoverAttachmentAnchor? = nil
+    private static let tipEdge: Edge = .top
+    #endif
+
     /// True when the card shows the year's figure as a link to its figure screen, where t2
     /// goes.
     static func linksYear(_ summary: CompanySummary, companyID: String) -> Bool {
@@ -64,8 +74,11 @@ struct CompanySummaryCard: View {
         case .figures(let figures):
             if let row = figures.rows.first, row.current != nil, case .year(let fiscalYear) = figures.span {
                 // The tip goes on the label, as on the report rows (CompanyPageView).
-                link(.year) { YearHero(figures: figures, row: row, fiscalYear: fiscalYear).footnoteTip(tip) }
-                    .accessibilityIdentifier("summary-year")
+                link(.year) {
+                    YearHero(figures: figures, row: row, fiscalYear: fiscalYear)
+                        .footnoteTip(tip, anchor: Self.tipAnchor, arrowEdge: Self.tipEdge)
+                }
+                .accessibilityIdentifier("summary-year")
             } else if let statement = figures.statement {
                 statementRow(statement)
             }
@@ -104,6 +117,42 @@ struct CompanySummaryCard: View {
             .padding(.vertical, 6)
             .frame(maxWidth: .infinity, minHeight: Theme.minTarget, alignment: .leading)
             .listRowBackground(Theme.surface)
+    }
+}
+
+/// A note in place of a change, in the first of these that fits: one line; two halves of
+/// about equal length (`작년 숫자가 0 이하라` / `증가율을 계산하지 않아요`); wrapped with its last
+/// words held together, when those fit on a line; the two halves made smaller to fit, as
+/// `UnbrokenWords` does for a word wider than the line. No layout leaves one or two words
+/// alone on the last line. VoiceOver reads it as one text.
+private struct ChangeNote: View {
+    let text: String
+
+    var body: some View {
+        let halves = AskCopy.halves(text)
+        let held = AskCopy.keepingTail(text)
+        ViewThatFits(in: .horizontal) {
+            Text(words: text).fixedSize()
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(Array(halves.enumerated()), id: \.offset) { _, half in
+                    Text(words: half).fixedSize()
+                }
+            }
+            // Fits when the held words fit: the wrapped text asks for no width of its own.
+            ZStack(alignment: .topLeading) {
+                Text(words: held.split(separator: " ").last.map(String.init) ?? held)
+                    .fixedSize()
+                    .hidden()
+                Text(words: held)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(minWidth: 0, idealWidth: 0, maxWidth: .infinity, alignment: .leading)
+            }
+            Text(words: halves.joined(separator: "\n"))
+                .lineLimit(halves.count)
+                .minimumScaleFactor(0.5)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(verbatim: text.spokenSeparators))
     }
 }
 
@@ -209,25 +258,39 @@ private struct QuarterLines: View {
 }
 
 /// One quarter figure: the name on the left, the rounded amount and its change on the
-/// right; stacked at accessibility sizes.
+/// right; stacked at accessibility sizes. A note in place of a change takes the row's full
+/// width under them.
 private struct SummaryFigureLine: View {
     @Environment(\.language) private var language
     @Environment(\.dynamicTypeSize) private var typeSize
     let row: AnswerFigureRow
 
     var body: some View {
-        if typeSize.isAccessibilitySize {
-            VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: 2) {
+            if typeSize.isAccessibilitySize {
                 name
                 value(alignment: .leading)
+            } else {
+                HStack(alignment: .firstTextBaseline, spacing: 12) {
+                    name
+                    Spacer(minLength: 0)
+                    value(alignment: .trailing)
+                }
             }
-        } else {
-            HStack(alignment: .firstTextBaseline, spacing: 12) {
-                name
-                Spacer(minLength: 0)
-                value(alignment: .trailing)
+            if let note {
+                ChangeNote(text: note)
+                    .font(.footnote)
+                    .monospacedDigit()
+                    .foregroundStyle(Theme.muted)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
+    }
+
+    /// The text that stands in for a change the filing's figures cannot give.
+    private var note: String? {
+        guard row.current != nil, case .refusal? = row.change else { return nil }
+        return AskCopy.change(row, language)
     }
 
     private var name: some View {
@@ -249,11 +312,11 @@ private struct SummaryFigureLine: View {
                     .numberTransition(amount)
                     .multilineTextAlignment(text)
                     .fixedSize(horizontal: false, vertical: true)
-                if let change = AskCopy.change(row, language) {
+                if case .result? = row.change, let change = AskCopy.change(row, language) {
                     Text(words: change)
                         .font(.footnote)
                         .monospacedDigit()
-                        .foregroundStyle(isResult ? Theme.ink : Theme.muted)
+                        .foregroundStyle(Theme.ink)
                         .multilineTextAlignment(text)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -265,11 +328,6 @@ private struct SummaryFigureLine: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
-    }
-
-    private var isResult: Bool {
-        if case .result? = row.change { return true }
-        return false
     }
 }
 
