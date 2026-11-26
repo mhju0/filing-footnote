@@ -181,7 +181,7 @@ tips E, timing B). The copy is the owner's and is not reworded.
 
 | Tip | On | Shows from | Ends when |
 |---|---|---|---|
-| 숫자를 누르면 출처가 보여요 / Tap a figure to see its source | The summary card's year figure (D107); on a page whose card has none, the first report row | Second company page | A figure or report is opened |
+| 숫자를 누르면 출처가 보여요 / Tap a figure to see its source | The summary card's year figure (D107), beside it on the Mac (macOS 26 or later) so the company name stays in view; on a page whose card has none, the first report row | Second company page | A figure or report is opened |
 | 질문을 눌러 보세요 / Tap a question | The first question to ask | Third company page, after the figure tip ends | A question is tapped |
 | 작년과 비교해 보세요 / Compare with last year | 작년과 비교 on the figure screen | Second figure screen | Either comparison is opened |
 | 공시 종류로 골라 보기 / Filter by filing type | The News filter | Second visit to 소식 / News | A filing type is chosen |

@@ -117,13 +117,22 @@ private struct FootnoteTipModifier: ViewModifier {
     @Environment(\.tipsPaused) private var paused
     @Environment(\.language) private var language
     let tip: (any Tip)?
+    let anchor: PopoverAttachmentAnchor?
     let arrowEdge: Edge
 
     func body(content: Content) -> some View {
         // The language in the id redraws an open tip when the language switches.
-        content
-            .popoverTip(paused ? nil : tip, arrowEdge: arrowEdge)
-            .id(language)
+        tipped(content).id(language)
+    }
+
+    /// On the Mac the plain popover opens above its control whatever the arrow edge says;
+    /// the anchored one (macOS 26) follows it.
+    @ViewBuilder private func tipped(_ content: Content) -> some View {
+        if let anchor, #available(iOS 26.0, macOS 26.0, *) {
+            content.popoverTip(paused ? nil : tip, attachmentAnchor: anchor, arrowEdge: arrowEdge)
+        } else {
+            content.popoverTip(paused ? nil : tip, arrowEdge: arrowEdge)
+        }
     }
 }
 
@@ -142,9 +151,12 @@ private struct TipEventModifier: ViewModifier {
 }
 
 extension View {
-    /// The tip as a popover on this control, unless tips are paused.
-    func footnoteTip(_ tip: (any Tip)?, arrowEdge: Edge = .top) -> some View {
-        modifier(FootnoteTipModifier(tip: tip, arrowEdge: arrowEdge))
+    /// The tip as a popover on this control, unless tips are paused. An anchor makes the
+    /// popover follow the arrow edge on the Mac too.
+    func footnoteTip(
+        _ tip: (any Tip)?, anchor: PopoverAttachmentAnchor? = nil, arrowEdge: Edge = .top
+    ) -> some View {
+        modifier(FootnoteTipModifier(tip: tip, anchor: anchor, arrowEdge: arrowEdge))
     }
 
     /// Counts a tip event once per screen: coming back from a pushed screen is not a
