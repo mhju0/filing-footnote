@@ -2085,3 +2085,12 @@ and the same fixed sentences.
   no-advice answer.
 - **Copy.** The placeholder, field label, button, working label, the none line and the note
   are drafts (option A of two per string) until the owner picks on the local review page.
+- **Accessibility audit.** Two iPad screens: the field empty, audited from the top and after a
+  swipe, and the none line, opened scrolled to the field (`-FootnoteScroll ask`). The field's
+  prompt is Muted (5.96:1 light, 6.62:1 dark on Surface); the system placeholder colour was
+  reported in dark mode. On a screen opened scrolled, text in the scroll edge effect within
+  forty-eight points under the navigation bar is not counted for contrast (`top-edge`); those
+  rows are audited unscrolled on the company screen. Two short words the audit splits out of
+  the summary card's Muted lines (D106), `금액` and `출처 ·`, fail contrast on the iPad with
+  typed questions on or off; measured on the screenshots they are 5.96:1 (light) and 6.62:1
+  (dark), and are now filtered as `summary-card-word`.

@@ -120,7 +120,9 @@ private struct TypedQuestionField: View {
     }
 
     private var field: some View {
-        TextField(AskCopy.typedPlaceholder(language), text: $text)
+        // The prompt in Muted: the system placeholder colour is too faint to read on Surface.
+        TextField(AskCopy.typedFieldLabel(language), text: $text,
+                  prompt: Text(AskCopy.typedPlaceholder(language)).foregroundStyle(Theme.muted))
             .textFieldStyle(.plain)
             .font(.body)
             .foregroundStyle(Theme.ink)
