@@ -90,10 +90,9 @@ private struct SourceExcerpt: View {
                     .foregroundStyle(Theme.muted)
                     .fixedSize(horizontal: false, vertical: true)
                 ForEach(Array(excerpts.enumerated()), id: \.offset) { _, excerpt in
-                    Text(verbatim: excerpt.keepingWords)
+                    Text(verbatim: excerpt.withLastWordHeld.keepingWords)
                         .font(.subheadline)
                         .foregroundStyle(Theme.ink)
-                        .typesettingLanguage(Locale.Language(identifier: excerptLanguage.rawValue))
                         .fixedSize(horizontal: false, vertical: true)
                         .padding(.leading, 12)
                         .overlay(alignment: .leading) {
@@ -118,6 +117,14 @@ private struct SourceExcerpt: View {
             text += part
         }
         return text
+    }
+}
+
+private extension String {
+    /// A no-break space before the last word, so the excerpt never ends on a lone word.
+    var withLastWordHeld: String {
+        guard let space = lastIndex(of: " ") else { return self }
+        return replacingCharacters(in: space...space, with: "\u{00A0}")
     }
 }
 
