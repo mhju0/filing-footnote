@@ -12,7 +12,8 @@ struct CompanyPageView: View {
     @Environment(\.filingSelection) private var selection
     @Environment(\.drawsTitleInList) private var drawsTitleInList
     @State private var showsNotices: Bool
-    /// t2 on the figure, then t3 on the questions once t2 has ended (D104).
+    /// t2 on the summary card's year figure, then t3 on the questions once t2 has ended
+    /// (D104, D107).
     @State private var tips = TipGroup(.ordered) {
         FigureSourceTip()
         AskTip()
@@ -27,6 +28,13 @@ struct CompanyPageView: View {
     private var name: String { Titles.name(of: page.company, language: language) }
 
     private var summary: CompanySummary? { CompanyAnswerer.summary(store: store, companyID: page.company.id) }
+
+    /// t2 on a report row, for a company whose summary card has no year figure to tap: t3
+    /// waits for t2, so t2 needs a control on every page that has one.
+    private func reportTip(_ summary: CompanySummary?) -> FigureSourceTip? {
+        if let summary, CompanySummaryCard.linksYear(summary, companyID: page.company.id) { return nil }
+        return tips.currentTip as? FigureSourceTip
+    }
 
     /// A title another filing on the page shares gets its approved summary's first line
     /// under it, to tell the two apart (2026-11-26 review, issue 13; D106).
@@ -55,10 +63,12 @@ struct CompanyPageView: View {
     }
 
     private var list: some View {
-        SelectionList(selection: selection) {
+        let summary = summary
+        return SelectionList(selection: selection) {
             header
             if let summary {
-                CompanySummaryCard(summary: summary, companyID: page.company.id)
+                CompanySummaryCard(
+                    summary: summary, companyID: page.company.id, tip: tips.currentTip as? FigureSourceTip)
             }
             // D106: directly under the summary card, above the reports and filings.
             AskSection(companyID: page.company.id, tip: tips.currentTip as? AskTip)
@@ -70,7 +80,7 @@ struct CompanyPageView: View {
                         // its selection tag on the Mac and shrink its button on iPad.
                         FilingRowLink(filingID: report.filing.id) {
                             QuarterRow(report: report, company: page.company, dataAsOf: page.dataAsOf)
-                                .footnoteTip(tips.currentTip as? FigureSourceTip)
+                                .footnoteTip(reportTip(summary))
                         }
                     }
                     ForEach(page.periodicReports, id: \.filing.id) { report in
@@ -78,7 +88,7 @@ struct CompanyPageView: View {
                             PeriodicRow(report: report, company: page.company, dataAsOf: page.dataAsOf)
                                 .footnoteTip(
                                     page.quarterReport == nil && report.filing.id == page.periodicReports.first?.filing.id
-                                        ? tips.currentTip as? FigureSourceTip : nil)
+                                        ? reportTip(summary) : nil)
                         }
                     }
                 } header: {

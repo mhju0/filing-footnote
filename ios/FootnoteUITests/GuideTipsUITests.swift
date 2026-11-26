@@ -79,6 +79,27 @@ final class GuideTipsUITests: XCTestCase {
         XCTAssertTrue(tip.waitForExistence(timeout: 5), "the News tip did not show after the guide closed")
     }
 
+    /// The figure tip points at the summary card's year figure, at the top of the company
+    /// page (D107), not at a report row further down.
+    @MainActor func testFigureTipIsOnTheSummaryCard() throws {
+        AuditFixture.prepareDevice(for: self)
+        let fixture = try XCTUnwrap(Bundle(for: Self.self).path(forResource: "footnote", ofType: "sqlite"))
+        let app = launch(
+            ["-FootnoteResetGuide", "-FootnoteResetTips", "-FootnoteShowAllTips", "-FootnoteOpen",
+             "company=dart:00126380", "-language", "en"],
+            bundle: fixture)
+        XCTAssertTrue(identified("guide", in: app).waitForExistence(timeout: 10))
+        app.buttons["guide-skip"].tap()
+
+        let tip = text("Tap a figure to see its source", in: app)
+        XCTAssertTrue(tip.waitForExistence(timeout: 10), "the figure tip did not show")
+        let year = identified("summary-year", in: app)
+        XCTAssertTrue(year.exists)
+        // A popover sits just above or below the control it explains.
+        let gap = max(tip.frame.minY - year.frame.maxY, year.frame.minY - tip.frame.maxY)
+        XCTAssertLessThan(gap, 120, "tip \(tip.frame) is not next to the year figure \(year.frame)")
+    }
+
     /// From a reset datastore, the News filter tip waits for the second visit to News (its
     /// own rule).
     @MainActor func testNewsTipShowsOnTheSecondVisit() throws {

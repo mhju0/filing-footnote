@@ -38,6 +38,16 @@ struct CompanySummaryCard: View {
     @Environment(\.filingSelection) private var selection
     let summary: CompanySummary
     let companyID: String
+    /// t2 (D104), on the year's figure when the card links it.
+    var tip: FigureSourceTip?
+
+    /// True when the card shows the year's figure as a link to its figure screen, where t2
+    /// goes.
+    static func linksYear(_ summary: CompanySummary, companyID: String) -> Bool {
+        guard case .figures(let figures) = summary.year, figures.rows.first?.current != nil,
+              case .year = figures.span else { return false }
+        return SummarySelection.year.route(summary, companyID: companyID) != nil
+    }
 
     var body: some View {
         Section {
@@ -53,7 +63,8 @@ struct CompanySummaryCard: View {
         switch summary.year {
         case .figures(let figures):
             if let row = figures.rows.first, row.current != nil, case .year(let fiscalYear) = figures.span {
-                link(.year) { YearHero(figures: figures, row: row, fiscalYear: fiscalYear) }
+                // The tip goes on the label, as on the report rows (CompanyPageView).
+                link(.year) { YearHero(figures: figures, row: row, fiscalYear: fiscalYear).footnoteTip(tip) }
                     .accessibilityIdentifier("summary-year")
             } else if let statement = figures.statement {
                 statementRow(statement)

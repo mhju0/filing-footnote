@@ -2013,3 +2013,31 @@ the UX review's issues 1, 3, 10, 13 and 15, carried out through the Orca coordin
   still audited. Retrying in the same launch never recovered: every retry timed out too.
 - The card's context and source lines break only after a `·`, so a filing date stays
   whole with its 공시 (screenshot review, iPhone 13 mini).
+
+## D107 · Figure tip on the summary card, source-sentence label in Ink, audit one type per call · 2026-11-26 (`ACCEPTED`)
+
+Wave 2 follow-up after #56 (D106) and #57 (D101) merged.
+
+- **t2 on the summary card.** The figure tip (D104) now points at the summary card's year
+  figure (`summary-year`), which opens the revenue figure screen and so ends the tip.
+  On main it was attached to the quarter report row, below the card and the six
+  questions; with tips reset and forced on, it did not show on the first screen, nor
+  when the row was scrolled into view. The copy, the popover, the daily limit and the
+  ordered group with t3 are unchanged. A company whose card has no year figure keeps the
+  tip on its first report row, because t3 waits for t2 to end.
+- **Source sentence label in Ink.** In a full Korean dark audit on main, the
+  "출처 문장 / Source sentence" disclosure label in Pine was reported as "Contrast nearly
+  passed". Measured on the screenshot it is 7.71:1 (Pine on dark Surface), and the same
+  screen audited alone shows no finding, so the report came under load. The label now
+  uses Ink (14.1:1 on dark Surface); the chevron stays Muted. No colour was added.
+- **Audit reliability.** With `.all`, one audit call on the company page took up to about
+  twenty-five seconds, about half of it the Dynamic Type check. A call that runs past
+  XCTest's limit ("Audit failed to complete in time") leaves the simulator's
+  testmanagerd at full speed (sampled every twenty seconds: idle between audits before the
+  first timeout, about one core busy without pause after it, and still busy in the next
+  `xcodebuild` run on the same simulator), and in long runs later audits then timed out
+  as well. Run the audits on a freshly booted simulator. The audit now makes one call per
+  audit type (the seven types `.all` covers on iOS), and before each pass waits until two
+  screenshots half a second apart match, so no audit starts on a moving screen. Every
+  check still runs on every pass, with the same false-positive rules. The fresh-launch
+  retry after a timeout stays.
