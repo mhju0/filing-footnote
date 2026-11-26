@@ -248,9 +248,16 @@ extension View {
         self
         #endif
     }
+
+    /// A disclosure group inside a row's own stack, such as a source sentence (D101): one
+    /// full-width button with the chevron inside, on every platform. There the iPhone's
+    /// system style adds a separate unlabeled chevron button too small to tap, and the
+    /// label's minimum height does not reach the button.
+    func inlineDisclosure() -> some View {
+        disclosureGroupStyle(InsetDisclosureStyle())
+    }
 }
 
-#if os(macOS)
 private struct InsetDisclosureStyle: DisclosureGroupStyle {
     func makeBody(configuration: Configuration) -> some View {
         InsetDisclosure(configuration: configuration)
@@ -288,7 +295,6 @@ private struct InsetDisclosure: View {
         }
     }
 }
-#endif
 
 struct SourceSection: View {
     @Environment(\.language) private var language

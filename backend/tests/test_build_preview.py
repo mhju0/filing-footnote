@@ -19,6 +19,7 @@ from tests.test_build_export import (
     RELEASE,
     _all_approved,
     _export,
+    _faithfulness_dir,  # noqa: F401  (autouse fixture, see test_build_export.py)
     _no_event_cap,  # noqa: F401  (autouse fixture, see test_build_export.py)
     _options,
     _rows,

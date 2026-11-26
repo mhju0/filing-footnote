@@ -37,6 +37,30 @@ struct FilingPageTests {
         fact(earnings, 12, "results_net_income_attributable_current", "amount", "1704370", "백만원", "dartdoc:results.results_net_income_attributable_current"),
     ].joined(separator: "\n")
 
+    @Test func eachLineCarriesItsSourceSentences() throws {
+        let store = try BundleStore(contentsOf: Support.fixtureURL)
+        let page = try #require(FilingPage(store: store, filingID: Self.purchase))
+        for language in [Language.ko, .en] {
+            let lines = page.sourcedSummaryLines(language)
+            #expect(lines.map { $0.text } == page.summaryLines(language))
+            let expected: [LineSource?] = [
+                .excerpts(["이사회는 자기주식 취득을 결의하였습니다."], language: .ko),
+                .excerpts(["취득 목적 : 임직원 주식보상", "취득 방법은 유가증권시장을 통한 장내 매수로 합니다."],
+                          language: .ko),
+                nil,
+            ]
+            #expect(lines.map { $0.source } == expected)
+        }
+    }
+
+    @Test func aTemplateLineHasNoExcerpt() throws {
+        let sql = "INSERT INTO summary_sources VALUES ('\(Self.purchase)', 'ko', 'summary', 3, 0, "
+            + "'template', NULL, 'ko', NULL, NULL)"
+        let page = try #require(FilingPage(store: try Support.editedFixture(sql), filingID: Self.purchase))
+        #expect(page.sourcedSummaryLines(.ko)[2].source == .template)
+        #expect(page.sourcedSummaryLines(.en)[2].source == nil)
+    }
+
     @Test func resultsCompareWithTheSamePeriodAYearEarlier() throws {
         let store = try Support.editedFixture(Self.resultsSQL)
         let page = try #require(FilingPage(store: store, filingID: Self.earnings))

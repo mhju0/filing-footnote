@@ -21,13 +21,15 @@ final class AccessibilityAuditUITests: XCTestCase {
     private static let corrected = "dart:20261029800099"
     private static let samsungQuarter = "dart:20261116000111"
     private static let appleQuarter = "sec:0000320193-26-000020"
+    private static let purchase = "dart:20260821000616"
 
     /// A screen: its name in failure messages, the launch route (nil: the companies list),
-    /// and how many times to swipe up and audit again.
+    /// how many times to swipe up and audit again, and any extra launch arguments.
     struct Screen {
         let name: String
         let route: String?
         var swipes = 2
+        var arguments: [String] = []
     }
 
     static let screens: [Screen] = [
@@ -38,6 +40,9 @@ final class AccessibilityAuditUITests: XCTestCase {
         Screen(name: "filing-outlook", route: "filing=\(samsung)|\(outlook)"),
         Screen(name: "filing-results", route: "filing=\(samsung)|\(results)"),
         Screen(name: "filing-corrected", route: "filing=\(samsung)|\(corrected)"),
+        // D101: the source sentences, opened, so the audit sees the excerpts and captions.
+        Screen(name: "filing-sources", route: "filing=\(samsung)|\(purchase)",
+               arguments: ["-FootnoteSources", "open"]),
         Screen(name: "annual", route: "filing=\(samsung)|\(annual)", swipes: 3),
         Screen(name: "quarter", route: "filing=\(samsung)|\(samsungQuarter)"),
         Screen(name: "quarter-sec", route: "filing=\(apple)|\(appleQuarter)"),
@@ -110,7 +115,8 @@ final class AccessibilityAuditUITests: XCTestCase {
         let bundle = try AuditFixture.glossaryBundle(for: self)
         let only = ProcessInfo.processInfo.environment["FOOTNOTE_AUDIT_ONLY"].map { $0.split(separator: ",").map(String.init) }
         for screen in Self.screens where only?.contains(screen.name) ?? true {
-            let app = AuditFixture.launch(screen.route, language: language, size: size, bundle: bundle)
+            let app = AuditFixture.launch(screen.route, language: language, size: size, bundle: bundle,
+                                          arguments: screen.arguments)
             let config = "\(screen.name) \(language)\(size == nil ? "" : " AX")\(dark ? " dark" : "")"
             // Every screen has a navigation bar; wait for it and a moment for the list to settle.
             XCTAssertTrue(app.navigationBars.firstMatch.waitForExistence(timeout: 10), config)
@@ -307,7 +313,7 @@ enum AuditFixture {
     }
 
     @MainActor static func launch(
-        _ route: String?, language: String?, size: String? = nil, bundle: String
+        _ route: String?, language: String?, size: String? = nil, bundle: String, arguments extra: [String] = []
     ) -> XCUIApplication {
         let app = XCUIApplication()
         // `-language` pins the stored language for the whole run (the argument domain wins
@@ -317,7 +323,7 @@ enum AuditFixture {
         if let language { arguments += ["-language", language] }
         if let route { arguments += ["-FootnoteOpen", route] }
         if let size { arguments += ["-UIPreferredContentSizeCategoryName", size] }
-        app.launchArguments = arguments
+        app.launchArguments = arguments + extra
         app.launch()
         return app
     }

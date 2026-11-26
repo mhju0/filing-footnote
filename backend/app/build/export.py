@@ -29,6 +29,16 @@ entries are omitted, never written, and do not refuse the build. A preview recor
 ``allow_unapproved = 0`` and ``preview = 1`` in ``build_meta``; ``python -m app.build.verify
 --release`` refuses it. Only approved summaries are ever written, in every mode.
 
+Source sentences (D101): every exported summary line gets its rows in ``summary_sources``,
+copied from the faithfulness report (``--faithfulness``, default
+``data/summaries/faithfulness.jsonl``, D97) when its record is from the current aligner for
+exactly that line and approval. A supported or partly line ships its span sentences, a template
+line one row without an excerpt, and a line the owner accepted
+(``data/summaries/faithfulness_accepted.jsonl``) no row. A release refuses a line without a
+current record and an unsupported or unsourced line the owner has not accepted. A development
+build or a preview leaves such a section out in both languages and lists it in the report, and
+ships a line without a record without a source sentence.
+
 Event filings: the version of each correction chain shown is the newest one filed on or
 before ``--as-of``; ingest's ``is_latest`` is not used. At most ten events per company are
 exported, the newest, and an event without a stored body text is left out
@@ -70,6 +80,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from app.build import faithfulness
 from app.build.bundle import (
     BUILD_META_COLUMNS,
     INSERT_ORDER,
@@ -211,6 +222,8 @@ class _Build:
     facts: list[tuple] = field(default_factory=list)
     figures: list[tuple] = field(default_factory=list)
     quarter_figures: list[tuple] = field(default_factory=list)
+    sources: list[tuple] = field(default_factory=list)  # summary_sources rows
+    faithfulness: faithfulness.RecordIndex = field(default_factory=faithfulness.RecordIndex)
     report: dict[str, Any] = field(default_factory=dict)
 
 
@@ -222,9 +235,18 @@ def _company_id(regulator: str, key: str) -> str:
     return f"{regulator.lower()}:{key}"
 
 
-def build_bundle(data: BuildInput, options: BuildOptions, pinned_dirs: Sequence[Path]) -> Bundle:
-    """Select, convert and verify every row; raise :class:`BuildError` on any problem."""
+def build_bundle(
+    data: BuildInput,
+    options: BuildOptions,
+    pinned_dirs: Sequence[Path],
+    sources: faithfulness.RecordIndex | None = None,
+) -> Bundle:
+    """Select, convert and verify every row; raise :class:`BuildError` on any problem.
+    ``sources`` holds the faithfulness records the summary lines' source sentences come from;
+    none means no line has one, which only a development build or a preview accepts."""
     build = _Build(data, options, PinnedResponses(pinned_dirs))
+    if sources is not None:
+        build.faithfulness = sources
     companies = {(c.regulator, c.key): c for c in data.companies}
     _annual_versions(build, companies)
     _event_filings(build, companies)
@@ -251,6 +273,7 @@ def build_bundle(data: BuildInput, options: BuildOptions, pinned_dirs: Sequence[
         "filings": list(build.filings.values()),
         "notices": list(build.notices.values()),
         "filing_summaries": summary_rows,
+        "summary_sources": build.sources,
         "filing_facts": build.facts,
         "figures": build.figures,
         "quarter_figures": build.quarter_figures,
@@ -269,6 +292,7 @@ def build_bundle(data: BuildInput, options: BuildOptions, pinned_dirs: Sequence[
         "prompt_version": options.prompt_version,
         "allow_unapproved": int(options.allow_unapproved),
         "preview": int(options.preview),
+        "aligner_version": faithfulness.ALIGNER_VERSION,
     }
     build.report["row_counts"] = {table: len(rows[table]) for table in sorted(rows)}
     return Bundle(rows, meta, build.report)
@@ -1143,6 +1167,7 @@ def _summaries(build: _Build, company_rows: list[tuple]) -> list[tuple]:
             (summary.filing_id, summary.lang, summary.section, *lines, "approved",
              summary.input_sha256)
         )  # fmt: skip
+    rows = _summary_sources(build, rows, approved)
     required = required_summaries(
         ((fid, row[1], row[2], row[8], row[7]) for fid, row in build.filings.items()),
         {
@@ -1175,6 +1200,73 @@ def _summaries(build: _Build, company_rows: list[tuple]) -> list[tuple]:
         "filings_without_approved_summaries": missing,
     }
     return rows
+
+
+def _summary_sources(
+    build: _Build, rows: list[tuple], approved: set[tuple[str, str, str]]
+) -> list[tuple]:
+    """Fill ``build.sources`` for the summary rows that ship and return those rows (D101).
+
+    A release refuses a line without a current record, and an unsupported or unsourced line the
+    owner did not accept. A development build or a preview leaves such a section out in both
+    languages; a line without a record ships there without a source sentence."""
+    index = build.faithfulness
+    release = not (build.options.allow_unapproved or build.options.preview)
+    if release and index.missing is not None:
+        build.problems.append(
+            f"release build refused: no faithfulness report at {index.missing}; run "
+            "make faithfulness AS_OF=<the summary run's --as-of>"
+        )
+    sources: dict[tuple[str, str, str], list[tuple]] = {}
+    withheld: set[tuple[str, str]] = set()
+    unchecked: list[str] = []
+    accepted = 0
+    for row in rows:
+        filing_id, lang, section = row[:3]
+        excerpt_lang = faithfulness.SOURCE_LANG[filing_id.split(":")[0].upper()]
+        found: list[tuple] = []
+        for number, line in enumerate((r for r in row[3:6] if r is not None), start=1):
+            key = (filing_id, lang, section, number)
+            where = f"{filing_id} {lang}/{section} line {number}"
+            if index.accepted(key, line, row[7]):
+                accepted += 1
+                continue
+            record = index.current(key, line, row[7])
+            if record is None:
+                unchecked.append(where)
+                continue
+            line_rows = faithfulness.source_rows(key, record, excerpt_lang)
+            if not line_rows:
+                withheld.add((filing_id, section))
+                if release:
+                    build.problems.append(
+                        f"release build refused: {where} is {record['verdict']} with no source "
+                        "sentence; unsupported lines never ship unless the owner accepts them"
+                    )
+            found += line_rows
+        sources[(filing_id, lang, section)] = found
+    if release and index.missing is None and unchecked:
+        shown = ", ".join(unchecked[:10]) + (" ..." if len(unchecked) > 10 else "")
+        build.problems.append(
+            f"release build refused: {len(unchecked)} summary lines have no faithfulness record "
+            f"from {faithfulness.ALIGNER_VERSION} for their text and approval; rerun make "
+            f"faithfulness ({shown})"
+        )
+    kept = []
+    for row in rows:
+        if (row[0], row[2]) in withheld:
+            approved.discard(row[:3])
+            continue
+        kept.append(row)
+        build.sources += sources[row[:3]]
+    build.report["summary_sources"] = {
+        "aligner_version": faithfulness.ALIGNER_VERSION,
+        "rows": len(build.sources),
+        "lines_accepted_without_source": accepted,
+        "lines_without_record": unchecked,
+        "sections_withheld": sorted(f"{fid} {section}" for fid, section in withheld),
+    }
+    return kept
 
 
 # -- writing -------------------------------------------------------------------------------------
@@ -1224,7 +1316,10 @@ def _write_sqlite(bundle: Bundle, path: Path) -> dict[str, Any]:
                 f"INSERT INTO {table} ({', '.join(columns)}) VALUES ({marks})",
                 bundle.rows[table],
             )
-        meta = {**bundle.meta, "content_sha256": content_sha256(connection)}
+        meta = {
+            **bundle.meta,
+            "content_sha256": content_sha256(connection, bundle.meta["aligner_version"]),
+        }
         connection.execute(
             f"INSERT INTO build_meta ({', '.join(BUILD_META_COLUMNS)}) "
             f"VALUES ({', '.join('?' for _ in BUILD_META_COLUMNS)})",
@@ -1312,6 +1407,13 @@ def _parser() -> argparse.ArgumentParser:
         type=Path,
         help="file of approved summaries (default backend/data/summaries/approved.jsonl)",
     )
+    parser.add_argument(
+        "--faithfulness",
+        type=Path,
+        default=faithfulness.REPORT_PATH,
+        help="faithfulness report the source sentences come from (default "
+        "data/summaries/faithfulness.jsonl, D97, D101)",
+    )
     parser.add_argument("--llm-model", default=DEFAULT_LLM_MODEL)
     parser.add_argument(
         "--prompt-version",
@@ -1367,7 +1469,8 @@ def run(
             prompt_version=args.prompt_version,
             event_prompt_version=args.event_prompt_version,
         )
-        bundle = build_bundle(load(args), options, args.pinned or [DEFAULT_PINNED_DIR])
+        bundle = build_bundle(load(args), options, args.pinned or [DEFAULT_PINNED_DIR],
+                              faithfulness.load_index(args.faithfulness))  # fmt: skip
         report = write_bundle(bundle, args.out, report_path)
     except BuildError as exc:
         remove_outputs(args.out, report_path)

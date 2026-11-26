@@ -49,6 +49,7 @@ from tests.build_seed import (
     SAMSUNG_PRIOR,
     event_input,
     fixture_build_input,
+    supported_records,
 )
 
 BUILD_DIR = Path(__file__).resolve().parents[1] / "app" / "build"
@@ -67,6 +68,22 @@ def data() -> BuildInput:
     return fixture_build_input()
 
 
+@pytest.fixture(autouse=True)
+def _faithfulness_dir(tmp_path_factory, monkeypatch) -> None:
+    """Where :func:`_export` writes its faithfulness report: outside the output directory, so
+    the tests that expect an empty one still can, and never the real report."""
+    monkeypatch.setattr(
+        "tests.test_build_export._REPORT_DIR", tmp_path_factory.mktemp("faithfulness")
+    )
+
+
+_REPORT_DIR: Path | None = None
+
+
+def supported_index(data: BuildInput) -> faithfulness.RecordIndex:
+    return faithfulness.RecordIndex(supported_records(data.summaries))
+
+
 def _args(out: Path, *extra: str) -> list[str]:
     pinned = [arg for d in PINNED_DIRS for arg in ("--pinned", str(d))]
     return ["--as-of", AS_OF.isoformat(), "--out", str(out), "--source-revision", "test", *pinned,
@@ -74,6 +91,13 @@ def _args(out: Path, *extra: str) -> list[str]:
 
 
 def _export(data: BuildInput, out: Path, *extra: str) -> int:
+    """Export ``data`` with a faithfulness report that supports every approved line, unless
+    ``extra`` names its own report."""
+    if "--faithfulness" not in extra:
+        assert _REPORT_DIR is not None
+        report = _REPORT_DIR / f"{out.parent.name}-{out.stem}.jsonl"
+        faithfulness.write_records(report, supported_records(data.summaries))
+        extra = (*extra, "--faithfulness", str(report))
     return run(_args(out, *extra), load=lambda _args: data)
 
 
@@ -192,7 +216,7 @@ def test_export_writes_section_four_file_and_report(data, tmp_path, capsys) -> N
     assert f"size_bytes={out.stat().st_size}" in printed
     assert report["build_meta"]["allow_unapproved"] == 1 and report["mode"] == "development"
     assert _rows(out, "SELECT schema_version, data_as_of, source_revision, allow_unapproved, preview "
-                      "FROM build_meta") == [(4, "2026-11-17", "test", 1, 0)]  # fmt: skip
+                      "FROM build_meta") == [(5, "2026-11-17", "test", 1, 0)]  # fmt: skip
     for table, count in report["row_counts"].items():
         assert _rows(out, f"SELECT count(*) FROM {table}") == [(count,)]
     assert report["row_counts"]["figures"] == len(report["figure_checks"]) > 0
@@ -417,16 +441,7 @@ def test_release_holds_every_summary_line_to_the_faithfulness_gate(data, tmp_pat
     approved = _all_approved(data, build_bundle(data, _options(), PINNED_DIRS))
     out = tmp_path / "footnote.sqlite"
     assert _export(approved, out, *RELEASE) == 0
-    with sqlite3.connect(out) as connection:
-        connection.row_factory = sqlite3.Row
-        summaries = [dict(r) for r in connection.execute("SELECT * FROM filing_summaries")]
-    records = [
-        {"filing_id": s["filing_id"], "lang": s["lang"], "section": s["section"], "line_no": n,
-         "line_sha256": faithfulness.line_sha256(s[f"line{n}"]),
-         "input_sha256": s["input_sha256"], "verdict": faithfulness.SUPPORTED,
-         "aligner_version": faithfulness.ALIGNER_VERSION, "reasons": []}
-        for s in summaries for n in (1, 2, 3) if s[f"line{n}"] is not None
-    ]  # fmt: skip
+    records = supported_records(approved.summaries)
     gate = faithfulness.ReleaseGate(records)
     assert check_bundle(out, release=True, pinned_dirs=PINNED_DIRS, faithfulness_gate=gate) == []
     # One unsupported line blocks the release, unless the policy only warns.
@@ -1283,7 +1298,9 @@ def test_older_annual_filing_is_exported_as_a_figure_source_without_summaries(
     no_older = _all_approved(changed, bundle, skip=frozenset({f"dart:{older}"}))
     argv = ["--as-of", AS_OF.isoformat(), "--out", str(out), "--source-revision", "test",
             *_pinned_args(pinned), *RELEASE]  # fmt: skip
-    assert run(argv, load=lambda _args: no_older) == 0
+    report = tmp_path / "faithfulness.jsonl"
+    faithfulness.write_records(report, supported_records(no_older.summaries))
+    assert run([*argv, "--faithfulness", str(report)], load=lambda _args: no_older) == 0
     assert check_bundle(out, release=True, pinned_dirs=dirs) == []
     no_latest = _all_approved(changed, bundle, skip=frozenset({f"dart:{SAMSUNG_2025}"}))
     with pytest.raises(BuildError, match=f"dart:{SAMSUNG_2025}"):
@@ -1359,7 +1376,8 @@ def test_rows_are_inserted_in_primary_key_order(data, tmp_path) -> None:
     approved = _all_approved(data, build_bundle(data, _options(), PINNED_DIRS),
                              prompt_version="none")
     out = tmp_path / "footnote.sqlite"
-    write_bundle(build_bundle(approved, _options(prompt_version="none"), PINNED_DIRS), out)
+    write_bundle(build_bundle(approved, _options(prompt_version="none"), PINNED_DIRS,
+                              supported_index(approved)), out)  # fmt: skip
     for table, (_, key) in TABLES.items():
         columns = ", ".join(key)
         by_rowid = _rows(out, f"SELECT {columns} FROM {table} ORDER BY rowid")
@@ -1443,9 +1461,12 @@ def test_every_schema_column_is_in_the_fingerprint(data, tmp_path) -> None:
     approved = _all_approved(data, build_bundle(data, _options(), PINNED_DIRS),
                              prompt_version="none")
     out = tmp_path / "footnote.sqlite"
-    write_bundle(build_bundle(approved, _options(prompt_version="none"), PINNED_DIRS), out)
+    write_bundle(build_bundle(approved, _options(prompt_version="none"), PINNED_DIRS,
+                              supported_index(approved)), out)  # fmt: skip
     with sqlite3.connect(out) as connection:
         lines = [json.loads(line) for line in canonical_dump_lines(connection)]
+    # The last line is the aligner version, so the fingerprint covers it (D101).
+    assert lines.pop() == ["build_meta", {"aligner_version": faithfulness.ALIGNER_VERSION}]
     seen: dict[str, set[str]] = {}
     for table, row in lines:
         assert set(row) == fingerprinted[table], table

@@ -20,6 +20,7 @@ public struct FilingPage: Sendable {
     /// outlook_without_figures). A prose outlook filing (장래사업ㆍ경영계획) is never one.
     public let outlookHasNoFigures: Bool
     private let summaries: [FilingSummary]
+    private let sources: [SummarySource]
 
     public init?(store: BundleStore, filingID: String) {
         guard let filing = store.filing(id: filingID),
@@ -29,6 +30,7 @@ public struct FilingPage: Sendable {
         self.company = company
         dataAsOf = store.meta.dataAsOf
         summaries = store.summaries.filter { $0.filingID == filing.id }
+        sources = store.sources.filter { $0.filingID == filing.id && $0.section == .summary }
         source = SourceDetails(filing: filing, regulator: company.regulator)
         let facts = store.facts(forFiling: filing.id)
         let reportName = Titles.parseDart(filing.titleOriginal).base
@@ -49,6 +51,14 @@ public struct FilingPage: Sendable {
     /// summary is in review.
     public func summaryLines(_ language: Language) -> [String] {
         summaries.first { $0.language == language && $0.section == .summary }?.lines ?? []
+    }
+
+    /// The approved lines in `language`, each with what the bundle says it came from (D101).
+    public func sourcedSummaryLines(_ language: Language) -> [SummaryLine] {
+        summaryLines(language).enumerated().map { index, text in
+            let found = sources.filter { $0.language == language && $0.lineNumber == index + 1 }
+            return SummaryLine(text: text, source: LineSource(found))
+        }
     }
 
     /// How many numbers the blocks show, for the six-number budget.
@@ -466,5 +476,31 @@ public struct SourceDetails: Sendable, Hashable {
         let prefix = regulator == .dart ? "dart:" : "sec:"
         receiptNumber = filing.id.hasPrefix(prefix) ? String(filing.id.dropFirst(prefix.count)) : filing.id
         url = URL(string: filing.sourceURL)
+    }
+}
+
+/// One summary line and its source (D101).
+public struct SummaryLine: Sendable, Hashable {
+    public let text: String
+    /// Nil when the bundle has no source row for the line: a schema 4 bundle, a line the
+    /// owner accepted, or a development build without a faithfulness report.
+    public let source: LineSource?
+}
+
+/// Where a summary line came from. A partly supported line is shown like a supported one.
+public enum LineSource: Sendable, Hashable {
+    /// Verbatim sentences of the filing, in source order, in `language` (the filing's).
+    case excerpts([String], language: Language)
+    /// A fixed sentence (D78) filled in from the filing's table.
+    case template
+
+    init?(_ rows: [SummarySource]) {
+        if rows.contains(where: { $0.verdict == .template }) {
+            self = .template
+            return
+        }
+        let excerpts = rows.sorted { $0.position < $1.position }.compactMap(\.excerpt)
+        guard let first = rows.first, !excerpts.isEmpty else { return nil }
+        self = .excerpts(excerpts, language: first.excerptLanguage)
     }
 }

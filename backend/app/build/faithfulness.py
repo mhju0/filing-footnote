@@ -978,6 +978,44 @@ def read_records(path: Path) -> list[dict[str, Any]]:
 # -- release gate --------------------------------------------------------------------------------
 
 
+class RecordIndex:
+    """Faithfulness records and owner acceptances by line, for the export and the release
+    gate. A record counts only when it is from this aligner version for exactly that line's
+    text and approval (input) hash; an accepted entry only for exactly that line."""
+
+    def __init__(
+        self,
+        records: Iterable[Mapping[str, Any]] = (),
+        accepted: Iterable[Mapping[str, Any]] = (),
+        missing: Path | None = None,
+    ) -> None:
+        self.missing = missing  # the report file, when it does not exist
+        self._by_key: dict[tuple[str, str, str, int], list[Mapping[str, Any]]] = defaultdict(list)
+        for record in records:
+            self._by_key[record_key(record)].append(record)
+        self._accepted = {(record_key(a), a["line_sha256"], a["input_sha256"]) for a in accepted}
+
+    def current(
+        self, key: tuple[str, str, str, int], line: str, input_sha256: str
+    ) -> Mapping[str, Any] | None:
+        digest = line_sha256(line)
+        for record in self._by_key.get(key, ()):
+            if (record["line_sha256"] == digest and record["input_sha256"] == input_sha256
+                    and record.get("aligner_version") == ALIGNER_VERSION):  # fmt: skip
+                return record
+        return None
+
+    def accepted(self, key: tuple[str, str, str, int], line: str, input_sha256: str) -> bool:
+        return (key, line_sha256(line), input_sha256) in self._accepted
+
+
+def load_index(report: Path = REPORT_PATH, accepted: Path | None = None) -> RecordIndex:
+    """The report's records and the owner's acceptances (default ``ACCEPTED_PATH``)."""
+    accepted = ACCEPTED_PATH if accepted is None else accepted
+    return RecordIndex(read_records(report), read_records(accepted),
+                       missing=None if report.exists() else report)  # fmt: skip
+
+
 @dataclass
 class ReleaseGate:
     """What ``app.build.verify --release`` checks for every summary line in a bundle: a record
@@ -989,6 +1027,10 @@ class ReleaseGate:
     accepted: Sequence[Mapping[str, Any]] = ()
     notes: list[str] = field(default_factory=list)
     missing: Path | None = None  # the report file, when it does not exist
+
+    @property
+    def index(self) -> RecordIndex:
+        return RecordIndex(self.records, self.accepted, self.missing)
 
     def problems(self, summaries: Sequence[Mapping[str, Any]]) -> list[str]:
         if self.policy not in POLICIES:
@@ -1004,36 +1046,26 @@ class ReleaseGate:
                 return []
             return [problem]
         blocking = POLICIES[self.policy]
-        by_key: dict[tuple[str, str, str, int], list[Mapping[str, Any]]] = defaultdict(list)
-        for record in self.records:
-            by_key[record_key(record)].append(record)
-        accepted = {
-            (record_key(a), a["line_sha256"], a["input_sha256"]) for a in self.accepted
-        }
+        index = self.index
         counts: Counter[str] = Counter()
         problems = []
         for summary in summaries:
             for number, line in enumerate(row_lines(summary), start=1):
                 key = (summary["filing_id"], summary["lang"], summary["section"], number)
                 where = f"{key[0]} {key[1]}/{key[2]} line {number}"
-                digest = line_sha256(line)
-                match = [
-                    r for r in by_key.get(key, ())
-                    if r["line_sha256"] == digest and r["input_sha256"] == summary["input_sha256"]
-                    and r.get("aligner_version") == ALIGNER_VERSION
-                ]  # fmt: skip
-                if (key, digest, summary["input_sha256"]) in accepted:
+                if index.accepted(key, line, summary["input_sha256"]):
                     counts["accepted"] += 1
                     continue
-                if not match:
+                record = index.current(key, line, summary["input_sha256"])
+                if record is None:
                     counts["unchecked"] += 1
                     problems.append(f"{where}: no faithfulness record from {ALIGNER_VERSION} "
                                     "for this line; rerun the check")  # fmt: skip
                     continue
-                verdict = match[0]["verdict"]
+                verdict = record["verdict"]
                 counts[verdict] += 1
                 if verdict in blocking:
-                    reasons = "; ".join(match[0].get("reasons") or ())
+                    reasons = "; ".join(record.get("reasons") or ())
                     problems.append(f"{where}: faithfulness {verdict}"
                                     + (f" ({reasons})" if reasons else ""))  # fmt: skip
         self.notes.append(
@@ -1049,6 +1081,117 @@ def load_gate(
 ) -> ReleaseGate:
     missing = None if report.exists() else report
     return ReleaseGate(read_records(report), policy, read_records(accepted), missing=missing)
+
+
+# -- bundle sources (schema 5) -------------------------------------------------------------------
+
+# The verdicts whose span ships in the bundle's summary_sources table. Unsupported lines and
+# lines without source text never ship; an owner-accepted line ships without a span.
+SHIPPED_VERDICTS = frozenset({SUPPORTED, PARTLY, TEMPLATE})
+# The language a filing's source text is written in, by regulator.
+SOURCE_LANG = {"DART": "ko", "SEC": "en"}
+
+
+def source_rows(
+    key: tuple[str, str, str, int], record: Mapping[str, Any], excerpt_lang: str
+) -> list[tuple]:
+    """The summary_sources rows for one line's record, in bundle column order: one row per span
+    sentence in source order, or one row without an excerpt for a template line. Empty when the
+    record's span cannot ship: an unsupported or unchecked line, or a line with no span. A line
+    break inside a span (a soft-wrapped line, D102) becomes a space, so the app shows the
+    sentence as one run of text; the excerpt keeps its length, so it still fits its offsets."""
+    verdict = record["verdict"]
+    if verdict == TEMPLATE:
+        return [(*key, 0, TEMPLATE, None, excerpt_lang, None, None)]
+    if verdict not in SHIPPED_VERDICTS:
+        return []
+    spans = sorted(record.get("spans") or (), key=lambda s: (s["start"], s["end"]))
+    return [(*key, position, verdict, _one_line(span["text"]), excerpt_lang, span["start"],
+             span["end"]) for position, span in enumerate(spans)]  # fmt: skip
+
+
+def _one_line(text: str) -> str:
+    return text.replace("\r", " ").replace("\n", " ")
+
+
+SOURCE_COLUMNS = ("filing_id", "lang", "section", "line_no", "position", "verdict", "excerpt",
+                  "excerpt_lang", "source_start", "source_end")  # fmt: skip
+
+
+def _as_row(source: Mapping[str, Any]) -> tuple:
+    return tuple(source[c] for c in SOURCE_COLUMNS)
+
+
+def bundle_source_problems(
+    summaries: Sequence[Mapping[str, Any]],
+    sources: Sequence[Mapping[str, Any]],
+    filing_regulators: Mapping[str, str],
+    *,
+    release: bool = False,
+    index: RecordIndex | None = None,
+    compare: bool = False,
+) -> list[str]:
+    """Problems with a finished bundle's summary_sources rows.
+
+    Always: every row belongs to a line the bundle holds, positions run from 0 in source order,
+    a template line has one row and no excerpt, an excerpt is as long as its offsets and is in
+    its filing's language. With ``release``, every summary line also needs its rows unless the
+    owner accepted it in ``index`` (an accepted line has none), and with ``compare`` the rows
+    must be exactly the ones the line's current record in ``index`` gives."""
+    by_line: dict[tuple[str, str, str, int], list[Mapping[str, Any]]] = defaultdict(list)
+    for source in sources:
+        by_line[(source["filing_id"], source["lang"], source["section"], source["line_no"])
+                ].append(source)  # fmt: skip
+    lines: dict[tuple[str, str, str, int], tuple[str, str]] = {}
+    for summary in summaries:
+        for number, line in enumerate(row_lines(summary), start=1):
+            key = (summary["filing_id"], summary["lang"], summary["section"], number)
+            lines[key] = (line, summary["input_sha256"])
+    problems = []
+    for key, rows in sorted(by_line.items()):
+        where = f"{key[0]} {key[1]}/{key[2]} line {key[3]}"
+        if key not in lines:
+            problems.append(f"{where}: summary_sources row for a line the bundle does not hold")
+            continue
+        rows = sorted(rows, key=lambda r: r["position"])
+        verdicts = {r["verdict"] for r in rows}
+        if [r["position"] for r in rows] != list(range(len(rows))):
+            problems.append(f"{where}: summary_sources positions are not 0..{len(rows) - 1}")
+        if len(verdicts) != 1:
+            problems.append(f"{where}: summary_sources rows disagree on the verdict")
+        if TEMPLATE in verdicts and len(rows) != 1:
+            problems.append(f"{where}: a template line has {len(rows)} summary_sources rows")
+        starts = [r["source_start"] for r in rows if r["source_start"] is not None]
+        if starts != sorted(starts):
+            problems.append(f"{where}: summary_sources rows are not in source order")
+        for row in rows:
+            expected = SOURCE_LANG.get(filing_regulators.get(key[0], ""))
+            if row["excerpt_lang"] != expected:
+                problems.append(f"{where}: excerpt_lang {row['excerpt_lang']!r}, the filing's "
+                                f"language is {expected!r}")  # fmt: skip
+            excerpt = row["excerpt"]
+            if excerpt is not None and (not excerpt.strip() or
+                                        len(excerpt) != row["source_end"] - row["source_start"]):
+                problems.append(f"{where}: excerpt does not match its offsets")
+    if not release:
+        return problems
+    for key, (line, input_sha256) in sorted(lines.items()):
+        where = f"{key[0]} {key[1]}/{key[2]} line {key[3]}"
+        rows = [_as_row(r) for r in sorted(by_line.get(key, ()), key=lambda r: r["position"])]
+        if index is not None and index.accepted(key, line, input_sha256):
+            if rows:
+                problems.append(f"{where}: an owner-accepted line ships with a source sentence")
+            continue
+        if not rows:
+            problems.append(f"{where}: no supported, partly or template source sentence")
+            continue
+        if not compare or index is None:
+            continue
+        record = index.current(key, line, input_sha256)
+        lang = SOURCE_LANG.get(filing_regulators.get(key[0], ""), "")
+        if record is None or source_rows(key, record, lang) != rows:
+            problems.append(f"{where}: summary_sources rows differ from the faithfulness report")
+    return problems
 
 
 # -- eval ----------------------------------------------------------------------------------------
