@@ -24,6 +24,7 @@ struct QuarterReportView: View {
         .groupedScreen()
         .pageTitle(page.company)
         .languageToolbar()
+        .endsFigureSourceTip()
         .accessibilityIdentifier("quarter-page")
     }
 
