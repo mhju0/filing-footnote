@@ -49,8 +49,10 @@ final class AccessibilityLabelsUITests: XCTestCase {
             XCTAssertFalse(button.label.trimmingCharacters(in: .whitespaces).isEmpty,
                            "\(config): a button has no label: \(button.debugDescription)")
             guard screen.contains(frame), !bars.contains(where: { $0.contains(frame) }) else { continue }
-            XCTAssertGreaterThanOrEqual(frame.height, 44, "\(config): \(button.label) is \(frame.size)")
-            XCTAssertGreaterThanOrEqual(frame.width, 44, "\(config): \(button.label) is \(frame.size)")
+            // A thousandth of a point of slack: a 44-point button can come back as
+            // 43.99999999999994 after the frame is converted to screen coordinates.
+            XCTAssertGreaterThanOrEqual(frame.height, 44 - 0.001, "\(config): \(button.label) is \(frame)")
+            XCTAssertGreaterThanOrEqual(frame.width, 44 - 0.001, "\(config): \(button.label) is \(frame)")
         }
         // Decorative images are not checked here: XCUITest lists images marked
         // `accessibilityHidden` too (the calculation's check marks), so its image query does
@@ -65,12 +67,12 @@ final class AccessibilityLabelsUITests: XCTestCase {
         let bundle = try AuditFixture.glossaryBundle(for: self)
         let expectations: [(route: String, id: String, ko: [String], en: [String])] = [
             ("figure=\(Self.samsung)|revenue|2025", "figure-page",
-             ["300조 8,709억 300만원", "전년보다 16.20퍼센트 늘었어요"],
-             ["up 16.20 percent from the year before"]),
+             ["300조 8,709억 300만원", "전년보다 16.20퍼센트 증가"],
+             ["increased 16.20 percent from the year before"]),
             ("yearcompare=\(Self.samsung)|revenue|2025", "year-change",
-             ["전년보다 16.20퍼센트 늘었어요", "차이"], ["up 16.20 percent from the year before"]),
+             ["전년보다 16.20퍼센트 증가", "차이"], ["increased 16.20 percent from the year before"]),
             ("filing=\(Self.samsung)|dart:20260310000123", "figure-revenue",
-             ["전년보다 16.20퍼센트 늘었어요", "300조 8,709억 300만원"], ["up 16.20 percent"]),
+             ["전년보다 16.20퍼센트 증가", "300조 8,709억 300만원"], ["increased 16.20 percent"]),
             ("compare=\(Self.samsung)|\(Self.apple)|revenue|operating_margin|2025", "rate-\(Self.samsung)",
              ["삼성전자", "영업이익률"], ["Samsung Electronics", "Operating margin"]),
             ("compare=\(Self.samsung)|\(Self.apple)|revenue|operating_margin|2025", "rate-difference",

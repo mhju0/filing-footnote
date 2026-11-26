@@ -2,8 +2,9 @@ import FootnoteKit
 import SwiftUI
 
 /// 소식 / News: the filings the company pages list, across every company, newest first and
-/// grouped by day (`NewsFeed`, D86). Rows are the company page's (tag, title, no preview line)
-/// with the company's name in place of the date the heading already gives.
+/// grouped by day (`NewsFeed`, D86). Rows are the company page's (tag, title) with the
+/// company's name in place of the date the heading already gives, and the first line of the
+/// filing's approved summary under the title when it has one (D106).
 struct NewsView: View {
     @Environment(\.language) private var language
     @Environment(\.filingSelection) private var selection
@@ -45,7 +46,8 @@ struct NewsView: View {
                                     filing: filing, dataAsOf: feed.dataAsOf,
                                     companyName: store.company(id: filing.companyID)
                                         .map { Titles.name(of: $0, language: language) },
-                                    showsDate: false)
+                                    showsDate: false,
+                                    secondLine: store.firstSummaryLine(filingID: filing.id, language: language))
                             }
                         }
                     } header: {
@@ -152,6 +154,7 @@ struct NewsView: View {
 struct GlossaryView: View {
     @Environment(\.language) private var language
     @Environment(\.glossarySelection) private var selection
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(GuideModel.self) private var guide: GuideModel?
     @State private var query = ""
     @State private var expanded: Set<String>
@@ -204,8 +207,10 @@ struct GlossaryView: View {
                                     entry: entry, isFocused: entry.termKey == focus,
                                     isExpanded: expanded.contains(entry.termKey)
                                 ) {
-                                    if expanded.remove(entry.termKey) == nil {
-                                        expanded.insert(entry.termKey)
+                                    Motion.perform(reduceMotion: reduceMotion) {
+                                        if expanded.remove(entry.termKey) == nil {
+                                            expanded.insert(entry.termKey)
+                                        }
                                     }
                                 }
                                 .id(entry.termKey)

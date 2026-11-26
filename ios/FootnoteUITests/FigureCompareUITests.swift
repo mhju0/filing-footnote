@@ -46,7 +46,7 @@ final class FigureCompareUITests: XCTestCase {
         XCTAssertTrue(identified("figure-page", in: app).waitForExistence(timeout: 5))
         // The header reads the exact value and the direction in words.
         XCTAssertTrue(element("300조 8,709억 300만원", in: app).exists)
-        XCTAssertTrue(element("16.20퍼센트 늘었어요", in: app).exists)
+        XCTAssertTrue(element("16.20퍼센트 증가", in: app).exists)
         // Earlier years as a list, each value exact.
         let prior = element("2024 회계연도, 258조 9,354억 9,400만원", in: app)
         reveal(prior, in: app)
@@ -57,7 +57,7 @@ final class FigureCompareUITests: XCTestCase {
         XCTAssertGreaterThanOrEqual(compare.frame.height, 44)
         compare.tap()
         XCTAssertTrue(identified("year-compare-page", in: app).waitForExistence(timeout: 5))
-        XCTAssertTrue(identified("year-change", in: app).label.contains("16.20퍼센트 늘었어요"))
+        XCTAssertTrue(identified("year-change", in: app).label.contains("16.20퍼센트 증가"))
 
         let calculation = app.buttons["see-calculation"]
         reveal(calculation, in: app)

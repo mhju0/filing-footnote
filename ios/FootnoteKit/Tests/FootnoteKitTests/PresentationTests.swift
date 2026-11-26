@@ -229,8 +229,8 @@ struct FormattingAdditionTests {
     @Test(arguments: [
         ("0.003", "0.00% 변동 없어요", "전년과 같아요", "no change from the year before"),
         ("-0.004", "0.00% 변동 없어요", "전년과 같아요", "no change from the year before"),
-        ("0.005", "+0.01% 늘었어요", "전년보다 0.01퍼센트 늘었어요", "up 0.01 percent from the year before"),
-        ("-3.4512", "\u{2212}3.45% 줄었어요", "전년보다 3.45퍼센트 줄었어요", "down 3.45 percent from the year before"),
+        ("0.005", "▲\u{00A0}0.01% 늘었어요", "전년보다 0.01퍼센트 증가", "increased 0.01 percent from the year before"),
+        ("-3.4512", "▼\u{00A0}3.45% 줄었어요", "전년보다 3.45퍼센트 감소", "decreased 3.45 percent from the year before"),
     ])
     func spokenChange(_ value: String, _ shown: String, _ ko: String, _ en: String) {
         #expect(Formatting.percentChange(Support.decimal(value), language: .ko) == shown)

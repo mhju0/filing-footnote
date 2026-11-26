@@ -148,10 +148,10 @@ struct CopyTests {
         let store = try BundleStore(contentsOf: fixtureURL)
         let page = try #require(CompanyPage(store: store, companyID: "dart:00126380"))
         let report = try #require(page.periodicReports.first)
-        #expect(Copy.revenueLine(report, currency: "KRW", .ko) == "매출 300조 8,709억원\u{00A0}· +16.20% 늘었어요")
-        #expect(Copy.revenueLine(report, currency: "KRW", .en) == "Revenue ₩300.87 trillion\u{00A0}· +16.20% up")
+        #expect(Copy.revenueLine(report, currency: "KRW", .ko) == "매출 300조 8,709억원\u{00A0}· ▲\u{00A0}16.20% 늘었어요")
+        #expect(Copy.revenueLine(report, currency: "KRW", .en) == "Revenue ₩300.87 trillion\u{00A0}· ▲\u{00A0}16.20% up")
         #expect(Copy.revenueSpoken(report, currency: "KRW", .en)
-            == "Revenue for fiscal 2025, ₩300.87 trillion, up 16.20 percent from the year before")
+            == "Revenue for fiscal 2025, ₩300.87 trillion, increased 16.20 percent from the year before")
     }
 
     /// Apple's 52-week years end a day apart: the row notes it; Samsung's calendar years do not.

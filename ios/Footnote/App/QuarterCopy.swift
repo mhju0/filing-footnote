@@ -74,7 +74,23 @@ extension PageCopy {
 
     static func quarterLabel(_ figure: QuarterFigure, _ language: Language) -> String {
         language("\(figure.fiscalYear) 회계연도 \(figure.fiscalQuarter)분기",
-                 "Q\(figure.fiscalQuarter) FY \(figure.fiscalYear)")
+                 "Q\(figure.fiscalQuarter) FY\(figure.fiscalYear)")
+    }
+
+    /// The fiscal label with the calendar months it covers (2026-11-26 review, issue 10):
+    /// `2026 회계연도 3분기 · 3월 29일–6월 27일`, `Q3 FY2026 · Mar 29–Jun 27`; whole months as
+    /// `7–9월` / `Jul–Sep`.
+    static func quarterLabelWithMonths(_ figure: QuarterFigure, _ language: Language) -> String {
+        quarterLabel(figure, language) + Copy.dot + months(start: figure.periodStart, end: figure.periodEnd, language)
+    }
+
+    /// `7–9월` / `Jul–Sep`, or `3월 29일–6월 27일` / `Mar 29–Jun 27` for partial months.
+    static func months(start: CivilDate, end: CivilDate, _ language: Language) -> String {
+        guard isWholeMonths(start, end) else {
+            return Formatting.monthDay(start, language: language) + "–" + Formatting.monthDay(end, language: language)
+        }
+        return language("\(start.month)–\(end.month)월",
+                        "\(monthNames[start.month - 1].prefix(3))–\(monthNames[end.month - 1].prefix(3))")
     }
 
     static func quarterSpoken(_ row: QuarterFigureRow, currency: String, _ language: Language) -> String {

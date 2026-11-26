@@ -275,15 +275,15 @@ enum PageCopy {
         }
     }
 
-    /// The direction line under the figure (board 5A): `+16.20% 늘었어요 · 작년보다`,
-    /// `+16.20% up from last year`.
+    /// The direction line under the figure (board 5A): `▲ 16.20% 늘었어요 · 작년보다`,
+    /// `▲ 16.20% up from last year`.
     static func changeFromLastYear(_ percent: Decimal, _ language: Language) -> String {
         let change = Formatting.percentChange(percent, language: language)
         return language(change + Copy.dot + "작년보다", change + " from last year")
     }
 
     /// `changeFromLastYear` in the two phrases a line may break between at large text
-    /// sizes: the rate, then its words (`+16.20%` / `늘었어요 · 작년보다`). Joined with a
+    /// sizes: the rate, then its words (`▲ 16.20%` / `늘었어요 · 작년보다`). Joined with a
     /// space they are `changeFromLastYear` exactly.
     static func changeFromLastYearPhrases(_ percent: Decimal, _ language: Language) -> [String] {
         let whole = changeFromLastYear(percent, language)
@@ -325,7 +325,8 @@ enum PageCopy {
         return language("작년과 같아요", "Same as last year")
     }
 
-    /// The rate alone with its sign: `+16.20%`, `−19.47%`, `0.00%`.
+    /// The rate alone with its sign, as a calculation's result: `+16.20%`, `−19.47%`,
+    /// `0.00%`. Elsewhere a change shows its glyph (`Formatting.percentWithGlyph`).
     static func signedPercent(_ percent: Decimal) -> String {
         let rounded = DecimalText.roundHalfUp(percent, scale: 2)
         return (rounded > 0 ? "+" : "") + Formatting.percent(rounded)

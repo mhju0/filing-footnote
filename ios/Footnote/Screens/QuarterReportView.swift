@@ -31,6 +31,10 @@ struct QuarterReportView: View {
     @ViewBuilder private var figures: some View {
         if let period = page.period {
             Section {
+                // One sentence above the figures, the same one the revenue answer gives
+                // (2026-11-26 review, issue 10).
+                SentenceRows(lines: [page.revenueSentence.text(language)])
+                    .accessibilityIdentifier("quarter-sentence")
                 ForEach(page.rows) { row in
                     NavigationLink(value: Route.quarterFigure(page.filing.id, row.metric)) {
                         QuarterFigureRowView(row: row, currency: page.currency)
@@ -73,7 +77,7 @@ struct QuarterReportView: View {
 }
 
 /// One figure as board 15 lays it out: the name on the left; the quarter's value shortened
-/// and, under it, the change from the same quarter a year earlier in sign and word, or why
+/// and, under it, the change from the same quarter a year earlier in glyph and word, or why
 /// there is none, on the right. At accessibility sizes the three lines stack. VoiceOver reads
 /// the exact value.
 private struct QuarterFigureRowView: View {
@@ -163,7 +167,8 @@ struct QuarterFigureView: View {
     var body: some View {
         List {
             ScreenHeader(
-                context: Titles.name(of: page.company, language: language) + Copy.dot + PageCopy.quarterLabel(row.current, language),
+                context: Titles.name(of: page.company, language: language) + Copy.dot
+                    + PageCopy.quarterLabelWithMonths(row.current, language),
                 title: row.metric.name(language))
             headline
             if let prior = row.prior {
@@ -223,11 +228,18 @@ struct QuarterFigureView: View {
 
     private var headline: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(words: PageCopy.shortened(row.current, currency: page.currency, language))
-                .font(.largeTitle.bold())
-                .monospacedDigit()
-                .foregroundStyle(Theme.ink)
-                .fixedSize(horizontal: false, vertical: true)
+            // The rounded amount, the exact one under it (owner pick 2026-11-26, design
+            // direction 9 B).
+            let headline = PageCopy.shortened(row.current, currency: page.currency, language)
+            let exact = exactValue(row.current)
+            BigValue(text: headline)
+            if exact != headline {
+                UnbrokenNumbers(text: PageCopy.exactAmount(exact, language))
+                    .font(.subheadline)
+                    .monospacedDigit()
+                    .foregroundStyle(Theme.muted)
+                    .accessibilityIdentifier("quarter-figure-exact")
+            }
             switch row.comparison {
             case .result(let change):
                 if let prior = row.prior {
@@ -263,7 +275,7 @@ struct QuarterFigureView: View {
     }
 
     private func compactRow(_ figure: QuarterFigure) -> some View {
-        let period = PageCopy.quarterLabel(figure, language)
+        let period = PageCopy.quarterLabelWithMonths(figure, language)
         return FactRow(
             label: period,
             value: PageCopy.shortened(figure, currency: page.currency, language),

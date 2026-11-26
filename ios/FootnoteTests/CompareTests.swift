@@ -259,6 +259,8 @@ struct PhraseBreakTests {
             #expect(phrases.joined(separator: " ") == PageCopy.changeFromLastYear(percent, language))
         }
         #expect(PageCopy.changeFromLastYearPhrases(Decimal(string: "16.2")!, .ko)
-            == ["+16.20%", "늘었어요\u{00A0}· 작년보다"])
+            == ["▲\u{00A0}16.20%", "늘었어요\u{00A0}· 작년보다"])
+        #expect(PageCopy.changeFromLastYearPhrases(Decimal(string: "-14.334")!, .en)
+            == ["▼\u{00A0}14.33%", "down from last year"])
     }
 }

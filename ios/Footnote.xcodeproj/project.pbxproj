@@ -38,6 +38,7 @@
 		81CAD0ED4CF207C78847AC4B /* FigureCompareUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54D2C9D9FA8B8C5FC1B1C2CE /* FigureCompareUITests.swift */; };
 		845DF390B5E0D3CFD0789B56 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC289A12582A8B34DF6AD1CD /* Theme.swift */; };
 		86CD4D1EB16C9CC2ECCAD48E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A5158F1E7A83D45A03BF2540 /* Assets.xcassets */; };
+		99E50A35C2A82176E435F22A /* SummaryCardTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00AF8594734ABB2BB355F404 /* SummaryCardTests.swift */; };
 		A650145FEDFAB26885379208 /* filing-facts.json in Resources */ = {isa = PBXBuildFile; fileRef = FE38B31209FBFAD5D8F880A1 /* filing-facts.json */; };
 		A6F115BDD483A134FE63EA0E /* FootnoteKit in Frameworks */ = {isa = PBXBuildFile; productRef = 9F673E045A19D40A0571831C /* FootnoteKit */; };
 		B30164E0C64046AF5128AC21 /* SourceCopy.swift in Sources */ = {isa = PBXBuildFile; fileRef = B870352A36D6FCACD283FF85 /* SourceCopy.swift */; };
@@ -53,6 +54,7 @@
 		DDA675971087F266809D199A /* FactLabels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17DABD04C86B387AB9155CAA /* FactLabels.swift */; };
 		E4FDB3841AF5B3BFA18CA247 /* footnote.sqlite in Resources */ = {isa = PBXBuildFile; fileRef = D0E3DC947AE76FA1DBF99AFA /* footnote.sqlite */; };
 		EF371CEA4F797D5EFEF45944 /* QuarterReportUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BCA2D816402190C3607EC91 /* QuarterReportUITests.swift */; };
+		F20BD55EC6EF1C4D5930EEB8 /* CompanySummaryCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AB4DEC26CD67CDABF505B64 /* CompanySummaryCard.swift */; };
 		F3C16DAFFB27788E9901ABC8 /* footnote.sqlite in Resources */ = {isa = PBXBuildFile; fileRef = D0E3DC947AE76FA1DBF99AFA /* footnote.sqlite */; };
 /* End PBXBuildFile section */
 
@@ -74,9 +76,11 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		00AF8594734ABB2BB355F404 /* SummaryCardTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SummaryCardTests.swift; sourceTree = "<group>"; };
 		03173DCF226C21F70DD7DD42 /* FigureScreens.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FigureScreens.swift; sourceTree = "<group>"; };
 		0586064CD3DD81BAE04243EB /* AccessibilityAuditUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessibilityAuditUITests.swift; sourceTree = "<group>"; };
 		0935B3701FCD891C689475F4 /* Footnote.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Footnote.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		0AB4DEC26CD67CDABF505B64 /* CompanySummaryCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompanySummaryCard.swift; sourceTree = "<group>"; };
 		0B925AA3157EEF14E56E6451 /* KeepAll.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeepAll.swift; sourceTree = "<group>"; };
 		0CEB9F0F6A890E7BA9ADA8CB /* FootnoteTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FootnoteTests.swift; sourceTree = "<group>"; };
 		0DD3DC3BFB1504B093423E4F /* FootnoteTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = FootnoteTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -224,6 +228,7 @@
 				0CEB9F0F6A890E7BA9ADA8CB /* FootnoteTests.swift */,
 				0E68E997A5AC60F2CD5E39DB /* GuideTests.swift */,
 				DC07D6DBFF8C7816D195A2B1 /* SourceCopyTests.swift */,
+				00AF8594734ABB2BB355F404 /* SummaryCardTests.swift */,
 			);
 			path = FootnoteTests;
 			sourceTree = "<group>";
@@ -244,6 +249,7 @@
 				83D0E13ABF3BD2C1B509E51D /* CompaniesView.swift */,
 				F3BC53A364995EEBA70750C3 /* CompanyCompare.swift */,
 				1451043C5F97E78360D49B1A /* CompanyPageView.swift */,
+				0AB4DEC26CD67CDABF505B64 /* CompanySummaryCard.swift */,
 				03173DCF226C21F70DD7DD42 /* FigureScreens.swift */,
 				9945C6216AEFA396D190DF4C /* FilingPageView.swift */,
 				F3EEEDE3C8248C6812127F6B /* GuideView.swift */,
@@ -464,6 +470,7 @@
 				65603A66B51C890443BF4D11 /* FootnoteTests.swift in Sources */,
 				CB020CE466CF01BA12BD1CB2 /* GuideTests.swift in Sources */,
 				21D91F8BEC83D84BF56CE136 /* SourceCopyTests.swift in Sources */,
+				99E50A35C2A82176E435F22A /* SummaryCardTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -494,6 +501,7 @@
 				7F5D19558056B19C0D92F257 /* CompaniesView.swift in Sources */,
 				7743B85CF8598A5146EDB016 /* CompanyCompare.swift in Sources */,
 				38E071F6C439E5A6631C71EF /* CompanyPageView.swift in Sources */,
+				F20BD55EC6EF1C4D5930EEB8 /* CompanySummaryCard.swift in Sources */,
 				7043A98ED52874F41EE22664 /* Copy.swift in Sources */,
 				DDA675971087F266809D199A /* FactLabels.swift in Sources */,
 				33649A6A85C0D9AA9E8BE128 /* FigureScreens.swift in Sources */,

@@ -34,8 +34,9 @@ final class AskQuestionsUITests: XCTestCase {
     @MainActor func testQuestionOpensItsAnswerAndTheSourceFiling() throws {
         let app = try launch("company=\(Self.samsung)", language: "ko")
         let question = identified("ask-revenue", in: app)
-        XCTAssertTrue(question.waitForExistence(timeout: 10))
+        // The summary card sits above the questions; a list creates a row only near the screen.
         reveal(question, in: app)
+        XCTAssertTrue(question.waitForExistence(timeout: 10))
         XCTAssertEqual(question.label, "매출은 어때요?")
         // Every question is a full-size target.
         for intent in ["should_buy", "fundamentals", "recent_trend", "profit_or_loss", "revenue", "next_quarter_revenue"] {
@@ -51,7 +52,7 @@ final class AskQuestionsUITests: XCTestCase {
         XCTAssertTrue(revenue.exists)
         // VoiceOver reads the exact amount and the change in words.
         XCTAssertTrue(revenue.label.hasPrefix("매출, 86조 617억 4,700만원"), revenue.label)
-        XCTAssertTrue(revenue.label.contains("8.80퍼센트 늘었어요"), revenue.label)
+        XCTAssertTrue(revenue.label.contains("8.80퍼센트 증가"), revenue.label)
         XCTAssertTrue(identified("answer-year-revenue", in: app).exists)
 
         let source = identified("answer-source-\(Self.samsungQuarter)", in: app)
@@ -63,8 +64,8 @@ final class AskQuestionsUITests: XCTestCase {
     @MainActor func testBuyingIsDeflectedToQuestionsTheFilingsAnswer() throws {
         let app = try launch("company=\(Self.samsung)", language: "en")
         let question = identified("ask-should_buy", in: app)
-        XCTAssertTrue(question.waitForExistence(timeout: 10))
         reveal(question, in: app)
+        XCTAssertTrue(question.waitForExistence(timeout: 10))
         question.tap()
 
         XCTAssertTrue(identified("answer-page", in: app).waitForExistence(timeout: 5))

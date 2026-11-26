@@ -101,7 +101,7 @@ final class CoreFlowUITests: XCTestCase {
         reveal(revenue, in: app)
         revenue.tap()
         XCTAssertTrue(identified("figure-page", in: app).waitForExistence(timeout: 5))
-        XCTAssertTrue(element(ko ? "퍼센트 늘었어요" : "percent from the year before", in: app).exists)
+        XCTAssertTrue(element(ko ? "퍼센트 증가" : "percent from the year before", in: app).exists)
         let prior = element(ko ? "2024 회계연도" : "FY2024", in: app)
         reveal(prior, in: app)
         XCTAssertTrue(prior.exists)
@@ -109,7 +109,7 @@ final class CoreFlowUITests: XCTestCase {
         // Compare with last year and its calculation.
         tapRevealed(app.buttons["compare-last-year"], in: app)
         XCTAssertTrue(identified("year-compare-page", in: app).waitForExistence(timeout: 5))
-        XCTAssertTrue(identified("year-change", in: app).label.contains(ko ? "늘었어요" : "up"))
+        XCTAssertTrue(identified("year-change", in: app).label.contains(ko ? "증가" : "increased"))
         tapRevealed(app.buttons["see-calculation"], in: app)
         XCTAssertTrue(identified("calculation-page", in: app).waitForExistence(timeout: 5))
         XCTAssertTrue(identified("equation", in: app).exists)

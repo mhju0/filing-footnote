@@ -374,16 +374,7 @@ private struct Reports {
         _ metrics: [ReportedMetric], statement: (([AnswerFigureRow]) -> AnswerSentence)?
     ) -> AnswerPart {
         guard let page = quarterPage, let first = page.rows.first else { return .statement(.quarterMissing) }
-        let rows = metrics.map { metric -> AnswerFigureRow in
-            let found = page.rows.first { metric.isNetIncome ? $0.metric.isNetIncome : $0.metric == metric }
-            guard let found else { return AnswerFigureRow(metric: metric, current: nil, prior: nil, change: nil) }
-            let change: Comparison<Decimal> = switch found.comparison {
-            case .result(let result): .result(result.percentChange)
-            case .refusal(let refusal): .refusal(refusal)
-            }
-            return AnswerFigureRow(
-                metric: found.metric, current: found.current.amount, prior: found.prior?.amount, change: change)
-        }
+        let rows = page.answerRows(metrics)
         let prior = page.priorPeriod.map { AnswerPeriod(start: $0.start, end: $0.end) }
         return .figures(AnswerFigures(
             span: .quarter(fiscalYear: first.current.fiscalYear, fiscalQuarter: first.current.fiscalQuarter),
@@ -431,4 +422,63 @@ private extension QuarterFigure {
 
 private extension Figure {
     var amount: AnswerAmount { AnswerAmount(value: value, unit: unit, currency: currency) }
+}
+
+extension QuarterPage {
+    /// The quarter's figures for `metrics` as answers show them. A metric the report does not
+    /// state stays as a row with no figure; net income stands in for the attributable figure.
+    func answerRows(_ metrics: [ReportedMetric]) -> [AnswerFigureRow] {
+        metrics.map { metric -> AnswerFigureRow in
+            let found = rows.first { metric.isNetIncome ? $0.metric.isNetIncome : $0.metric == metric }
+            guard let found else { return AnswerFigureRow(metric: metric, current: nil, prior: nil, change: nil) }
+            let change: Comparison<Decimal> = switch found.comparison {
+            case .result(let result): .result(result.percentChange)
+            case .refusal(let refusal): .refusal(refusal)
+            }
+            return AnswerFigureRow(
+                metric: found.metric, current: found.current.amount, prior: found.prior?.amount, change: change)
+        }
+    }
+
+    /// The sentence that reads the quarter's revenue against the same quarter a year earlier
+    /// (2026-11-26 review, issue 10): the same fixed sentence the revenue answer and the
+    /// company page's summary use.
+    public var revenueSentence: AnswerSentence {
+        CompanyAnswerer.revenueQuarter(answerRows([.revenue]))
+    }
+}
+
+/// The company page's summary card (owner pick 2026-11-26, design direction 1 B, with the
+/// review's "How did it do" card): the newest annual report's revenue against the year
+/// before, then the newest quarter's revenue, operating income and net income against the
+/// same quarter a year earlier. Built by the same code and sentences as the answers, so the
+/// card, the quarter report and an answer never show one figure two ways.
+public struct CompanySummary: Sendable, Hashable {
+    /// `.figures` with one revenue row, or `.statement(.yearMissing)`.
+    public let year: AnswerPart
+    /// `.figures` with the three main rows, or `.statement(.quarterMissing)`.
+    public let quarter: AnswerPart
+
+    /// The annual figures, when there is an annual report.
+    public var yearFigures: AnswerFigures? {
+        if case .figures(let figures) = year { return figures }
+        return nil
+    }
+
+    /// The quarter's figures, when there is a quarterly report.
+    public var quarterFigures: AnswerFigures? {
+        if case .figures(let figures) = quarter { return figures }
+        return nil
+    }
+}
+
+extension CompanyAnswerer {
+    /// The summary card for a company; nil for a company the bundle does not hold.
+    public static func summary(store: BundleStore, companyID: String) -> CompanySummary? {
+        guard store.company(id: companyID) != nil else { return nil }
+        let reports = Reports(store: store, companyID: companyID)
+        return CompanySummary(
+            year: reports.year([.revenue], statement: revenueYear),
+            quarter: reports.quarter(mainMetrics, statement: revenueQuarter))
+    }
 }

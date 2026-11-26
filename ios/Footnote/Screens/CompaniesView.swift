@@ -5,7 +5,7 @@ struct CompaniesView: View {
     @Environment(\.language) private var language
     @State private var market: Regulator = .dart
     @State private var sort: CompanySort = .latest
-    @State private var query = ""
+    @State private var query = LaunchRoute.searchQuery ?? ""
     let store: BundleStore
 
     var body: some View {
@@ -80,6 +80,8 @@ private struct CompanyDirectory<Row: View>: View {
     @Binding var market: Regulator
     @Binding var sort: CompanySort
     var showsDataFooter = false
+    /// Set in the sidebar; see `DirectoryMatchSections`.
+    var open: ((Route) -> Void)?
     @ViewBuilder let row: (Company) -> Row
 
     var body: some View {
@@ -123,6 +125,9 @@ private struct CompanyDirectory<Row: View>: View {
                 DataFooter(meta: store.meta)
             }
         }
+        if search.isActive {
+            DirectoryMatchSections(store: store, query: query, open: open)
+        }
     }
 }
 
@@ -143,9 +148,87 @@ private struct CompanySearch {
         .sorted { CompanySort.namePrecedes($0, $1, language: language) }
     }
 
-    private static func normalized(_ text: String) -> String {
-        text.folding(options: [.caseInsensitive, .diacriticInsensitive, .widthInsensitive], locale: nil)
-            .filter { !$0.isWhitespace && $0 != "." && $0 != "-" }
+    private static func normalized(_ text: String) -> String { SearchText.normalized(text) }
+}
+
+/// Below the companies a search finds: recent filings whose type or title matches, and
+/// glossary terms (2026-11-26 review, issue 15). On iPhone a row pushes its screen; in the
+/// sidebar `open` shows it in the split view's columns.
+private struct DirectoryMatchSections: View {
+    @Environment(\.language) private var language
+    let store: BundleStore
+    let query: String
+    let open: ((Route) -> Void)?
+
+    var body: some View {
+        let matches = store.directoryMatches(query, language: language)
+        if !matches.filings.isEmpty {
+            Section {
+                ForEach(matches.filings) { filing in
+                    row(.filing(filing.id), identifier: "search-filing-\(filing.id)") {
+                        FilingRow(
+                            filing: filing, dataAsOf: store.meta.dataAsOf,
+                            companyName: store.company(id: filing.companyID).map { Titles.name(of: $0, language: language) },
+                            secondLine: store.firstSummaryLine(filingID: filing.id, language: language))
+                    }
+                }
+            } header: {
+                SectionTitle(language("공시", "Filings"))
+                    .accessibilityAddTraits(.isHeader)
+            } footer: {
+                if matches.filingCount > matches.filings.count {
+                    SectionNote(text: language(
+                        "맞는 공시 \(matches.filingCount)건 중 최근 \(matches.filings.count)건이에요.",
+                        "The latest \(matches.filings.count) of \(matches.filingCount) matching filings."))
+                }
+            }
+        }
+        if !matches.terms.isEmpty {
+            Section {
+                ForEach(matches.terms, id: \.termKey) { entry in
+                    row(.glossary(entry.termKey), identifier: "search-term-\(entry.termKey)") {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(words: entry.term)
+                                .font(.body.weight(.semibold))
+                                .foregroundStyle(Theme.ink)
+                                .fixedSize(horizontal: false, vertical: true)
+                            Text(words: entry.plain)
+                                .font(.subheadline)
+                                .foregroundStyle(Theme.muted)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        .padding(.vertical, 4)
+                        .accessibilityElement(children: .combine)
+                    }
+                }
+            } header: {
+                SectionTitle(language("용어", "Glossary"))
+                    .accessibilityAddTraits(.isHeader)
+            }
+        }
+    }
+
+    @ViewBuilder private func row<Label: View>(
+        _ route: Route, identifier: String, @ViewBuilder label: () -> Label
+    ) -> some View {
+        if let open {
+            Button {
+                open(route)
+            } label: {
+                HStack(spacing: 12) {
+                    label().frame(maxWidth: .infinity, alignment: .leading)
+                    Chevron()
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .listRowBackground(Theme.surface)
+            .accessibilityIdentifier(identifier)
+        } else {
+            NavigationLink(value: route) { label() }
+                .listRowBackground(Theme.surface)
+                .accessibilityIdentifier(identifier)
+        }
     }
 }
 
@@ -167,19 +250,43 @@ struct DirectorySearchField: View {
                 Image(systemName: "magnifyingglass")
                     .foregroundStyle(Theme.muted)
                     .accessibilityHidden(true)
-                TextField(title, text: $query, prompt: Text(words: prompt).foregroundStyle(Theme.muted))
-                    .textFieldStyle(.plain)
-                    .foregroundStyle(Theme.ink)
-                    .autocorrectionDisabled()
-                    #if os(iOS)
-                    .textInputAutocapitalization(.never)
-                    #endif
-                    .focused($focused)
-                    .submitLabel(.search)
-                    .onSubmit { focused = false }
-                    .accessibilityIdentifier(identifier)
-                    .padding(.vertical, 8)
-                    .frame(minHeight: Theme.minTarget)
+                // Vertical, so a long query wraps at large text sizes rather than clips
+                // (D106, accessibility audit). The field's own prompt stays on one line and
+                // clips, so the prompt is drawn behind the field, where it wraps and sets the
+                // height; a tap on it focuses the field. VoiceOver reads it as the hint.
+                // Return ends the search, as on a one-line field.
+                ZStack(alignment: .topLeading) {
+                    if query.isEmpty {
+                        Text(words: prompt)
+                            .foregroundStyle(Theme.muted)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .accessibilityHidden(true)
+                    }
+                    TextField(title, text: $query, prompt: Text(verbatim: ""), axis: .vertical)
+                        .lineLimit(1...4)
+                        .textFieldStyle(.plain)
+                        .foregroundStyle(Theme.ink)
+                        .autocorrectionDisabled()
+                        #if os(iOS)
+                        .textInputAutocapitalization(.never)
+                        #endif
+                        .focused($focused)
+                        .submitLabel(.search)
+                        .onSubmit { focused = false }
+                        .onChange(of: query) { _, text in
+                            guard text.contains(where: \.isNewline) else { return }
+                            query = text.filter { !$0.isNewline }
+                            focused = false
+                        }
+                        // A vertical field with an empty prompt has no name of its own.
+                        .accessibilityLabel(title)
+                        .accessibilityHint(prompt)
+                        .accessibilityIdentifier(identifier)
+                }
+                .padding(.vertical, 8)
+                .frame(maxWidth: .infinity, minHeight: Theme.minTarget, alignment: .leading)
+                .contentShape(Rectangle())
+                .onTapGesture { focused = true }
                 if !query.isEmpty {
                     Button {
                         query = ""
@@ -267,7 +374,12 @@ private struct CompanyMarketPicker: View {
             Text(language("미국", "US")).tag(Regulator.sec)
         }
         .pickerStyle(.segmented)
+        #if os(iOS)
+        // Segments at least 44 points tall (accessibility audit, 2026-11-26).
+        .controlSize(.extraLarge)
+        #endif
         .frame(minHeight: Theme.minTarget)
+        .sensoryFeedback(.selection, trigger: market)
         .accessibilityIdentifier("company-market")
     }
 }
@@ -307,6 +419,7 @@ private struct CompanySortMenu: View {
             Text(verbatim: language("정렬", "Sort by") + ": " + sort.title(language))
         }
         #endif
+        .sensoryFeedback(.selection, trigger: sort)
         .accessibilityLabel(language("정렬", "Sort by"))
         .accessibilityValue(sort.title(language))
         .accessibilityIdentifier("company-sort")
@@ -410,13 +523,16 @@ struct SidebarView: View {
     @Environment(\.language) private var language
     let store: BundleStore
     @Binding var selection: Item?
+    /// Shows a filing or term the search found in the split view's columns.
+    let open: (Route) -> Void
     @State private var market: Regulator
     @State private var sort: CompanySort = .latest
-    @State private var query = ""
+    @State private var query = LaunchRoute.searchQuery ?? ""
 
-    init(store: BundleStore, selection: Binding<Item?>) {
+    init(store: BundleStore, selection: Binding<Item?>, open: @escaping (Route) -> Void) {
         self.store = store
         _selection = selection
+        self.open = open
         if case .company(let id) = selection.wrappedValue {
             _market = State(initialValue: store.company(id: id)?.regulator ?? .dart)
         } else {
@@ -434,7 +550,7 @@ struct SidebarView: View {
                         .tag(Item.glossary)
                 }
             }
-            CompanyDirectory(store: store, query: $query, market: $market, sort: $sort) { company in
+            CompanyDirectory(store: store, query: $query, market: $market, sort: $sort, open: open) { company in
                 CompanyRow(company: company, latest: store.latestFiling(companyID: company.id),
                            isSelected: selection == .company(company.id))
                     .accessibilityIdentifier("company-\(company.id)")

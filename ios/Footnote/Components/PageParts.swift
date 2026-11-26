@@ -11,7 +11,7 @@ struct PageHeader: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             FlowLayout(spacing: 6, lineSpacing: 4) {
-                TagView(text: filing.category.label(language), kind: .category)
+                TagView(text: filing.category.label(language), kind: .category, symbol: filing.category.symbol)
                 if filing.isCorrected {
                     TagView(text: language("정정됨", "Corrected"), kind: .corrected)
                 }
@@ -111,6 +111,7 @@ struct TintNote: View {
 /// `details` lines go under the value; any `exact` lines appear under the row on a tap.
 struct FactRow: View {
     @Environment(\.dynamicTypeSize) private var typeSize
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let label: String
     let value: String
     var details: [String] = []
@@ -150,7 +151,9 @@ struct FactRow: View {
         .padding(.vertical, 2)
         .frame(minHeight: Theme.minTarget)
         .contentShape(Rectangle())
-        .onTapGesture { if !exact.isEmpty { showsExact.toggle() } }
+        .onTapGesture {
+            if !exact.isEmpty { Motion.perform(reduceMotion: reduceMotion) { showsExact.toggle() } }
+        }
         .listRowBackground(Theme.surface)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityText)
@@ -238,15 +241,13 @@ struct SectionNote: View {
 }
 
 extension View {
-    /// A disclosure group whose chevron sits inside the row on the Mac, in line with the
-    /// rows around it rather than out in the margin (2026-11-26 review, issue 14). iPhone and
-    /// iPad keep the system style.
+    /// A disclosure group drawn as one button the width of the row. On the Mac the chevron
+    /// sits inside the row, in line with the rows around it rather than out in the margin
+    /// (2026-11-26 review, issue 14). On iPhone and iPad it stays at the trailing edge where
+    /// the system draws it; the system group in a list makes the chevron a separate button
+    /// with no label, about ten by fourteen points (D106, accessibility audit).
     func rowDisclosure() -> some View {
-        #if os(macOS)
         disclosureGroupStyle(InsetDisclosureStyle())
-        #else
-        self
-        #endif
     }
 
     /// A disclosure group inside a row's own stack, such as a source sentence (D101): one
@@ -266,22 +267,26 @@ private struct InsetDisclosureStyle: DisclosureGroupStyle {
 
 private struct InsetDisclosure: View {
     @Environment(\.language) private var language
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let configuration: DisclosureGroupStyleConfiguration
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Button {
-                withAnimation(.snappy) { configuration.isExpanded.toggle() }
+                Motion.perform(reduceMotion: reduceMotion) { configuration.isExpanded.toggle() }
             } label: {
                 HStack(spacing: 8) {
-                    Image(systemName: "chevron.right")
-                        .font(.footnote.weight(.semibold))
-                        .foregroundStyle(Theme.muted)
-                        .rotationEffect(.degrees(configuration.isExpanded ? 90 : 0))
-                        .accessibilityHidden(true)
+                    #if os(macOS)
+                    chevron
                     configuration.label
                     Spacer(minLength: 0)
+                    #else
+                    configuration.label
+                    Spacer(minLength: 0)
+                    chevron
+                    #endif
                 }
+                .frame(minHeight: Theme.minTarget)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -293,6 +298,14 @@ private struct InsetDisclosure: View {
                 .padding(.bottom, 4)
             }
         }
+    }
+
+    private var chevron: some View {
+        Image(systemName: "chevron.right")
+            .font(.footnote.weight(.semibold))
+            .foregroundStyle(Theme.muted)
+            .rotationEffect(.degrees(configuration.isExpanded ? 90 : 0))
+            .accessibilityHidden(true)
     }
 }
 
