@@ -94,7 +94,7 @@ It has not falsely blocked a faithful line, and it misses many unfaithful ones. 
 
 ### The gate
 
-Requires Python 3.11. On macOS it also runs the FootnoteKit tests with Xcode's `swift test`; XcodeGen&nbsp;2.47.0&nbsp;is&nbsp;optional.
+Requires Python 3.11. On macOS it also runs the FootnoteKit tests with Xcode's `swift test`; XcodeGen&nbsp;2.48.0&nbsp;is&nbsp;optional.
 
 ```bash
 python3.11 -m venv .venv

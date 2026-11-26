@@ -39,7 +39,7 @@ fi
 # ios/Footnote.xcodeproj is generated from ios/project.yml and committed. Regenerate it
 # and compare. On drift, or when generation itself fails, restore the checked-in copy and
 # fail. Another XcodeGen version writes a different file, so the version is pinned.
-XCODEGEN_VERSION="2.47.0"
+XCODEGEN_VERSION="2.48.0"
 xcodeproj_current() {
   found="$(xcodegen --version 2>/dev/null | sed -n 's/^Version: //p')"
   if [ "$found" != "$XCODEGEN_VERSION" ]; then
