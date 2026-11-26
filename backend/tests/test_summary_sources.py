@@ -116,6 +116,22 @@ def test_a_release_copies_each_lines_span_in_source_order(approved, tmp_path) ->
     assert report["summary_sources"]["sections_withheld"] == []
 
 
+def test_a_wrapped_line_in_a_span_ships_as_one_line(approved, tmp_path) -> None:
+    # A soft-wrapped 8-K sentence (D102) keeps its line break in the report; the bundle's
+    # excerpt reads as one line, still as long as its offsets, and verify compares it.
+    records = supported_records(approved.summaries)
+    sec = _sec_event(approved)
+    wrapped = "The compensation of our named executive officers\nas disclosed was approved."
+    span = {"start": 100, "end": 100 + len(wrapped), "text": wrapped}
+    _edit(records, sec, "en", "summary", 1, spans=[span])
+    report = _report(tmp_path, records)
+    out = tmp_path / "footnote.sqlite"
+    assert _export(approved, out, *RELEASE, "--faithfulness", str(report)) == 0
+    where = f"filing_id = '{sec}' AND lang = 'en' AND section = 'summary' AND line_no = 1"
+    assert [row[6] for row in _sources(out, where)] == [wrapped.replace("\n", " ")]
+    assert _verify(out, report) == 0
+
+
 @pytest.mark.parametrize("verdict", [faithfulness.UNSUPPORTED, faithfulness.NO_SOURCE])
 def test_a_release_refuses_a_line_whose_span_cannot_ship(approved, verdict) -> None:
     records = supported_records(approved.summaries)

@@ -1011,15 +1011,21 @@ def source_rows(
 ) -> list[tuple]:
     """The summary_sources rows for one line's record, in bundle column order: one row per span
     sentence in source order, or one row without an excerpt for a template line. Empty when the
-    record's span cannot ship: an unsupported or unchecked line, or a line with no span."""
+    record's span cannot ship: an unsupported or unchecked line, or a line with no span. A line
+    break inside a span (a soft-wrapped line, D102) becomes a space, so the app shows the
+    sentence as one run of text; the excerpt keeps its length, so it still fits its offsets."""
     verdict = record["verdict"]
     if verdict == TEMPLATE:
         return [(*key, 0, TEMPLATE, None, excerpt_lang, None, None)]
     if verdict not in SHIPPED_VERDICTS:
         return []
     spans = sorted(record.get("spans") or (), key=lambda s: (s["start"], s["end"]))
-    return [(*key, position, verdict, span["text"], excerpt_lang, span["start"], span["end"])
-            for position, span in enumerate(spans)]  # fmt: skip
+    return [(*key, position, verdict, _one_line(span["text"]), excerpt_lang, span["start"],
+             span["end"]) for position, span in enumerate(spans)]  # fmt: skip
+
+
+def _one_line(text: str) -> str:
+    return text.replace("\r", " ").replace("\n", " ")
 
 
 SOURCE_COLUMNS = ("filing_id", "lang", "section", "line_no", "position", "verdict", "excerpt",
