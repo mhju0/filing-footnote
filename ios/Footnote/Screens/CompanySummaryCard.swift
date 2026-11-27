@@ -168,9 +168,10 @@ struct BalancedText: View {
         return AskCopy.halves(text)
     }
 
-    /// A WORD JOINER after each hyphen, so `(10-K)` wraps whole, not as `(10-` / `K)`.
-    static func joiningHyphens(_ text: String) -> String {
-        text.replacingOccurrences(of: "-", with: "-\u{2060}")
+    /// A WORD JOINER after each hyphen, so `(10-K)` wraps whole, not as `(10-` / `K)`. A
+    /// hyphen already joined keeps its one joiner.
+    nonisolated static func joiningHyphens(_ text: String) -> String {
+        text.replacingOccurrences(of: "-(?!\u{2060})", with: "-\u{2060}", options: .regularExpression)
     }
 }
 

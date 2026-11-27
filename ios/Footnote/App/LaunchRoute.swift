@@ -162,9 +162,10 @@ struct LaunchRoute: Sendable {
     }
 
     /// Debug builds only: `-FootnoteScroll top|center|bottom|ask` opens a filing or annual
-    /// page scrolled to its numbers (`center`) or its end (`bottom`), a figure, calculation
-    /// or company compare page scrolled to its end, and a company page scrolled to its
-    /// questions (`ask`), so the screenshot script can capture a page longer than the screen.
+    /// page scrolled to its numbers (`center`) or its end (`bottom`), a calculation page
+    /// scrolled to its inputs (`center`), a figure, calculation or company compare page
+    /// scrolled to its end, and a company page scrolled to its questions (`ask`), so the
+    /// screenshot script can capture a page longer than the screen.
     static let scrollTarget: (id: String, anchor: UnitPoint)? = {
         #if DEBUG
         let arguments = ProcessInfo.processInfo.arguments

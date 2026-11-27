@@ -108,6 +108,31 @@ struct SummaryCardTests {
         }
     }
 
+    /// A form name wraps whole on every screen, as on the summary card (#71): at the
+    /// accessibility sizes `(10-K)` broke at its hyphen in the annual page title
+    /// (`FY2026 (10-` / `K)`) and the figure page's source note (`연차보고서 (10-` / `K)`).
+    /// Every text shown through `Text(words:)` now joins the hyphen and slash of a word with
+    /// a digit; a word without one keeps its breaks. The text VoiceOver reads is unchanged.
+    @Test @MainActor func formNamesNeverBreakInsideOnEveryScreen() throws {
+        let joiner = "\u{2060}"
+        let annual = try #require(store.filing(id: "sec:0000320193-25-000079"))
+        let quarter = try #require(store.filing(id: "sec:0000320193-26-000020"))
+        for language in Language.allCases {
+            for (filing, form) in [(annual, "10-K"), (quarter, "10-Q")] {
+                for text in [Titles.title(for: filing, language: language), PageCopy.source(filing, language),
+                             PageCopy.inputSource(filing, language)] {
+                    let shown = text.keepingWords
+                    #expect(text.contains("(\(form))"))
+                    #expect(shown.contains("(" + form.replacingOccurrences(of: "-", with: "-" + joiner) + ")"))
+                    #expect(shown.replacingOccurrences(of: joiner, with: "") == text)
+                }
+            }
+        }
+        #expect("(8-K/A)".keepingWords == "(8-\(joiner)K/\(joiner)A)")
+        #expect("Half-year report".keepingWords == "Half-year report")
+        #expect(BalancedText.joiningHyphens(BalancedText.joiningHyphens("(10-K)")) == "(10-\(joiner)K)")
+    }
+
     /// Design direction 7 B: one symbol per category, none shared.
     @Test func everyCategoryHasItsOwnSymbol() {
         let symbols = FilingCategory.allCases.map(\.symbol)
