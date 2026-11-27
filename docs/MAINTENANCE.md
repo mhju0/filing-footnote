@@ -25,7 +25,7 @@ operation require an explicit owner decision to reopen development.
 - The October 3 Gemini Flash-Lite evaluation passed 24 cases over that corpus;
   questions cover Apple, Microsoft and Samsung Electronics only. Fourteen are
   full-answer cases and ten are retrieval cases. Hit@1/Hit@3/MRR measure retrieval,
-  not general financial accuracy. See [evaluation method](https://github.com/mhju0/filing-footnote/blob/215a2ad96ddff79d803cdd90ece902beedb6f451/backend/evals/README.md).
+  not general financial accuracy. See [evaluation method](../backend/evals/README.md).
 - Offline and database CI checks are separate from live provider evaluation.
   iOS UI tests use mock transport. Physical-device/full accessibility and fresh
   live/cold-start readiness are not certified by this patch release.
