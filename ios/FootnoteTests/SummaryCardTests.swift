@@ -76,17 +76,36 @@ struct SummaryCardTests {
     /// The date reads the same as `Copy.filedOn`.
     @Test @MainActor func sourcePartsWrapWithoutOrphans() throws {
         let date = try #require(CivilDate(iso: "2026-11-16"))
-        let korean = SummarySource.filedOn(date, .ko)
+        let korean = Copy.wrappingFiledOn(date, .ko)
         #expect(korean.spokenSeparators == Copy.filedOn(date, .ko).spokenSeparators)
         #expect(AskCopy.halves(korean) == ["2026년", "11월" + Copy.noBreak + "16일 공시"])
-        #expect(SummarySource.filedOn(date, .en) == Copy.filedOn(date, .en))
-        #expect(AskCopy.halves(SummarySource.filedOn(date, .en)) == ["Filed", Copy.unbroken("Nov 16, 2026")])
+        #expect(Copy.wrappingFiledOn(date, .en) == Copy.filedOn(date, .en))
+        #expect(AskCopy.halves(Copy.wrappingFiledOn(date, .en)) == ["Filed", Copy.unbroken("Nov 16, 2026")])
 
         let parts = SummarySource.phrases(["출처", "2026년 3분기 보고서", korean])
         #expect(BalancedText.halves(parts[1], atComma: true) == ["2026년", "3분기 보고서" + Copy.noBreak + "·"])
         let english = SummarySource.phrases(["Source", "Annual report, FY2025", "Filed"])
         #expect(BalancedText.halves(english[1], atComma: true) == ["Annual report,", "FY2025" + Copy.noBreak + "·"])
         #expect(BalancedText.joiningHyphens("(10-K)") == "(10-\u{2060}K)")
+    }
+
+    /// Every other screen that shows the filed date breaks it where the summary card does:
+    /// the page header and an answer's source row lay it out as `BalancedText` (`2026년` /
+    /// `11월 16일 공시`), and the source notes on figure and calculation pages may break after
+    /// the year, never inside `11월 16일`. They read the same as `Copy.filedOn`.
+    @Test @MainActor func filedDateWrapsAfterItsYearOnEveryScreen() throws {
+        let filing = try #require(store.filing(id: "dart:20261116000111"))
+        let korean = Copy.wrappingFiledOn(filing.filedOn, .ko)
+        #expect(BalancedText.halves(korean, atComma: false) == ["2026년", "11월" + Copy.noBreak + "16일 공시"])
+        for language in Language.allCases {
+            let date = Copy.wrappingFiledOn(filing.filedOn, language)
+            let spoken = Copy.filedOn(filing.filedOn, language).spokenSeparators
+            for note in [PageCopy.source(filing, language), PageCopy.inputSource(filing, language)] {
+                #expect(note.hasSuffix(Copy.dot + date))
+                #expect(note.spokenSeparators.hasSuffix(spoken))
+                #expect(!note.contains("2026년" + Copy.noBreak))
+            }
+        }
     }
 
     /// Design direction 7 B: one symbol per category, none shared.

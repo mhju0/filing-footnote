@@ -363,17 +363,7 @@ struct SummarySource: View {
 
     private static func parts(_ filing: Filing, _ language: Language) -> [String] {
         [AskCopy.source(language), Titles.title(for: filing, language: language),
-         filedOn(filing.filedOn, language)]
-    }
-
-    /// `Copy.filedOn` with a break allowed after the Korean year. Its date is one unbroken
-    /// run, which at the accessibility sizes is wider than the line and broke inside itself
-    /// (`2026년 11월` / `16일 공시`); now it wraps as `2026년` / `11월 16일 공시`. The month
-    /// and day stay together. English already breaks only after `Filed`.
-    static func filedOn(_ date: CivilDate, _ language: Language) -> String {
-        let filed = Copy.filedOn(date, language)
-        guard language == .ko else { return filed }
-        return filed.replacingOccurrences(of: "\(date.year)년" + Copy.noBreak, with: "\(date.year)년 ")
+         Copy.wrappingFiledOn(filing.filedOn, language)]
     }
 
     static func line(_ filing: Filing, _ language: Language) -> String {

@@ -412,11 +412,10 @@ private struct SourceRow: View {
                     .font(.subheadline)
                     .foregroundStyle(Theme.pine)
                     .fixedSize(horizontal: false, vertical: true)
-                Text(words: Copy.filedOn(filing.filedOn, language))
+                BalancedText(text: Copy.wrappingFiledOn(filing.filedOn, language))
                     .font(.footnote)
                     .monospacedDigit()
                     .foregroundStyle(Theme.muted)
-                    .fixedSize(horizontal: false, vertical: true)
             }
             .frame(minHeight: Theme.minTarget, alignment: .leading)
         }
