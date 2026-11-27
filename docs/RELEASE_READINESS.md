@@ -3,7 +3,7 @@
 # Release qualification · 2026-09-09
 
 The owner approved the remediation sequence and company expansion after the
-[initial joint audit](https://github.com/mhju0/filing-agent/blob/main/docs/audits/2026-09-09-release-readiness/README.md).
+[initial joint audit](https://github.com/mhju0/filing-agent/blob/a2b01cdc7e42ba019d9b6e4c1727cc13091d2fe7/docs/audits/2026-09-09-release-readiness/README.md).
 That audit is a historical baseline; this record describes the follow-up.
 
 - Financial prose guards now cover the five audit probes, spelled amounts,

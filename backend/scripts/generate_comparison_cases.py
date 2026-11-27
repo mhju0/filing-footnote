@@ -185,7 +185,7 @@ def cross_in(metric, measure, facts):
             "facts": facts}
 
 
-# --- Verified figures (filing-agent pilot snapshot, 2026-09-07) -------------
+# --- Verified figures (docs/audits/2026-09-07-coverage/pilot-snapshot.json) --
 s22_rev = fy(2022, SAMSUNG, "revenue", "302231360000000")
 s23_rev = fy(2023, SAMSUNG, "revenue", "258935494000000")
 s22_op = fy(2022, SAMSUNG, "operating_income", "43376630000000")

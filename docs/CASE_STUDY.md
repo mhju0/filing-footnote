@@ -297,6 +297,48 @@ pass, and its fixes are recorded (for example D85 for the comparison screens, an
 `90146f2` for the quarter report). The owner kept three things: product scope, visual picks, and approval of every
 summary, glossary entry and piece of screen copy.
 
+## What Footnote dropped from the earlier projects
+
+Filing Digest answered questions with retrieval and a generated narrative. Filing Agent used
+a local model inside a LangGraph workflow. Footnote keeps neither. Each removal rests on a
+recorded result or decision.
+
+**Retrieval and embeddings.** Digest embedded filing chunks with KURE-v1 and searched them
+with pgvector (D3), and Gemini wrote the answer. Its last live evaluation, on 2026-10-03,
+passed 24 of 24 cases about three companies. Its hit and rank measures covered retrieval,
+not general financial accuracy ([MAINTENANCE.md](MAINTENANCE.md)). Footnote has no server:
+the app reads one bundled file ([ADR 0006](adr/0006-bundled-sqlite-with-exact-decimals.md)).
+Nothing in the ingest, build, export or verify path imported Digest's FastAPI service, so
+[D94](DECISIONS.md) deleted the service, search, embeddings and the eval harness that called its API. The
+lock lost 41 packages, among them torch and transformers.
+
+**The local model.** Filing Agent's 2026-09-07 benchmark ran qwen3:8b and gemma4:e4b through
+Ollama on the owner's Mac, three trials per case
+([bench/results.md](https://github.com/mhju0/filing-agent/blob/a2b01cdc7e42ba019d9b6e4c1727cc13091d2fe7/bench/results.md)).
+Samsung Electronics' FY2023 revenue changed by −14.33%. qwen3:8b consistently returned
+−14.38% and gemma4:e4b −14.45%. In a later run both models picked the right evidence and
+still wrote that revenue had increased, and qwen3:8b reported an absent R&D expense as zero
+([run notes](https://github.com/mhju0/filing-agent/blob/a2b01cdc7e42ba019d9b6e4c1727cc13091d2fe7/bench/runs/2026-09-07/README.md)).
+Agent's [ADR 0005](https://github.com/mhju0/filing-agent/blob/a2b01cdc7e42ba019d9b6e4c1727cc13091d2fe7/docs/adr/0005-local-intent-and-deterministic-financial-answers.md)
+then let the model read only the question's intent; code picks the evidence, calculates with
+Decimal and writes the answer. Under that split, Agent's release evaluation passed 120 of 120
+scenario runs over 138 local turns with no source or value mismatch, on paraphrases an agent
+wrote, not independent review
+([evals/RESULTS.md](https://github.com/mhju0/filing-agent/blob/a2b01cdc7e42ba019d9b6e4c1727cc13091d2fe7/evals/RESULTS.md)).
+Footnote keeps the split without Ollama. Groq writes summaries at build time, and each
+passes the guards and the owner's approval before it ships (D68). On iPad and Mac, Apple's on-device model only maps a
+typed question to one of six fixed questions or to none; it never writes an answer or a
+figure (D108).
+
+**The LangGraph agent.** Agent ran each investigation through three LangGraph stages
+(interpretation, evidence and arithmetic, answer persistence) with FastAPI and PostgreSQL, so
+an interrupted stage could be retried
+([ADR 0006](https://github.com/mhju0/filing-agent/blob/a2b01cdc7e42ba019d9b6e4c1727cc13091d2fe7/docs/adr/0006-persisted-local-workflows-and-release-scope.md)).
+Footnote has no accounts or servers, and the app does not chat ([PRODUCT.md](../PRODUCT.md)).
+Each fixed question maps straight to an intent, and code answers it from the bundle with
+fixed sentences that contain no digits (D99). A typed question gets a fresh model session
+each time (D108).
+
 ## Measured results
 
 Counted on 2026-11-20 on branch `docs/portfolio-values`. The bundle counts are from the local

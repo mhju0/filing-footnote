@@ -140,7 +140,7 @@ paths, request limits, and response fields stay as documented above, and no
 endpoint is added. A change to any of them would be a new contract version,
 which this project does not plan to publish.
 
-[Filing Agent](https://github.com/mhju0/filing-agent) is the implemented sister
+[Filing Agent](https://github.com/mhju0/filing-agent/tree/a2b01cdc7e42ba019d9b6e4c1727cc13091d2fe7) is the implemented sister
 project for conversational investigations. It uses a separately qualified,
 pinned snapshot of Digest facts plus regulator supplements. It does not call
 these endpoints, KURE or Digest's LLM provider during a question. Digest owns ingestion and the

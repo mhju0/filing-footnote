@@ -31,6 +31,7 @@ Same machine, PostgreSQL 16 / pgvector 0.8.4, before and after this patch:
   encoder independently reproduced the issue: 260.80 ms → 7.17 ms maximum gap.
   This is a responsiveness improvement, not a claim of faster model computation.
 - **Dependency waste:** [prior CI run](https://github.com/mhju0/filing-digest/actions/runs/33943511811)
+  (workflow at [`d752423`](https://github.com/mhju0/filing-footnote/blob/d75242340dfa0f62f21c8e017f6262aae6120f1c/.github/workflows/ci.yml))
   installed roughly 2 GB of NVIDIA wheels plus a 555 MB torch wheel. CPU
   installation removes that unused GPU dependency chain; network/cache differences
   make whole-job timing a poor controlled benchmark.

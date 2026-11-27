@@ -110,9 +110,9 @@ guessing. It explains; it does not advise or trade.
 
 ## Evidence on Hand
 
-- Verified figures: `filing-agent/docs/audits/2026-09-07-coverage/pilot-snapshot.json`
-  (read-only partner repo), e.g. Samsung Electronics FY2023 revenue 258.94조 원, −14.33%
-  year over year.
+- Verified figures: `docs/audits/2026-09-07-coverage/pilot-snapshot.json` (copied from
+  Filing Agent's 2026-09-07 coverage audit), e.g. Samsung Electronics FY2023 revenue
+  258.94조 원, −14.33% year over year.
 - Data pipeline, guards and tests inherited from Filing Digest in `backend/`.
 - No testimonials, users, ratings or usage numbers exist; never invent them.
 
