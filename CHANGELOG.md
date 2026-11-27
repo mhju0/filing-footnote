@@ -21,6 +21,8 @@ the release bundle is not built and the walkthrough is not recorded.
 - The Filing Digest app, its Pages site and its tests are removed (D77, D80).
 
 **Added**
+- Typed questions on iPad and Mac: Apple's on-device model maps a typed question to
+  one of the six fixed questions or none, with a labelled eval set and runner (D108).
 - The filing page shows the verbatim source sentence behind each summary line on
   demand; bundles move to schema 5 with a `summary_sources` table (D101).
 - `scripts/check.sh`, one command that runs lint, the offline tests, the

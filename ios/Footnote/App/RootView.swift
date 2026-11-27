@@ -21,6 +21,7 @@ struct RootView: View {
         }
         .environment(\.language, language)
         .environment(\.locale, language.locale)
+        .environment(\.questionRouter, QuestionRouting.router)
         .tint(Theme.pine)
         .opensLinksInApp()
     }

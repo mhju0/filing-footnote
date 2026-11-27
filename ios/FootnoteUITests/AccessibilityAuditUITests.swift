@@ -64,6 +64,14 @@ final class AccessibilityAuditUITests: XCTestCase {
         Screen(name: "answer-buy", route: "ask=\(samsung)|should_buy", swipes: 0),
         Screen(name: "answer-next-quarter", route: "ask=\(samsung)|next_quarter_revenue", swipes: 1),
         Screen(name: "answer-fundamentals-sec", route: "ask=\(apple)|fundamentals", swipes: 1),
+        // D108: the typed-question field (stand-in router), empty and after a question none
+        // fits. The empty field is audited from the top: opened scrolled to it, the English
+        // contrast check ran past XCTest's time limit on every try. The none line is checked
+        // where the scroll puts it, at the top of the screen.
+        Screen(name: "company-typed", route: "company=\(samsung)",
+               arguments: ["-FootnoteTypedQuestions", "stub"]),
+        Screen(name: "company-typed-none", route: "company=\(samsung)", swipes: 1,
+               arguments: ["-FootnoteTypedQuestions", "stub", "-FootnoteScroll", "ask", "-FootnoteAsk", "weather"]),
     ]
 
     private static let accessibilityXL = "UICTContentSizeCategoryAccessibilityXL"
@@ -141,14 +149,15 @@ final class AccessibilityAuditUITests: XCTestCase {
         XCTAssertTrue(app.navigationBars.firstMatch.waitForExistence(timeout: 10), config)
         sleep(1)
         waitForStillScreen(app)
-        try audit(app, config, pass: 0)
+        let startsScrolled = screen.arguments.contains("-FootnoteScroll")
+        try audit(app, config, pass: 0, startsScrolled: startsScrolled)
         for pass in 0..<screen.swipes {
             app.swipeUp()
             // A list keeps gliding after a swipe; an audit taken while it moves measures
             // blurred text and reports contrast failures that are not there.
             sleep(2)
             waitForStillScreen(app)
-            try audit(app, config, pass: pass + 1)
+            try audit(app, config, pass: pass + 1, startsScrolled: startsScrolled)
         }
         app.terminate()
     }
@@ -168,7 +177,7 @@ final class AccessibilityAuditUITests: XCTestCase {
         print("AUDIT-MOVING|the screen was still changing after ten seconds")
     }
 
-    @MainActor private func audit(_ app: XCUIApplication, _ config: String, pass: Int) throws {
+    @MainActor private func audit(_ app: XCUIApplication, _ config: String, pass: Int, startsScrolled: Bool) throws {
         if let folder = ProcessInfo.processInfo.environment["FOOTNOTE_AUDIT_SHOTS"] {
             let file = "\(folder)/\(config.replacingOccurrences(of: " ", with: "-"))-\(pass).png"
             try? XCUIScreen.main.screenshot().pngRepresentation.write(to: URL(fileURLWithPath: file))
@@ -192,7 +201,7 @@ final class AccessibilityAuditUITests: XCTestCase {
             defer { print("AUDIT-TIME|\(config) #\(pass) \(type.name): \(Date().timeIntervalSince(start))") }
             try app.performAccessibilityAudit(for: type) { issue in
                 self.handle(issue, config, pass: pass, bars: bars, sidebar: sidebar, window: window,
-                            investorEvent: investorEvent)
+                            investorEvent: investorEvent, startsScrolled: startsScrolled)
             }
         }
     }
@@ -207,12 +216,14 @@ final class AccessibilityAuditUITests: XCTestCase {
     ]
 
     @MainActor private func handle(_ issue: XCUIAccessibilityAuditIssue, _ config: String, pass: Int, bars: [CGRect],
-                                   sidebar: CGRect?, window: CGRect, investorEvent: CGRect?) -> Bool {
+                                   sidebar: CGRect?, window: CGRect, investorEvent: CGRect?,
+                                   startsScrolled: Bool) -> Bool {
         let element = issue.element
         let where_ = "\(config) #\(pass): \(issue.auditType.name) · \(issue.compactDescription) · "
             + "id=\(element?.identifier ?? "-") label=\(element?.label ?? "-") type=\(element?.elementType.rawValue ?? 0)"
         if let reason = Self.falsePositive(issue, bars: bars, sidebar: sidebar, window: window,
-                                             investorEvent: investorEvent, afterSwipe: pass > 0) {
+                                             investorEvent: investorEvent, afterSwipe: pass > 0,
+                                             startsScrolled: startsScrolled) {
             // Issues without an element are always printed, so a log shows them.
             if self.recording || element == nil { print("FILTERED|\(reason)|" + where_) }
             return true
@@ -233,7 +244,7 @@ final class AccessibilityAuditUITests: XCTestCase {
     /// the elements it applies to; anything else fails the test.
     @MainActor private static func falsePositive(_ issue: XCUIAccessibilityAuditIssue, bars: [CGRect],
                                                  sidebar: CGRect?, window: CGRect, investorEvent: CGRect?,
-                                                 afterSwipe: Bool) -> String? {
+                                                 afterSwipe: Bool, startsScrolled: Bool) -> String? {
         guard let element = issue.element else {
             // Some contrast, Dynamic Type and clipped-text findings name no element and no
             // frame (SwiftUI nodes the audit cannot hand back). Q1 checked each such pass
@@ -324,6 +335,15 @@ final class AccessibilityAuditUITests: XCTestCase {
             // the selected row's Pine fill was checked on the iPad screenshots (system `.primary`
             // text). The section headers' Muted on the glass itself is not measured (audit item 37).
             if let sidebar, sidebar.intersects(frame) { return "under-sidebar" }
+            // A screen opened already scrolled (`-FootnoteScroll`, the typed-question screens,
+            // D108) leaves the rows above its target at the top of the list: under the status
+            // bar, or in the scroll edge effect within 48 points below the navigation bar,
+            // where iOS fades list content into the bar. D108 audit screenshot
+            // company-typed-ko-0: `출처 · 2026년 3분기 보고서` at y 113, under a bar ending at
+            // y 86. The same rows are audited unscrolled on the company screen.
+            if startsScrolled, element.elementType == .staticText, bars.contains(where: {
+                $0.maxY < window.midY && frame.minY < $0.maxY + 48 && $0.minX < frame.maxX && frame.minX < $0.maxX
+            }) { return "top-edge" }
             // Text the list has laid out below the screen (`Needs an internet connection`
             // at y 850 on the 812-point mini): there is nothing behind it to measure.
             if !window.contains(frame) { return "off-screen" }
@@ -337,6 +357,15 @@ final class AccessibilityAuditUITests: XCTestCase {
             // Background (5.51:1 light, 7.51:1 dark). `공시 내용` above it, the same style on the
             // same background, passes; the audit misjudges the short word.
             if element.label == "원문", element.elementType == .staticText { return "original-header" }
+            // Short words the audit splits out of the company summary card's Muted lines
+            // (D106) and fails on the iPad, with typed questions on or off: `금액` from
+            // `정확한 금액 300조 8,709억 300만원` (default size, light and dark) and `출처 ·`
+            // from the source lines (dark). On the D108 audit screenshots they are Muted on
+            // Surface: #5B6475 on white, 5.96:1, and #9BA5B3 on #192024, 6.62:1. The rest of
+            // each line passes.
+            if ["금액", "출처 ·"].contains(element.label), element.elementType == .staticText {
+                return "summary-card-word"
+            }
         case .dynamicType:
             // The language button sits in the navigation bar, which caps its text size at
             // the accessibility sizes (a system rule for bar items); it shows the large

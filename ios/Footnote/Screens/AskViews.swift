@@ -21,6 +21,7 @@ struct AskSection: View {
     @Environment(\.language) private var language
     @Environment(\.navigate) private var navigate
     @Environment(\.filingSelection) private var selection
+    @Environment(\.questionRouter) private var router
     let companyID: String
     /// t3, shown on the first question (D104).
     var tip: AskTip?
@@ -31,6 +32,9 @@ struct AskSection: View {
             // content column) pins a footer to the bottom edge, over the questions at large
             // text sizes.
             VStack(alignment: .leading, spacing: 12) {
+                if let router {
+                    TypedQuestionField(router: router, open: open)
+                }
                 questions
                 SectionNote(text: AskCopy.sectionNote(language))
                     .padding(.horizontal, 16)
@@ -52,17 +56,153 @@ struct AskSection: View {
                     title: intent.question(language),
                     isSelected: AskSelection.intent(selection?.wrappedValue) == intent
                 ) {
-                    AskTip().invalidate(reason: .actionPerformed)
-                    if let selection {
-                        selection.wrappedValue = AskSelection.id(intent)
-                    } else {
-                        navigate(.answer(companyID, intent))
-                    }
+                    open(intent)
                 }
                 .accessibilityIdentifier("ask-\(intent.rawValue)")
                 .footnoteTip(intent == QuestionIntent.allCases.first ? tip : nil)
             }
         }
+    }
+
+    /// Opens a question's answer, from its button or from a typed question.
+    private func open(_ intent: QuestionIntent) {
+        AskTip().invalidate(reason: .actionPerformed)
+        if let selection {
+            selection.wrappedValue = AskSelection.id(intent)
+        } else {
+            navigate(.answer(companyID, intent))
+        }
+    }
+}
+
+/// A typed question (D108), on iPad and Mac where the on-device model runs: the router picks
+/// one of the six questions and its answer opens as if its button had been tapped, or, when
+/// none fits, a line says so above the six questions. The text stays in the field.
+private struct TypedQuestionField: View {
+    @Environment(\.language) private var language
+    @Environment(\.dynamicTypeSize) private var typeSize
+    let router: any QuestionRouter
+    let open: (QuestionIntent) -> Void
+    @State private var text = QuestionRouting.launchQuestion ?? ""
+    @State private var isRouting = false
+    @State private var showsNone = false
+    @FocusState private var isFocused: Bool
+
+    private var canSubmit: Bool { !isRouting && TypedQuestion.cleaned(text) != nil }
+    private var isActive: Bool { canSubmit || isRouting }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            let layout = typeSize.isAccessibilitySize
+                ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8))
+                : AnyLayout(HStackLayout(alignment: .center, spacing: 8))
+            layout {
+                field
+                submitButton
+            }
+            // The field lines up with the question buttons; text lines up with the notes.
+            Group {
+                if showsNone {
+                    Text(words: wrapped(AskCopy.typedNone(language)))
+                        .font(.subheadline)
+                        .foregroundStyle(Theme.ink)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityIdentifier("typed-none")
+                }
+                SectionNote(text: wrapped(AskCopy.typedNote(language)))
+            }
+            .padding(.horizontal, 16)
+        }
+        .task {
+            // `-FootnoteAsk` (debug): submit the launch question once the page is open.
+            if QuestionRouting.launchQuestion != nil { submit() }
+        }
+    }
+
+    private var field: some View {
+        // The prompt in Muted: the system placeholder colour is too faint to read on Surface.
+        TextField(AskCopy.typedFieldLabel(language), text: $text,
+                  prompt: Text(AskCopy.typedPlaceholder(language)).foregroundStyle(Theme.muted))
+            .textFieldStyle(.plain)
+            .font(.body)
+            .foregroundStyle(Theme.ink)
+            .focused($isFocused)
+            // Loading the model takes a moment the first time; start while the reader types.
+            .onChange(of: isFocused) { if isFocused { router.prewarm() } }
+            .submitLabel(.search)
+            .onSubmit(submit)
+            .onChange(of: text) { showsNone = false }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .frame(maxWidth: .infinity, minHeight: Theme.minTarget, alignment: .leading)
+            .background(Theme.surface, in: shape)
+            // Pine while focused, so keyboard focus is always visible.
+            .overlay { shape.strokeBorder(isFocused ? Theme.pine : Theme.line, lineWidth: isFocused ? 2 : 1) }
+            .accessibilityLabel(AskCopy.typedFieldLabel(language))
+            .accessibilityIdentifier("typed-question")
+    }
+
+    private var submitButton: some View {
+        Button(action: submit) {
+            ZStack {
+                // The label keeps its width while the progress view shows, so nothing moves.
+                Text(words: AskCopy.typedSubmit(language))
+                    .font(.body.weight(.semibold))
+                    .opacity(isRouting ? 0 : 1)
+                if isRouting {
+                    ProgressView().controlSize(.small).tint(Theme.onPine)
+                        .accessibilityHidden(true)
+                }
+            }
+            // Pine when there is something to ask; before that, Muted on Surface like an
+            // unselected control, which keeps its text readable (no faded Pine).
+            .foregroundStyle(isActive ? Theme.onPine : Theme.muted)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .frame(minWidth: Theme.minTarget, minHeight: Theme.minTarget)
+            .background(isActive ? Theme.pine : Theme.surface, in: shape)
+            .overlay { shape.strokeBorder(isActive ? Theme.pine : Theme.line) }
+            .contentShape(shape)
+        }
+        // The style draws the states itself: SwiftUI's dimming of a disabled plain button
+        // would put white on pale Pine while the model works.
+        .buttonStyle(UndimmedButtonStyle())
+        .disabled(!isActive)
+        .accessibilityLabel(isRouting ? AskCopy.typedWorking(language) : AskCopy.typedSubmit(language))
+        .accessibilityIdentifier("typed-submit")
+    }
+
+    private func submit() {
+        guard canSubmit else { return }
+        isRouting = true
+        showsNone = false
+        let question = text
+        Task {
+            let route = await TypedQuestion.route(question, with: router)
+            isRouting = false
+            switch route {
+            case .intent(let intent):
+                open(intent)
+            case .none:
+                showsNone = true
+                AccessibilityNotification.Announcement(AskCopy.typedNone(language)).post()
+            }
+        }
+    }
+
+    /// Below accessibility sizes, a wrapped line never ends with one or two words alone.
+    private func wrapped(_ text: String) -> String {
+        typeSize.isAccessibilitySize ? text : AskCopy.keepingTail(text)
+    }
+
+    private var shape: RoundedRectangle { RoundedRectangle(cornerRadius: 10, style: .continuous) }
+}
+
+/// A button whose label is drawn the same whether or not it is enabled; the label shows the
+/// state itself.
+private struct UndimmedButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label.opacity(configuration.isPressed ? 0.8 : 1)
     }
 }
 

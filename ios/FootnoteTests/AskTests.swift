@@ -1,5 +1,8 @@
 import FootnoteKit
 import Testing
+#if os(iOS)
+import UIKit
+#endif
 @testable import Footnote
 
 @Suite("Ask about this company")
@@ -51,5 +54,35 @@ struct AskTests {
         #expect(route.askIntent == nil)
         #expect(route.companiesPath == [.company("dart:00126380")])
         #expect(route.filingID == nil)
+    }
+
+    // D108: typed questions.
+
+    @Test @MainActor func debugArgumentsChooseTheStubOrHideTheField() async throws {
+        let stub = try #require(QuestionRouting.make(arguments: ["Footnote", "-FootnoteTypedQuestions", "stub"]))
+        #expect(await TypedQuestion.route("매출 알려 줘", with: stub) == .intent(.revenue))
+        #expect(await TypedQuestion.route("Should I buy?", with: stub) == .intent(.shouldBuy))
+        #expect(await TypedQuestion.route("오늘 날씨", with: stub) == QuestionRoute.none)
+        #expect(QuestionRouting.make(arguments: ["Footnote", "-FootnoteTypedQuestions", "off"]) == nil)
+    }
+
+    #if os(iOS)
+    /// iPhone keeps its company page as it was: no field, whatever the model can do.
+    @Test @MainActor func iPhoneHasNoTypedQuestions() {
+        guard UIDevice.current.userInterfaceIdiom == .phone else { return }
+        #expect(QuestionRouting.make(arguments: ["Footnote"]) == nil)
+    }
+    #endif
+
+    @Test(arguments: [Language.ko, .en])
+    func typedCopyHasNoDigitsOrDashes(_ language: Language) {
+        let texts = [AskCopy.typedPlaceholder(language), AskCopy.typedFieldLabel(language),
+                     AskCopy.typedSubmit(language), AskCopy.typedWorking(language),
+                     AskCopy.typedNone(language), AskCopy.typedNote(language)]
+        for text in texts {
+            #expect(!text.contains { $0.isNumber }, "\(text)")
+            #expect(!text.contains("\u{2014}"), "\(text)")
+            #expect(!text.isEmpty)
+        }
     }
 }

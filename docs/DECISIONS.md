@@ -2041,3 +2041,61 @@ Wave 2 follow-up after #56 (D106) and #57 (D101) merged.
   screenshots half a second apart match, so no audit starts on a moving screen. Every
   check still runs on every pass, with the same false-positive rules. The fresh-launch
   retry after a timeout stays.
+
+## D108 · Typed questions on iPad and Mac, mapped on the device to the six fixed questions · 2026-11-27
+
+Feature 3, approved by the owner through the Orca coordinator. Builds on D99: the typed
+question is one more way to pick one of the six questions; the answer is the same code
+and the same fixed sentences.
+
+- **Flow.** Typed text → `QuestionRouter` (FootnoteKit) → `QuestionRoute`, which is one of
+  the six `QuestionIntent`s or `none` → for an intent, the same action as tapping its
+  button (the detail column on iPad and Mac, a push elsewhere). The router only chooses.
+  It never writes an answer, a sentence or a figure.
+- **Model.** `OnDeviceQuestionRouter` uses Apple Foundation Models (`SystemLanguageModel`)
+  with guided generation into a `@Generable` enum of seven choices, short instructions,
+  greedy sampling, at most sixteen response tokens, and a fresh session per question. Text
+  is trimmed and cut to two hundred characters. Any router error (guardrail, refusal,
+  unsupported language) is `none`. The model runs on the device; the app adds no network
+  call and no other provider.
+- **Where.** iPad and Mac only, as PRODUCT.md says, and only when
+  `SystemLanguageModel.default.availability` is `.available` at launch (eligible device,
+  Apple Intelligence on, model downloaded); otherwise the field is hidden and the six
+  buttons are as before. iPhone is unchanged: the same code would run there, but the
+  owner's iPhone minis cannot run the model and PRODUCT.md keeps typed questions to iPad
+  and Mac. The owner's iPad Pro 11-inch (3rd generation) is not eligible either, so the
+  field shows on the Mac and on newer iPads. The guide's company preview keeps the six
+  questions only.
+- **Advice.** Questions about buying, selling, holding or the share price map to "Should I
+  buy this?", whose answer says the app gives no advice. Questions about future revenue,
+  earnings or guidance map to "What's next quarter's revenue?", which says the app does
+  not estimate. Neither path shows a prediction.
+- **None.** A short line says the app can't answer that, above the six questions, and
+  VoiceOver announces it. The typed text stays in the field.
+- **Eval.** `contracts/typed-questions.json`: seventy-two questions, half Korean and half
+  English, labelled by Claude and not yet reviewed by the owner, covering the six
+  questions, none, advice and adversarial phrasings (prompt injection, typos, mixed
+  language). `swift run --package-path ios/FootnoteKit -c release question-router-eval`
+  prints accuracy per label, language and kind, a confusion matrix, and the advice
+  questions that missed the no-advice answer. The instructions were tuned on a separate
+  scratch set of twenty-eight questions, then run once on the contract set. Results on
+  the M1 Pro Mac (macOS 27.2.1), identical on two runs: sixty-five of seventy-two, all
+  fourteen advice questions to the no-advice answer, no router errors; misses are in the
+  pull request. Five of the seven misses land on "Should I buy this?", which shows the
+  no-advice answer.
+- **Copy.** The owner approved the wording on 2026-11-27, picking option A of two for all six
+  strings on the local review page, with no notes: placeholder 질문을 직접 입력해 보세요 / Type a
+  question; field label 질문 입력 / Your question; button 묻기 / Ask; working label 질문을 찾고
+  있어요 / Finding the question; none line 이 질문에는 답할 수 없어요. 아래 질문 중에서 골라
+  주세요. / This app can't answer that. Pick one of the questions below.; note 입력한 질문은
+  아래 여섯 질문 중 가장 가까운 질문으로 답해요. 질문은 이 기기 안에서만 처리돼요. / Your
+  question is answered as the closest of the six questions below. It never leaves this device.
+- **Accessibility audit.** Two iPad screens: the field empty, audited from the top and after a
+  swipe, and the none line, opened scrolled to the field (`-FootnoteScroll ask`). The field's
+  prompt is Muted (5.96:1 light, 6.62:1 dark on Surface); the system placeholder colour was
+  reported in dark mode. On a screen opened scrolled, text in the scroll edge effect within
+  forty-eight points under the navigation bar is not counted for contrast (`top-edge`); those
+  rows are audited unscrolled on the company screen. Two short words the audit splits out of
+  the summary card's Muted lines (D106), `금액` and `출처 ·`, fail contrast on the iPad with
+  typed questions on or off; measured on the screenshots they are 5.96:1 (light) and 6.62:1
+  (dark), and are now filtered as `summary-card-word`.
