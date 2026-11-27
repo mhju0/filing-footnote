@@ -21,6 +21,8 @@ the release bundle is not built and the walkthrough is not recorded.
 - The Filing Digest app, its Pages site and its tests are removed (D77, D80).
 
 **Added**
+- A tracked list of filings the owner excluded, left out of every bundle with the
+  reason in the build output; `dart:20261030800867` is its first entry (D109).
 - Typed questions on iPad and Mac: Apple's on-device model maps a typed question to
   one of the six fixed questions or none, with a labelled eval set and runner (D108).
 - The filing page shows the verbatim source sentence behind each summary line on

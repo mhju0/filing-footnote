@@ -1774,6 +1774,7 @@ generated on the device.
   question filled. Amounts use the app's formatter, so Korean USD reads `1,094억 달러`.
 
 ## D100 · Owner picks after the summary regeneration · 2026-11-26 (`ACCEPTED`)
+*Partly superseded by D109 (`dart:20261030800867` is left out of every bundle).*
 
 The owner chose these on 2026-11-26 (12:31 KST) after the regeneration of the three flagged
 summaries (D97), and Claude recorded them.
@@ -2099,3 +2100,38 @@ and the same fixed sentences.
   the summary card's Muted lines (D106), `금액` and `출처 ·`, fail contrast on the iPad with
   typed questions on or off; measured on the screenshots they are 5.96:1 (light) and 6.62:1
   (dark), and are now filtered as `summary-card-word`.
+
+## D109 · Owner-excluded filings, and `dart:20261030800867` left out · 2026-11-27
+
+The owner decided on 2026-11-26 (D100) that `dart:20261030800867`, Hyundai Motor's
+clarification filing (풍문또는보도에대한해명), gets no summary and no more regeneration tries.
+Its staged rows stay withheld: the Korean line 1 ended in 해명했어요, and the English line said
+Gyeongnam where the filing and the Korean line say 영남권. Under D100 its filing row still
+shipped in a preview without a summary, and a release refused while it lacked one, so the
+release could not ship. Asked for through the Orca coordinator on 2026-11-27.
+
+- **The list.** `backend/data/summaries/excluded_filings.jsonl` is tracked beside
+  `approved.jsonl` and `faithfulness_accepted.jsonl`, and changes only through a reviewed pull
+  request. One JSON object per line with exactly `filing_id`, `decided_on` (an ISO date) and a
+  non-empty `reason`. A malformed line or an id listed twice fails the build. It holds one
+  entry, this filing, decided 2026-11-26.
+- **The rule.** `app.build.source.read_excluded` loads it into `BuildInput.excluded`, like the
+  approved summaries; `export --excluded` names another file. The exporter leaves each listed
+  event filing out in every mode (release, preview, development): no filing row, facts,
+  summaries or source sentences. It applies after the event scope and its per-company cap
+  (D72), so leaving one out never brings another filing into the bundle; Hyundai Motor shows
+  nine events instead of ten at as-of 2026-11-19. Only event filings can be listed: an id that
+  is not an event filing in the build input (a typo, an annual report, a filing not ingested)
+  refuses the build in every mode.
+- **What the build says.** The report gains `owner_excluded_filings` (each id, its reason, its
+  date, and whether it was in scope at `--as-of`), and the export prints one line per entry:
+  `owner-excluded dart:20261030800867 (left out; decided 2026-11-26): <reason>`. Nothing about
+  it goes into the bundle, and no user-facing copy changes.
+- **Not changed.** A filing that is not listed and lacks an approved summary still refuses a
+  release. The summary loop still selects this filing as a target, but it does not retry
+  withheld rows (D100). `ios/scripts/screenshots.sh` still names this filing for its
+  `filing-clarification-hyundai-ko-light` shot, which no bundle can show any more.
+- **Result on 2026-11-27** (as-of 2026-11-19, the tracked approvals, the Compose database). A
+  release still refuses: before, forty-six exported filings lacked approved summaries; with the
+  list, forty-five, all of which have staged or withheld rows waiting for the owner. This
+  filing no longer blocks it. A preview builds and passes `verify --preview` without it.

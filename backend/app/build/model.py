@@ -371,9 +371,19 @@ class SummaryRow:
 
 
 @dataclass(frozen=True)
+class ExcludedFiling:
+    """An event filing the owner decided to leave out of every bundle (D109)."""
+
+    filing_id: str  # bundle filing id, e.g. 'dart:20261030800867'
+    decided_on: datetime.date
+    reason: str
+
+
+@dataclass(frozen=True)
 class BuildInput:
     companies: tuple[CompanyRow, ...]
     annual_filings: tuple[AnnualFilingRow, ...]
     financials: tuple[FinancialRow, ...]
     events: tuple[EventRow, ...]
     summaries: tuple[SummaryRow, ...] = ()
+    excluded: tuple[ExcludedFiling, ...] = ()
