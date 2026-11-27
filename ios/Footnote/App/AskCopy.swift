@@ -17,8 +17,7 @@ enum AskCopy {
         language("답을 열어요", "Opens the answer")
     }
 
-    // Typed questions on iPad and Mac (D108). Drafts: option A of each pair on the copy
-    // review page, used until the owner picks.
+    // Typed questions on iPad and Mac (D108). Wording approved by the owner on 2026-11-27.
 
     static func typedPlaceholder(_ language: Language) -> String {
         language("질문을 직접 입력해 보세요", "Type a question")

@@ -2083,8 +2083,13 @@ and the same fixed sentences.
   fourteen advice questions to the no-advice answer, no router errors; misses are in the
   pull request. Five of the seven misses land on "Should I buy this?", which shows the
   no-advice answer.
-- **Copy.** The placeholder, field label, button, working label, the none line and the note
-  are drafts (option A of two per string) until the owner picks on the local review page.
+- **Copy.** The owner approved the wording on 2026-11-27, picking option A of two for all six
+  strings on the local review page, with no notes: placeholder 질문을 직접 입력해 보세요 / Type a
+  question; field label 질문 입력 / Your question; button 묻기 / Ask; working label 질문을 찾고
+  있어요 / Finding the question; none line 이 질문에는 답할 수 없어요. 아래 질문 중에서 골라
+  주세요. / This app can't answer that. Pick one of the questions below.; note 입력한 질문은
+  아래 여섯 질문 중 가장 가까운 질문으로 답해요. 질문은 이 기기 안에서만 처리돼요. / Your
+  question is answered as the closest of the six questions below. It never leaves this device.
 - **Accessibility audit.** Two iPad screens: the field empty, audited from the top and after a
   swipe, and the none line, opened scrolled to the field (`-FootnoteScroll ask`). The field's
   prompt is Muted (5.96:1 light, 6.62:1 dark on Surface); the system placeholder colour was
