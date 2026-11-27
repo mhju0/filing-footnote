@@ -32,8 +32,10 @@ def _cli(*args: str) -> subprocess.CompletedProcess:
 
 
 def _export(out: Path, *extra: str) -> subprocess.CompletedProcess:
-    # A file that does not exist: these tests never read the owner's approved.jsonl.
-    extra = (*extra, "--approved", str(out.parent / "no-approved.jsonl"))
+    # Files that do not exist: these tests never read the owner's approved.jsonl or
+    # excluded_filings.jsonl, whose ids are not in the seed.
+    extra = (*extra, "--approved", str(out.parent / "no-approved.jsonl"),
+             "--excluded", str(out.parent / "no-excluded.jsonl"))  # fmt: skip
     pinned = [arg for d in PINNED_DIRS for arg in ("--pinned", str(d))]
     return _cli("app.build.export", "--as-of", AS_OF.isoformat(), "--out", str(out),
                 "--database-url", TEST_DATABASE_URL, "--source-revision", "test", *pinned,

@@ -44,7 +44,10 @@ before ``--as-of``; ingest's ``is_latest`` is not used. At most ten events per c
 exported, the newest, and an event without a stored body text is left out
 (:func:`event_scope`). Notice filings (D76) go to the ``notices`` table: same window and
 correction rule, no body needed, no cap, never summarised. Annual filings follow
-:data:`app.build.model.ANNUAL_SCOPE`.
+:data:`app.build.model.ANNUAL_SCOPE`. The event filings the owner excluded
+(``data/summaries/excluded_filings.jsonl``, ``--excluded``, D109) are left out in every mode,
+after the cap, and listed with their reason and date in the report and the output. An entry
+that names no event filing in the build input refuses the build.
 
 Figures cover two fiscal years per company: the year of its latest annual filing and the
 year before (D79). The newest filing that states a figure is its source; a figure whose
@@ -639,6 +642,7 @@ def _event_filings(build: _Build, companies: dict[tuple[str, str], CompanyRow]) 
         return " ".join(prefix_re.sub("", event.report_nm).split())
 
     scope = event_scope(build.data, build.options.as_of)
+    _owner_excluded(build, scope)
     build.problems.extend(f"{fid}: no filing date" for fid in scope.undated)
     for item in scope.excluded:
         if item["reason"] not in reasons:
@@ -714,6 +718,33 @@ def _event_filings(build: _Build, companies: dict[tuple[str, str], CompanyRow]) 
     }
     build.report["fact_errors"] = {"count": len(fact_errors), "facts": fact_errors}
     build.report["fact_checks"] = fact_checks
+
+
+def _owner_excluded(build: _Build, scope: EventScope) -> None:
+    """Leave out the event filings the owner excluded (D109), in every mode, and say why.
+
+    Applied after :func:`event_scope`, cap included, so leaving one out never brings another
+    filing into the bundle. An id that is not an event filing in the build input refuses the
+    build, so a typo cannot pass for an exclusion."""
+    events = {_filing_id(e.regulator, e.filing_key) for e in build.data.events}
+    excluded = {e.filing_id: e for e in build.data.excluded}
+    build.problems.extend(
+        f"{fid}: listed as owner-excluded but not an event filing in the build input"
+        for fid in sorted(set(excluded) - events)
+    )
+    shown = {_filing_id(e.regulator, e.filing_key) for e in (*scope.exported, *scope.notices)}
+    scope.exported = [e for e in scope.exported
+                      if _filing_id(e.regulator, e.filing_key) not in excluded]  # fmt: skip
+    scope.notices = [e for e in scope.notices
+                     if _filing_id(e.regulator, e.filing_key) not in excluded]  # fmt: skip
+    build.report["owner_excluded_filings"] = {
+        "count": len(excluded),
+        "filings": [
+            {"id": fid, "decided_on": e.decided_on.isoformat(), "reason": e.reason,
+             "in_scope": fid in shown}
+            for fid, e in sorted(excluded.items())
+        ],
+    }  # fmt: skip
 
 
 @functools.cache
@@ -1408,6 +1439,12 @@ def _parser() -> argparse.ArgumentParser:
         help="file of approved summaries (default backend/data/summaries/approved.jsonl)",
     )
     parser.add_argument(
+        "--excluded",
+        type=Path,
+        help="the owner's excluded filings (default backend/data/summaries/excluded_filings.jsonl, "
+        "D109)",
+    )
+    parser.add_argument(
         "--faithfulness",
         type=Path,
         default=faithfulness.REPORT_PATH,
@@ -1445,7 +1482,9 @@ def _load_from_database(args: argparse.Namespace) -> BuildInput:
     from app.config import get_settings
 
     return asyncio.run(
-        load_build_input(args.database_url or get_settings().database_url, args.approved)
+        load_build_input(
+            args.database_url or get_settings().database_url, args.approved, args.excluded
+        )
     )
 
 
@@ -1495,6 +1534,10 @@ def run(
         f"superseded_unresolved={report['superseded_unresolved']['count']} "
         f"fact_errors={report['fact_errors']['count']} mode={report['mode']}"
     )
+    for item in report["owner_excluded_filings"]["filings"]:
+        state = "left out" if item["in_scope"] else "not in scope at --as-of"
+        print(f"owner-excluded {item['id']} ({state}; decided {item['decided_on']}): "
+              f"{item['reason']}")  # fmt: skip
     print(f"report={report_path}")
     return 0
 

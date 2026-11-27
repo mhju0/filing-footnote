@@ -19,11 +19,13 @@ from sqlalchemy.ext.asyncio import AsyncConnection, create_async_engine
 from app.build import summaries
 from app.build.model import (
     AnnualFilingRow,
+    BuildError,
     BuildInput,
     ChunkRow,
     CompanyRow,
     EventFactRow,
     EventRow,
+    ExcludedFiling,
     FinancialRow,
     SummaryRow,
 )
@@ -34,6 +36,9 @@ from app.ingest.sec_events import item_set
 
 _REGULATOR = {"dart": "DART", "sec": "SEC"}
 SEC_KEY_PREFIX = "sec:"  # app.ingest.sec_events.sec_key
+# The owner's list of event filings left out of every bundle, tracked and reviewed (D109).
+EXCLUDED_PATH = summaries.SUMMARIES_DIR / "excluded_filings.jsonl"
+_EXCLUDED_FIELDS = frozenset({"filing_id", "decided_on", "reason"})
 
 
 def _company_key(source: str, dart_corp_code: str | None, sec_cik: str | None) -> str:
@@ -293,7 +298,40 @@ def read_summaries(path: Path | None = None) -> list[SummaryRow]:
     return summaries.read_approved(path or summaries.APPROVED_PATH)
 
 
-async def load_build_input(database_url: str, summaries_path: Path | None = None) -> BuildInput:
+def read_excluded(path: Path | None = None) -> list[ExcludedFiling]:
+    """The owner's excluded filings (:data:`EXCLUDED_PATH` by default), one JSON object per line
+    with exactly ``filing_id``, ``decided_on`` (an ISO date) and a non-empty ``reason``. A
+    missing file means none. Any other line, or an id listed twice, raises :class:`BuildError`.
+    """
+    path = path or EXCLUDED_PATH
+    entries, problems, seen = [], [], set()
+    for number, row in enumerate(summaries.read_jsonl(path), start=1):
+        where = f"{path.name} entry {number}"
+        if not isinstance(row, dict) or set(row) != _EXCLUDED_FIELDS:
+            problems.append(f"{where}: needs exactly {sorted(_EXCLUDED_FIELDS)}")
+            continue
+        filing_id, decided_on, reason = row["filing_id"], row["decided_on"], row["reason"]
+        try:
+            date = datetime.date.fromisoformat(decided_on)
+        except (TypeError, ValueError):
+            problems.append(f"{where}: decided_on {decided_on!r} is not an ISO date")
+            continue
+        if not isinstance(filing_id, str) or not isinstance(reason, str) or not reason.strip():
+            problems.append(f"{where}: filing_id and a non-empty reason must be text")
+            continue
+        if filing_id in seen:
+            problems.append(f"{where}: {filing_id} is listed twice")
+            continue
+        seen.add(filing_id)
+        entries.append(ExcludedFiling(filing_id, date, reason))
+    if problems:
+        raise BuildError(problems)
+    return entries
+
+
+async def load_build_input(
+    database_url: str, summaries_path: Path | None = None, excluded_path: Path | None = None
+) -> BuildInput:
     engine = create_async_engine(database_url)
     try:
         async with engine.connect() as connection:
@@ -304,6 +342,7 @@ async def load_build_input(database_url: str, summaries_path: Path | None = None
                 financials=tuple(await read_financials(connection)),
                 events=tuple(await read_event_rows(connection)),
                 summaries=tuple(read_summaries(summaries_path)),
+                excluded=tuple(read_excluded(excluded_path)),
             )
     finally:
         await engine.dispose()
