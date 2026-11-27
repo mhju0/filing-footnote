@@ -9,7 +9,7 @@ later, Swift. Both must pass every case in `contracts/comparison-cases.json`. Wh
 document and the case file disagree, fix one of them; neither silently wins.
 
 The rules follow the comparison logic of the filing-agent prototype
-(`slice/financial.py`, `calculated()`), extended to operating margin and to
+([`slice/financial.py`](https://github.com/mhju0/filing-agent/blob/a2b01cdc7e42ba019d9b6e4c1727cc13091d2fe7/slice/financial.py#L66), `calculated()`), extended to operating margin and to
 cross-company comparisons.
 
 ## Inputs

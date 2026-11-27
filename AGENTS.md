@@ -16,6 +16,8 @@ Check command, from the repository root: `scripts/check.sh`. It must end with
   filing says and attribute it to the company.
 - Only summaries the owner approved ship.
 - `filing-agent` and `filing-digest` are read-only partner repos. Change nothing there.
+  Pinned links: [filing-agent](https://github.com/mhju0/filing-agent/tree/a2b01cdc7e42ba019d9b6e4c1727cc13091d2fe7),
+  [filing-digest](https://github.com/mhju0/filing-digest/tree/f80aaed394ed83c1b960b78832847992a89281ac).
 - Never commit secrets or `backend/.env`; never print them.
 - Never add a `LICENSE` file or a license field.
 - Record significant decisions in `docs/DECISIONS.md` and `docs/adr/`. Old entries are
