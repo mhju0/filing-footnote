@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import dataclasses
 import datetime
 import json
@@ -9,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from app.build import export, source
+from app.build import export, source, summaries
 from app.build.export import build_bundle
 from app.build.model import BuildError, BuildInput, ExcludedFiling
 from app.build.verify import check_bundle
@@ -181,3 +182,38 @@ def test_the_cli_reads_the_list_it_is_given(data, tmp_path, capsys) -> None:
             "--allow-unapproved", "--excluded", str(path)]  # fmt: skip
     assert export.run(argv, load=load) == 1
     assert "non-empty reason" in capsys.readouterr().err
+
+
+def test_the_summary_loop_never_targets_an_excluded_filing(data, tmp_path) -> None:
+    targets = summaries.select_targets(data, AS_OF)
+    fid = next(t.filing_id for t in targets if t.kind == "event" and t.template is None
+               and t.source_text)  # fmt: skip
+    kept = summaries.select_targets(_excluding(data, fid), AS_OF)
+    assert [t for t in targets if t.filing_id != fid] == kept
+    # Asking for it by id fails loudly instead of running nothing.
+    with pytest.raises(ValueError, match=f"no summary target for: {fid}"):
+        summaries.pick_filings(kept, [fid])
+
+    # Its summary is staged as withheld, which --retry-withheld would otherwise regenerate.
+    source_text = next(t.source_text for t in targets if t.filing_id == fid)
+    key = summaries.input_sha256(source_text, "test-model", "summary")
+    staged = tmp_path / "staged.jsonl"
+    staged.write_text(
+        "".join(json.dumps({"filing_id": fid, "lang": lang, "section": "summary",
+                            "input_sha256": key, "review_state": "withheld"}) + "\n"
+                for lang in ("ko", "en")),
+        encoding="utf-8",
+    )  # fmt: skip
+
+    def planned(chosen, retry_withheld: bool) -> set[str]:
+        result, _ = asyncio.run(summaries.generate(
+            None, chosen, model="test-model", staged_path=staged,
+            approved_path=tmp_path / "approved.jsonl", calls_path=None, dry_run=True,
+            retry_withheld=retry_withheld, max_calls=10_000,
+        ))  # fmt: skip
+        return {t.filing_id for t, _ in result.planned}
+
+    assert fid in planned(targets, retry_withheld=True)
+    assert fid not in planned(targets, retry_withheld=False)
+    for retry_withheld in (False, True):
+        assert fid not in planned(kept, retry_withheld)

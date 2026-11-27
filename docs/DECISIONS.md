@@ -2127,10 +2127,17 @@ release could not ship. Asked for through the Orca coordinator on 2026-11-27.
   date, and whether it was in scope at `--as-of`), and the export prints one line per entry:
   `owner-excluded dart:20261030800867 (left out; decided 2026-11-26): <reason>`. Nothing about
   it goes into the bundle, and no user-facing copy changes.
+- **Summary loop.** `select_targets` leaves the listed filings out too, so no mode of
+  `summaries generate` summarises them, `--retry-withheld` included, and
+  `--filing dart:20261030800867` fails with "no summary target". The faithfulness check and the
+  review page take their source text from the same targets, so they show this filing's withheld
+  rows without one.
+- **Screenshots.** `ios/scripts/screenshots.sh` named this filing for its clarification shot.
+  The shot is now `filing-clarification-lgchem-ko-light`, on `dart:20260824800215`, LG Chem's
+  풍문또는보도에대한해명(미확정): the same report name and the same 미확정 status, with an
+  approved summary. Every id the script names is in the preview bundle at as-of 2026-11-19.
 - **Not changed.** A filing that is not listed and lacks an approved summary still refuses a
-  release. The summary loop still selects this filing as a target, but it does not retry
-  withheld rows (D100). `ios/scripts/screenshots.sh` still names this filing for its
-  `filing-clarification-hyundai-ko-light` shot, which no bundle can show any more.
+  release.
 - **Result on 2026-11-27** (as-of 2026-11-19, the tracked approvals, the Compose database). A
   release still refuses: before, forty-six exported filings lacked approved summaries; with the
   list, forty-five, all of which have staged or withheld rows waiting for the owner. This

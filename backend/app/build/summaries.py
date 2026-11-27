@@ -463,14 +463,18 @@ def select_targets(data: BuildInput, as_of: datetime.date) -> list[Target]:
     """Every filing and section that needs a summary as of ``as_of``, events first, each
     group in filing id order.
 
-    Events are the exporter's own, :func:`app.build.export.event_scope`. Annual reports are
-    the exporter's own choice, :func:`annual_summary_filings`.
+    Events are the exporter's own, :func:`app.build.export.event_scope`, less the filings the
+    owner excluded (D109), so no mode, ``--retry-withheld`` included, summarises those. Annual
+    reports are the exporter's own choice, :func:`annual_summary_filings`.
     """
     names = company_names(data.companies)
+    excluded = {e.filing_id for e in data.excluded}
     targets: list[Target] = []
 
     for event in event_scope(data, as_of).exported:
         fid = _filing_id(event.regulator, event.filing_key)
+        if fid in excluded:
+            continue
         source = event_source_text(event)
         template = event_template(event)
         targets.append(
