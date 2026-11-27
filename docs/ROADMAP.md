@@ -75,7 +75,7 @@ did not exist when it was rejected.
   adding them would be theater rather than engineering.
 - **Production deployment / Kubernetes**: a hosted instance costs money, and an
   unauthenticated public API over a personal DART key is not something to ship.
-  The [GitHub Pages walkthrough](https://github.com/mhju0/filing-footnote/tree/215a2ad96ddff79d803cdd90ece902beedb6f451/docs) is the
+  The [GitHub Pages walkthrough](https://mhju0.github.io/filing-digest/) is the
   answer instead, and it discloses that it is not live (D34).
 - **Alembic, or any migration framework**: `backend/db/init.sql` is the single
   schema source; existing databases move by reviewed versioned SQL after a

@@ -139,7 +139,7 @@ then builds the app and runs unit tests plus the core XCUITest flow on a macOS i
 live evaluation harness remains manual because it requires an ingested corpus
 and a configured LLM key. Retrieval cases compare canonical filing periods
 returned by the API, so regenerated database UUIDs do not require an eval-map
-update; see [`backend/evals/README.md`](https://github.com/mhju0/filing-footnote/blob/215a2ad96ddff79d803cdd90ece902beedb6f451/backend/evals/README.md).
+update; see [`backend/evals/README.md`](../../backend/evals/README.md).
 
 ### Run on a device
 
