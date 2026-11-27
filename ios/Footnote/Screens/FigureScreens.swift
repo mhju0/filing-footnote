@@ -326,11 +326,13 @@ struct CalculationView: View {
     private var list: some View {
         List {
             ScreenHeader(context: context, title: PageCopy.calculation(language))
-            ForEach(Array(calculations.enumerated()), id: \.offset) { _, calculation in
+            ForEach(Array(calculations.enumerated()), id: \.offset) { index, calculation in
                 let named = calculations.count > 1 ? Titles.name(of: calculation.company, language: language) : nil
                 switch calculation {
-                case .growth(let growth): GrowthCalculation(calculation: growth, companyName: named)
-                case .margin(let margin): MarginCalculationSections(calculation: margin, companyName: named)
+                case .growth(let growth):
+                    GrowthCalculation(calculation: growth, companyName: named, marksInputs: index == 0)
+                case .margin(let margin):
+                    MarginCalculationSections(calculation: margin, companyName: named, marksInputs: index == 0)
                 }
             }
             if let difference, calculations.count == 2 {
@@ -364,6 +366,8 @@ private struct GrowthCalculation: View {
     @Environment(\.language) private var language
     let calculation: YearCalculation
     let companyName: String?
+    /// The first input row is the launch scroll target `center` (debug builds).
+    let marksInputs: Bool
 
     var body: some View {
         let change = calculation.result
@@ -376,11 +380,9 @@ private struct GrowthCalculation: View {
             SectionTitle(companyName.map { $0 + Copy.dot + PageCopy.formula(language) } ?? PageCopy.formula(language))
         }
         Section {
-            ForEach([
-                (calculation.prior, calculation.priorSource), (calculation.current, calculation.currentSource),
-            ], id: \.0.id) { figure, source in
-                InputRow(figure: figure, source: source)
-            }
+            InputRow(figure: calculation.prior, source: calculation.priorSource)
+                .id(marksInputs ? PageScroll.numbers : calculation.prior.id)
+            InputRow(figure: calculation.current, source: calculation.currentSource)
             FactRow(
                 label: PageCopy.difference(language),
                 value: PageCopy.signedExact(change.delta, unit: change.unit, currency: change.currency, language))
@@ -393,7 +395,9 @@ private struct GrowthCalculation: View {
         }
         Section {
             ForEach(Array(calculation.checks.enumerated()), id: \.offset) { _, check in
-                CheckRow(label: PageCopy.checkLabel(check, language), value: PageCopy.checkValue(check, language))
+                let holdsAmount = if case .positiveBaseline = check { true } else { false }
+                CheckRow(label: PageCopy.checkLabel(check, language), value: PageCopy.checkValue(check, language),
+                         holdsAmount: holdsAmount)
             }
         } header: {
             SectionTitle(PageCopy.checks(language))
@@ -405,6 +409,8 @@ private struct MarginCalculationSections: View {
     @Environment(\.language) private var language
     let calculation: MarginCalculation
     let companyName: String?
+    /// The first input row is the launch scroll target `center` (debug builds).
+    let marksInputs: Bool
 
     var body: some View {
         let margin = calculation.result
@@ -419,6 +425,7 @@ private struct MarginCalculationSections: View {
         }
         Section {
             InputRow(figure: calculation.revenue, source: calculation.source)
+                .id(marksInputs ? PageScroll.numbers : calculation.revenue.id)
             InputRow(figure: calculation.operatingIncome, source: calculation.source)
         } header: {
             SectionTitle(PageCopy.inputs(language))
@@ -432,7 +439,8 @@ private struct MarginCalculationSections: View {
                      value: PageCopy.checkValue(.sameBasis(calculation.revenue.basis), language))
             CheckRow(label: PageCopy.samePeriod(language),
                      value: Formatting.period(margin.periodStart, margin.periodEnd, language: language))
-            CheckRow(label: PageCopy.revenueAboveZero(language), value: PageCopy.exact(calculation.revenue, language))
+            CheckRow(label: PageCopy.revenueAboveZero(language), value: PageCopy.exact(calculation.revenue, language),
+                     holdsAmount: true)
         } header: {
             SectionTitle(PageCopy.checks(language))
         }
@@ -495,6 +503,9 @@ private struct InputRow: View {
 private struct CheckRow: View {
     let label: String
     let value: String
+    /// The value is a full amount: it never breaks inside its digits, and one wider than
+    /// the line shrinks to fit, as in the input rows (D87).
+    var holdsAmount = false
 
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 10) {
@@ -506,10 +517,17 @@ private struct CheckRow: View {
                 Text(words: label)
                     .font(.body)
                     .foregroundStyle(Theme.ink)
-                Text(words: value)
-                    .font(.body)
-                    .monospacedDigit()
-                    .foregroundStyle(Theme.muted)
+                if holdsAmount {
+                    UnbrokenNumbers(text: value)
+                        .font(.body)
+                        .monospacedDigit()
+                        .foregroundStyle(Theme.muted)
+                } else {
+                    Text(words: value)
+                        .font(.body)
+                        .monospacedDigit()
+                        .foregroundStyle(Theme.muted)
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
