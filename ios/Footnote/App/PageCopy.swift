@@ -294,7 +294,7 @@ enum PageCopy {
     /// `출처: 사업보고서 (2025.12) · 2026년 3월 10일 공시` (board 5A).
     static func source(_ filing: Filing, _ language: Language) -> String {
         let title = Titles.title(for: filing, language: language)
-        return language("출처: ", "Source: ") + title + Copy.dot + Copy.filedOn(filing.filedOn, language)
+        return language("출처: ", "Source: ") + title + Copy.dot + Copy.wrappingFiledOn(filing.filedOn, language)
     }
 
     /// The note under a change between fiscal years that end on different days (D82). The
@@ -376,7 +376,7 @@ enum PageCopy {
 
     /// D88: where an input comes from: `사업보고서 (2025.12) · 2026년 3월 10일 공시`.
     static func inputSource(_ filing: Filing, _ language: Language) -> String {
-        Titles.title(for: filing, language: language) + Copy.dot + Copy.filedOn(filing.filedOn, language)
+        Titles.title(for: filing, language: language) + Copy.dot + Copy.wrappingFiledOn(filing.filedOn, language)
     }
 
     /// `두 숫자 모두 사업보고서 (2025.12)에서 가져왔어요.` (board 6b).

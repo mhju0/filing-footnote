@@ -18,11 +18,10 @@ struct PageHeader: View {
                 if Freshness.isNew(filing, dataAsOf: dataAsOf) {
                     TagView(text: language("새 공시", "New"), kind: .new)
                 }
-                Text(words: Copy.filedOn(filing.filedOn, language))
+                BalancedText(text: Copy.wrappingFiledOn(filing.filedOn, language))
                     .font(.footnote)
                     .monospacedDigit()
                     .foregroundStyle(Theme.muted)
-                    .fixedSize(horizontal: false, vertical: true)
             }
             Text(words: Titles.title(for: filing, language: language))
                 .font(.title.bold())

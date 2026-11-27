@@ -146,6 +146,17 @@ enum Copy {
         return language("\(day) 공시", "Filed \(day)")
     }
 
+    /// `filedOn` with a break allowed after the Korean year, for every screen that shows the
+    /// filed date. Its date is one unbroken run, which at the accessibility sizes is wider
+    /// than the line and broke inside itself (`2026년 11월` / `16일 공시`); now it wraps as
+    /// `2026년` / `11월 16일 공시`. The month and day stay together. English already breaks
+    /// only after `Filed`.
+    static func wrappingFiledOn(_ date: CivilDate, _ language: Language) -> String {
+        let filed = filedOn(date, language)
+        guard language == .ko else { return filed }
+        return filed.replacingOccurrences(of: "\(date.year)년" + noBreak, with: "\(date.year)년 ")
+    }
+
     static func market(_ regulator: Regulator, _ language: Language) -> String {
         regulator == .dart ? language("한국", "Korea") : language("미국", "United States")
     }
