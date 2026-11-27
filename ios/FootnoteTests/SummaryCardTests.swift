@@ -70,6 +70,25 @@ struct SummaryCardTests {
         #expect(PageCopy.quarterLabelWithMonths(apple, .en).hasPrefix("Q\(apple.fiscalQuarter) FY\(apple.fiscalYear)"))
     }
 
+    /// At the accessibility sizes a source part wider than the line wraps between two halves
+    /// that leave no word alone: the Korean date after its year, never inside `11월 16일`,
+    /// a title before its last two words or after its comma, and `10-K` never at its hyphen.
+    /// The date reads the same as `Copy.filedOn`.
+    @Test @MainActor func sourcePartsWrapWithoutOrphans() throws {
+        let date = try #require(CivilDate(iso: "2026-11-16"))
+        let korean = SummarySource.filedOn(date, .ko)
+        #expect(korean.spokenSeparators == Copy.filedOn(date, .ko).spokenSeparators)
+        #expect(AskCopy.halves(korean) == ["2026년", "11월" + Copy.noBreak + "16일 공시"])
+        #expect(SummarySource.filedOn(date, .en) == Copy.filedOn(date, .en))
+        #expect(AskCopy.halves(SummarySource.filedOn(date, .en)) == ["Filed", Copy.unbroken("Nov 16, 2026")])
+
+        let parts = SummarySource.phrases(["출처", "2026년 3분기 보고서", korean])
+        #expect(BalancedText.halves(parts[1], atComma: true) == ["2026년", "3분기 보고서" + Copy.noBreak + "·"])
+        let english = SummarySource.phrases(["Source", "Annual report, FY2025", "Filed"])
+        #expect(BalancedText.halves(english[1], atComma: true) == ["Annual report,", "FY2025" + Copy.noBreak + "·"])
+        #expect(BalancedText.joiningHyphens("(10-K)") == "(10-\u{2060}K)")
+    }
+
     /// Design direction 7 B: one symbol per category, none shared.
     @Test func everyCategoryHasItsOwnSymbol() {
         let symbols = FilingCategory.allCases.map(\.symbol)

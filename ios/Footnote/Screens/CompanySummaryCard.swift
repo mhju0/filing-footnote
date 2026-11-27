@@ -120,19 +120,22 @@ struct CompanySummaryCard: View {
     }
 }
 
-/// A note in place of a change, in the first of these that fits: one line; two halves of
-/// about equal length (`작년 숫자가 0 이하라` / `증가율을 계산하지 않아요`); wrapped with its last
-/// words held together, when those fit on a line; the two halves made smaller to fit, as
-/// `UnbrokenWords` does for a word wider than the line. No layout leaves one or two words
-/// alone on the last line. VoiceOver reads it as one text.
-private struct ChangeNote: View {
+/// A note in place of a change, or one part of a source line, in the first of these that
+/// fits: one line; two halves of about equal length (`작년 숫자가 0 이하라` / `증가율을 계산하지
+/// 않아요`, `2026년` / `3분기 보고서 ·`); wrapped with its last words held together, when those
+/// fit on a line; the two halves made smaller to fit, as `UnbrokenWords` does for a word
+/// wider than the line. No layout leaves one or two words alone on the last line, and a
+/// hyphenated word (`10-K`) never breaks at its hyphen. VoiceOver reads it as one text.
+struct BalancedText: View {
     let text: String
+    /// Halves at the last comma when there is one (`Annual report,` / `FY2025 ·`).
+    var breaksAtComma = false
 
     var body: some View {
-        let halves = AskCopy.halves(text)
-        let held = AskCopy.keepingTail(text)
+        let halves = Self.halves(text, atComma: breaksAtComma).map(Self.joiningHyphens)
+        let held = Self.joiningHyphens(AskCopy.keepingTail(text))
         ViewThatFits(in: .horizontal) {
-            Text(words: text).fixedSize()
+            Text(words: Self.joiningHyphens(text)).fixedSize()
             VStack(alignment: .leading, spacing: 0) {
                 ForEach(Array(halves.enumerated()), id: \.offset) { _, half in
                     Text(words: half).fixedSize()
@@ -153,6 +156,21 @@ private struct ChangeNote: View {
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(verbatim: text.spokenSeparators))
+    }
+
+    /// `AskCopy.halves`, or with `atComma` the text cut after its last comma, so a title
+    /// breaks where it reads (`Annual report,` / `FY2025 ·`, not `Annual` / `report, FY2025 ·`).
+    static func halves(_ text: String, atComma: Bool) -> [String] {
+        let words = text.split(separator: " ").map(String.init)
+        if atComma, let comma = words.dropLast().lastIndex(where: { $0.hasSuffix(",") }) {
+            return [words[...comma].joined(separator: " "), words[(comma + 1)...].joined(separator: " ")]
+        }
+        return AskCopy.halves(text)
+    }
+
+    /// A WORD JOINER after each hyphen, so `(10-K)` wraps whole, not as `(10-` / `K)`.
+    static func joiningHyphens(_ text: String) -> String {
+        text.replacingOccurrences(of: "-", with: "-\u{2060}")
     }
 }
 
@@ -278,7 +296,7 @@ private struct SummaryFigureLine: View {
                 }
             }
             if let note {
-                ChangeNote(text: note)
+                BalancedText(text: note)
                     .font(.footnote)
                     .monospacedDigit()
                     .foregroundStyle(Theme.muted)
@@ -332,7 +350,7 @@ private struct SummaryFigureLine: View {
 }
 
 /// The report a card row comes from: `출처 · 2026년 3분기 보고서 · 11월 16일 공시`.
-private struct SummarySource: View {
+struct SummarySource: View {
     @Environment(\.language) private var language
     let filing: Filing
 
@@ -345,7 +363,17 @@ private struct SummarySource: View {
 
     private static func parts(_ filing: Filing, _ language: Language) -> [String] {
         [AskCopy.source(language), Titles.title(for: filing, language: language),
-         Copy.filedOn(filing.filedOn, language)]
+         filedOn(filing.filedOn, language)]
+    }
+
+    /// `Copy.filedOn` with a break allowed after the Korean year. Its date is one unbroken
+    /// run, which at the accessibility sizes is wider than the line and broke inside itself
+    /// (`2026년 11월` / `16일 공시`); now it wraps as `2026년` / `11월 16일 공시`. The month
+    /// and day stay together. English already breaks only after `Filed`.
+    static func filedOn(_ date: CivilDate, _ language: Language) -> String {
+        let filed = Copy.filedOn(date, language)
+        guard language == .ko else { return filed }
+        return filed.replacingOccurrences(of: "\(date.year)년" + Copy.noBreak, with: "\(date.year)년 ")
     }
 
     static func line(_ filing: Filing, _ language: Language) -> String {
@@ -366,15 +394,15 @@ private struct SummarySource: View {
 }
 
 /// Phrases laid out like words: as many on a line as fit, a line break only between
-/// phrases. A phrase wider than the line wraps between its own words.
+/// phrases. A phrase wider than the line wraps between its own words as `BalancedText`
+/// does, so it never leaves one or two words alone (`2026년` / `3분기 보고서 ·`).
 private struct PhraseFlow: View {
     let phrases: [String]
 
     var body: some View {
         FlowLayout(spacing: 4, lineSpacing: 0) {
             ForEach(Array(phrases.enumerated()), id: \.offset) { _, phrase in
-                Text(words: phrase)
-                    .fixedSize(horizontal: false, vertical: true)
+                BalancedText(text: phrase, breaksAtComma: true)
             }
         }
     }
