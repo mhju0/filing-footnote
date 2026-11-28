@@ -13,9 +13,10 @@ A caller that has the filing passes it as a :class:`Source`. Two narrow allowanc
 need it and stay closed without it: an N1 label (a year, quarter, round, numbered plant or
 SEC form name) passes only when the source holds the same label, and a Korean line one may
 end in a report-type ending only when the filing's title is that report type. A line where a
-year, quarter or round label passed puts the whole summary under N3 `dated_future` (future,
-plan and target forms), so a source-held label cannot carry a dated forecast. On every line,
-an attributed prediction (`attributed_prediction`: -ㄹ 거라고, "said ... would") fails N3.
+year, quarter, round or plant label passed (plants since D112) puts the whole summary under N3
+`dated_future` (future, plan, target and outlook forms), so a source-held label cannot carry
+a dated forecast. On every line, an attributed prediction (`attributed_prediction`:
+-ㄹ 거라고, "said ... would") fails N3.
 """
 
 import json
@@ -78,8 +79,8 @@ _RIEUL_FINAL = "".join(chr(0xAC00 + block * 28 + 8) for block in range(19 * 21))
 _NIEUN_FINAL = "".join(chr(0xAC00 + block * 28 + 4) for block in range(19 * 21))
 # Placeholders the N3 form-class lists use for a syllable ending in ㄹ or ㄴ (D111).
 _FINAL_CLASSES = {"<ㄹ>": f"[{_RIEUL_FINAL}]", "<ㄴ>": f"[{_NIEUN_FINAL}]"}
-# Label kinds that put a whole summary under N3 dated_future (D111).
-_DATED_KINDS = frozenset({"year", "quarter", "round"})
+# Label kinds that put a whole summary under N3 dated_future (D111; plants since D112).
+_DATED_KINDS = frozenset({"year", "quarter", "round", "plant"})
 
 
 # Spelled ordinals an N1 label may use, so "third quarter" matches the source's 3분기.
@@ -140,7 +141,7 @@ class _Lexicon:
     ko_report_endings: tuple[tuple[re.Pattern[str], frozenset[int], re.Pattern[str]], ...]
     # (kind, pattern with a "value" group): N1 labels exempt when the source has them (D111).
     labels: tuple[tuple[str, re.Pattern[str]], ...]
-    # N3 forms banned in a summary where a year, quarter or round label passed (D111).
+    # N3 forms banned in a summary where a year, quarter, round or plant label passed (D111).
     dated_future: dict[Lang, tuple[re.Pattern[str], ...]]
     # N3 attributed predictions banned on every line (D111).
     attributed_prediction: dict[Lang, tuple[re.Pattern[str], ...]]
@@ -388,8 +389,8 @@ def _regex_violations(
 def uses_dated_label(
     lines: Sequence[str], source: Source | None, lexicon: _Lexicon | None = None
 ) -> bool:
-    """Whether any line passes N1 through a year, quarter or round label the source holds. If
-    one does, N3 ``dated_future`` applies to every line of the summary (D111)."""
+    """Whether any line passes N1 through a year, quarter, round or plant label the source
+    holds. If one does, N3 ``dated_future`` applies to every line of the summary (D111)."""
     lex = lexicon or load_lexicon()
     return any(
         kind in _DATED_KINDS
@@ -409,7 +410,7 @@ def check_line(
 ) -> list[Violation]:
     """Return every failing-rule violation for one line (N1-N4, N6 per line, N7, N8).
     ``source`` opens the two D111 allowances described in the module docstring. ``dated``
-    says whether the line's summary uses a year, quarter or round label (see
+    says whether the line's summary uses a year, quarter, round or plant label (see
     :func:`uses_dated_label`); left as None, only this line's own labels decide."""
     lex = lexicon or load_lexicon()
     text = normalize(line)
@@ -482,7 +483,7 @@ def check_section(
     source: Source | None = None,
 ) -> list[Violation]:
     """Every line of one summary through :func:`check_line`, with N3 ``dated_future`` on all of
-    them when any one uses a year, quarter or round label (D111). No line-count check."""
+    them when any one uses a year, quarter, round or plant label (D111). No line-count check."""
     lex = lexicon or load_lexicon()
     dated = uses_dated_label(lines, source, lex)
     found = []

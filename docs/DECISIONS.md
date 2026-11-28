@@ -2346,3 +2346,43 @@ does not list.
 - **Not edited.** ADR 0005 and the AGENTS.md rule "Generated prose contains no digits" still
   say no digits. Read them with this entry's label exception: no figures, and a digit only
   as a label that the source holds.
+
+## D112 · Neutrality guard follow-up to D111: outlook forms, plant labels, judgement words · 2026-11-28
+
+The final review of D111 found three lexical gaps. The coordinator decided on 2026-11-28 to
+close them in a follow-up, with a negative test for each case. D111 stays as written; this
+entry adds to it.
+
+- **N3 `dated_future`, English outlook forms.** In a summary where a label opens the
+  dated-forecast list, these also fail:
+  - outlook verbs: sees (see, seeing), foresees, envisions, predicts;
+  - confident (confidently), optimistic, pessimistic, optimism, pessimism;
+  - position(s/ed/ing) it, itself, the company, them or us … for, and (well) positioned to
+    or for.
+
+  So "The company said it sees fiscal 2027 growth.", "it is confident about fiscal 2027." and
+  "fiscal 2026 results position it for growth." fail. The noun stays clear: "its financial
+  position for fiscal 2026".
+- **Plant labels open `dated_future`.** A plant label (2공장, Plant 2) now opens the list like
+  a year, quarter or round label, so 회사는 2공장 증설로 생산능력이 늘어난다고 밝혔어요 fails.
+  A form label still does not open it.
+- **N7, valuation and bottom calls.** These are judgements, like 저평가 and undervalued, and
+  fail on every line, with or without a label or a source:
+  - Korean: 매력적, 매력도, 매력이 있다/높다/크다, 투자 매력; 바닥을 치다/찍다/지나다/
+    확인하다/탈출하다, 바닥권; 저점을 찍다/통과하다/지나다/확인하다; 과소평가, 과대평가; 주가
+    or 밸류에이션 + 싸다/싼/저렴;
+  - English: attractive (attractively, attractiveness); bottom(s/ed/ing) out, bottomed, hit or
+    reach (a) bottom, rock bottom; under- and over- + valu… or pric… (undervaluation,
+    overpriced); fairly, fully, richly or cheaply valued.
+
+  저평가, 고평가, undervalued and overvalued were already listed. 바닥재 (flooring), 저렴한
+  제품, bottom line, under pricing pressure and collective bargaining stay clear. The existing
+  bad fixture 회사는 주가가 바닥을 지난 것으로 보인다고 밝혔어요 now fails N7 as well as N3.
+- **N1 is a digit rule.** Deadlines and counts the filing states, written in words, are
+  allowed (한 달 이내, within three months, seven series); this follow-up does not change them.
+- **Keys and approvals.** The new N7 words are `patterns`, which the summary prompt does not
+  list, and `dated_future` is not read by the prompt either. So the prompt text is unchanged
+  (checked by hashing every system prompt before and after), `lexicon_version` stays 2, and no
+  cache key changes. All 438 approved rows and the nine round-3 cards give the same result
+  under the old and the new guard, with no source and with a source that holds every label
+  in their lines. No approved line contains a digit, so no label opens `dated_future` for them.

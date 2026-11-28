@@ -628,13 +628,12 @@ def test_a_label_on_one_line_puts_the_whole_summary_under_dated_future(lines, la
         alone)
 
 
-def test_dated_future_forms_apply_only_where_a_year_quarter_or_round_label_passed() -> None:
+def test_dated_future_forms_apply_only_where_a_year_quarter_round_or_plant_label_passed() -> None:
     # Without such a label the dated-forecast list does not apply (the general question of a
-    # bare will is out of scope); a form or plant label does not open it either.
+    # bare will is out of scope); a form label does not open it either. Plants do since D112.
     assert _rules("The company said revenue will rise.", "en", YEARS, 2) == []
     assert _rules("회사는 매출이 늘어난다고 밝혔어요", "ko", YEARS, 2) == []
     assert _rules("The company said it will file a Form S-3.", "en", SHELF, 2) == []
-    assert _rules("회사는 2공장을 증설한다고 밝혔어요", "ko", Source("x", "2공장"), 2) == []
 
 
 @pytest.mark.parametrize(
@@ -776,3 +775,93 @@ def test_a_report_quoted_as_saying_would_is_an_attributed_prediction() -> None:
     # The card taken off round 3: dart:20260918800583 (an inquiry answer), English line one.
     line = "The company said a report stated it would build a semiconductor plant in Japan."
     assert ("N3", "said a report stated it would") in _rules(line, "en", INQUIRY)
+
+
+# -- D112: outlook forms, plant labels and judgement words (coordinator decision 2026-11-28) -----
+PLANT = Source("x", "2공장 증설")
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        "The company said it sees fiscal 2027 growth.",
+        "The company said it is confident about fiscal 2027.",
+        "The company said fiscal 2026 results position it for growth.",
+        "The company said fiscal 2026 results positioned the company for growth.",
+        "The company said it is optimistic about fiscal 2027.",
+        "The company said it is well positioned for fiscal 2027.",
+        "The company said it foresees fiscal 2027 growth.",
+        "The company said it predicts fiscal 2027 growth.",
+    ],
+)
+def test_outlook_verbs_and_confidence_join_dated_future(line: str) -> None:
+    found = _rules(line, "en", YEARS, 2)
+    assert "N1" not in {rule for rule, _ in found}
+    assert "N3" in {rule for rule, _ in found}
+    # Without a label in the summary the list stays closed (the D111 scope).
+    assert _rules(line.replace("fiscal 2027", "next year").replace("fiscal 2026", "recent"),
+                  "en", YEARS, 2) == []  # fmt: skip
+
+
+def test_a_position_noun_stays_clear_in_a_dated_summary() -> None:
+    assert _rules("The company reported its financial position for fiscal 2026.", "en",
+                  YEARS, 2) == []  # fmt: skip
+
+
+@pytest.mark.parametrize(
+    "lines",
+    [
+        ["회사는 2공장 증설로 생산능력이 늘어난다고 밝혔어요"],
+        ["회사는 2공장을 증설한다고 밝혔어요"],
+        ["회사는 2공장 증설을 공시했어요", "회사는 생산능력이 늘어날 수 있다고 밝혔어요"],
+    ],
+)
+def test_a_plant_label_puts_the_summary_under_dated_future(lines: list[str]) -> None:
+    found = check_section(lines, "ko", source=PLANT)
+    assert "N1" not in {v.rule_id for v in found}
+    assert ("N3", len(lines)) in {(v.rule_id, v.line_no) for v in found}
+
+
+def test_a_plant_label_without_a_forecast_passes() -> None:
+    assert check_section(["회사는 2공장 증설을 결정했다고 밝혔어요"], "ko", source=PLANT) == []
+
+
+@pytest.mark.parametrize(
+    ("line", "lang"),
+    [
+        ("회사는 주가가 매력적이라고 밝혔어요", "ko"),
+        ("회사는 투자 매력이 있다고 밝혔어요", "ko"),
+        ("회사는 주가가 바닥을 쳤다고 밝혔어요", "ko"),
+        ("회사는 주가가 바닥을 찍었다고 밝혔어요", "ko"),
+        ("회사는 주가가 저점을 통과했다고 밝혔어요", "ko"),
+        ("회사는 주가가 저평가돼 있다고 밝혔어요", "ko"),
+        ("회사는 주가가 고평가됐다고 밝혔어요", "ko"),
+        ("회사는 주가가 과소평가돼 있다고 밝혔어요", "ko"),
+        ("회사는 주가가 싸다고 밝혔어요", "ko"),
+        ("The company said its shares are attractive.", "en"),
+        ("The company said its shares bottomed out.", "en"),
+        ("The company said the stock has bottomed.", "en"),
+        ("The company said its shares hit bottom.", "en"),
+        ("The company said its shares are undervalued.", "en"),
+        ("The company said its shares are under-valued.", "en"),
+        ("The company said its shares are overpriced.", "en"),
+        ("The company said its shares are fairly valued.", "en"),
+    ],
+)  # fmt: skip
+def test_valuation_and_bottom_calls_fail_n7_everywhere(line: str, lang: str) -> None:
+    for source, line_no in ((None, 1), (YEARS, 2), (CLARIFICATION, 1)):
+        assert "N7" in {rule for rule, _ in _rules(line, lang, source, line_no)}
+
+
+@pytest.mark.parametrize(
+    ("line", "lang"),
+    [
+        ("회사는 바닥재 사업을 양수했다고 밝혔어요", "ko"),
+        ("회사는 저렴한 제품을 출시했다고 밝혔어요", "ko"),
+        ("The company reported its bottom line.", "en"),
+        ("The company said margins were under pricing pressure.", "en"),
+        ("The company disclosed a strike related to collective bargaining.", "en"),
+    ],
+)  # fmt: skip
+def test_lookalikes_of_the_judgement_words_stay_clear(line: str, lang: str) -> None:
+    assert _rules(line, lang, None, 2) == []
