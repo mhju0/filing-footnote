@@ -276,14 +276,15 @@ def _clarified_target() -> Target:
     return Target(FID, "event", "summary", NAMES, CLARIFIED_SOURCE, title=CLARIFIED_TITLE)
 
 
-def _write_withheld(tmp_path, body: dict[str, str], model: str = MODEL) -> None:
+def _write_withheld(tmp_path, body: dict[str, str], model: str = MODEL,
+                    flags: tuple = ()) -> None:  # fmt: skip
     key = input_sha256(CLARIFIED_SOURCE, model, "summary")
     rows = [
         {"filing_id": FID, "lang": lang, "section": "summary", "line1": lines[0],
          "line2": lines[1], "line3": lines[2], "review_state": "withheld", "input_sha256": key,
          "violations": [{"rule_id": "N4", "line_no": 1, "token": "", "span": [0, 0]}],
-         "warnings": [], "reviewer_flags": [], "model": model,
-         "prompt_version": summaries.EVENT_PROMPT_VERSION, "lexicon_version": 2}
+         "warnings": [], "reviewer_flags": [f for f in flags if f["lang"] == lang],
+         "model": model, "prompt_version": summaries.EVENT_PROMPT_VERSION, "lexicon_version": 2}
         for lang, lines in _lines(body).items()
     ]  # fmt: skip
     summaries.write_staged(tmp_path / "staged.jsonl", rows)
@@ -315,6 +316,17 @@ def test_recheck_withheld_stages_a_pair_that_now_passes_without_a_call(tmp_path)
 
     result = approve.approve_all_reviewed(tmp_path / "staged.jsonl", tmp_path / "approved.jsonl")
     assert result.approved == []
+
+
+def test_recheck_withheld_keeps_flags_a_reviewer_raised(tmp_path) -> None:
+    # A pair staged with reviewer flags, then withheld by a recheck, keeps them when staged again.
+    flag = {"lang": "en", "type": "exaggeration", "line": 2, "quote_from_summary": "x"}
+    _write_withheld(tmp_path, CLARIFIED, flags=(flag,))
+    summaries.recheck_withheld([_clarified_target()], model=MODEL,
+                               staged_path=tmp_path / "staged.jsonl")  # fmt: skip
+    rows = {r["lang"]: r for r in _staged(tmp_path)}
+    assert rows["en"]["review_state"] == rows["ko"]["review_state"] == "staged"
+    assert (rows["en"]["reviewer_flags"], rows["ko"]["reviewer_flags"]) == ([flag], None)
 
 
 @pytest.mark.parametrize(

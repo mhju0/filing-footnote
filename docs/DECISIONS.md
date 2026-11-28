@@ -2160,30 +2160,48 @@ The owner decided on 2026-11-28, through the Orca coordinator, to "change the ru
 for summaries the guard kept withholding, rather than exclude them as in D109. Each change is
 as narrow as the blocked cases need. Every other line the guard failed before still fails.
 
-- **N1, labels.** A digit that names something rather than counts it may pass: a year (four
-  digits from 1900 to 2099 before 년, 회계연도 or 사업연도, or after fiscal, fiscal year or FY),
-  a quarter (1분기 to 4분기, first to fourth quarter), a round (one digit before 차 standing
-  alone or with a particle: 1차와, 2차 발행가액), a numbered plant (2공장, Plant 2) and the SEC
-  form names S-1/3/4/8, F-1/3/4, 10-K, 10-Q, 8-K, 6-K, 11-K, 20-F, 40-F (optional /A). A label
-  passes only when the caller passes the filing's source and the source holds the same kind and
-  value, in either language (third quarter matches 3분기). With no source, nothing changes. The
-  patterns are N1 `labels` in `contracts/neutrality-lexicon.json`.
+- **N1, labels.** A digit that names something rather than counts it may pass:
+  - a year: four digits from 1900 to 2099 before 년, 회계연도 or 사업연도, or after fiscal,
+    fiscal year or FY;
+  - a quarter: 1분기 to 4분기 written without a space and not followed by 연속, 동안, 간,
+    만에, 째, 이내, 마다 or 씩, or first to fourth quarter;
+  - a round: one digit before 차, standing alone or with one of 와 과 의 는 은 가 를 을 도 에
+    (1차와, 2차 발행가액), but not 에 걸쳐 or 에 나눠;
+  - a numbered plant: 2공장 with no space, or Plant 2;
+  - the SEC form names S-1/3/4/8, F-1/3/4, 10-K, 10-Q, 8-K, 6-K, 11-K, 20-F and 40-F, with
+    an optional /A.
+
+  A label passes only when the caller passes the filing's source and the source holds a label
+  of the same kind and value. The source may hold it in either language: third quarter matches
+  3분기, and a Korean line about an SEC filing writes 2026 회계연도 for fiscal 2026. With no
+  source, nothing changes. The patterns are N1 `labels` in
+  `contracts/neutrality-lexicon.json`.
 - **Still banned under N1.** Amounts, percentages, prices, counts and durations. 6개월 is a
   duration, so LG Chem's `dart:20260824800208` stays withheld; the next retry can say it without
-  the number. Also still banned: 년간 and 년 동안 (durations), 2차전지, 3차원 and the count
-  2차례, a bare English year (in 2026), halves (상반기, first half), spelled Korean quarters
-  (삼분기), product and company names with digits (3M, Model 3), and file numbers. The 1차/2차
+  the number. Also still banned:
+  - durations: 년간, 년 동안, 3분기 연속, 4분기 동안, 3분기 만에;
+  - counts that look like rounds or plants: 2차례, 2차에 걸쳐, 3차에 나눠, 4차로 (lanes),
+    2 공장;
+  - words containing 차: 2차전지, 3차원, 차이;
+  - a bare English year (in 2026), halves (상반기, first half) and spelled Korean quarters
+    (삼분기);
+  - product and company names with digits (3M, Model 3), and file numbers. The 1차/2차
   of Samsung Biologics' issue-price filing are rounds: the line names the first and second
   issue prices without stating them, and the source says 1차 발행가액 and 2차 발행가액.
-- **N4, report endings.** Line one of a clarification filing (title 풍문또는보도에대한해명) may
-  also end in 해명했어요. Line one of an inquiry answer (title 조회공시요구…에대한답변) may also
-  end in 답변했어요 or 조회공시 요구를 받았어요. Each says what the company did or what the
+- **N4, report endings.** Line one of a clarification filing may also end in 해명했어요. Its
+  title starts with 풍문또는보도에대한해명, after an optional bracketed tag such as [기재정정].
+  Line one of an inquiry answer may also end in 답변했어요 or 조회공시 요구를 받았어요. Its title
+  starts with 조회공시요구, an optional bracket, then 에대한답변. A title that only mentions an
+  inquiry answer does not count. Each says what the company did or what the
   exchange asked; none judges or predicts. Lines two and three, and every other report type, keep
   the five endings. The ending opens no other rule: N2, N3 and the rest still apply to the line.
 - **N7, legal terms and selling notes.** 강제 매수 (강제매수, a compulsory acquisition of
   minority shares under law) joins the allow list beside 공개 매수. A new `allow_patterns` entry
-  lets the company sell the notes it issues: 채권, 사채 or 노트 + 을/를, an optional buyer + 에
-  or 에게, then 매도 before 하기로, 했, 한, 하는, 할 예정 or 할 계획. Shares are left out on
+  lets the company sell the notes it issues. The pattern is 채권, 사채 or 노트 + 을/를, then
+  optionally 인수단, 인수인, 주관사 or (기관)투자자(들) + 에/에게, then 매도 directly before
+  하기로, 했다, 했어요, 했고, 했으며, 했습니다, 할 예정 or 할 계획. The buyer list is closed, so
+  a judgement word in that slot (유망기업에) is still caught, and 매도하는, 매도한, 매도한다면
+  and 매도했으면 are left out. Shares are left out on
   purpose, because house style writes 취득/처분 for the company's own share trades, and the
   existing test line 자기주식을 매도하기로 must keep failing. Bare 매수/매도, 사세요, 팔세요,
   매도하세요, 매도해야 and 매도할 때 still fail.
@@ -2195,9 +2213,9 @@ as narrow as the blocked cases need. Every other line the guard failed before st
   only fail more often, never less.
 - **Re-guarding without generating.** A new command, `python -m app.build.summaries
   recheck-withheld` (with `--dry-run`), re-runs the guard on cached withheld pairs whose input
-  key is still current. When both languages pass, it stages them with no violations and
-  `reviewer_flags` null. No Groq call is made, so `approve --all-reviewed` skips them and only
-  the owner approves them. `generate` still keeps a cached withheld pair withheld unless
+  key is still current. When both languages pass, it stages them with no violations, and it
+  sets an empty `reviewer_flags` to null while keeping any flags a reviewer did raise. No Groq
+  call is made, so `approve --all-reviewed` skips them and only the owner approves them. `generate` still keeps a cached withheld pair withheld unless
   `--retry-withheld` is given.
 - **Keys and approvals.** `lexicon_version` stays 2. Only that integer enters the input key,
   and the prompt reads none of the changed fields, so no cache key, prompt or prompt version
@@ -2216,6 +2234,13 @@ as narrow as the blocked cases need. Every other line the guard failed before st
   N3.
 - **Order.** This must merge before the next `summaries generate` run. Code without it
   re-guards the twelve staged pairs with the old guard and withholds them again.
+- **Independent review.** A fresh-context review of the first version found four ways it let
+  something through: quarter durations (3분기 연속), round counts (2차에 걸쳐, 4차로, 1차이),
+  a judgement word in the buyer slot (채권을 유망기업에 매도), and conditional or third-party
+  sales (매도한다면, 투자자가 … 매도하는 것이 낫다). It also found that the inquiry-answer title
+  pattern was unanchored. All are closed above, and each has a test that passed on the first
+  version and fails now. It also noted a gap older than D111: 사세요 and 팔세요 in the middle
+  of a line pass N7, which catches them only at the end of a line. D111 does not change that.
 - **Not edited.** ADR 0005 and the AGENTS.md rule "Generated prose contains no digits" still
   say no digits. Read them with this entry's label exception: no figures, and a digit only
   as a label that the source holds.

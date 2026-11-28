@@ -961,9 +961,10 @@ def recheck_staged(target: Target, rows: Sequence[dict[str, Any]]) -> bool:
 
 def stage_withheld(target: Target, rows: Sequence[dict[str, Any]]) -> bool:
     """Re-run the guard on a cached withheld summary; when both languages now pass (the word
-    lists changed, D111), stage both rows with no violations. No reviewer call is made, so
-    ``reviewer_flags`` becomes None, as for a template: ``--all-reviewed`` skips the pair and
-    only the owner approves it. Returns True when it changed the rows."""
+    lists changed, D111), stage both rows with no violations. No reviewer call is made, so an
+    empty ``reviewer_flags`` becomes None, as for a template: ``--all-reviewed`` skips the pair
+    and only the owner approves it. Flags a reviewer did raise are kept. Returns True when it
+    changed the rows."""
     lines = {
         row["lang"]: [line for line in (row.get("line1"), row.get("line2"), row.get("line3"))
                       if line is not None]
@@ -975,7 +976,7 @@ def stage_withheld(target: Target, rows: Sequence[dict[str, Any]]) -> bool:
     for row in rows:
         row["review_state"] = "staged"
         row["violations"] = []
-        row["reviewer_flags"] = None
+        row["reviewer_flags"] = row.get("reviewer_flags") or None
         row["lexicon_version"] = load_lexicon().version
     return True
 

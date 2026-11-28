@@ -428,6 +428,16 @@ def test_figures_and_absent_labels_still_fail_n1(
         ("회사는 2026년간 배당을 시행한다고 밝혔어요.", Source("x", "2026년간 배당")),
         ("회사는 10년 동안 배당을 시행한다고 밝혔어요.", Source("x", "10년 동안 2010년")),
         ("회사는 2공장 두 곳을 짓는다고 밝혔어요.", Source("x", "2공장")),
+        # Found in review: quarter and round counts whose digit the source holds as a label.
+        ("회사는 3분기 연속 영업손실을 냈다고 밝혔어요", Source("x", "2026년 3분기")),
+        ("회사는 4분기 동안 공장을 멈췄다고 밝혔어요", Source("x", "4분기 실적")),
+        ("회사는 3분기 만에 흑자로 돌아섰다고 밝혔어요", Source("x", "3분기 실적")),
+        ("회사는 최근 3 분기 연속 흑자라고 밝혔어요", Source("x", "3분기 실적")),
+        ("회사는 2차에 걸쳐 납입한다고 밝혔어요", Source("x", "2차 납입")),
+        ("회사는 3차에 나눠 지급한다고 밝혔어요", Source("x", "3차 지급")),
+        ("회사는 4차로 도로를 짓는다고 밝혔어요", Source("x", "4차 공사")),
+        ("회사는 1차이로 낙찰됐다고 밝혔어요", Source("x", "1차 입찰")),
+        ("회사는 국내에 2 공장을 운영한다고 밝혔어요", Source("x", "2공장")),
     ],
 )  # fmt: skip
 def test_counts_and_durations_that_look_like_labels_fail_n1(line: str, source: Source) -> None:
@@ -445,6 +455,7 @@ def test_counts_and_durations_that_look_like_labels_fail_n1(line: str, source: S
         ("회사는 솔리다임의 미국 낸드공장 신설 검토 보도에 대해 해명했어요.", CLARIFICATION),
         ("회사는 일본에 반도체 공장을 짓는다는 보도에 대해 조회공시 요구를 받았어요.", INQUIRY),
         ("회사는 일본에 반도체 공장을 짓는다는 보도에 대해 조회공시요구를 받았어요.", INQUIRY),
+        ("회사는 신설 검토 보도에 대해 해명했어요.", Source("[기재정정]풍문또는보도에대한해명", "")),
         ("회사는 반도체 공장 보도에 대한 조회공시 요구에 답변했어요.", INQUIRY),
     ],
 )  # fmt: skip
@@ -461,6 +472,9 @@ def test_line_one_of_its_report_type_may_end_in_a_report_ending(line: str, sourc
         ("회사는 보도에 대해 해명했어요.", INQUIRY, 1),
         ("회사는 조회공시 요구를 받았어요.", CLARIFICATION, 1),
         ("회사는 조회공시 요구에 답변했어요.", CLARIFICATION, 1),
+        # A title that only mentions an inquiry answer is not one.
+        ("회사는 한국거래소에 답변했어요.",
+         Source("불성실공시법인지정예고(조회공시요구에대한답변 지연)", ""), 1),
         # Lines two and three keep the five endings.
         ("회사는 보도에 대해 해명했어요.", CLARIFICATION, 2),
         ("회사는 조회공시 요구를 받았어요.", INQUIRY, 3),
@@ -507,6 +521,14 @@ def test_legal_terms_and_selling_its_notes_pass_n7(line: str) -> None:
         "회사는 자기주식을 매도하기로 결정했어요",
         "회사는 주식을 인수단에 매도하기로 합의했다고 밝혔어요.",
         "회사는 소수주주 지분을 강제로 매수한다고 밝혔어요",
+        # Found in review: a judgement word as the buyer, a third party, conditionals.
+        "회사는 채권을 유망기업에 매도하기로 했다고 밝혔어요",
+        "회사는 채권을 저평가종목에 매도했다고 밝혔어요",
+        "회사는 사채를 추천종목에 매도했다고 밝혔어요",
+        "회사는 투자자가 채권을 매도하는 것이 낫다고 밝혔어요",
+        "회사는 채권을 매도한다면 손실이라고 밝혔어요",
+        "회사는 채권을 매도한 뒤 주식을 사라고 밝혔어요",
+        "회사는 채권을 매도했으면 한다고 밝혔어요",
     ],
 )  # fmt: skip
 def test_buy_and_sell_advice_still_fails_n7(line: str) -> None:
