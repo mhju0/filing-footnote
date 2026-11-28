@@ -101,7 +101,7 @@ from app.llm.neutrality_guard import (
     LEXICON_PATH,
     Source,
     Violation,
-    check_line,
+    check_section,
     check_summary,
     load_lexicon,
     summary_warnings,
@@ -593,11 +593,7 @@ def guard_lines(
     the lines were written from; without it the D111 allowances stay closed."""
     if section in THREE_LINE_SECTIONS:
         return check_summary(lines, lang, names, source=source)  # type: ignore[arg-type]
-    return [
-        v
-        for number, line in enumerate(lines, start=1)
-        for v in check_line(line, lang, number, names, source=source)  # type: ignore[arg-type]
-    ]
+    return check_section(lines, lang, names, source=source)  # type: ignore[arg-type]
 
 
 def _violation_dict(v: Violation) -> dict[str, Any]:

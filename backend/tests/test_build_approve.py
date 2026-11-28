@@ -102,10 +102,22 @@ def test_an_edit_is_guarded_with_the_filings_source(tmp_path) -> None:
         seen.append((filing_id, section))
         return source
 
-    approve.approve_filing(staged, approved, FID, lang="ko", edit=(1, text), names=_names,
-                           sources=sources)  # fmt: skip
+    # With the source the label passes N1, and the summary is then under N3 dated_future on
+    # every line: lines two and three state plans (려고, 취득한다고, 예정).
+    with pytest.raises(approve.ApproveError) as refused:
+        approve.approve_filing(staged, approved, FID, lang="ko", edit=(1, text), names=_names,
+                               sources=sources)  # fmt: skip
     assert seen == [(FID, "summary")]
-    assert next(r for r in read_jsonl(approved) if r["lang"] == "ko")["line1"] == text
+    assert "N1" not in str(refused.value)
+    assert "N3 line 2" in str(refused.value) and "N3 line 3" in str(refused.value)
+    plain = "회사는 2026년 자기주식 취득 결정을 공시했어요"
+    staged, approved = _setup(tmp_path, [
+        {**_row(lang="ko"), "line2": "회사는 취득 목적을 주식보상이라고 밝혔어요",
+         "line3": "회사는 장내 매수로 취득했다고 밝혔어요"},
+        _row(lang="en")])  # fmt: skip
+    approve.approve_filing(staged, approved, FID, lang="ko", edit=(1, plain), names=_names,
+                           sources=sources)  # fmt: skip
+    assert next(r for r in read_jsonl(approved) if r["lang"] == "ko")["line1"] == plain
 
 
 def test_filing_sources_match_what_the_summary_build_guards_with() -> None:

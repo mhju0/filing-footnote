@@ -82,7 +82,7 @@ from app.clients.sec import (
 from app.filings.categories import load_contract as load_categories_contract
 from app.ingest.dart import _dart_financial_facts, dart_quarter_rows, period_descriptor
 from app.ingest.sec_events import sec_facts
-from app.llm.neutrality_guard import Source, check_line, check_source_url, check_summary
+from app.llm.neutrality_guard import Source, check_section, check_source_url, check_summary
 
 BACKEND_DIR = Path(__file__).resolve().parents[2]
 DEFAULT_PINNED_DIR = BACKEND_DIR / "data" / "pinned"
@@ -659,12 +659,8 @@ def summary_problems(
         violations = check_summary(present, lang, company_names,  # type: ignore[arg-type]
                                    source=source)  # fmt: skip
     else:
-        violations = [
-            v
-            for number, line in enumerate(present, start=1)
-            for v in check_line(line, lang, number, company_names,  # type: ignore[arg-type]
-                                source=source)  # fmt: skip
-        ]
+        violations = check_section(present, lang, company_names,  # type: ignore[arg-type]
+                                   source=source)  # fmt: skip
     return [
         f"{filing_id} summary {lang}/{section}: {v.rule_id} on line {v.line_no} {v.token!r}"
         for v in violations
