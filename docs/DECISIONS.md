@@ -2238,10 +2238,14 @@ does not list.
     followed in the same clause by 'll, would, shall or going to.
 
   So a clarification or inquiry-answer ending cannot carry one (회사는 주가가 오를 거라고
-  해명했어요). This is N3 `attributed_prediction`. English "said … will" is not in it. It would
-  fail 29 lines in 26 approved rows ("The company said it will file again …"), and five of the
-  round-3 cards say "will file again". The repository has no way to exempt approved hashes from
-  a rule, so the coordinator decides it. The bare-"will" question stays the owner's.
+  해명했어요). This is N3 `attributed_prediction`.
+- **Considered and not adopted: an every-line ban on English "said … will".** It would fail 29
+  lines in 26 approved rows, and five of the nine round-3 cards. The coordinator decided on
+  2026-11-28 not to adopt it. Those lines ("The company said it will file again when details
+  are confirmed", "stated the shares will be transferred") report a scheduled step or an
+  obligation the filing states, not a forecast. The owner approved each of them line by line.
+  "said … will" still fails inside any summary with a year, quarter or round label, through
+  `dated_future`. The repository has no way to exempt approved hashes from a rule.
 - **N4, report endings.** Line one of a clarification filing may also end in 해명했어요. Its
   title starts with 풍문또는보도에대한해명, after an optional bracketed tag such as [기재정정].
   Line one of an inquiry answer may also end in 답변했어요 or 조회공시 요구를 받았어요. Its title
