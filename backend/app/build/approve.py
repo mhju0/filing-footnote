@@ -16,10 +16,10 @@ problem, so approving again replaces the approved row. Without ``--lang`` both l
 filing and section move together.
 
 An edit replaces one line of one language and runs the language's lines through the same guard
-the exporter runs (``summaries.guard_lines``) with the company's names; on a violation nothing is
-written. ``--all-reviewed`` approves a filing section only when both languages are staged,
-hold no violations and have a reviewer result with no flags; a row whose reviewer did not run is
-left for the owner. It lists what it approved.
+the exporter runs (``summaries.guard_lines``) with the company's names and the filing's source
+text (D111); on a violation nothing is written. ``--all-reviewed`` approves a filing section
+only when both languages are staged, hold no violations and have a reviewer result with no
+flags; a row whose reviewer did not run is left for the owner. It lists what it approved.
 """
 
 from __future__ import annotations
@@ -33,7 +33,13 @@ from pathlib import Path
 from typing import Any
 
 from app.build.export import _company_id, _filing_id
-from app.build.model import LANGS, BuildInput
+from app.build.model import (
+    LANGS,
+    BuildInput,
+    annual_sections,
+    annual_source_text,
+    event_source_text,
+)
 from app.build.summaries import (
     APPROVED_PATH,
     LINE_COUNT,
@@ -43,11 +49,12 @@ from app.build.summaries import (
     read_jsonl,
     write_staged,
 )
-from app.llm.neutrality_guard import summary_warnings
+from app.llm.neutrality_guard import Source, summary_warnings
 
 Row = dict[str, Any]
 Key = tuple[str, str, str]  # (filing_id, lang, section)
 NamesFor = Callable[[str], Sequence[str]]
+SourceFor = Callable[[str, str], Source | None]  # (filing_id, section) -> the guard's source
 
 
 class ApproveError(Exception):
@@ -99,12 +106,14 @@ def _violation_text(found: Sequence[Any]) -> str:
     return "; ".join(f"{v.rule_id} line {v.line_no} {v.token!r}" for v in found)
 
 
-def _edited(row: Row, number: int, text: str, names: Sequence[str]) -> Row:
+def _edited(
+    row: Row, number: int, text: str, names: Sequence[str], source: Source | None = None
+) -> Row:
     lines = _lines(row)
     if not 1 <= number <= len(lines):
         raise ApproveError(f"line {number} does not exist; {' '.join(_key(row))} has {len(lines)}")
     lines[number - 1] = text.strip()
-    found = guard_lines(row["section"], row["lang"], lines, names)
+    found = guard_lines(row["section"], row["lang"], lines, names, source)
     if found:
         raise ApproveError(f"edit refused, the guard found: {_violation_text(found)}")
     padded = lines + [None] * (3 - len(lines))
@@ -130,6 +139,7 @@ def approve_filing(
     lang: str | None = None,
     edit: tuple[int, str] | None = None,
     names: NamesFor | None = None,
+    sources: SourceFor | None = None,
 ) -> ApproveResult:
     staged = read_jsonl(staged_path)
     picked = [
@@ -159,7 +169,8 @@ def approve_filing(
             raise ApproveError("an edit needs --lang")
         if names is None:
             raise ApproveError("an edit needs the company names to run the guard")
-        picked = [_edited(picked[0], edit[0], edit[1], names(filing_id))]
+        source = sources(filing_id, picked[0]["section"]) if sources else None
+        picked = [_edited(picked[0], edit[0], edit[1], names(filing_id), source)]
     return _commit(staged_path, approved_path, staged, [_approved_row(r) for r in picked])
 
 
@@ -200,21 +211,40 @@ def filing_names(data: BuildInput) -> dict[str, tuple[str, ...]]:
     return names
 
 
-def _database_names(database_url: str | None) -> NamesFor:
+def filing_sources(data: BuildInput) -> dict[tuple[str, str], Source]:
+    """(filing id, section) -> the title and source text the summary build guards with."""
+    sources = {}
+    for event in data.events:
+        text = event_source_text(event)
+        if text is not None:
+            fid = _filing_id(event.regulator, event.filing_key)
+            sources[(fid, "summary")] = Source(event.report_nm, text)
+    for filing in data.annual_filings:
+        fid = _filing_id(filing.regulator, filing.filing_key)
+        for section in annual_sections(filing.regulator, filing.chunks):
+            text = annual_source_text(filing, section)
+            if text is not None:
+                sources[(fid, section)] = Source(filing.title, text)
+    return sources
+
+
+def _database_guard(database_url: str | None) -> tuple[NamesFor, SourceFor]:
     from app.build.source import load_build_input
 
     if database_url is None:
         from app.config import get_settings
 
         database_url = get_settings().database_url
-    names = filing_names(asyncio.run(load_build_input(database_url)))
+    data = asyncio.run(load_build_input(database_url))
+    names = filing_names(data)
+    sources = filing_sources(data)
 
     def names_for(filing_id: str) -> Sequence[str]:
         if filing_id not in names:
             raise ApproveError(f"{filing_id} is not in the build database; cannot run the guard")
         return names[filing_id]
 
-    return names_for
+    return names_for, lambda filing_id, section: sources.get((filing_id, section))
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -252,9 +282,10 @@ def run(argv: Sequence[str] | None = None) -> int:
             result = approve_all_reviewed(args.staged, args.approved)
         else:
             edit = None if args.edit_line is None else (args.edit_line, args.text)
-            names = _database_names(args.database_url) if edit else None
+            names, sources = _database_guard(args.database_url) if edit else (None, None)
             result = approve_filing(
-                args.staged, args.approved, args.filing, args.section, args.lang, edit, names
+                args.staged, args.approved, args.filing, args.section, args.lang, edit, names,
+                sources,
             )
     except ApproveError as exc:
         print(f"refused: {exc}", file=sys.stderr)

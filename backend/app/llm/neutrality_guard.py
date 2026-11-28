@@ -8,6 +8,14 @@ Every check runs on the line after NFKC normalisation with format characters rem
 and every ``Violation.span`` indexes into that normalised text. N9 is a warning rule:
 its hits come only from :func:`line_warnings` / :func:`summary_warnings` and never
 from the ``check_*`` functions.
+
+A caller that has the filing passes it as a :class:`Source`. Two narrow allowances (D111)
+need it and stay closed without it: an N1 label (a year, quarter, round, numbered plant or
+SEC form name) passes only when the source holds the same label, and a Korean line one may
+end in a report-type ending only when the filing's title is that report type. A line where a
+year, quarter or round label passed puts the whole summary under N3 `dated_future` (future,
+plan and target forms), so a source-held label cannot carry a dated forecast. On every line,
+an attributed prediction (`attributed_prediction`: -ㄹ 거라고, "said ... would") fails N3.
 """
 
 import json
@@ -67,6 +75,24 @@ _N1_RES = (
 )
 # Hangul syllables are laid out as 0xAC00 + (initial*21 + medial)*28 + final; final 8 is ㄹ.
 _RIEUL_FINAL = "".join(chr(0xAC00 + block * 28 + 8) for block in range(19 * 21))
+_NIEUN_FINAL = "".join(chr(0xAC00 + block * 28 + 4) for block in range(19 * 21))
+# Placeholders the N3 form-class lists use for a syllable ending in ㄹ or ㄴ (D111).
+_FINAL_CLASSES = {"<ㄹ>": f"[{_RIEUL_FINAL}]", "<ㄴ>": f"[{_NIEUN_FINAL}]"}
+# Label kinds that put a whole summary under N3 dated_future (D111).
+_DATED_KINDS = frozenset({"year", "quarter", "round"})
+
+
+# Spelled ordinals an N1 label may use, so "third quarter" matches the source's 3분기.
+_ORDINAL_WORDS = {"first": "1", "second": "2", "third": "3", "fourth": "4"}
+
+
+@dataclass(frozen=True)
+class Source:
+    """The filing a summary is written from: its title and the text the model saw (or, in a
+    finished bundle, the title and the cited excerpts)."""
+
+    title: str
+    text: str
 
 
 @dataclass(frozen=True)
@@ -110,6 +136,14 @@ class _Lexicon:
     ko_subjects: tuple[str, ...]
     ko_name_particles: tuple[str, ...]
     ko_third_party_re: re.Pattern[str]
+    # (title pattern, line numbers, ending pattern): N4 endings for one report type (D111).
+    ko_report_endings: tuple[tuple[re.Pattern[str], frozenset[int], re.Pattern[str]], ...]
+    # (kind, pattern with a "value" group): N1 labels exempt when the source has them (D111).
+    labels: tuple[tuple[str, re.Pattern[str]], ...]
+    # N3 forms banned in a summary where a year, quarter or round label passed (D111).
+    dated_future: dict[Lang, tuple[re.Pattern[str], ...]]
+    # N3 attributed predictions banned on every line (D111).
+    attributed_prediction: dict[Lang, tuple[re.Pattern[str], ...]]
     en_verbs: tuple[str, ...]
     en_subjects: tuple[str, ...]
     en_name_suffixes: tuple[str, ...]
@@ -162,6 +196,7 @@ def _compile_block(block: dict[str, Any]) -> _Matcher:
     sources += [_allow_pattern(phrase, mode) for phrase in block.get("phrases", ())]
     sources += block.get("patterns", [])
     allow = [_allow_pattern(phrase, mode) for phrase in block.get("allow", ())]
+    allow += block.get("allow_patterns", [])
     return _Matcher(
         patterns=tuple(re.compile(s, re.IGNORECASE | re.MULTILINE) for s in sources),
         allow=tuple(re.compile(s, re.IGNORECASE) for s in allow),
@@ -170,6 +205,18 @@ def _compile_block(block: dict[str, Any]) -> _Matcher:
 
 def _compile_list(sources: Sequence[str]) -> tuple[re.Pattern[str], ...]:
     return tuple(re.compile(s, re.IGNORECASE) for s in sources)
+
+
+def _compile_forms(block: dict[str, Any]) -> dict[Lang, tuple[re.Pattern[str], ...]]:
+    def expand(source: str) -> str:
+        for token, chars in _FINAL_CLASSES.items():
+            source = source.replace(token, chars)
+        return source
+
+    return {
+        lang: tuple(re.compile(expand(s), re.IGNORECASE) for s in block[lang])
+        for lang in ("ko", "en")
+    }
 
 
 @lru_cache(maxsize=4)
@@ -181,7 +228,7 @@ def load_lexicon(path: Path = LEXICON_PATH) -> _Lexicon:
         for rule_id in ("N1", "N2", "N3", "N7", "N9")
         for lang in ("ko", "en")
     }
-    n3, n4, n6 = rules["N3"], rules["N4"], rules["N6"]
+    n1, n3, n4, n6 = rules["N1"], rules["N3"], rules["N4"], rules["N6"]
     return _Lexicon(
         version=raw["version"],
         matchers=matchers,
@@ -194,6 +241,24 @@ def load_lexicon(path: Path = LEXICON_PATH) -> _Lexicon:
             r"^\s*(?:" + "|".join(map(re.escape, n4["ko"]["third_party_subjects"])) + r")들?"
             r"(?:" + "|".join(map(re.escape, n4["ko"]["third_party_particles"])) + r")(?![가-힣])"
         ),
+        ko_report_endings=tuple(
+            (
+                re.compile(entry["title_pattern"]),
+                frozenset(entry["lines"]),
+                re.compile(
+                    "(?:" + "|".join(_allow_pattern(e, "substring") for e in entry["endings"])
+                    + ")$"
+                ),
+            )
+            for entry in n4["ko"]["report_endings"]
+        ),
+        labels=tuple(
+            (label["kind"], re.compile(pattern, re.IGNORECASE))
+            for label in n1["labels"]
+            for pattern in label["patterns"]
+        ),
+        dated_future=_compile_forms(n3["dated_future"]),
+        attributed_prediction=_compile_forms(n3["attributed_prediction"]),
         en_verbs=tuple(n4["en"]["verbs"]),
         en_subjects=tuple(n4["en"]["subjects"]),
         en_name_suffixes=tuple(n4["en"]["name_suffixes"]),
@@ -215,14 +280,59 @@ def normalize(text: str) -> str:
     return "".join(ch for ch in folded if unicodedata.category(ch) != "Cf")
 
 
+def _label_value(kind: str, match: re.Match[str]) -> tuple[str, str]:
+    value = match.group("value").lower()
+    return kind, _ORDINAL_WORDS.get(value, value).upper()
+
+
+@lru_cache(maxsize=64)
+def _source_labels(
+    text: str, labels: tuple[tuple[str, re.Pattern[str]], ...]
+) -> frozenset[tuple[str, str]]:
+    return frozenset(
+        _label_value(kind, m) for kind, pattern in labels for m in pattern.finditer(text)
+    )
+
+
+def _label_spans(
+    text: str, source: Source | None, lex: _Lexicon
+) -> list[tuple[str, tuple[int, int]]]:
+    """(kind, span) of the N1 labels in ``text`` that the source also holds; none without a
+    source."""
+    if source is None:
+        return []
+    known = _source_labels(normalize(source.text), lex.labels)
+    return [
+        (kind, m.span())
+        for kind, pattern in lex.labels
+        for m in pattern.finditer(text)
+        if _label_value(kind, m) in known
+    ]
+
+
+def _report_ending(body: str, line_no: int, source: Source | None, lex: _Lexicon) -> bool:
+    if source is None:
+        return False
+    title = normalize(source.title)
+    return any(
+        line_no in lines and title_re.search(title) and ending_re.search(body)
+        for title_re, lines, ending_re in lex.ko_report_endings
+    )
+
+
 def _attribution_violations(
-    text: str, lang: Lang, line_no: int, names: Sequence[str], lex: _Lexicon
+    text: str,
+    lang: Lang,
+    line_no: int,
+    names: Sequence[str],
+    lex: _Lexicon,
+    source: Source | None = None,
 ) -> list[Violation]:
     found = []
     head = text[_LEADING_MARKUP_RE.match(text).end() :]
     if lang == "ko":
         body = text.rstrip(" .!?")
-        if not body.endswith(lex.ko_endings):
+        if not body.endswith(lex.ko_endings) and not _report_ending(body, line_no, source, lex):
             found.append(Violation("N4", lang, line_no, "", (len(body), len(body))))
         if line_no == 1:
             subjects = list(lex.ko_subjects)
@@ -275,21 +385,46 @@ def _regex_violations(
     return [Violation(rule_id, lang, line_no, m.group(), m.span()) for m in pattern.finditer(text)]
 
 
+def uses_dated_label(
+    lines: Sequence[str], source: Source | None, lexicon: _Lexicon | None = None
+) -> bool:
+    """Whether any line passes N1 through a year, quarter or round label the source holds. If
+    one does, N3 ``dated_future`` applies to every line of the summary (D111)."""
+    lex = lexicon or load_lexicon()
+    return any(
+        kind in _DATED_KINDS
+        for line in lines
+        for kind, _ in _label_spans(normalize(line), source, lex)
+    )
+
+
 def check_line(
     line: str,
     lang: Lang,
     line_no: int = 1,
     company_names: Sequence[str] = (),
     lexicon: _Lexicon | None = None,
+    source: Source | None = None,
+    dated: bool | None = None,
 ) -> list[Violation]:
-    """Return every failing-rule violation for one line (N1-N4, N6 per line, N7, N8)."""
+    """Return every failing-rule violation for one line (N1-N4, N6 per line, N7, N8).
+    ``source`` opens the two D111 allowances described in the module docstring. ``dated``
+    says whether the line's summary uses a year, quarter or round label (see
+    :func:`uses_dated_label`); left as None, only this line's own labels decide."""
     lex = lexicon or load_lexicon()
     text = normalize(line)
     found: list[Violation] = []
 
+    n1: list[Violation] = []
     for pattern in _N1_RES:
-        found += _regex_violations("N1", pattern, text, lang, line_no)
-    found += _matcher_violations("N1", text, lang, line_no, lex)
+        n1 += _regex_violations("N1", pattern, text, lang, line_no)
+    n1 += _matcher_violations("N1", text, lang, line_no, lex)
+    labels = _label_spans(text, source, lex)
+    found += [v for v in n1 if not any(s <= v.span[0] and v.span[1] <= e for _, (s, e) in labels)]
+    if dated is None:
+        dated = any(kind in _DATED_KINDS for kind, _ in labels)
+    for pattern in (*lex.attributed_prediction[lang], *(lex.dated_future[lang] if dated else ())):
+        found += _regex_violations("N3", pattern, text, lang, line_no)
 
     # Company names are exempt from N2 only: "Boost Mobile" is a name, "3M" still fails N1.
     found += _matcher_violations(
@@ -297,7 +432,7 @@ def check_line(
     )
 
     found += _matcher_violations("N3", text, lang, line_no, lex)
-    attribution = _attribution_violations(text, lang, line_no, company_names, lex)
+    attribution = _attribution_violations(text, lang, line_no, company_names, lex, source)
     allowed_spans = [m.span() for p in lex.plan_allowed[lang] for m in p.finditer(text)]
     for pattern in lex.plan_gated[lang]:
         for m in pattern.finditer(text):
@@ -329,14 +464,30 @@ def check_summary(
     lang: Lang,
     company_names: Sequence[str] = (),
     lexicon: _Lexicon | None = None,
+    source: Source | None = None,
 ) -> list[Violation]:
     """Return every failing-rule violation for one language's event summary."""
     lex = lexicon or load_lexicon()
     found = []
     if len(lines) != lex.line_count:
         found.append(Violation("N6", lang, 0, "", (len(lines), len(lines))))
+    return found + check_section(lines, lang, company_names, lex, source)
+
+
+def check_section(
+    lines: Sequence[str],
+    lang: Lang,
+    company_names: Sequence[str] = (),
+    lexicon: _Lexicon | None = None,
+    source: Source | None = None,
+) -> list[Violation]:
+    """Every line of one summary through :func:`check_line`, with N3 ``dated_future`` on all of
+    them when any one uses a year, quarter or round label (D111). No line-count check."""
+    lex = lexicon or load_lexicon()
+    dated = uses_dated_label(lines, source, lex)
+    found = []
     for index, line in enumerate(lines, start=1):
-        found += check_line(line, lang, index, company_names, lex)
+        found += check_line(line, lang, index, company_names, lex, source, dated)
     return found
 
 

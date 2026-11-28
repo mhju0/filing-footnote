@@ -2153,3 +2153,196 @@ The owner accepted both in chat on 2026-11-28, through the Orca coordinator.
 - Accepted: the wrapping at the largest accessibility text size (AX5) merged in PRs #71–#73:
   the summary card's source line (#71), the filed date on every screen (#72), and amounts and
   form names that never split inside themselves (#73).
+
+## D111 · Neutrality guard: labels, report-type endings, legal 매수/매도 · 2026-11-28
+
+The owner decided on 2026-11-28, through the Orca coordinator, to "change the rules instead"
+for summaries the guard kept withholding, rather than exclude them as in D109. Each change is
+as narrow as the blocked cases need. Every other line the guard failed before still fails.
+The coordinator decided the dated-forecast and attributed-prediction rules below on the same
+day.
+
+The guard is a lexical pre-filter. The final gate is the owner's approval of every line, bound
+to its input hash. The guard's job is to make a forecast or a figure unlikely to reach the
+owner, not impossible: it works on word forms, and a sentence can state a forecast in words it
+does not list.
+
+- **N1, labels.** A digit that names something rather than counts it may pass. Quarters and
+  rounds are an allow-list of shapes, not a list of exceptions:
+  - a year: four digits from 1900 to 2099 before 년 (not 년간 or 년 동안), 회계연도 or
+    사업연도, or after fiscal, fiscal year or FY;
+  - a quarter: 1분기 to 4분기 written without a space, followed by one of:
+    - a noun from a closed list (실적, 잠정, 영업실적, 보고서, 결산, 배당, 배당금, 매출,
+      매출액, 영업이익, 순이익, 중, 말, 초), with an optional particle;
+    - one of 에, 에는, 에도, 의, 부터, 까지, 는, 은;
+    - punctuation or the end of the line.
+
+    No count or duration word may follow (연속, 이상, 이하, 넘게, 내내, 동안, 만에, 례, 째,
+    씩, 마다, 평균, 나눠, and the stems 걸쳐/걸친 and 합쳐/합친/합계/합산), and 최근 or 향후
+    may not come before the digit. In English: first to fourth quarter followed by (of) (fiscal
+    (year)) a year, by results, report, earnings or dividend(s), or by punctuation or the end of
+    the line;
+  - a round: N차, or a list N차와 M차 (와, 과, 및 or a comma), directly before a noun from a
+    closed list (발행가액, 발행가, 발행, 공시, 납입, 청약, 입찰, 매각, 정정, 모집), with an
+    optional particle and no count word after it. The 1차/2차 of Samsung Biologics'
+    issue-price filing are rounds: the line names the first and second issue prices without
+    stating them, and the source says 1차 발행가액 and 2차 발행가액;
+  - a numbered plant: 2공장 with no space, or Plant 2;
+  - the SEC form names S-1/3/4/8, F-1/3/4, 10-K, 10-Q, 8-K, 6-K, 11-K, 20-F and 40-F, with
+    an optional /A.
+
+  A label passes only when the caller passes the filing's source and the source holds a label
+  of the same kind and value. The source may hold it in either language: third quarter matches
+  3분기, and a Korean line about an SEC filing writes 2026 회계연도 for fiscal 2026. With no
+  source, nothing changes. The patterns are N1 `labels` in
+  `contracts/neutrality-lexicon.json`.
+- **Still banned under N1.** Amounts, percentages, prices, counts and durations. 6개월 is a
+  duration, so LG Chem's `dart:20260824800208` stays withheld; the next retry can say it without
+  the number. Also still banned:
+  - quarter counts and durations: 3분기 연속, 3분기에 걸쳐, 3분기에 걸친, 4분기 합산, 3분기
+    넘게, 2분기 이상, 3분기 내내, 4분기 동안, 3분기 만에, 최근 3분기 실적을 합쳐, 3분기 실적
+    합계, 향후 4분기;
+  - round counts: 4차 연속, 3차 이상, 2차 례, 2차례, 2차에 걸쳐, 3차에 나눠, 4차로 (lanes);
+  - 2 공장;
+  - words containing 차: 2차전지, 3차원, 차이;
+  - a bare English year (in 2026), halves (상반기, first half), spelled Korean quarters
+    (삼분기), and the third quarter in a row;
+  - product and company names with digits (3M, Model 3), and file numbers.
+- **N3, no dated forecast (coordinator decisions).** A label the source holds must not carry a
+  forecast. When any line of a summary passes N1 through a year, quarter or round label, these
+  form classes fail N3 on every line of that summary, the labelled line or not:
+  - Korean:
+    - future and conjecture: -ㄹ/을 거·것, 것이라고, 것으로, -ㄹ 수 있다 (수도 있다), -겠;
+    - intentions and plans: -려 하다, -려고, -려는, 방침, 계획, 추진, 목표, 예정, 달성, 전망,
+      예상, 기대, and 년/분기/연도/차 + 이후;
+    - the present tense used for the future: -ㄴ다고 and -는다고 (늘린다고, 돌아선다고,
+      추진한다고), with -다며 and -다는.
+  - English, ignoring case: will, 'll, would, should, may (lower case, not the month), might,
+    could, shall, going to; set, due, slated, scheduled, poised or likely to; on course or on
+    track; seek, want, hope, aim, plan, intend, look, strive, expect or target (with their
+    endings) + to, sought to; expect…, target…, aim, goal(s), forecast…, anticipat…,
+    intend…, outlook, guidance, projected, projection(s), and to be
+    decided/determined/announced/held/paid.
+
+  They are N3 `dated_future` in the lexicon, written as stem patterns so conjugations are
+  caught. In them <ㄹ> stands for any syllable ending in ㄹ and <ㄴ> for any ending in ㄴ. A
+  summary without a year, quarter or round label is not checked against this list, and a form
+  or plant label does not open it. So a labelled summary cannot state any future action, even
+  one the filing announces (a dividend it will pay). Such a summary goes back to generation or
+  to the owner's line edit. `neutrality_guard.check_section` applies the scope to a section
+  checked line by line, and `check_summary` applies it to a three-line summary.
+- **N3, no attributed prediction (coordinator decision).** On every line, with or without a
+  label or a source, an attributed prediction fails N3:
+  - Korean -ㄹ/을 거라고 or 것이라고, and the -라며, -라는, -란 and -래요 forms;
+  - English said, stated, announced, disclosed, reported, clarified, answered and the like,
+    followed in the same clause by 'll, would, shall or going to.
+
+  So a clarification or inquiry-answer ending cannot carry one (회사는 주가가 오를 거라고
+  해명했어요). This is N3 `attributed_prediction`.
+- **Considered and not adopted: an every-line ban on English "said … will".** It would fail 29
+  lines in 26 approved rows, and five of the nine round-3 cards. The coordinator decided on
+  2026-11-28 not to adopt it. Those lines ("The company said it will file again when details
+  are confirmed", "stated the shares will be transferred") report a scheduled step or an
+  obligation the filing states, not a forecast. The owner approved each of them line by line.
+  "said … will" still fails inside any summary with a year, quarter or round label, through
+  `dated_future`. The repository has no way to exempt approved hashes from a rule.
+- **N4, report endings.** Line one of a clarification filing may also end in 해명했어요. Its
+  title starts with 풍문또는보도에대한해명, after an optional bracketed tag such as [기재정정].
+  Line one of an inquiry answer may also end in 답변했어요 or 조회공시 요구를 받았어요. Its title
+  starts with 조회공시요구, an optional bracket, then 에대한답변. A title that only mentions an
+  inquiry answer does not count. Each ending says what the company did or what the exchange
+  asked; none judges or predicts. Lines two and three, and every other report type, keep the
+  five endings. The ending opens no other rule: N2, N3 and the rest still apply to the line.
+- **N7, legal terms and selling notes.** 강제 매수 (강제매수, a compulsory acquisition of
+  minority shares under law) joins the allow list beside 공개 매수. A new `allow_patterns` entry
+  lets the company sell the notes it issues:
+  - 채권, 사채 or 노트 + 을/를;
+  - optionally 인수단, 인수인, 주관사 or (기관)투자자(들) + 에/에게;
+  - then 매도 directly before 하기로, 했다, 했어요, 했고, 했으며, 했습니다, 할 예정 or 할 계획.
+
+  The buyer list is closed, so a judgement word in that slot (유망기업에) is still caught.
+  매도하는, 매도한, 매도한다면 and 매도했으면 are not covered. Shares are excluded on
+  purpose: house style writes 취득/처분 for the company's own share trades, and the existing
+  test line 자기주식을 매도하기로 must keep failing. Bare 매수/매도, 사세요, 팔세요, 매도하세요,
+  매도해야 and 매도할 때 still fail.
+- **Which source text is checked.** `neutrality_guard.Source(title, text)` goes through
+  `check_line` and `check_summary`.
+  - Generation (`summaries`), the exporter (`export`) and the approve tool's line edit
+    (`approve.filing_sources`) pass the filing's title and full source text.
+  - A bundle keeps no source text, only each line's cited `summary_sources` excerpts. So
+    `verify.check_bundle` guards with `verify.cited_source`: the title plus that filing
+    section's excerpts.
+  - After the source sentences are chosen, the exporter checks every shipped row a second time
+    with the same `cited_source`. So an export never accepts what verify would refuse, in any
+    mode. A label the filing holds but no cited sentence holds is refused at export.
+- **Re-guarding without generating.** A new command, `python -m app.build.summaries
+  recheck-withheld` (with `--dry-run`), re-runs the guard on cached withheld pairs whose input
+  key is still current. When both languages pass, it stages them with no violations. It sets
+  an empty `reviewer_flags` to null and keeps any flags a reviewer did raise. No Groq call is
+  made, so `approve --all-reviewed` skips these pairs and only the owner approves them.
+  `generate` still keeps a cached withheld pair withheld unless `--retry-withheld` is given.
+  When the next run re-checks cached staged pairs (`recheck_staged`), it withholds any staged
+  pair that fails the current rules.
+- **Keys and approvals.** `lexicon_version` stays 2. Only that integer enters the input key,
+  and the prompt reads none of the changed fields (`labels`, `report_endings`,
+  `allow_patterns`, `dated_future`, `attributed_prediction`). So no cache key, prompt or prompt version changes: no
+  regeneration and no re-approval. All 438 approved rows give the same result, no violations,
+  under the old guard and under the new guard, with or without the source. No withheld row
+  changes result.
+- **Result on 2026-11-28.** `recheck-withheld` staged twelve pairs. After the review fixes,
+  three of them came off review round 3, and `recheck_staged` set them back to withheld:
+  - Samsung Electronics' `dart:20260821800763` fails the dated-forecast rule (2026년 … 예상,
+    3분기에 … 계획, plans to, to be decided, and will on line three).
+  - SK hynix's `dart:20260918800583`, an inquiry answer, fails the attributed-prediction rule
+    on English line one ("said a report stated it would build").
+  - Samsung Biologics' `dart:20261105800618` fails on two counts. Its round label puts the
+    summary under the dated-forecast list, and line three says 적용한다고. Its 1차 and 2차
+    are also not in the sentences its lines cite.
+
+  Round 3 has nine cards:
+  - the five DART clarification or inquiry-answer filings `dart:20260907800165`,
+    `dart:20260917800315`, `dart:20261006800220`, `dart:20261026800118` and
+    `dart:20261029800130`;
+  - 강제매수: Samsung Biologics `dart:20261106800008`;
+  - fiscal year: Costco `sec:0000909832-26-000025`;
+  - Form S-3: Meta `sec:0001193125-26-204128` and NVIDIA `sec:0001193125-26-275783`.
+
+  Sixteen sections are not reviewable:
+  - the three above;
+  - nine for N6 line length;
+  - LG Chem for 6개월;
+  - two for English N3 (plan to, intend to);
+  - NVIDIA `sec:0001045810-26-000069`, for N6 and an ending that is not a report ending.
+
+  Walmart's `sec:0001193125-26-429539` now passes its Korean 매도 line but still fails English
+  N3.
+- **Order.** This must merge before the next `summaries generate` run. Code without it
+  re-guards the nine staged round-3 pairs with the old guard and withholds them again.
+- **Independent reviews.**
+  - The first review found four ways the first version let something through: quarter
+    durations (3분기 연속), round counts (2차에 걸쳐, 4차로, 1차이), a judgement word in the
+    buyer slot (채권을 유망기업에 매도), and conditional or third-party sales (매도한다면,
+    투자자가 … 매도하는 것이 낫다). It also found the inquiry-answer title pattern unanchored.
+  - The second review found more quarter and round counts that the exception lists missed
+    (3분기에 걸쳐, 4분기 합산, 3분기 넘게, 2분기 이상, 3분기 내내, 4차 연속, 3차 이상, 2차 례).
+    It also found dated forecasts on labelled lines, and the gap between export and verify.
+    The allow-list shapes, the dated-forecast rule and the export's cited-excerpt check answer
+    it.
+  - The third review found that the dated-forecast list was too narrow in scope and in form:
+    - a forecast on an unlabelled line of a labelled summary;
+    - round labels;
+    - modal futures (should, may, is set to, 'll, seeks to);
+    - Korean intentions and the present tense used for the future (늘리려 한다고, 방침,
+      추진한다고, 돌아선다고, 돌아설 수 있다고);
+    - attributed predictions that the new report endings let through (주가가 오를 거라고
+      해명했어요);
+    - spanning and summing quarters (3분기에 걸친, 3분기 실적을 합쳐).
+
+    Summary-wide scope, the form-class lists, `attributed_prediction` and the count stems
+    answer it.
+
+  Each case has a test that fails now. A gap older than D111 remains unchanged: N7 catches
+  사세요 and 팔세요 only at the end of a line, so they pass in the middle of one.
+- **Not edited.** ADR 0005 and the AGENTS.md rule "Generated prose contains no digits" still
+  say no digits. Read them with this entry's label exception: no figures, and a digit only
+  as a label that the source holds.

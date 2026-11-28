@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import json
 import sqlite3
 from pathlib import Path
@@ -349,3 +350,58 @@ def test_bundle_source_problems_reads_mappings() -> None:
     )
     assert "dart:1 en/summary line 1: a template line has 2 summary_sources rows" in problems
     assert "dart:1 en/summary line 2: no supported, partly or template source sentence" in problems
+
+
+# -- D111: labels in the export and in a finished bundle -------------------------------------------
+
+LABELLED = "dart:20261029800099"  # its source text holds 2026년 and 3분기
+
+
+def _relabel(approved: BuildInput, line1: str) -> BuildInput:
+    return dataclasses.replace(approved, summaries=[
+        dataclasses.replace(s, line1=line1)
+        if (s.filing_id, s.lang, s.section) == (LABELLED, "ko", "summary") else s
+        for s in approved.summaries
+    ])  # fmt: skip
+
+
+def test_the_export_refuses_a_label_its_source_does_not_hold(approved, tmp_path, capsys) -> None:
+    data = _relabel(approved, "회사는 2025년 3분기 잠정 영업실적을 공시했어요")
+    assert _export(data, tmp_path / "footnote.sqlite", *RELEASE) != 0
+    assert f"{LABELLED} summary ko/summary: N1 on line 1 '2'" in capsys.readouterr().err
+
+
+def test_the_export_checks_labels_against_what_the_bundle_keeps(approved, tmp_path,
+                                                                capsys) -> None:  # fmt: skip
+    # The source holds 2026년 and 3분기, but the line cites a sentence without them. Verify sees
+    # only the title and the cited excerpts, so the export refuses what verify would refuse.
+    data = _relabel(approved, "회사는 2026년 3분기 잠정 영업실적을 공시했어요")
+    records = supported_records(data.summaries)
+    text = "잠정 영업실적 공시"
+    _edit(records, LABELLED, "ko", "summary", 1,
+          spans=[{"start": 100, "end": 100 + len(text), "text": text}])  # fmt: skip
+    out = tmp_path / "footnote.sqlite"
+    report = str(_report(tmp_path, records))
+    assert _export(data, out, *RELEASE, "--faithfulness", report) != 0
+    err = capsys.readouterr().err
+    for digit in "20263":
+        assert f"{LABELLED} summary ko/summary: N1 on line 1 {digit!r}" in err
+    # A development build refuses it too, as verify does for any bundle.
+    assert _export(data, out, "--allow-unapproved", "--faithfulness", report) != 0
+
+
+def test_a_bundle_label_passes_verify_only_while_an_excerpt_holds_it(approved, tmp_path) -> None:
+    data = _relabel(approved, "회사는 2026년 3분기 잠정 영업실적을 공시했어요")
+    records = supported_records(data.summaries)
+    text = "2026년 3분기 실적"
+    _edit(records, LABELLED, "ko", "summary", 1,
+          spans=[{"start": 100, "end": 100 + len(text), "text": text}])  # fmt: skip
+    out = tmp_path / "footnote.sqlite"
+    assert _export(data, out, *RELEASE, "--faithfulness", str(_report(tmp_path, records))) == 0
+    assert check_bundle(out, release=False, pinned_dirs=PINNED_DIRS) == []
+    # The bundle holds no source text, so verify reads the title and the cited excerpts.
+    _rehash(out, "UPDATE summary_sources SET excerpt = replace(excerpt, '2026', '0000')")
+    problems = check_bundle(out, release=False, pinned_dirs=PINNED_DIRS)
+    assert [p for p in problems if "N1" in p] == [
+        f"{LABELLED} summary ko/summary: N1 on line 1 {digit!r}" for digit in "2026"
+    ]
