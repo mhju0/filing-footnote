@@ -49,6 +49,7 @@ import json
 import re
 import sqlite3
 import sys
+from collections import defaultdict
 from collections.abc import Sequence
 from dataclasses import dataclass
 from decimal import Decimal
@@ -81,7 +82,7 @@ from app.clients.sec import (
 from app.filings.categories import load_contract as load_categories_contract
 from app.ingest.dart import _dart_financial_facts, dart_quarter_rows, period_descriptor
 from app.ingest.sec_events import sec_facts
-from app.llm.neutrality_guard import check_line, check_source_url, check_summary
+from app.llm.neutrality_guard import Source, check_line, check_source_url, check_summary
 
 BACKEND_DIR = Path(__file__).resolve().parents[2]
 DEFAULT_PINNED_DIR = BACKEND_DIR / "data" / "pinned"
@@ -642,17 +643,20 @@ def summary_problems(
     section: str,
     lines: Sequence[str | None],
     company_names: Sequence[str],
+    source: Source | None = None,
 ) -> list[str]:
     """Neutrality guard on one summary row: a three-line section as one summary, any other
-    section line by line."""
+    section line by line. ``source`` opens the D111 allowances (labels, report endings)."""
     present = [line for line in lines if line is not None]
     if section in THREE_LINE_SECTIONS:
-        violations = check_summary(present, lang, company_names)  # type: ignore[arg-type]
+        violations = check_summary(present, lang, company_names,  # type: ignore[arg-type]
+                                   source=source)  # fmt: skip
     else:
         violations = [
             v
             for number, line in enumerate(present, start=1)
-            for v in check_line(line, lang, number, company_names)  # type: ignore[arg-type]
+            for v in check_line(line, lang, number, company_names,  # type: ignore[arg-type]
+                                source=source)  # fmt: skip
         ]
     return [
         f"{filing_id} summary {lang}/{section}: {v.rule_id} on line {v.line_no} {v.token!r}"
@@ -721,13 +725,24 @@ def check_bundle(
     problems += _quarter_problems(pinned, quarter_figures, filings)
     problems += _fact_problems(pinned, facts, filings, companies)
 
+    # The bundle holds no source text, only each line's cited excerpts: a D111 label passes
+    # here only when the title or an excerpt of the same filing and section holds it.
+    excerpts: dict[tuple[str, str], list[str]] = defaultdict(list)
+    for row in sources:
+        if row["excerpt"]:
+            excerpts[(row["filing_id"], row["section"])].append(row["excerpt"])
     for summary in summaries:
         filing = filings.get(summary["filing_id"])
         company = companies.get(filing["company_id"]) if filing else None
         names = [company["name_ko"], company["name_en"]] if company else []
+        cited = None
+        if filing:
+            texts = excerpts[(summary["filing_id"], summary["section"])]
+            cited = Source(filing["title_original"],
+                           "\n".join([filing["title_original"], *texts]))  # fmt: skip
         problems += summary_problems(
             summary["filing_id"], summary["lang"], summary["section"],
-            (summary["line1"], summary["line2"], summary["line3"]), names,
+            (summary["line1"], summary["line2"], summary["line3"]), names, cited,
         )  # fmt: skip
     if release:
         present = {(s["filing_id"], s["lang"], s["section"]) for s in summaries}

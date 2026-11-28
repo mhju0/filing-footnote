@@ -1,13 +1,21 @@
 {
-  "about": "Neutrality guard lexicon for generated Filing Footnote summaries. Read by backend/app/llm/neutrality_guard.py. Every rule has an id; severity 'fail' blocks a line, 'warn' only reports it. Match modes: 'substring' finds the term anywhere (Korean); 'word' needs word boundaries, case-insensitive, spaces match any whitespace (English); 'inflected_word' is 'word' plus English verb and noun endings (-s, -es, -ed, -ing, -ly, -ness, -en, -less; a final e is dropped before -ing/-ed/-y; a final consonant + y becomes -ies/-ied), and comparative -er/-est only for terms in 'adjectives'. 'phrases' are matched as written, without endings (in Korean a space matches an optional space); 'patterns' are regular expressions. A hit that lies wholly inside an 'allow' phrase is ignored; in Korean allow phrases a space matches an optional space (장내 매수 also covers 장내매수). Company names the caller passes are also exempt from N2 (not from N1). 'narrowed' records every listed word that no longer matches as a bare word, with the reason; 'added' records everything beyond the M5 plan list.",
+  "about": "Neutrality guard lexicon for generated Filing Footnote summaries. Read by backend/app/llm/neutrality_guard.py. Every rule has an id; severity 'fail' blocks a line, 'warn' only reports it. Match modes: 'substring' finds the term anywhere (Korean); 'word' needs word boundaries, case-insensitive, spaces match any whitespace (English); 'inflected_word' is 'word' plus English verb and noun endings (-s, -es, -ed, -ing, -ly, -ness, -en, -less; a final e is dropped before -ing/-ed/-y; a final consonant + y becomes -ies/-ied), and comparative -er/-est only for terms in 'adjectives'. 'phrases' are matched as written, without endings (in Korean a space matches an optional space); 'patterns' are regular expressions. A hit that lies wholly inside an 'allow' phrase or an 'allow_patterns' regular expression is ignored; in Korean allow phrases a space matches an optional space (장내 매수 also covers 장내매수). Company names the caller passes are also exempt from N2 (not from N1). 'narrowed' records every listed word that no longer matches as a bare word, with the reason; 'added' records everything beyond the M5 plan list.",
   "version": 2,
-  "updated": "2026-11-18",
+  "updated": "2026-11-28",
   "rules": [
     {
       "id": "N1",
       "title": "No digits",
       "severity": "fail",
-      "note": "Implemented in code by reuse: NFKC normalisation then any \\d (neutrality_guard._ANY_DIGIT_RE), plus spelled financial numbers (number_guard._SPELLED_FINANCIAL_RE, _SPELLED_PREFIX_RE, _KOREAN_SPELLED_RE), plus the ko/en lists below. English counts spelled without a unit or currency ('three quarters') are not caught. Known limitation: a company or form name with a digit (3M, Form 8-K, 10-K) always fails; the pipeline must have the model write 회사/The company or the name without digits.",
+      "note": "Implemented in code by reuse: NFKC normalisation then any \\d (neutrality_guard._ANY_DIGIT_RE), plus spelled financial numbers (number_guard._SPELLED_FINANCIAL_RE, _SPELLED_PREFIX_RE, _KOREAN_SPELLED_RE), plus the ko/en lists below. English counts spelled without a unit or currency ('three quarters') are not caught. Known limitation: a company name with a digit (3M) always fails; the pipeline must have the model write 회사/The company. 'labels' (D111) are the only digits and ordinals that may pass, and only when the caller passes the source and the source holds the same label.",
+      "labels": [
+        {"kind": "year", "patterns": ["(?<![\\d.,])(?P<value>(?:19|20)\\d{2})(?=년(?!간|\\s?동안)|\\s?(?:회계|사업)연도)", "\\b(?:fiscal(?:\\s+year)?|FY)\\s?(?P<value>(?:19|20)\\d{2})\\b"]},
+        {"kind": "quarter", "patterns": ["(?<![\\d.,])(?P<value>[1-4])(?=\\s?분기)", "\\b(?P<value>first|second|third|fourth)[\\s-]+quarter\\b"]},
+        {"kind": "round", "patterns": ["(?<![\\d.,])(?P<value>[1-9])(?=차(?:$|[^가-힣]|[와과의는은이가를을로에도]))"]},
+        {"kind": "plant", "patterns": ["(?<![\\d.,])(?P<value>[1-9])(?=\\s?공장)", "\\bplant\\s+(?:no\\.\\s*)?(?P<value>[1-9])\\b"]},
+        {"kind": "form", "patterns": ["(?<![A-Za-z0-9-])(?P<value>S-[1348]|F-[134]|10-K|10-Q|8-K|6-K|11-K|20-F|40-F)(?:/A)?(?![A-Za-z0-9-])"]}
+      ],
+      "labels_note": "D111, owner decision 2026-11-28. A label names something; it is not a figure. Each pattern's 'value' group is the label's key: the digits, a spelled ordinal as its digit (third -> 3), a form name in capitals. A line's label is exempt from N1 only when the same kind and key occur in the source text (either language, so 'third quarter' matches 3분기 and '2026 회계연도' matches 'fiscal 2026'). Years: four digits from 1900 to 2099 before 년 (not 년간 or 년 동안), 회계연도 or 사업연도, or after fiscal, fiscal year or FY. Quarters: 1분기 to 4분기, first to fourth quarter; halves (상반기, first half) and spelled Korean quarters (삼분기) stay banned. Rounds: one digit before 차 standing alone or with a particle (1차와, 2차 발행가액), so 2차전지, 3차원 and the count 2차례 stay banned. Plants: one digit before 공장, or Plant N. Forms: the SEC form names listed, with an optional /A. Amounts, percentages, prices, counts and durations (6개월, six months) stay banned; a bare English year (in 2026) stays banned.",
       "sources": [
         "app.llm.neutrality_guard._ANY_DIGIT_RE",
         "app.llm.number_guard._SPELLED_FINANCIAL_RE",
@@ -107,7 +115,11 @@
         "name_particles": ["은", "는", "이", "가"],
         "third_party_subjects": ["애널리스트", "증권가", "투자자", "시장", "업계", "전문가"],
         "third_party_particles": ["은", "는", "이", "가", "에서는", "에선"],
-        "note": "Every line ends with an ending (trailing spaces and . ! ? ignored). Line one starts with 회사는 or a company name followed by one of name_particles (증권회사는, 자회사는 fail). Any line that starts with a third-party subject (optionally + 들, then a third_party_particle) fails.",
+        "report_endings": [
+          {"title_pattern": "풍문\\s?또는\\s?보도에\\s?대한\\s?해명", "lines": [1], "endings": ["해명했어요"]},
+          {"title_pattern": "조회공시\\s?요구.*에\\s?대한\\s?답변", "lines": [1], "endings": ["답변했어요", "조회공시 요구를 받았어요"]}
+        ],
+        "note": "Every line ends with an ending (trailing spaces and . ! ? ignored). Line one starts with 회사는 or a company name followed by one of name_particles (증권회사는, 자회사는 fail). Any line that starts with a third-party subject (optionally + 들, then a third_party_particle) fails. report_endings (D111): line one of a clarification filing (title 풍문또는보도에대한해명) may also end in 해명했어요, and line one of an inquiry answer (title 조회공시요구…에대한답변) in 답변했어요 or 조회공시 요구를 받았어요 (a space matches an optional space). They need the caller to pass the filing's title; lines two and three keep the five endings.",
         "added": [
           {"term": "name_particles: 은, 는, 이, 가", "reason": "The plan says 'the company name'; these are the subject and topic particles that make it the subject."},
           {"term": "third_party_subjects: 애널리스트, 증권가, 투자자, 시장, 업계, 전문가 (+들, + 은/는/이/가/에서는/에선)", "reason": "Lines two and three may omit the subject, but an explicit third-party subject attributes the line to someone other than the company."}
@@ -152,7 +164,8 @@
         "match": "substring",
         "terms": ["매수", "매도", "추천", "투자하세요", "사야", "팔아야", "유망", "저평가", "고평가"],
         "phrases": ["살 때", "투자할 만", "주목할 만", "매수 기회", "투자 기회"],
-        "allow": ["장내 매수", "장외 매수", "장내 매도", "장외 매도", "매수 주문", "매도 주문", "공개 매수", "매수 선택권", "매수 청구권", "매도 청구권", "매도 가능", "매수인", "매도인", "추천 위원회"],
+        "allow": ["장내 매수", "장외 매수", "장내 매도", "장외 매도", "매수 주문", "매도 주문", "공개 매수", "강제 매수", "매수 선택권", "매수 청구권", "매도 청구권", "매도 가능", "매수인", "매도인", "추천 위원회"],
+        "allow_patterns": ["(?:채권|사채|노트)(?:을|를)\\s?(?:[가-힣A-Za-z]+(?:에|에게)\\s?)?매도(?=하기로|했|한|하는|할\\s?(?:예정|계획))"],
         "narrowed": [
           {"term": "매수, 매도", "now_matches": "every use except the filing's own terms in allow", "reason": "Filings use them for the method, party or instrument: 장내 매수 (on-market purchase, the buyback filing's 취득방법), 매도 주문수량 한도, 공개매수 (tender offer), 주식매수선택권 (stock options), 주식매수청구권 (appraisal right), 매도가능 (available-for-sale), 매수인/매도인 (buyer/seller in a contract). Bare 매수/매도 still fail; summaries write 취득/처분 for the company's own trades."},
           {"term": "추천", "now_matches": "every use except inside 추천위원회", "reason": "사외이사후보추천위원회 is a board committee's legal name. 이사회가 추천한 후보 still fails; write 이사회가 정한 후보."}
@@ -160,7 +173,9 @@
         "added": [
           {"term": "allow: 매수인, 매도인, spaced 매수 청구권/매수 선택권/매도 청구권", "reason": "Contract parties and the spaced spelling of the legal rights."},
           {"term": "저평가, 고평가; phrases 살 때, 투자할 만, 주목할 만", "reason": "owner-approved 2026-11-17"},
-          {"term": "phrases only: 매수 기회, 투자 기회", "reason": "owner-approved 2026-11-17; bare 기회 is generic (사업 기회)"}
+          {"term": "phrases only: 매수 기회, 투자 기회", "reason": "owner-approved 2026-11-17; bare 기회 is generic (사업 기회)"},
+          {"term": "allow: 강제 매수", "reason": "D111, owner decision 2026-11-28: 강제매수 is the legal term for a compulsory acquisition of minority shares (a squeeze-out), like 공개매수."},
+          {"term": "allow_patterns: 채권/사채/노트 + 을/를 + optional '<buyer>에/에게' + 매도 before 하기로/했/한/하는/할 예정/할 계획", "reason": "D111, owner decision 2026-11-28: the company selling the notes it issues (채권을 인수단에 매도하기로 합의했어요) is a fact. Shares stay out: the company's own share trades are written 취득/처분 (자기주식을 매도 still fails), as is any other form (매도하세요, 매도해야, 매도할 때)."}
         ]
       },
       "en": {

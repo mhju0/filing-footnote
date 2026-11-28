@@ -6,6 +6,7 @@ import pytest
 
 from app.build import approve, summaries
 from app.build.summaries import read_approved, read_jsonl, write_staged
+from app.llm.neutrality_guard import Source
 
 FID = "dart:20260821000616"
 OTHER = "dart:20260821000999"
@@ -86,6 +87,37 @@ def test_an_edit_with_a_digit_is_refused_and_files_are_unchanged(tmp_path) -> No
                                edit=(1, "회사는 3주를 취득하기로 결정했어요"), names=_names)  # fmt: skip
     assert staged.read_bytes() == before
     assert not approved.exists()
+
+
+def test_an_edit_is_guarded_with_the_filings_source(tmp_path) -> None:
+    # D111: a label the source holds passes; the same edit without the source is refused.
+    staged, approved = _setup(tmp_path, [_row(lang="ko"), _row(lang="en")])
+    text = "회사는 2026년 자기주식을 취득하기로 결정했다고 공시했어요"
+    with pytest.raises(approve.ApproveError, match="N1"):
+        approve.approve_filing(staged, approved, FID, lang="ko", edit=(1, text), names=_names)
+    source = Source("주요사항보고서(자기주식취득결정)", "2026년 자기주식 취득 결정")
+    seen = []
+
+    def sources(filing_id, section):
+        seen.append((filing_id, section))
+        return source
+
+    approve.approve_filing(staged, approved, FID, lang="ko", edit=(1, text), names=_names,
+                           sources=sources)  # fmt: skip
+    assert seen == [(FID, "summary")]
+    assert next(r for r in read_jsonl(approved) if r["lang"] == "ko")["line1"] == text
+
+
+def test_filing_sources_match_what_the_summary_build_guards_with() -> None:
+    from app.build.summaries import select_targets
+    from tests.build_seed import AS_OF, fixture_build_input
+
+    data = fixture_build_input()
+    sources = approve.filing_sources(data)
+    targets = [t for t in select_targets(data, AS_OF) if t.source is not None]
+    assert targets
+    for target in targets:
+        assert sources[(target.filing_id, target.section)] == target.source
 
 
 def test_an_edit_needs_a_language_and_a_valid_line(tmp_path) -> None:

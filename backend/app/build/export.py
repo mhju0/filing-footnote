@@ -136,7 +136,7 @@ from app.clients.dart_events import load_facts_contract
 from app.filings.categories import load_contract as load_categories_contract
 from app.financials.vocabulary import ReportedMetric
 from app.ingest.events import _superseded_by_rm, window_bounds
-from app.llm.neutrality_guard import load_lexicon
+from app.llm.neutrality_guard import Source, load_lexicon
 
 BACKEND_DIR = Path(__file__).resolve().parents[2]
 FAMILY_GLOSSARY_PATH = BACKEND_DIR.parent / "contracts" / "family-glossary.json"
@@ -1159,6 +1159,18 @@ def current_input_sha256(build: _Build, filing_id: str, section: str) -> str | N
                                 build.options.prompt_version, load_lexicon().version)  # fmt: skip
 
 
+def guard_source(build: _Build, filing_id: str, section: str) -> Source | None:
+    """The title and source text the summary build guarded this filing and section with
+    (D111), or None when there is no source text."""
+    if build.filing_kinds[filing_id] == "event":
+        event = build.events[filing_id]
+        text = event_source_text(event)
+        return None if text is None else Source(event.report_nm, text)
+    filing = build.annual[filing_id].filing
+    text = annual_source_text(filing, section)
+    return None if text is None else Source(filing.title, text)
+
+
 def _summaries(build: _Build, company_rows: list[tuple]) -> list[tuple]:
     names = {row[0]: [row[3], row[4]] for row in company_rows}
     rows = []
@@ -1193,6 +1205,7 @@ def _summaries(build: _Build, company_rows: list[tuple]) -> list[tuple]:
         build.problems += summary_problems(
             summary.filing_id, summary.lang, summary.section, lines,
             names.get(build.filing_company[summary.filing_id], []),
+            guard_source(build, summary.filing_id, summary.section),
         )  # fmt: skip
         rows.append(
             (summary.filing_id, summary.lang, summary.section, *lines, "approved",

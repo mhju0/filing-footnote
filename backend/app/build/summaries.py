@@ -2,6 +2,7 @@
 
     python -m app.build.summaries generate [--filing ID ...] [--limit N] [--max-calls N]
         [--call-interval SECONDS] [--dry-run]
+    python -m app.build.summaries recheck-withheld [--filing ID ...] [--dry-run]
     python -m app.build.summaries measure-reviewer [--max-calls N]
 
 ``generate`` reads the build database, picks the filings and sections that need summaries,
@@ -25,7 +26,9 @@ Cache: ``input_sha256`` (:func:`app.build.model.summary_input_sha256`) covers th
 the prompt version (:data:`PROMPT_VERSION` for an annual section, :data:`EVENT_PROMPT_VERSION`
 for an event summary), the model, the section and the neutrality lexicon version. A key
 already in the staged or approved file makes no call. A cached staged summary is re-checked by
-the guard and becomes ``withheld`` when it now fails. Every call, and every cache hit, is
+the guard and becomes ``withheld`` when it now fails. A cached withheld summary stays withheld
+until ``--retry-withheld`` regenerates it, or ``recheck-withheld`` stages it when both languages
+now pass the guard. Every call, and every cache hit, is
 appended to ``data/summaries/calls.jsonl`` with the model, token counts, estimated cost,
 purpose and cache result; prompts, headers and keys are never logged.
 
@@ -96,6 +99,7 @@ from app.llm.base import ChatMessage, LLMClient, LLMResult
 from app.llm.chat_completions import LLMApiError
 from app.llm.neutrality_guard import (
     LEXICON_PATH,
+    Source,
     Violation,
     check_line,
     check_summary,
@@ -441,6 +445,12 @@ class Target:
     category: str | None = None  # an event's category, for its prompt guidance
     # The fixed wording of an event whose table facts parsed (D78); no model call is made.
     template: TemplateSummary | None = None
+    title: str = ""  # the filing's title: an event's report name, an annual report's title
+
+    @property
+    def source(self) -> Source | None:
+        """What the guard matches labels and report-type endings against (D111)."""
+        return None if self.source_text is None else Source(self.title, self.source_text)
 
 
 def company_names(companies: Iterable[CompanyRow]) -> dict[str, tuple[str, ...]]:
@@ -480,7 +490,8 @@ def select_targets(data: BuildInput, as_of: datetime.date) -> list[Target]:
         targets.append(
             Target(fid, "event", "summary",
                    names.get(_company_id(event.regulator, event.company_key), ()), source,
-                   None if source or template else "no_source_text", event.category, template)
+                   None if source or template else "no_source_text", event.category, template,
+                   event.report_nm)
         )  # fmt: skip
 
     wanted = annual_summary_filings(data, as_of)
@@ -492,7 +503,7 @@ def select_targets(data: BuildInput, as_of: datetime.date) -> list[Target]:
             source = annual_source_text(filing, section)
             targets.append(
                 Target(fid, "annual", section, names.get(cid, ()), source,
-                       None if source else "no_source_text")
+                       None if source else "no_source_text", title=filing.title)
             )  # fmt: skip
     return targets
 
@@ -571,16 +582,21 @@ def read_approved(path: Path = APPROVED_PATH) -> list[SummaryRow]:
 
 
 def guard_lines(
-    section: str, lang: str, lines: Sequence[str], names: Sequence[str]
+    section: str,
+    lang: str,
+    lines: Sequence[str],
+    names: Sequence[str],
+    source: Source | None = None,
 ) -> list[Violation]:
     """N1-N8 as the exporter runs them (``app.build.verify.summary_problems``): a three-line
-    event section as one summary, any other section line by line."""
+    event section as one summary, any other section line by line. ``source`` is the filing
+    the lines were written from; without it the D111 allowances stay closed."""
     if section in THREE_LINE_SECTIONS:
-        return check_summary(lines, lang, names)  # type: ignore[arg-type]
+        return check_summary(lines, lang, names, source=source)  # type: ignore[arg-type]
     return [
         v
         for number, line in enumerate(lines, start=1)
-        for v in check_line(line, lang, number, names)  # type: ignore[arg-type]
+        for v in check_line(line, lang, number, names, source=source)  # type: ignore[arg-type]
     ]
 
 
@@ -616,21 +632,27 @@ class Attempt:
 
 
 def check_lines(
-    lines: dict[str, list[str]], section: str, names: Sequence[str]
+    lines: dict[str, list[str]],
+    section: str,
+    names: Sequence[str],
+    source: Source | None = None,
 ) -> dict[str, list[dict[str, Any]]]:
     return {
-        lang: [_violation_dict(v) for v in guard_lines(section, lang, lines[lang], names)]
+        lang: [_violation_dict(v)
+               for v in guard_lines(section, lang, lines[lang], names, source)]
         for lang in LANGS
-    }
+    }  # fmt: skip
 
 
-def check_attempt(text: str, section: str, names: Sequence[str]) -> Attempt:
+def check_attempt(
+    text: str, section: str, names: Sequence[str], source: Source | None = None
+) -> Attempt:
     lines = parse_lines(text, section)
     if lines is None:
         empty = {lang: [""] * LINE_COUNT[section] for lang in LANGS}
         bad = [{"rule_id": "json", "line_no": 0, "token": "", "span": [0, 0]}]
         return Attempt(empty, {lang: list(bad) for lang in LANGS})
-    return Attempt(lines, check_lines(lines, section, names))
+    return Attempt(lines, check_lines(lines, section, names, source))
 
 
 def retry_message(attempt: Attempt) -> str:
@@ -889,7 +911,7 @@ async def generate_one(
     ]
     first = await _call(client, stats, messages, schema, _MAX_TOKENS, "generate",
                         target.filing_id, target.section)  # fmt: skip
-    attempt = check_attempt(first.text, target.section, target.company_names)
+    attempt = check_attempt(first.text, target.section, target.company_names, target.source)
     if not attempt.passed:
         messages = messages + [
             {"role": "assistant", "content": first.text.strip() or NO_ANSWER},
@@ -897,7 +919,8 @@ async def generate_one(
         ]
         second = await _call(client, stats, messages, schema, _MAX_TOKENS, "retry",
                              target.filing_id, target.section)  # fmt: skip
-        attempt = check_attempt(second.text, target.section, target.company_names)
+        attempt = check_attempt(second.text, target.section, target.company_names,
+                                target.source)  # fmt: skip
 
     flags: list[dict[str, Any]] | None = []
     state = "withheld"
@@ -913,7 +936,7 @@ def template_rows(target: Target, key: str) -> list[dict[str, Any]]:
     or reviewer call, so ``reviewer_flags`` is None and only the owner approves it."""
     assert target.template is not None
     lines = target.template.lines
-    violations = check_lines(lines, target.section, target.company_names)
+    violations = check_lines(lines, target.section, target.company_names, target.source)
     state = "withheld" if any(violations.values()) else "staged"
     return _rows(target, key, TEMPLATE_MODEL, state, lines, violations, None, TEMPLATE_VERSION)
 
@@ -926,7 +949,7 @@ def recheck_staged(target: Target, rows: Sequence[dict[str, Any]]) -> bool:
                       if line is not None]
         for row in rows
     }  # fmt: skip
-    violations = check_lines(lines, target.section, target.company_names)
+    violations = check_lines(lines, target.section, target.company_names, target.source)
     if not any(violations.values()):
         return False
     for row in rows:
@@ -934,6 +957,54 @@ def recheck_staged(target: Target, rows: Sequence[dict[str, Any]]) -> bool:
         row["violations"] = violations[row["lang"]]
         row["lexicon_version"] = load_lexicon().version
     return True
+
+
+def stage_withheld(target: Target, rows: Sequence[dict[str, Any]]) -> bool:
+    """Re-run the guard on a cached withheld summary; when both languages now pass (the word
+    lists changed, D111), stage both rows with no violations. No reviewer call is made, so
+    ``reviewer_flags`` becomes None, as for a template: ``--all-reviewed`` skips the pair and
+    only the owner approves it. Returns True when it changed the rows."""
+    lines = {
+        row["lang"]: [line for line in (row.get("line1"), row.get("line2"), row.get("line3"))
+                      if line is not None]
+        for row in rows
+    }  # fmt: skip
+    violations = check_lines(lines, target.section, target.company_names, target.source)
+    if any(violations.values()):
+        return False
+    for row in rows:
+        row["review_state"] = "staged"
+        row["violations"] = []
+        row["reviewer_flags"] = None
+        row["lexicon_version"] = load_lexicon().version
+    return True
+
+
+def recheck_withheld(
+    targets: Sequence[Target], *, model: str, staged_path: Path = STAGED_PATH,
+    dry_run: bool = False,
+) -> list[tuple[str, str]]:
+    """Re-run the guard on every cached withheld summary of ``targets`` whose key still
+    matches, and stage the pairs that now pass (:func:`stage_withheld`). No model call is
+    made. Returns the staged ``(filing_id, section)``; a dry run writes nothing."""
+    rows = {_row_key(row): row for row in read_jsonl(staged_path)}
+    staged = []
+    for target in targets:
+        if target.template is not None:
+            key = template_input_sha256(target.template, load_lexicon().version)
+        elif target.source_text is None:
+            continue
+        else:
+            key = input_sha256(target.source_text, model, target.section)
+        hit = [rows.get((target.filing_id, lang, target.section)) for lang in LANGS]
+        if not all(r and r["input_sha256"] == key and r["review_state"] == "withheld"
+                   for r in hit):
+            continue
+        if stage_withheld(target, hit):  # type: ignore[arg-type]
+            staged.append((target.filing_id, target.section))
+    if staged and not dry_run:
+        write_staged(staged_path, rows.values())
+    return staged
 
 
 @dataclass
@@ -1139,6 +1210,16 @@ def _parser() -> argparse.ArgumentParser:
     gen.add_argument("--staged", type=Path, default=STAGED_PATH)
     gen.add_argument("--approved", type=Path, default=APPROVED_PATH)
     gen.add_argument("--calls-log", type=Path, default=CALLS_PATH)
+    recheck = commands.add_parser(
+        "recheck-withheld", help="stage cached withheld summaries that now pass; no calls"
+    )
+    recheck.add_argument("--as-of", type=datetime.date.fromisoformat,
+                         default=datetime.date.today())  # fmt: skip
+    recheck.add_argument("--filing", action="append", default=[], metavar="ID",
+                         help="only this filing id, repeatable")  # fmt: skip
+    recheck.add_argument("--dry-run", action="store_true", help="list them; write nothing")
+    recheck.add_argument("--database-url", help="default: DATABASE_URL from the settings")
+    recheck.add_argument("--staged", type=Path, default=STAGED_PATH)
     measure = commands.add_parser("measure-reviewer", help="reviewer recall and false flags")
     measure.add_argument("--calls-log", type=Path, default=CALLS_PATH)
     for sub in (gen, measure):
@@ -1216,6 +1297,18 @@ async def _run_measure(args: argparse.Namespace, settings: Any) -> None:
     print(f"calls {stats.calls}, est. cost {stats.cost_text()}")
 
 
+async def _run_recheck(args: argparse.Namespace, settings: Any) -> None:
+    targets = pick_filings(
+        await load_targets(args.database_url or settings.database_url, args.as_of), args.filing
+    )
+    staged = recheck_withheld(targets, model=settings.llm_model, staged_path=args.staged,
+                              dry_run=args.dry_run)  # fmt: skip
+    verb = "would stage" if args.dry_run else "staged"
+    for filing_id, section in staged:
+        print(f"{verb} {filing_id} {section}")
+    print(f"{verb} {len(staged)} withheld summaries that now pass the guard; calls 0")
+
+
 def run(argv: Sequence[str] | None = None) -> int:
     from app.config import get_settings
 
@@ -1223,6 +1316,8 @@ def run(argv: Sequence[str] | None = None) -> int:
     settings = get_settings()
     if args.command == "generate":
         asyncio.run(_run_generate(args, settings))
+    elif args.command == "recheck-withheld":
+        asyncio.run(_run_recheck(args, settings))
     else:
         asyncio.run(_run_measure(args, settings))
     return 0

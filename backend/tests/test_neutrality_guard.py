@@ -8,6 +8,7 @@ import pytest
 
 from app.llm.neutrality_guard import (
     LEXICON_PATH,
+    Source,
     check_line,
     check_source_url,
     check_summary,
@@ -326,3 +327,197 @@ def test_lexicon_contract_schema() -> None:
             assert len(rule[lang]["terms"]) == len(set(rule[lang]["terms"]))
 
     assert all(_lists(lexicon)), "every list in the lexicon is non-empty"
+
+
+# -- D111: labels, report-type endings, legal 매수/매도 (owner decision 2026-11-28) ---------------
+# The lines are the real withheld ones; each source is a passage of the filing it came from.
+
+SAMSUNG = Source(
+    "수시공시의무관련사항(공정공시)",
+    "1. 정보내용 공시제목 2026년 주주환원 예상 규모 및 시행 방안 관련 수시공시내용 "
+    "- 2026년 3분기에는 정규 분기배당을 포함해 30조원 내외 규모의 현금배당을 시행할 계획",
+)
+LG_CHEM = Source(
+    "조회공시요구(풍문또는보도)에대한답변(미확정)",
+    "1. 제목 (주)LG화학의 여수 NCC 2공장 매각 착수 보도에 대한 조회공시 답변(재공시) "
+    "향후 본건과 관련하여 구체적으로 결정되는 사항이 있을 경우 또는 6개월 이내에 재공시하도록",
+)
+ISSUE_PRICE = Source(
+    "유상증자신주발행가액(안내공시)",
+    "② 1차 발행가액 : 1차 발행가액은 신주배정기준일 전 제3거래일 ③ 2차 발행가액 : 2차 "
+    "발행가액은 구주주 청약일 전 제3거래일 할인율 15%를 적용 1개월 가중산술평균주가",
+)
+COSTCO = Source("8-K", "the first 24 weeks of fiscal 2026, ended February 15, 2026")
+SHELF = Source(
+    "8-K",
+    "The offering of the Notes was made pursuant to the Company's Registration Statement on "
+    "Form S-3 (File No. 333-295425)",
+)
+CLARIFICATION = Source("풍문또는보도에대한해명(미확정)", "풍문 또는 보도에 대한 해명")
+INQUIRY = Source("조회공시요구(풍문또는보도)에대한답변(미확정)", "조회공시 요구에 대한 답변")
+
+
+def _rules(line: str, lang: str, source: Source | None, line_no: int = 1) -> list[tuple]:
+    return [(v.rule_id, v.token) for v in check_line(line, lang, line_no, source=source)]
+
+
+@pytest.mark.parametrize(
+    ("line", "lang", "source"),
+    [
+        ("회사는 2026년 주주환원 예상 규모 및 시행 방안에 대해 공시했어요.", "ko", SAMSUNG),
+        ("회사는 3분기에 현금배당을 시행할 계획이라고 밝혔어요.", "ko", SAMSUNG),
+        ("The company said it plans to implement cash dividends in the third quarter, with "
+         "specifics to be decided by the board.", "en", SAMSUNG),
+        ("회사는 여수 NCC 2공장 매각 착수 보도에 대해 조회공시 답변을 공시했어요.", "ko", LG_CHEM),
+        ("회사는 1차와 2차 발행가액 중 낮은 금액이라고 밝혔어요", "ko", ISSUE_PRICE),
+        ("회사는 2026 회계연도 분기 및 연초 이후 영업실적을 보고했어요", "ko", COSTCO),
+        ("The company reported its quarterly and year-to-date operating results for fiscal "
+         "2026.", "en", COSTCO),
+        ("회사는 S-3 양식의 등록 서류에 따라 발행했다고 밝혔어요", "ko", SHELF),
+        ("The company stated the offering was made pursuant to its Registration Statement on "
+         "Form S-3.", "en", SHELF),
+    ],
+)  # fmt: skip
+def test_a_label_the_source_holds_passes_n1(line: str, lang: str, source: Source) -> None:
+    assert _rules(line, lang, source) == []
+    # Without the source the label is a digit like any other.
+    assert {rule for rule, _ in _rules(line, lang, None)} == {"N1"}
+
+
+@pytest.mark.parametrize(
+    ("line", "lang", "source", "tokens"),
+    [
+        # A label the source does not hold.
+        ("회사는 2025년 주주환원 방안을 공시했어요.", "ko", SAMSUNG, ["2", "0", "2", "5"]),
+        ("회사는 4분기에 현금배당을 시행할 계획이라고 밝혔어요.", "ko", SAMSUNG, ["4"]),
+        ("The company said it pays the dividend in the fourth quarter.", "en", SAMSUNG,
+         ["fourth quarter"]),
+        ("회사는 S-1 양식의 등록 서류에 따라 발행했다고 밝혔어요", "ko", SHELF, ["1"]),
+        ("회사는 3공장 매각 보도에 대해 조회공시 답변을 공시했어요.", "ko", LG_CHEM, ["3"]),
+        # Durations, amounts, percentages, counts and file numbers stay banned, even when the
+        # source holds them.
+        ("회사는 6개월 이내에 재공시할 예정이라고 밝혔어요.", "ko", LG_CHEM, ["6"]),
+        ("회사는 할인율 15%를 적용한다고 밝혔어요", "ko", ISSUE_PRICE, ["1", "5"]),
+        ("회사는 1개월 가중산술평균주가를 쓴다고 밝혔어요", "ko", ISSUE_PRICE, ["1"]),
+        ("회사는 3분기에 30조원 내외의 현금배당을 시행할 계획이라고 밝혔어요.", "ko", SAMSUNG,
+         ["3", "0", "조원"]),
+        ("The company said the file number is 333-295425 under Form S-3.", "en", SHELF,
+         list("333295425")),
+        ("The company said the period covers 24 weeks of fiscal 2026.", "en", COSTCO,
+         ["2", "4"]),
+        # A bare year, a half and a spelled Korean quarter are not labels.
+        ("The company said the plan runs in 2026.", "en", SAMSUNG, ["2", "0", "2", "6"]),
+        ("The company said it reports first half results.", "en", SAMSUNG, ["first half"]),
+        ("회사는 삼분기에 현금배당을 시행한다고 밝혔어요.", "ko", SAMSUNG, ["삼분기"]),
+    ],
+)  # fmt: skip
+def test_figures_and_absent_labels_still_fail_n1(
+    line: str, lang: str, source: Source, tokens: list[str]
+) -> None:
+    found = _rules(line, lang, source)
+    assert {rule for rule, _ in found} == {"N1"}
+    assert sorted(token for _, token in found) == sorted(tokens)
+
+
+@pytest.mark.parametrize(
+    ("line", "source"),
+    [
+        ("회사는 2차전지 사업을 확대한다고 밝혔어요.", Source("x", "2차전지 사업")),
+        ("회사는 이사회를 2차례 열었다고 밝혔어요.", Source("x", "2차례 개최")),
+        ("회사는 3차원 설계를 도입한다고 밝혔어요.", Source("x", "3차원 설계")),
+        ("회사는 2026년간 배당을 시행한다고 밝혔어요.", Source("x", "2026년간 배당")),
+        ("회사는 10년 동안 배당을 시행한다고 밝혔어요.", Source("x", "10년 동안 2010년")),
+        ("회사는 2공장 두 곳을 짓는다고 밝혔어요.", Source("x", "2공장")),
+    ],
+)  # fmt: skip
+def test_counts_and_durations_that_look_like_labels_fail_n1(line: str, source: Source) -> None:
+    assert "N1" in {rule for rule, _ in _rules(line, "ko", source)}
+
+
+@pytest.mark.parametrize(
+    ("line", "source"),
+    [
+        ("회사는 미국 자회사 베어로보틱스가 나스닥 상장을 도전한다는 보도에 대해 해명했어요.",
+         CLARIFICATION),
+        ("회사는 배달의민족 인수 컨소시엄 구성 보도에 대해 해명했어요.", CLARIFICATION),
+        ("회사는 키옥시아 지분 차익으로 특별배당을 추진한다는 보도에 대해 해명했어요.",
+         CLARIFICATION),
+        ("회사는 솔리다임의 미국 낸드공장 신설 검토 보도에 대해 해명했어요.", CLARIFICATION),
+        ("회사는 일본에 반도체 공장을 짓는다는 보도에 대해 조회공시 요구를 받았어요.", INQUIRY),
+        ("회사는 일본에 반도체 공장을 짓는다는 보도에 대해 조회공시요구를 받았어요.", INQUIRY),
+        ("회사는 반도체 공장 보도에 대한 조회공시 요구에 답변했어요.", INQUIRY),
+    ],
+)  # fmt: skip
+def test_line_one_of_its_report_type_may_end_in_a_report_ending(line: str, source) -> None:
+    assert _rules(line, "ko", source) == []
+    assert _rules(line, "ko", None) == [("N4", "")]
+
+
+@pytest.mark.parametrize(
+    ("line", "source", "line_no"),
+    [
+        # Another report type, or no title at all.
+        ("회사는 보도에 대해 해명했어요.", Source("유상증자결정", "유상증자"), 1),
+        ("회사는 보도에 대해 해명했어요.", INQUIRY, 1),
+        ("회사는 조회공시 요구를 받았어요.", CLARIFICATION, 1),
+        ("회사는 조회공시 요구에 답변했어요.", CLARIFICATION, 1),
+        # Lines two and three keep the five endings.
+        ("회사는 보도에 대해 해명했어요.", CLARIFICATION, 2),
+        ("회사는 조회공시 요구를 받았어요.", INQUIRY, 3),
+        # Only the inquiry itself was received.
+        ("회사는 투자를 받았어요.", INQUIRY, 1),
+        ("회사는 투자 제안을 받았어요.", INQUIRY, 1),
+    ],
+)  # fmt: skip
+def test_report_endings_stay_closed_outside_their_report_and_line(line, source, line_no) -> None:
+    assert ("N4", "") in _rules(line, "ko", source, line_no)
+
+
+def test_a_report_ending_opens_no_other_rule() -> None:
+    found = _rules("회사는 실적 우려 보도에 대해 해명했어요.", "ko", CLARIFICATION)
+    assert found == [("N2", "우려")]
+    found = _rules("회사는 주가가 오를 것으로 보도에 대해 해명했어요.", "ko", CLARIFICATION)
+    assert {rule for rule, _ in found} == {"N3"}
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        "회사는 스위스법에 따른 강제매수 등으로 잔여지분을 취득해 지분 전부를 확보할 예정이라고 "
+        "밝혔어요",
+        "회사는 소수주주 지분을 강제 매수한다고 밝혔어요",
+        "회사는 PolyPeptide Group AG 공개매수에서 최종 응모 지분율을 기록했다고 보고했어요",
+        "회사는 미국 및 캐나다 채권을 인수단에 매도하기로 합의했다고 밝혔어요.",
+        "회사는 사채를 투자자에게 매도했다고 공시했어요.",
+        "회사는 노트를 인수단에 매도할 예정이라고 밝혔어요.",
+    ],
+)  # fmt: skip
+def test_legal_terms_and_selling_its_notes_pass_n7(line: str) -> None:
+    assert _rules(line, "ko", None) == []
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        "회사는 주식을 매수하라고 밝혔어요.",
+        "회사는 지금이 매수 기회라고 밝혔어요.",
+        "회사는 채권을 매도하세요라고 밝혔어요.",
+        "회사는 채권을 매도해야 한다고 밝혔어요.",
+        "회사는 채권을 매도할 때라고 밝혔어요.",
+        "회사는 자기주식을 매도하기로 결정했어요",
+        "회사는 주식을 인수단에 매도하기로 합의했다고 밝혔어요.",
+        "회사는 소수주주 지분을 강제로 매수한다고 밝혔어요",
+    ],
+)  # fmt: skip
+def test_buy_and_sell_advice_still_fails_n7(line: str) -> None:
+    assert "N7" in {rule for rule, _ in _rules(line, "ko", None)}
+
+
+def test_check_summary_passes_the_source_to_every_line() -> None:
+    lines = [
+        "회사는 2026년 주주환원 예상 규모 및 시행 방안에 대해 공시했어요.",
+        "회사는 3분기에 현금배당을 시행할 계획이라고 밝혔어요.",
+        "회사는 결산 후 나머지 주주환원 규모 및 방안을 최종 결정할 계획이라고 밝혔어요.",
+    ]
+    assert check_summary(lines, "ko", source=SAMSUNG) == []
+    assert {(v.rule_id, v.line_no) for v in check_summary(lines, "ko")} == {("N1", 1), ("N1", 2)}

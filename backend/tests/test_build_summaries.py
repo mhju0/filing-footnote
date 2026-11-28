@@ -258,6 +258,95 @@ def test_a_cached_withheld_row_that_now_passes_is_kept_unless_retry_withheld(tmp
     assert {r["review_state"] for r in _staged(tmp_path)} == {"staged"}
 
 
+# D111: the guard sees the filing's title and source text.
+CLARIFIED_TITLE = "풍문또는보도에대한해명(미확정)"
+CLARIFIED_SOURCE = (f"Filing title: {CLARIFIED_TITLE}\n\nFiling text:\n"
+                    "2026년 3분기 배당 보도에 대한 해명 확정된 사항은 없습니다")  # fmt: skip
+CLARIFIED = {
+    "ko_line1": "회사는 2026년 3분기 배당 보도에 대해 해명했어요",
+    "ko_line2": "회사는 확정된 사항이 없다고 밝혔어요",
+    "ko_line3": "회사는 확정되면 다시 공시할 예정이라고 밝혔어요",
+    "en_line1": "The company said a report stated it would pay a dividend in the third quarter.",
+    "en_line2": "The company said nothing has been confirmed.",
+    "en_line3": "The company said it will file again once matters are confirmed.",
+}
+
+
+def _clarified_target() -> Target:
+    return Target(FID, "event", "summary", NAMES, CLARIFIED_SOURCE, title=CLARIFIED_TITLE)
+
+
+def _write_withheld(tmp_path, body: dict[str, str], model: str = MODEL) -> None:
+    key = input_sha256(CLARIFIED_SOURCE, model, "summary")
+    rows = [
+        {"filing_id": FID, "lang": lang, "section": "summary", "line1": lines[0],
+         "line2": lines[1], "line3": lines[2], "review_state": "withheld", "input_sha256": key,
+         "violations": [{"rule_id": "N4", "line_no": 1, "token": "", "span": [0, 0]}],
+         "warnings": [], "reviewer_flags": [], "model": model,
+         "prompt_version": summaries.EVENT_PROMPT_VERSION, "lexicon_version": 2}
+        for lang, lines in _lines(body).items()
+    ]  # fmt: skip
+    summaries.write_staged(tmp_path / "staged.jsonl", rows)
+
+
+def test_generation_guards_with_the_targets_title_and_source(tmp_path) -> None:
+    client = FakeClient(CLARIFIED, NO_FLAGS)
+    result, _ = _run(client, [_clarified_target()], tmp_path)
+    assert (client.calls, result.generated, result.withheld) == (2, 1, 0)
+    # Without the title the report ending fails N4, and without the source the labels fail N1.
+    bare = dataclasses.replace(_clarified_target(), title="")
+    assert {v["rule_id"] for v in summaries.check_lines(_lines(CLARIFIED), "summary", NAMES,
+                                                        bare.source)["ko"]} == {"N4"}  # fmt: skip
+    assert {v["rule_id"] for v in summaries.check_lines(_lines(CLARIFIED), "summary",
+                                                        NAMES)["ko"]} == {"N1", "N4"}  # fmt: skip
+
+
+def test_recheck_withheld_stages_a_pair_that_now_passes_without_a_call(tmp_path) -> None:
+    _write_withheld(tmp_path, CLARIFIED)
+    staged = summaries.recheck_withheld([_clarified_target()], model=MODEL,
+                                        staged_path=tmp_path / "staged.jsonl")  # fmt: skip
+    assert staged == [(FID, "summary")]
+    rows = _staged(tmp_path)
+    assert {r["review_state"] for r in rows} == {"staged"}
+    assert all(r["violations"] == [] for r in rows)
+    # No reviewer ran, so --all-reviewed leaves the pair for the owner.
+    assert all(r["reviewer_flags"] is None for r in rows)
+    from app.build import approve
+
+    result = approve.approve_all_reviewed(tmp_path / "staged.jsonl", tmp_path / "approved.jsonl")
+    assert result.approved == []
+
+
+@pytest.mark.parametrize(
+    ("body", "model", "dry_run"),
+    [
+        ({**CLARIFIED, "ko_line3": "회사는 6개월 이내에 다시 공시할 예정이라고 밝혔어요"}, MODEL,
+         False),
+        (CLARIFIED, "other-model", False),  # the key no longer matches: a retry regenerates it
+        (CLARIFIED, MODEL, True),
+    ],
+)  # fmt: skip
+def test_recheck_withheld_keeps_what_still_fails_or_is_stale(tmp_path, body, model,
+                                                            dry_run) -> None:  # fmt: skip
+    _write_withheld(tmp_path, body, model)
+    before = (tmp_path / "staged.jsonl").read_bytes()
+    staged = summaries.recheck_withheld([_clarified_target()], model=MODEL,
+                                        staged_path=tmp_path / "staged.jsonl",
+                                        dry_run=dry_run)  # fmt: skip
+    assert staged == ([(FID, "summary")] if dry_run else [])
+    assert (tmp_path / "staged.jsonl").read_bytes() == before
+
+
+def test_select_targets_carries_each_filings_title() -> None:
+    data = fixture_build_input()
+    for target in select_targets(data, AS_OF):
+        assert target.title
+        first = (target.source_text or "").split("\n", 1)[0]
+        if target.source_text is not None:
+            assert first in (f"Filing title: {target.title}", f"Report: {target.title}")
+            assert target.source == summaries.Source(target.title, target.source_text)
+
+
 def test_an_approved_row_with_the_same_hash_is_a_cache_hit(tmp_path) -> None:
     key = input_sha256(SOURCE, MODEL, "summary")
     approved = [
