@@ -21,7 +21,7 @@
 {"lang": "ko", "company": "삼성전자", "line": "회사는 하반기 실적이 기대돼요", "rules": ["N1", "N3", "N4"], "note": "기대돼요"}
 {"lang": "ko", "company": "삼성바이오로직스", "line": "회사는 수주가 이어질 것으로 기대된다고 밝혔어요", "rules": ["N3"], "note": "기대된다 inside an attributed line still fails"}
 {"lang": "ko", "company": "삼성전자", "line": "회사는 하반기 매출이 회복될 것으로 공시했어요", "rules": ["N1", "N3"], "note": "~ㄹ 것으로 without a listed verb"}
-{"lang": "ko", "company": "삼성전자", "line": "회사는 주가가 바닥을 지난 것으로 보인다고 밝혔어요", "rules": ["N3"], "note": "보인다 (judgement), compare the past 보인 which is not listed"}
+{"lang": "ko", "company": "삼성전자", "line": "회사는 주가가 바닥을 지난 것으로 보인다고 밝혔어요", "rules": ["N3", "N7"], "note": "보인다 (judgement), compare the past 보인 which is not listed; 바닥을 지난 is a bottom call (D112)"}
 {"lang": "ko", "company": "삼성전자", "line": "회사는 자기주식을 취득할 계획이라고 공시한 것으로 보입니다", "rules": ["N3", "N4"], "note": "계획이라고 is allowed only in a line that passes N4; 보입니다 also fails"}
 {"lang": "ko", "company": "삼성전자", "line": "자기주식을 취득하기로 결정했어요", "rules": ["N4"], "note": "line one without 회사는 or the company name"}
 {"lang": "ko", "company": "삼성전자", "line": "회사는 자기주식을 취득해요", "rules": ["N4"], "note": "not a reporting ending"}

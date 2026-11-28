@@ -74,8 +74,8 @@
       "severity": "fail",
       "dated_future": {
         "ko": ["<ㄹ>\\s?(?:거|것)", "것이라고", "것으로", "<ㄹ>\\s?수\\s?(?:도\\s?)?있", "겠", "(?<![고우염배])려(?:\\s?(?:하|한|해|했)|고|는)", "<ㄴ>다(?:고|며|는)", "는다(?:고|며|는)", "방침", "추진", "계획", "목표", "예정", "달성", "전망", "예상", "기대", "(?:년|분기|연도|차)\\s?이후"],
-        "en": ["\\bwill\\b", "['’]ll\\b", "\\bwould\\b", "\\bshould\\b", "(?-i:\\bmay\\b)", "\\bmight\\b", "\\bcould\\b", "\\bshall\\b", "\\bgoing\\s+to\\b", "\\b(?:set|due|slated|scheduled|poised|likely|unlikely)\\s+to\\b", "\\bon\\s+(?:course|track)\\b", "\\b(?:seek|want|hope|aim|plan|intend|look|strive|expect|target)(?:s|ed|ing)?\\s+to\\b", "\\bsought\\s+to\\b", "\\bexpect\\w*", "\\btarget\\w*", "\\baim(?:s|ed|ing)?\\b", "\\bgoals?\\b", "\\bforecast\\w*", "\\banticipat\\w*", "\\bintend\\w*", "\\boutlook\\b", "\\bguidance\\b", "\\bprojected\\b", "\\bprojections?\\b", "\\bto\\s+be\\s+(?:decided|determined|announced|held|paid)\\b"],
-        "note": "D111, coordinator decisions 2026-11-28: a source-held label must not enable a dated forecast. When any line of a summary passes N1 through a year, quarter or round label (the source holds it), these regular expressions (English case-insensitive) also fail N3 on every line of that summary. They name form classes, not single words: Korean -ㄹ/을 거·것, -ㄹ 수 있다, -겠, -려 하다/-려고, the present tense used for the future (-ㄴ다고, -는다고), and intention, plan and target nouns; English modal and quasi-modal futures, plan and target verbs before 'to', and outlook nouns. <ㄹ> stands for any Hangul syllable whose final consonant is ㄹ, <ㄴ> for one whose final is ㄴ. A summary without such a label is not checked against this list. The summary prompt does not read it."
+        "en": ["\\bwill\\b", "['’]ll\\b", "\\bwould\\b", "\\bshould\\b", "(?-i:\\bmay\\b)", "\\bmight\\b", "\\bcould\\b", "\\bshall\\b", "\\bgoing\\s+to\\b", "\\b(?:set|due|slated|scheduled|poised|likely|unlikely)\\s+to\\b", "\\bon\\s+(?:course|track)\\b", "\\b(?:seek|want|hope|aim|plan|intend|look|strive|expect|target)(?:s|ed|ing)?\\s+to\\b", "\\bsought\\s+to\\b", "\\bexpect\\w*", "\\btarget\\w*", "\\baim(?:s|ed|ing)?\\b", "\\bgoals?\\b", "\\bforecast\\w*", "\\banticipat\\w*", "\\bintend\\w*", "\\boutlook\\b", "\\bguidance\\b", "\\bprojected\\b", "\\bprojections?\\b", "\\bto\\s+be\\s+(?:decided|determined|announced|held|paid)\\b", "\\b(?:sees?|seeing|foresee\\w*|envision\\w*|predict\\w*)\\b", "\\bconfident(?:ly)?\\b", "\\b(?:optimis|pessimis)(?:m|tic|tically)\\b", "\\bposition(?:s|ed|ing)?\\s+(?:it|itself|the\\s+company|them|themselves|us)\\b[^.;]*?\\bfor\\b", "\\b(?:well[\\s-]+)?positioned\\s+(?:to|for)\\b"],
+        "note": "D111, coordinator decisions 2026-11-28: a source-held label must not enable a dated forecast. When any line of a summary passes N1 through a year, quarter, round or plant label (the source holds it; plants since D112), these regular expressions (English case-insensitive) also fail N3 on every line of that summary. They name form classes, not single words: Korean -ㄹ/을 거·것, -ㄹ 수 있다, -겠, -려 하다/-려고, the present tense used for the future (-ㄴ다고, -는다고), and intention, plan and target nouns; English modal and quasi-modal futures, plan and target verbs before 'to', and outlook nouns; since D112 (coordinator decision 2026-11-28) also outlook verbs (sees, foresees, envisions, predicts), confident, optimistic or pessimistic, and position(s) it/the company … for or (well) positioned to/for, so 'said it sees fiscal 2027 growth' and '2공장 증설로 … 늘어난다고' fail in a labelled summary. 'its financial position for fiscal 2026' (a noun) stays clear. <ㄹ> stands for any Hangul syllable whose final consonant is ㄹ, <ㄴ> for one whose final is ㄴ. A summary without such a label is not checked against this list. The summary prompt does not read it."
       },
       "attributed_prediction": {
         "ko": ["<ㄹ>\\s?(?:거|것)이?(?:라고|라며|라는|란|래요)"],
@@ -175,6 +175,7 @@
         "terms": ["매수", "매도", "추천", "투자하세요", "사야", "팔아야", "유망", "저평가", "고평가"],
         "phrases": ["살 때", "투자할 만", "주목할 만", "매수 기회", "투자 기회"],
         "allow": ["장내 매수", "장외 매수", "장내 매도", "장외 매도", "매수 주문", "매도 주문", "공개 매수", "강제 매수", "매수 선택권", "매수 청구권", "매도 청구권", "매도 가능", "매수인", "매도인", "추천 위원회"],
+        "patterns": ["매력(?:적|도|이\\s?(?:있|높|크)|\\s?있)", "투자\\s?매력", "바닥을?\\s?(?:치|쳤|친|칠|찍|지나|지났|지난|확인|탈출)", "바닥권", "저점을?\\s?(?:찍|통과|지나|지났|지난|확인)", "과소\\s?평가", "과대\\s?평가", "(?:주가|밸류에이션)(?:가|는|이)?\\s?(?:싸|싼|저렴)"],
         "allow_patterns": ["(?:채권|사채|노트)(?:을|를)\\s?(?:(?:인수단|인수인|주관사|(?:기관\\s?)?투자자들?)(?:에|에게)\\s?)?매도(?=하기로|했(?:다|어요|고|으며|습니다)|할\\s?(?:예정|계획))"],
         "narrowed": [
           {"term": "매수, 매도", "now_matches": "every use except the filing's own terms in allow", "reason": "Filings use them for the method, party or instrument: 장내 매수 (on-market purchase, the buyback filing's 취득방법), 매도 주문수량 한도, 공개매수 (tender offer), 주식매수선택권 (stock options), 주식매수청구권 (appraisal right), 매도가능 (available-for-sale), 매수인/매도인 (buyer/seller in a contract). Bare 매수/매도 still fail; summaries write 취득/처분 for the company's own trades."},
@@ -185,7 +186,8 @@
           {"term": "저평가, 고평가; phrases 살 때, 투자할 만, 주목할 만", "reason": "owner-approved 2026-11-17"},
           {"term": "phrases only: 매수 기회, 투자 기회", "reason": "owner-approved 2026-11-17; bare 기회 is generic (사업 기회)"},
           {"term": "allow: 강제 매수", "reason": "D111, owner decision 2026-11-28: 강제매수 is the legal term for a compulsory acquisition of minority shares (a squeeze-out), like 공개매수."},
-          {"term": "allow_patterns: 채권/사채/노트 + 을/를 + optional 인수단/인수인/주관사/(기관)투자자(들) + 에/에게 + 매도 before 하기로, 했다/했어요/했고/했으며/했습니다, 할 예정 or 할 계획", "reason": "D111, owner decision 2026-11-28: the company selling the notes it issues (채권을 인수단에 매도하기로 합의했어요) is a fact. Shares stay out: the company's own share trades are written 취득/처분 (자기주식을 매도 still fails), as is any other form (매도하세요, 매도해야, 매도할 때, 매도하는 것이, 매도한다면) and any other buyer word (유망기업에 매도 keeps 유망 banned)."}
+          {"term": "allow_patterns: 채권/사채/노트 + 을/를 + optional 인수단/인수인/주관사/(기관)투자자(들) + 에/에게 + 매도 before 하기로, 했다/했어요/했고/했으며/했습니다, 할 예정 or 할 계획", "reason": "D111, owner decision 2026-11-28: the company selling the notes it issues (채권을 인수단에 매도하기로 합의했어요) is a fact. Shares stay out: the company's own share trades are written 취득/처분 (자기주식을 매도 still fails), as is any other form (매도하세요, 매도해야, 매도할 때, 매도하는 것이, 매도한다면) and any other buyer word (유망기업에 매도 keeps 유망 banned)."},
+          {"term": "patterns: 매력적/매력도/매력이 있·높·크/매력 있, 투자 매력; 바닥을 치·쳤·친·칠·찍·지나·확인·탈출, 바닥권; 저점을 찍·통과·지나·확인; 과소평가, 과대평가; 주가/밸류에이션 + 싸·싼·저렴", "reason": "D112, coordinator decision 2026-11-28: valuation and bottom calls are judgements, like 저평가. Kept as patterns, which the summary prompt does not list, so the prompt and its cache key stay as they are. 바닥재 (flooring) and 저렴한 제품 stay clear."}
         ]
       },
       "en": {
@@ -201,7 +203,14 @@
           "\\b(?:buy|sell)\\s+(?:now|the\\s+stock|the\\s+shares|this\\s+stock)\\b",
           "\\b(?:buying|selling)\\s+(?:the\\s+|its\\s+|more\\s+)?(?:stock|shares)\\b",
           "\\binvestors?\\s+(?:should\\s+|to\\s+)?(?:buy|sell|hold)\\b",
-          "^\\s*(?:buy|sell|hold)\\b"
+          "^\\s*(?:buy|sell|hold)\\b",
+          "\\battractive(?:ly|ness)?\\b",
+          "\\bbottom(?:s|ed|ing)?\\s+out\\b",
+          "\\bbottomed\\b(?!\\s+out\\b)",
+          "\\b(?:hit|hits|hitting|reach|reached|reaches|reaching)\\s+(?:a\\s+)?bottom\\b",
+          "\\brock[\\s-]+bottom\\b",
+          "\\b(?:under|over)(?:-valu\\w*|valu(?!ed\\b)\\w*|-?pric\\w*)",
+          "\\b(?:fairly|fully|richly|cheaply)\\s+valued\\b"
         ],
         "narrowed": [
           {"term": "buy", "now_matches": "advice phrasing only (patterns)", "reason": "'The company said it decided to buy back its own shares' is a buyback fact."},
@@ -212,7 +221,8 @@
         "added": [
           {"term": "recommends, recommended, recommending, recommendation, recommendations", "reason": "Inflections of 'recommend', listed because this rule uses word match."},
           {"term": "patterns 'buying/selling (the/its/more) stock/shares' and 'investor(s) (should/to) buy/sell/hold'", "reason": "Catch advice that sits next to a board recommendation."},
-          {"term": "worth a look, good time to invest, attractive valuation, buying opportunity, must-buy, cheap", "reason": "owner-approved 2026-11-17"}
+          {"term": "worth a look, good time to invest, attractive valuation, buying opportunity, must-buy, cheap", "reason": "owner-approved 2026-11-17"},
+          {"term": "patterns: attractive (attractively, attractiveness); bottom(s/ed/ing) out, bottomed, hit/reach (a) bottom, rock bottom; under-/over- + valu…/pric… (undervaluation, overpriced); fairly/fully/richly/cheaply valued", "reason": "D112, coordinator decision 2026-11-28: valuation and bottom calls are judgements, like undervalued. Patterns, not terms, so the summary prompt stays as it is. 'bottom line', 'under pricing pressure' and 'collective bargaining' stay clear."}
         ]
       }
     },
