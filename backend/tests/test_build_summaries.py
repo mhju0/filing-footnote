@@ -266,7 +266,7 @@ CLARIFIED = {
     "ko_line1": "회사는 2026년 3분기 배당 보도에 대해 해명했어요",
     "ko_line2": "회사는 확정된 사항이 없다고 밝혔어요",
     "ko_line3": "회사는 확정되면 다시 공시할 예정이라고 밝혔어요",
-    "en_line1": "The company said a report stated it would pay a dividend in the third quarter.",
+    "en_line1": "The company said a report covered a dividend in the third quarter.",
     "en_line2": "The company said nothing has been confirmed.",
     "en_line3": "The company said it will file again once matters are confirmed.",
 }

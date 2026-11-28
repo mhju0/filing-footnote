@@ -637,6 +637,13 @@ def check_fact(
     )
 
 
+def cited_source(title: str, excerpts: Sequence[str]) -> Source:
+    """What a bundle holds of one filing section's source (D111): its title and the excerpts its
+    lines cite. ``check_bundle`` guards with it, and the exporter checks the same text, so a
+    release never fails verify on a label the export accepted."""
+    return Source(title, "\n".join([title, *excerpts]))
+
+
 def summary_problems(
     filing_id: str,
     lang: str,
@@ -738,8 +745,7 @@ def check_bundle(
         cited = None
         if filing:
             texts = excerpts[(summary["filing_id"], summary["section"])]
-            cited = Source(filing["title_original"],
-                           "\n".join([filing["title_original"], *texts]))  # fmt: skip
+            cited = cited_source(filing["title_original"], texts)
         problems += summary_problems(
             summary["filing_id"], summary["lang"], summary["section"],
             (summary["line1"], summary["line2"], summary["line3"]), names, cited,

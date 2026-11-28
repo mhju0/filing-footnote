@@ -12,7 +12,9 @@ from the ``check_*`` functions.
 A caller that has the filing passes it as a :class:`Source`. Two narrow allowances (D111)
 need it and stay closed without it: an N1 label (a year, quarter, round, numbered plant or
 SEC form name) passes only when the source holds the same label, and a Korean line one may
-end in a report-type ending only when the filing's title is that report type.
+end in a report-type ending only when the filing's title is that report type. A line where a
+year or quarter label passed also fails N3 on any future, plan or target form (`dated_future`),
+so a source-held year cannot carry a dated forecast.
 """
 
 import json
@@ -132,6 +134,8 @@ class _Lexicon:
     ko_report_endings: tuple[tuple[re.Pattern[str], frozenset[int], re.Pattern[str]], ...]
     # (kind, pattern with a "value" group): N1 labels exempt when the source has them (D111).
     labels: tuple[tuple[str, re.Pattern[str]], ...]
+    # N3 forms banned on a line where a year or quarter label passed (D111).
+    dated_future: dict[Lang, tuple[re.Pattern[str], ...]]
     en_verbs: tuple[str, ...]
     en_subjects: tuple[str, ...]
     en_name_suffixes: tuple[str, ...]
@@ -233,6 +237,10 @@ def load_lexicon(path: Path = LEXICON_PATH) -> _Lexicon:
             for label in n1["labels"]
             for pattern in label["patterns"]
         ),
+        dated_future={
+            lang: tuple(re.compile(s, re.IGNORECASE) for s in n3["dated_future"][lang])
+            for lang in ("ko", "en")
+        },
         en_verbs=tuple(n4["en"]["verbs"]),
         en_subjects=tuple(n4["en"]["subjects"]),
         en_name_suffixes=tuple(n4["en"]["name_suffixes"]),
@@ -268,13 +276,16 @@ def _source_labels(
     )
 
 
-def _label_spans(text: str, source: Source | None, lex: _Lexicon) -> list[tuple[int, int]]:
-    """Spans of the N1 labels in ``text`` that the source also holds; none without a source."""
+def _label_spans(
+    text: str, source: Source | None, lex: _Lexicon
+) -> list[tuple[str, tuple[int, int]]]:
+    """(kind, span) of the N1 labels in ``text`` that the source also holds; none without a
+    source."""
     if source is None:
         return []
     known = _source_labels(normalize(source.text), lex.labels)
     return [
-        m.span()
+        (kind, m.span())
         for kind, pattern in lex.labels
         for m in pattern.finditer(text)
         if _label_value(kind, m) in known
@@ -375,7 +386,10 @@ def check_line(
         n1 += _regex_violations("N1", pattern, text, lang, line_no)
     n1 += _matcher_violations("N1", text, lang, line_no, lex)
     labels = _label_spans(text, source, lex)
-    found += [v for v in n1 if not any(s <= v.span[0] and v.span[1] <= e for s, e in labels)]
+    found += [v for v in n1 if not any(s <= v.span[0] and v.span[1] <= e for _, (s, e) in labels)]
+    if any(kind in ("year", "quarter") for kind, _ in labels):
+        for pattern in lex.dated_future[lang]:
+            found += _regex_violations("N3", pattern, text, lang, line_no)
 
     # Company names are exempt from N2 only: "Boost Mobile" is a name, "3M" still fails N1.
     found += _matcher_violations(

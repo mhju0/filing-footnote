@@ -354,6 +354,9 @@ SHELF = Source(
     "Form S-3 (File No. 333-295425)",
 )
 CLARIFICATION = Source("풍문또는보도에대한해명(미확정)", "풍문 또는 보도에 대한 해명")
+QUARTERS = Source("분기보고서", "2026년 1분기 실적, 2분기 실적, 3분기 실적, 4분기 실적")
+ROUNDS = Source("x", "1차 발행, 2차 발행, 3차 발행, 4차 발행")
+YEARS = Source("x", "FY2030 2027년 2030년 2026년 3분기 실적")
 INQUIRY = Source("조회공시요구(풍문또는보도)에대한답변(미확정)", "조회공시 요구에 대한 답변")
 
 
@@ -364,10 +367,16 @@ def _rules(line: str, lang: str, source: Source | None, line_no: int = 1) -> lis
 @pytest.mark.parametrize(
     ("line", "lang", "source"),
     [
-        ("회사는 2026년 주주환원 예상 규모 및 시행 방안에 대해 공시했어요.", "ko", SAMSUNG),
-        ("회사는 3분기에 현금배당을 시행할 계획이라고 밝혔어요.", "ko", SAMSUNG),
-        ("The company said it plans to implement cash dividends in the third quarter, with "
-         "specifics to be decided by the board.", "en", SAMSUNG),
+        ("회사는 2026년 주주환원 규모 및 시행 방안에 대해 공시했어요.", "ko", SAMSUNG),
+        ("회사는 3분기에 현금배당을 시행한다고 밝혔어요.", "ko", SAMSUNG),
+        ("The company said it pays cash dividends in the third quarter.", "en", SAMSUNG),
+        # The other quarter and round shapes.
+        ("회사는 2026년 3분기 실적을 공시했어요.", "ko", SAMSUNG),
+        ("회사는 3분기 배당금을 확정했다고 밝혔어요.", "ko", SAMSUNG),
+        ("회사는 3분기에는 배당을 지급했다고 밝혔어요.", "ko", SAMSUNG),
+        ("The company reported third quarter results.", "en", SAMSUNG),
+        ("The company reported results for the third quarter of fiscal 2026.", "en", SAMSUNG),
+        ("회사는 2차 발행가액을 확정했다고 밝혔어요", "ko", ISSUE_PRICE),
         ("회사는 여수 NCC 2공장 매각 착수 보도에 대해 조회공시 답변을 공시했어요.", "ko", LG_CHEM),
         ("회사는 1차와 2차 발행가액 중 낮은 금액이라고 밝혔어요", "ko", ISSUE_PRICE),
         ("회사는 2026 회계연도 분기 및 연초 이후 영업실적을 보고했어요", "ko", COSTCO),
@@ -399,7 +408,7 @@ def test_a_label_the_source_holds_passes_n1(line: str, lang: str, source: Source
         ("회사는 6개월 이내에 재공시할 예정이라고 밝혔어요.", "ko", LG_CHEM, ["6"]),
         ("회사는 할인율 15%를 적용한다고 밝혔어요", "ko", ISSUE_PRICE, ["1", "5"]),
         ("회사는 1개월 가중산술평균주가를 쓴다고 밝혔어요", "ko", ISSUE_PRICE, ["1"]),
-        ("회사는 3분기에 30조원 내외의 현금배당을 시행할 계획이라고 밝혔어요.", "ko", SAMSUNG,
+        ("회사는 3분기에 30조원 내외의 현금배당을 시행한다고 밝혔어요.", "ko", SAMSUNG,
          ["3", "0", "조원"]),
         ("The company said the file number is 333-295425 under Form S-3.", "en", SHELF,
          list("333295425")),
@@ -438,6 +447,18 @@ def test_figures_and_absent_labels_still_fail_n1(
         ("회사는 4차로 도로를 짓는다고 밝혔어요", Source("x", "4차 공사")),
         ("회사는 1차이로 낙찰됐다고 밝혔어요", Source("x", "1차 입찰")),
         ("회사는 국내에 2 공장을 운영한다고 밝혔어요", Source("x", "2공장")),
+        # Found in the second review: quarter and round counts outside the allowed shapes.
+        ("회사는 3분기에 걸쳐 실적을 공시했어요", QUARTERS),
+        ("회사는 최근 4분기 합산 실적을 공시했어요", QUARTERS),
+        ("회사는 3분기 넘게 감소했다고 밝혔어요", QUARTERS),
+        ("회사는 2분기 이상 지연됐다고 밝혔어요", QUARTERS),
+        ("회사는 3분기 내내 생산을 멈췄다고 밝혔어요", QUARTERS),
+        ("회사는 3분기 실적 연속 감소를 공시했어요", QUARTERS),
+        ("회사는 4차 연속 발행했다고 밝혔어요", ROUNDS),
+        ("회사는 3차 이상 공시했어요", ROUNDS),
+        ("회사는 2차 례 공시했다고 밝혔어요", ROUNDS),
+        ("회사는 2차 발행 연속 증가를 공시했어요", ROUNDS),
+        ("회사는 2차 사업을 시작했다고 밝혔어요", ROUNDS),
     ],
 )  # fmt: skip
 def test_counts_and_durations_that_look_like_labels_fail_n1(line: str, source: Source) -> None:
@@ -535,11 +556,42 @@ def test_buy_and_sell_advice_still_fails_n7(line: str) -> None:
     assert "N7" in {rule for rule, _ in _rules(line, "ko", None)}
 
 
+@pytest.mark.parametrize(
+    ("line", "lang", "tokens"),
+    [
+        ("The company said FY2030 revenue will double.", "en", ["will"]),
+        ("회사는 2027년 이후 흑자를 낼 거라고 밝혔어요", "ko", ["거라고", "년 이후"]),
+        ("회사는 2030년 매출 목표를 달성한다고 밝혔어요", "ko", ["목표", "달성"]),
+        ("회사는 3분기에 현금배당을 시행할 계획이라고 밝혔어요.", "ko", ["계획"]),
+        ("회사는 2026년 3분기 실적이 증가할 것으로 예상했어요", "ko", ["것으로", "예상"]),
+        ("The company said it expects third quarter results to rise.", "en", ["expects"]),
+        ("The company said it plans to pay dividends in fiscal 2030.", "en", ["plans to"]),
+    ],
+)  # fmt: skip
+def test_a_year_or_quarter_label_cannot_carry_a_dated_forecast(line, lang, tokens) -> None:
+    # D111: the label passes N1, but the line then fails N3 on its future or target form.
+    found = _rules(line, lang, YEARS, 2)
+    assert "N1" not in {rule for rule, _ in found}
+    assert set(tokens) <= {token for rule, token in found if rule == "N3"}
+
+
+def test_dated_future_forms_apply_only_where_a_year_or_quarter_label_passed() -> None:
+    # Without a year or quarter label the dated-forecast list does not apply (the general
+    # question of a bare will is out of scope); a form label does not open it either.
+    assert _rules("The company said revenue will rise.", "en", YEARS, 2) == []
+    assert _rules("The company said it will file a Form S-3.", "en", SHELF, 2) == []
+
+
 def test_check_summary_passes_the_source_to_every_line() -> None:
     lines = [
-        "회사는 2026년 주주환원 예상 규모 및 시행 방안에 대해 공시했어요.",
-        "회사는 3분기에 현금배당을 시행할 계획이라고 밝혔어요.",
+        "회사는 2026년 주주환원 규모 및 시행 방안에 대해 공시했어요.",
+        "회사는 3분기에 현금배당을 시행한다고 밝혔어요.",
         "회사는 결산 후 나머지 주주환원 규모 및 방안을 최종 결정할 계획이라고 밝혔어요.",
     ]
     assert check_summary(lines, "ko", source=SAMSUNG) == []
     assert {(v.rule_id, v.line_no) for v in check_summary(lines, "ko")} == {("N1", 1), ("N1", 2)}
+    # The staged Samsung Electronics lines carry dated forecasts on their labelled lines.
+    staged = ["회사는 2026년 주주환원 예상 규모 및 시행 방안에 대해 공시했어요.",
+              "회사는 3분기에 현금배당을 시행할 계획이라고 밝혔어요.", lines[2]]  # fmt: skip
+    assert {(v.rule_id, v.line_no, v.token) for v in check_summary(staged, "ko", source=SAMSUNG)
+            } == {("N3", 1, "예상"), ("N3", 2, "계획")}  # fmt: skip

@@ -127,6 +127,7 @@ from app.build.verify import (
     check_fact,
     check_figure,
     check_quarter_figure,
+    cited_source,
     dart_fiscal_period,
     dart_quarter_period,
     link_problems,
@@ -1212,6 +1213,23 @@ def _summaries(build: _Build, company_rows: list[tuple]) -> list[tuple]:
              summary.input_sha256)
         )  # fmt: skip
     rows = _summary_sources(build, rows, approved)
+    # The bundle keeps only the title and cited excerpts, and verify guards with those (D111):
+    # check them here too, so the export refuses what verify would.
+    excerpts: dict[tuple[str, str], list[str]] = defaultdict(list)
+    for source_row in build.sources:
+        if source_row[6]:
+            excerpts[(source_row[0], source_row[2])].append(source_row[6])
+    reported = set(build.problems)
+    for row in rows:
+        filing_id, lang, section = row[:3]
+        cited = cited_source(build.filings[filing_id][6], excerpts[(filing_id, section)])
+        for problem in summary_problems(
+            filing_id, lang, section, row[3:6],
+            names.get(build.filing_company[filing_id], []), cited,
+        ):  # fmt: skip
+            if problem not in reported:
+                reported.add(problem)
+                build.problems.append(problem)
     required = required_summaries(
         ((fid, row[1], row[2], row[8], row[7]) for fid, row in build.filings.items()),
         {
