@@ -2142,3 +2142,14 @@ release could not ship. Asked for through the Orca coordinator on 2026-11-27.
   release still refuses: before, forty-six exported filings lacked approved summaries; with the
   list, forty-five, all of which have staged or withheld rows waiting for the owner. This
   filing no longer blocks it. A preview builds and passes `verify --preview` without it.
+
+## D110 · Accessibility-size wrapping and D87 accepted · 2026-11-28 (`ACCEPTED`)
+
+The owner accepted both in chat on 2026-11-28, through the Orca coordinator.
+
+- Accepted: D87, as written, including its rule that a number wider than the whole line
+  shrinks to fit (down to 40%) instead of breaking inside its digits. Its status line is not
+  edited; this entry records the acceptance, as D88 did for D78–D86.
+- Accepted: the wrapping at the largest accessibility text size (AX5) merged in PRs #71–#73:
+  the summary card's source line (#71), the filed date on every screen (#72), and amounts and
+  form names that never split inside themselves (#73).
